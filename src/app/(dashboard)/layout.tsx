@@ -1,28 +1,31 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import { logout } from "@/features/auth/actions";
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
   return (
     <div className="min-h-screen bg-slate-100 px-4 py-4 text-right text-slate-900">
       <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_24px_80px_-32px_rgba(15,23,42,0.35)]">
         <header className="border-b border-slate-200 px-4 py-4 sm:px-6">
-          <p className="text-xs font-semibold tracking-[0.24em] text-amber-700">
-            GOLD STUDIO APP
-          </p>
-          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs font-semibold tracking-[0.24em] text-amber-700">GOLD STUDIO APP</p>
+          <div className="mt-3 flex flex-col gap-3">
             <div className="space-y-1">
-              <h1 className="text-lg font-semibold text-slate-950">
-                پوسته موقت داشبورد
-              </h1>
-              <p className="text-sm text-slate-600">
-                این لایه برای مسیرهای اصلی کاربر در MVP استفاده می‌شود.
-              </p>
+              <h1 className="text-lg font-semibold text-slate-950">داشبورد کاربر</h1>
+              <p className="text-sm text-slate-600">{session.user.email}</p>
             </div>
 
-            <nav className="flex flex-wrap gap-2 text-sm">
+            <div className="flex flex-wrap items-center gap-2 text-sm">
               <Link
                 href="/dashboard"
                 className="rounded-full bg-slate-100 px-4 py-2 text-slate-700 transition-colors hover:bg-slate-200"
@@ -41,7 +44,15 @@ export default function DashboardLayout({
               >
                 پروژه جدید
               </Link>
-            </nav>
+              <form action={logout}>
+                <button
+                  type="submit"
+                  className="rounded-full border border-slate-300 px-4 py-2 text-slate-700 transition-colors hover:bg-slate-100"
+                >
+                  خروج
+                </button>
+              </form>
+            </div>
           </div>
         </header>
 

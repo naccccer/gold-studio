@@ -38,8 +38,8 @@ Phase 1 — MVP web app (mobile-first, tablet-friendly)
 - [x] Temporary homepage shell
 - [x] Root docs created
 - [x] Route groups created
-- [ ] Auth
-- [ ] Prisma + MySQL
+- [x] Auth
+- [x] Prisma + MySQL
 - [x] Dashboard shell
 - [ ] Upload flow
 - [ ] Style presets
