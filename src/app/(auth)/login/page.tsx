@@ -6,14 +6,28 @@ export default function LoginPage() {
     <PlaceholderPage
       eyebrow="LOGIN"
       title="ورود به حساب"
-      description="ورود هنوز پیاده‌سازی نشده است. این صفحه فقط جایگاه موقت جریان احراز هویت در MVP است."
+      description="ورود هنوز پیاده‌سازی نشده است. فعلا از این صفحه به عنوان دروازه موقت ورود به MVP استفاده می‌کنیم."
     >
-      <Link
-        href="/signup"
-        className="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 px-5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-      >
-        رفتن به ثبت‌نام
-      </Link>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Link
+          href="/dashboard"
+          className="inline-flex h-11 items-center justify-center rounded-full bg-slate-950 px-5 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+        >
+          ورود موقت به داشبورد
+        </Link>
+        <Link
+          href="/signup"
+          className="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 px-5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+        >
+          رفتن به ثبت‌نام
+        </Link>
+        <Link
+          href="/"
+          className="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 px-5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 sm:col-span-2"
+        >
+          بازگشت به صفحه اصلی
+        </Link>
+      </div>
     </PlaceholderPage>
   );
 }
