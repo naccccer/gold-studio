@@ -40,3 +40,10 @@ Gold Studio is a mobile-first Farsi RTL web app for turning low-quality jewelry/
 ## Documentation rules
 - Update `roadmap.md` when progress or scope changes
 - Keep docs concise
+
+## Network/proxy rules
+- The developer may be in Iran and using limited paid proxy bandwidth.
+- Do not assume proxy is needed for local-only work.
+- Try direct access first when an external service usually works. Use proxy only for blocked external services such as Prisma engine downloads, Gemini API calls, or npm package downloads if npm fails.
+- For v2rayN on `127.0.0.1:10808`, proxy env vars must include a scheme, e.g. `http://127.0.0.1:10808` or `socks5://127.0.0.1:10808`.
+- See `docs/proxy.md` before changing network setup instructions.

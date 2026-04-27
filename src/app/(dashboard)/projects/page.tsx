@@ -1,17 +1,24 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUserSession } from "@/lib/auth/session";
-import { STYLE_PRESETS } from "@/features/projects/presets";
+import { STYLE_PRESETS, type StylePresetId } from "@/features/projects/presets";
 
 const styleLabelMap = new Map(STYLE_PRESETS.map((item) => [item.id, item.label]));
+
+type ProjectListItem = {
+  id: string;
+  title: string | null;
+  status: string;
+  stylePreset: StylePresetId;
+};
 
 export default async function ProjectsPage() {
   const session = await requireUserSession();
 
-  const projects = await db.project.findMany({
+  const projects = (await db.project.findMany({
     where: { userId: session.userId },
     orderBy: { createdAt: "desc" },
-  });
+  })) as ProjectListItem[];
 
   return (
     <section className="mx-auto w-full max-w-3xl space-y-4">
@@ -32,7 +39,7 @@ export default async function ProjectsPage() {
           </div>
         ) : null}
 
-        {projects.map((project) => (
+        {projects.map((project: ProjectListItem) => (
           <Link
             key={project.id}
             href={`/projects/${project.id}`}

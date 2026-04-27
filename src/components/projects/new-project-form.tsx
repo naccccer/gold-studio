@@ -1,10 +1,12 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import type { ProjectFormState } from "@/features/projects/actions";
 import { STYLE_PRESETS } from "@/features/projects/presets";
 
 const INITIAL_STATE: ProjectFormState = {};
+
+type GenerationMode = "image" | "text";
 
 type NewProjectFormProps = {
   action: (
@@ -14,10 +16,30 @@ type NewProjectFormProps = {
 };
 
 export function NewProjectForm({ action }: NewProjectFormProps) {
+  const [mode, setMode] = useState<GenerationMode>("image");
   const [state, formAction, pending] = useActionState(action, INITIAL_STATE);
 
   return (
     <form action={formAction} className="space-y-5 rounded-3xl border border-slate-200 bg-white p-4 sm:p-6">
+      <input type="hidden" name="generationMode" value={mode} />
+
+      <div className="grid grid-cols-2 rounded-2xl border border-slate-200 bg-slate-50 p-1 text-sm">
+        <button
+          type="button"
+          onClick={() => setMode("image")}
+          className={`h-10 rounded-xl transition ${mode === "image" ? "bg-white font-medium text-slate-950 shadow-sm" : "text-slate-500"}`}
+        >
+          تصویر محصول
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("text")}
+          className={`h-10 rounded-xl transition ${mode === "text" ? "bg-white font-medium text-slate-950 shadow-sm" : "text-slate-500"}`}
+        >
+          تست متن به تصویر
+        </button>
+      </div>
+
       <div className="space-y-2">
         <label className="text-sm text-slate-700" htmlFor="title">
           عنوان پروژه (اختیاری)
@@ -26,25 +48,42 @@ export function NewProjectForm({ action }: NewProjectFormProps) {
           id="title"
           name="title"
           type="text"
-          placeholder="مثلا: انگشتر طلای زنانه"
+          placeholder={mode === "image" ? "مثلا: انگشتر طلای زنانه" : "مثلا: تست اتصال GapGPT"}
           className="h-11 w-full rounded-xl border border-slate-200 px-3 outline-none ring-amber-200 transition focus:ring"
         />
       </div>
 
-      <div className="space-y-2">
-        <label className="text-sm text-slate-700" htmlFor="image">
-          تصویر محصول
-        </label>
-        <input
-          required
-          id="image"
-          name="image"
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="block w-full rounded-xl border border-slate-200 p-2 text-sm"
-        />
-        <p className="text-xs text-slate-500">فرمت‌های مجاز: JPG, PNG, WEBP — حداکثر ۱۰MB</p>
-      </div>
+      {mode === "image" ? (
+        <div className="space-y-2">
+          <label className="text-sm text-slate-700" htmlFor="image">
+            تصویر محصول
+          </label>
+          <input
+            required
+            id="image"
+            name="image"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="block w-full rounded-xl border border-slate-200 p-2 text-sm"
+          />
+          <p className="text-xs text-slate-500">فرمت‌های مجاز: JPG, PNG, WEBP - حداکثر ۱۰MB</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <label className="text-sm text-slate-700" htmlFor="textPrompt">
+            پرامپت تست
+          </label>
+          <textarea
+            required
+            id="textPrompt"
+            name="textPrompt"
+            rows={4}
+            placeholder="مثلا: A premium studio photo of a gold ring on a clean white background"
+            className="w-full resize-none rounded-xl border border-slate-200 px-3 py-3 text-sm outline-none ring-amber-200 transition focus:ring"
+          />
+          <p className="text-xs text-slate-500">این حالت فقط اتصال و مدل متن به تصویر GapGPT را تست می‌کند.</p>
+        </div>
+      )}
 
       <fieldset className="space-y-2">
         <legend className="text-sm text-slate-700">انتخاب سبک خروجی</legend>
@@ -73,7 +112,7 @@ export function NewProjectForm({ action }: NewProjectFormProps) {
         disabled={pending}
         className="h-11 w-full rounded-full bg-slate-950 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
       >
-        {pending ? "در حال تولید..." : "آپلود و شروع تولید"}
+        {pending ? "در حال تولید..." : mode === "image" ? "آپلود و شروع تولید" : "اجرای تست متن به تصویر"}
       </button>
     </form>
   );

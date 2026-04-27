@@ -15,7 +15,7 @@ Phase 1 — MVP web app (mobile-first, tablet-friendly)
 - Project creation
 - Image upload
 - Style preset selection
-- Gemini-based generation
+- GapGPT Gemini-compatible image generation
 - Result page
 - Download result
 - Admin dashboard
@@ -43,12 +43,12 @@ Phase 1 — MVP web app (mobile-first, tablet-friendly)
 - [x] Dashboard shell
 - [x] Upload flow
 - [x] Style presets
-- [x] Gemini integration
+- [x] GapGPT image integration
 - [x] Admin panel
 - [x] MVP polish
 
 ## Phase 1 status
-Core MVP journey is now implemented end-to-end in-app: signup/login, create project, upload image, choose style, run Gemini generation, view result, and download output. Remaining execution dependency is environment setup (`DATABASE_URL`, `AUTH_SECRET`, `GEMINI_API_KEY`) for runtime.
+Core MVP journey is now implemented end-to-end in-app: signup/login, create project, upload image, choose style, run GapGPT image generation, view result, and download output. Remaining execution dependency is environment setup (`DATABASE_URL`, `AUTH_SECRET`, `GAPGPT_API_KEY`) for runtime.
 
 ## Rule
 This file must always be updated whenever scope, phases, or completed steps change.

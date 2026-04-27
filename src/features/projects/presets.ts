@@ -1,7 +1,7 @@
-import type { StylePreset } from "@prisma/client";
+export type StylePresetId = "CLEAN_WHITE" | "WARM_LUXURY" | "DRAMATIC_DARK" | "SOFT_EDITORIAL";
 
 export const STYLE_PRESETS: Array<{
-  id: StylePreset;
+  id: StylePresetId;
   label: string;
   description: string;
   prompt: string;

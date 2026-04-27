@@ -1,40 +1,59 @@
 # Gold Studio MVP
 
-اپلیکیشن وب موبایل‌فرست فارسی/RTL برای تبدیل عکس خام محصول و جواهر به تصویر استودیویی.
+Gold Studio is a mobile-first Farsi/RTL web app for turning low-quality jewelry/product photos into premium studio-style images.
 
 ## Tech
-- Next.js App Router + TypeScript
+- Next.js App Router
+- TypeScript
 - Tailwind CSS
 - Prisma + MySQL
-- Gemini API
+- GapGPT OpenAI-compatible image API
 
 ## Setup
-1. نصب وابستگی‌ها:
+1. Install dependencies:
    ```bash
    npm install
    ```
-2. ساخت فایل env:
+2. Create your env file:
    ```bash
    cp .env.example .env
    ```
-3. مقداردهی متغیرهای `.env` (شامل `DATABASE_URL` و `PRISMA_ACCELERATE_URL`).
-4. ساخت کلاینت Prisma:
+3. Fill the required env vars:
+   - `DATABASE_URL`
+   - `AUTH_SECRET`
+   - `GAPGPT_API_KEY`
+   - `ADMIN_EMAIL` is optional
+   - `GAPGPT_IMAGE_MODEL` is optional
+4. Generate Prisma client:
    ```bash
    npx prisma generate
    ```
-5. اعمال migration روی دیتابیس:
+5. Run the first migration:
    ```bash
    npx prisma migrate dev --name init
    ```
-6. اجرا:
+6. Start the app:
    ```bash
    npm run dev
    ```
 
-## مسیرها
-- `/` لندینگ
-- `/signup` و `/login` احراز هویت
-- `/dashboard` داشبورد کاربر
-- `/projects/new` ایجاد پروژه با آپلود + انتخاب سبک + تولید
-- `/projects` و `/projects/[projectId]` مشاهده نتیجه و دانلود
-- `/admin` مدیریت دستی اعتبار کاربران
+## GapGPT setup
+- Create `GAPGPT_API_KEY` from GapGPT.
+- Keep `GAPGPT_BASE_URL` as `https://api.gapgpt.app/v1`.
+- Keep `GAPGPT_IMAGE_MODEL` unset to use the default Gemini image model, or override it with a supported GapGPT image model.
+- The current product flow requires image-to-image support through an OpenAI-compatible image edit endpoint.
+
+## Proxy notes
+- If you are in Iran or using v2rayN, read `docs/proxy.md` before running external commands.
+- Try direct access first. Enable proxy only for commands that fail because of blocked external access, commonly Prisma engine download or Gemini calls.
+
+## Live test notes
+- Read `docs/live-test.md` before deploying. VPS-style hosting works with the current filesystem upload flow; serverless hosting needs persistent object storage first.
+
+## Routes
+- `/` landing
+- `/signup` and `/login`
+- `/dashboard`
+- `/projects/new`
+- `/projects` and `/projects/[projectId]`
+- `/admin`
