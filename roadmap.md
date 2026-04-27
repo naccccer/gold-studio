@@ -38,14 +38,17 @@ Phase 1 — MVP web app (mobile-first, tablet-friendly)
 - [x] Temporary homepage shell
 - [x] Root docs created
 - [x] Route groups created
-- [ ] Auth
-- [ ] Prisma + MySQL
+- [x] Auth
+- [x] Prisma + MySQL
 - [x] Dashboard shell
-- [ ] Upload flow
-- [ ] Style presets
-- [ ] Gemini integration
+- [x] Upload flow
+- [x] Style presets
+- [x] Gemini integration
 - [x] Admin panel
-- [ ] MVP polish
+- [x] MVP polish
+
+## Phase 1 status
+Core MVP journey is now implemented end-to-end in-app: signup/login, create project, upload image, choose style, run Gemini generation, view result, and download output. Remaining execution dependency is environment setup (`DATABASE_URL`, `AUTH_SECRET`, `GEMINI_API_KEY`) for runtime.
 
 ## Rule
 This file must always be updated whenever scope, phases, or completed steps change.

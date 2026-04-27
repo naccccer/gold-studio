@@ -1,0 +1,55 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum ProjectStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum StylePreset {
+  CLEAN_WHITE
+  WARM_LUXURY
+  DRAMATIC_DARK
+  SOFT_EDITORIAL
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String?
+  email        String    @unique
+  passwordHash String
+  role         UserRole  @default(USER)
+  credits      Int       @default(5)
+  projects     Project[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Project {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title          String?
+  sourceImageUrl String
+  resultImageUrl String?
+  status         ProjectStatus @default(PENDING)
+  stylePreset    StylePreset
+  prompt         String
+  errorMessage   String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([userId, createdAt])
+}
