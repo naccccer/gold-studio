@@ -11,22 +11,20 @@ type FieldProps = {
 
 export function Field({ label, htmlFor, hint, error, children, className = "" }: FieldProps) {
   return (
-    <div className={["space-y-2", className].filter(Boolean).join(" ")}>
+    <div className={["space-y-2.5", className].filter(Boolean).join(" ")}>
       {label ? (
-        <label className="text-sm font-medium text-muted" htmlFor={htmlFor}>
+        <label className="text-sm font-semibold tracking-[-0.005em] text-foreground-soft" htmlFor={htmlFor}>
           {label}
         </label>
       ) : null}
       {children}
-      {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
+      {hint ? <p className="quiet-meta">{hint}</p> : null}
       {error ? (
-        <p className="rounded-[var(--radius-md)] border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
-          {error}
-        </p>
+        <p className="rounded-[var(--radius-md)] bg-danger-soft px-3 py-2 text-sm text-danger ring-1 ring-danger/25">{error}</p>
       ) : null}
     </div>
   );
 }
 
 export const fieldControlClassName =
-  "h-11 w-full rounded-[var(--radius-md)] border border-border bg-surface px-3 text-foreground outline-none transition placeholder:text-muted-foreground focus:border-focus focus:shadow-[var(--shadow-focus)]";
+  "h-11 w-full rounded-[var(--radius-md)] bg-surface px-3 text-foreground ring-1 ring-inset ring-border outline-none transition placeholder:text-muted-foreground focus-visible:ring-border-strong focus-visible:shadow-[var(--shadow-focus)]";
