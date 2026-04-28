@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { LogoutButton } from "@/features/auth/components/logout-button";
 import { requireUserSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
@@ -15,39 +15,39 @@ export default async function DashboardLayout({
   });
 
   return (
-    <div className="min-h-screen bg-background px-4 py-4 text-right text-foreground">
-      <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-5xl flex-col overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface shadow-[var(--shadow-soft)]">
-        <header className="border-b border-border px-4 py-4 sm:px-6">
-          <p className="text-xs font-semibold uppercase text-accent">Gold Studio</p>
-          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="min-h-screen bg-background px-4 py-5 text-right text-foreground sm:py-6">
+      <div className="mx-auto flex min-h-[calc(100vh-2.5rem)] w-full max-w-6xl flex-col overflow-hidden rounded-[var(--radius-xl)] border border-border/80 bg-surface/95">
+        <header className="border-b border-border/80 px-4 py-4 sm:px-6 sm:py-5">
+          <div className="space-y-3">
             <div className="space-y-1">
-              <h1 className="text-lg font-semibold text-foreground">داشبورد کاربر</h1>
+              <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted">Gold Studio</p>
+              <h1 className="text-lg font-medium text-foreground">فضای کاری شما</h1>
               <p className="text-sm text-muted">
                 {user?.name || user?.email} • اعتبار: {"نامحدود"}
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2 text-sm">
-              <Link href="/dashboard" className="rounded-[var(--radius-md)] bg-surface-soft px-4 py-2 text-muted transition-colors hover:bg-surface-muted hover:text-foreground">
-                داشبورد
-              </Link>
-              <Link href="/projects" className="rounded-[var(--radius-md)] bg-surface-soft px-4 py-2 text-muted transition-colors hover:bg-surface-muted hover:text-foreground">
-                پروژه‌ها
-              </Link>
-              <Link href="/projects/new" className="rounded-[var(--radius-md)] bg-foreground px-4 py-2 text-surface transition-colors hover:bg-accent-foreground">
+            <nav className="flex flex-wrap items-center gap-2 text-sm">
+              <Link href="/projects/new" className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-foreground px-4 text-sm font-medium text-surface transition-colors hover:bg-accent-foreground">
                 پروژه جدید
               </Link>
+              <Link href="/dashboard" className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] border border-border bg-surface-soft px-4 text-sm text-muted transition-colors hover:border-border-strong hover:bg-surface-muted hover:text-foreground">
+                داشبورد
+              </Link>
+              <Link href="/projects" className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] border border-border bg-surface-soft px-4 text-sm text-muted transition-colors hover:border-border-strong hover:bg-surface-muted hover:text-foreground">
+                پروژه‌ها
+              </Link>
               {session.role === "ADMIN" ? (
-                <Link href="/admin" className="rounded-[var(--radius-md)] border border-accent-soft px-4 py-2 text-accent-foreground transition-colors hover:border-accent hover:bg-accent-soft">
+                <Link href="/admin" className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] border border-accent-soft px-4 text-sm text-accent-foreground transition-colors hover:border-accent hover:bg-accent-soft">
                   مدیریت
                 </Link>
               ) : null}
               <LogoutButton />
-            </div>
+            </nav>
           </div>
         </header>
 
-        <div className="flex-1 p-4 sm:p-6">{children}</div>
+        <div className="flex-1 px-4 py-5 sm:px-6 sm:py-7">{children}</div>
       </div>
     </div>
   );

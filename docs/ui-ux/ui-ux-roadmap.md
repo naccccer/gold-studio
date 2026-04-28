@@ -70,7 +70,7 @@ Do not accidentally redesign:
 - Do not redesign feature screens while doing foundation work.
 - Do not chase every old utility class in feature files unless the phase scope includes that screen.
 
-### [ ] Phase 2 - App Shell And Navigation Reframe
+### [x] Phase 2 - App Shell And Navigation Reframe
 Objective: Turn the signed-in app frame from dashboard chrome into a quiet studio shell that supports the project workflow.
 
 Usually affected:

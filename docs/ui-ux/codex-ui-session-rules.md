@@ -39,7 +39,7 @@ Also read `docs/conventions.md` before touching Persian copy or source files.
 ## Persian Copy Integrity
 - Preserve UTF-8 Persian.
 - Never paste already-corrupted mojibake text.
-- If Persian appears as `Ãƒ`, `Ã‚`, `Ã˜`, `Ã™`, `Ã›`, `Ãš`, `Ã¢`, or `ï¿½`, stop and repair deliberately.
+- If Persian appears as common mojibake fragments (for example Latin-1 style garbling of UTF-8), stop and repair deliberately.
 - Prefer direct UTF-8 Persian strings in TSX/TS/MD files.
 - Do not convert Persian to escaped Unicode unless there is a technical reason.
 - Keep Persian copy short, direct, and user-friendly.
