@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LogoutButton } from "@/components/auth/logout-button";
+import { LogoutButton } from "@/features/auth/components/logout-button";
 
 export default function AdminLayout({
   children,

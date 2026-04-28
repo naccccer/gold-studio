@@ -20,7 +20,7 @@ export function CreditsForm({ userId, credits }: CreditsFormProps) {
         type="submit"
         className="h-9 rounded-lg bg-amber-700 px-3 text-xs font-medium text-white transition hover:bg-amber-800"
       >
-        ذخیره
+        Ø°Ø®ÛŒØ±Ù‡
       </button>
     </form>
   );

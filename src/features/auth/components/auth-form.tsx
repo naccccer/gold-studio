@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
+import { Button, ButtonLink } from "@/components/ui/button";
+import { Field, fieldControlClassName } from "@/components/ui/field";
 import type { AuthFormState } from "@/features/auth/actions";
 
 type AuthFormProps = {
@@ -35,38 +37,31 @@ export function AuthForm({
 
         <form action={formAction} className="mt-6 space-y-4">
           {showName ? (
-            <label className="block space-y-2 text-sm">
-              <span className="text-slate-700">نام (اختیاری)</span>
-              <input
-                name="name"
-                type="text"
-                className="h-11 w-full rounded-xl border border-slate-200 px-3 outline-none ring-amber-200 transition focus:ring"
-              />
-            </label>
+            <Field label="Ù†Ø§Ù… (Ø§Ø®ØªÛŒØ§Ø±ÛŒ)">
+              <input name="name" type="text" className={fieldControlClassName} />
+            </Field>
           ) : null}
 
-          <label className="block space-y-2 text-sm">
-            <span className="text-slate-700">ایمیل</span>
+          <Field label="Ø§ÛŒÙ…ÛŒÙ„">
             <input
               required
               name="email"
               type="email"
               dir="ltr"
-              className="h-11 w-full rounded-xl border border-slate-200 px-3 text-left outline-none ring-amber-200 transition focus:ring"
+              className={`${fieldControlClassName} text-left`}
             />
-          </label>
+          </Field>
 
-          <label className="block space-y-2 text-sm">
-            <span className="text-slate-700">رمز عبور</span>
+          <Field label="Ø±Ù…Ø² Ø¹Ø¨ÙˆØ±">
             <input
               required
               name="password"
               minLength={8}
               type="password"
               dir="ltr"
-              className="h-11 w-full rounded-xl border border-slate-200 px-3 text-left outline-none ring-amber-200 transition focus:ring"
+              className={`${fieldControlClassName} text-left`}
             />
-          </label>
+          </Field>
 
           {state.error ? (
             <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -74,21 +69,14 @@ export function AuthForm({
             </p>
           ) : null}
 
-          <button
-            type="submit"
-            disabled={pending}
-            className="h-11 w-full rounded-full bg-slate-950 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
-          >
-            {pending ? "در حال پردازش..." : submitLabel}
-          </button>
+          <Button type="submit" disabled={pending} size="full">
+            {pending ? "Ø¯Ø± Ø­Ø§Ù„ Ù¾Ø±Ø¯Ø§Ø²Ø´..." : submitLabel}
+          </Button>
         </form>
 
-        <a
-          href={secondaryHref}
-          className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-full border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-        >
+        <ButtonLink href={secondaryHref} variant="secondary" size="full" className="mt-3">
           {secondaryLabel}
-        </a>
+        </ButtonLink>
       </section>
     </main>
   );

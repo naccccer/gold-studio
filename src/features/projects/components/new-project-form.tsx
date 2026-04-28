@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Field, fieldControlClassName } from "@/components/ui/field";
 import type { ProjectFormState } from "@/features/projects/actions";
 import { STYLE_PRESETS } from "@/features/projects/presets";
 
@@ -29,35 +31,33 @@ export function NewProjectForm({ action }: NewProjectFormProps) {
           onClick={() => setMode("image")}
           className={`h-10 rounded-xl transition ${mode === "image" ? "bg-white font-medium text-slate-950 shadow-sm" : "text-slate-500"}`}
         >
-          تصویر محصول
+          ØªØµÙˆÛŒØ± Ù…Ø­ØµÙˆÙ„
         </button>
         <button
           type="button"
           onClick={() => setMode("text")}
           className={`h-10 rounded-xl transition ${mode === "text" ? "bg-white font-medium text-slate-950 shadow-sm" : "text-slate-500"}`}
         >
-          تست متن به تصویر
+          ØªØ³Øª Ù…ØªÙ† Ø¨Ù‡ ØªØµÙˆÛŒØ±
         </button>
       </div>
 
-      <div className="space-y-2">
-        <label className="text-sm text-slate-700" htmlFor="title">
-          عنوان پروژه (اختیاری)
-        </label>
+      <Field label="Ø¹Ù†ÙˆØ§Ù† Ù¾Ø±ÙˆÚ˜Ù‡ (Ø§Ø®ØªÛŒØ§Ø±ÛŒ)" htmlFor="title">
         <input
           id="title"
           name="title"
           type="text"
-          placeholder={mode === "image" ? "مثلا: انگشتر طلای زنانه" : "مثلا: تست اتصال GapGPT"}
-          className="h-11 w-full rounded-xl border border-slate-200 px-3 outline-none ring-amber-200 transition focus:ring"
+          placeholder={mode === "image" ? "Ù…Ø«Ù„Ø§: Ø§Ù†Ú¯Ø´ØªØ± Ø·Ù„Ø§ÛŒ Ø²Ù†Ø§Ù†Ù‡" : "Ù…Ø«Ù„Ø§: ØªØ³Øª Ø§ØªØµØ§Ù„ GapGPT"}
+          className={fieldControlClassName}
         />
-      </div>
+      </Field>
 
       {mode === "image" ? (
-        <div className="space-y-2">
-          <label className="text-sm text-slate-700" htmlFor="image">
-            تصویر محصول
-          </label>
+        <Field
+          label="ØªØµÙˆÛŒØ± Ù…Ø­ØµÙˆÙ„"
+          htmlFor="image"
+          hint="ÙØ±Ù…Øªâ€ŒÙ‡Ø§ÛŒ Ù…Ø¬Ø§Ø²: JPG, PNG, WEBP - Ø­Ø¯Ø§Ú©Ø«Ø± Û±Û°MB"
+        >
           <input
             required
             id="image"
@@ -66,27 +66,26 @@ export function NewProjectForm({ action }: NewProjectFormProps) {
             accept="image/jpeg,image/png,image/webp"
             className="block w-full rounded-xl border border-slate-200 p-2 text-sm"
           />
-          <p className="text-xs text-slate-500">فرمت‌های مجاز: JPG, PNG, WEBP - حداکثر ۱۰MB</p>
-        </div>
+        </Field>
       ) : (
-        <div className="space-y-2">
-          <label className="text-sm text-slate-700" htmlFor="textPrompt">
-            پرامپت تست
-          </label>
+        <Field
+          label="Ù¾Ø±Ø§Ù…Ù¾Øª ØªØ³Øª"
+          htmlFor="textPrompt"
+          hint="Ø§ÛŒÙ† Ø­Ø§Ù„Øª ÙÙ‚Ø· Ø§ØªØµØ§Ù„ Ùˆ Ù…Ø¯Ù„ Ù…ØªÙ† Ø¨Ù‡ ØªØµÙˆÛŒØ± GapGPT Ø±Ø§ ØªØ³Øª Ù…ÛŒâ€ŒÚ©Ù†Ø¯."
+        >
           <textarea
             required
             id="textPrompt"
             name="textPrompt"
             rows={4}
-            placeholder="مثلا: A premium studio photo of a gold ring on a clean white background"
+            placeholder="Ù…Ø«Ù„Ø§: A premium studio photo of a gold ring on a clean white background"
             className="w-full resize-none rounded-xl border border-slate-200 px-3 py-3 text-sm outline-none ring-amber-200 transition focus:ring"
           />
-          <p className="text-xs text-slate-500">این حالت فقط اتصال و مدل متن به تصویر GapGPT را تست می‌کند.</p>
-        </div>
+        </Field>
       )}
 
       <fieldset className="space-y-2">
-        <legend className="text-sm text-slate-700">انتخاب سبک خروجی</legend>
+        <legend className="text-sm text-slate-700">Ø§Ù†ØªØ®Ø§Ø¨ Ø³Ø¨Ú© Ø®Ø±ÙˆØ¬ÛŒ</legend>
         <div className="grid gap-2">
           {STYLE_PRESETS.map((preset) => (
             <label
@@ -107,13 +106,9 @@ export function NewProjectForm({ action }: NewProjectFormProps) {
         <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="h-11 w-full rounded-full bg-slate-950 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
-      >
-        {pending ? "در حال تولید..." : mode === "image" ? "آپلود و شروع تولید" : "اجرای تست متن به تصویر"}
-      </button>
+      <Button type="submit" disabled={pending} size="full">
+        {pending ? "Ø¯Ø± Ø­Ø§Ù„ ØªÙˆÙ„ÛŒØ¯..." : mode === "image" ? "Ø¢Ù¾Ù„ÙˆØ¯ Ùˆ Ø´Ø±ÙˆØ¹ ØªÙˆÙ„ÛŒØ¯" : "Ø§Ø¬Ø±Ø§ÛŒ ØªØ³Øª Ù…ØªÙ† Ø¨Ù‡ ØªØµÙˆÛŒØ±"}
+      </Button>
     </form>
   );
 }

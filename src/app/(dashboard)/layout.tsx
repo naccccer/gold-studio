@@ -1,5 +1,5 @@
 ﻿import Link from "next/link";
-import { LogoutButton } from "@/components/auth/logout-button";
+import { LogoutButton } from "@/features/auth/components/logout-button";
 import { requireUserSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 
