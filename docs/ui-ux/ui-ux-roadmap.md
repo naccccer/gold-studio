@@ -133,7 +133,7 @@ Do not accidentally redesign:
 - Do not add too many style decisions on one screen.
 - Do not make style cards look like pricing cards or feature cards.
 
-### [ ] Phase 5 - Result Review Room
+### [x] Phase 5 - Result Review Room
 Objective: Make project detail feel like a result review room where the generated image is the hero.
 
 Usually affected:
