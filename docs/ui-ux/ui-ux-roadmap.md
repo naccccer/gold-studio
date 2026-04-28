@@ -111,7 +111,7 @@ Do not accidentally redesign:
 - Do not create startup gradient hero cliches.
 - Do not invent claims, metrics, or fake analytics.
 
-### [ ] Phase 4 - New Project Workspace
+### [x] Phase 4 - New Project Workspace
 Objective: Make upload, style selection, and generation feel like one guided creative workflow.
 
 Usually affected:

@@ -12,11 +12,11 @@ type NewProjectScreenProps = {
 
 export function NewProjectScreen({ action }: NewProjectScreenProps) {
   return (
-    <PageShell>
-      <Surface padding="lg">
-        <h2 className="text-lg font-semibold text-slate-900">شروع پروژه جدید</h2>
-        <p className="mt-2 text-sm text-slate-600">
-          یک عکس خام آپلود کنید، سبک را انتخاب کنید و خروجی نهایی را دریافت کنید.
+    <PageShell maxWidth="lg" className="space-y-6 sm:space-y-8">
+      <Surface padding="lg" className="space-y-3">
+        <h2 className="text-2xl font-semibold leading-tight text-foreground sm:text-3xl">شروع تولید تصویر جدید</h2>
+        <p className="max-w-2xl text-sm leading-7 text-muted sm:text-base">
+          اینجا فضای تولید استودیویی شماست: تصویر محصول را وارد کنید، سبک نهایی را انتخاب کنید و خروجی تبلیغاتی را آماده تحویل بگیرید.
         </p>
       </Surface>
 
