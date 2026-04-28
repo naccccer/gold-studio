@@ -5,10 +5,10 @@ type ButtonVariant = "primary" | "secondary" | "ghost" | "admin";
 type ButtonSize = "sm" | "md" | "full";
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: "bg-slate-950 text-white hover:bg-slate-800",
-  secondary: "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-  ghost: "bg-slate-100 text-slate-700 hover:bg-slate-200",
-  admin: "border border-amber-200 text-amber-900 hover:bg-amber-100",
+  primary: "bg-foreground text-surface hover:bg-accent-foreground",
+  secondary: "border border-border bg-surface text-foreground hover:border-border-strong hover:bg-surface-soft",
+  ghost: "bg-surface-soft text-muted hover:bg-surface-muted hover:text-foreground",
+  admin: "border border-accent-soft bg-surface text-accent-foreground hover:border-accent hover:bg-accent-soft",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -27,7 +27,7 @@ export function buttonClasses({
   className?: string;
 } = {}) {
   return [
-    "inline-flex items-center justify-center rounded-full font-medium transition disabled:opacity-60",
+    "inline-flex items-center justify-center rounded-[var(--radius-md)] font-medium transition disabled:opacity-60 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
     variantClasses[variant],
     sizeClasses[size],
     className,

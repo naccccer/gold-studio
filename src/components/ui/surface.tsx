@@ -6,13 +6,13 @@ type SurfaceRadius = "md" | "lg" | "xl";
 const paddingClasses: Record<SurfacePadding, string> = {
   sm: "p-3",
   md: "p-4",
-  lg: "p-5",
+  lg: "p-5 sm:p-6",
 };
 
 const radiusClasses: Record<SurfaceRadius, string> = {
-  md: "rounded-2xl",
-  lg: "rounded-3xl",
-  xl: "rounded-[2rem]",
+  md: "rounded-[var(--radius-md)]",
+  lg: "rounded-[var(--radius-lg)]",
+  xl: "rounded-[var(--radius-xl)]",
 };
 
 type SurfaceProps = HTMLAttributes<HTMLElement> & {
@@ -32,7 +32,7 @@ export function Surface({
     <Component
       className={[
         radiusClasses[radius],
-        "border border-slate-200 bg-white",
+        "border border-border bg-surface",
         paddingClasses[padding],
         className,
       ]

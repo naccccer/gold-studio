@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check:mojibake": "node scripts/check-mojibake.mjs"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.7.0",

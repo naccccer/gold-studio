@@ -31,32 +31,32 @@ export function NewProjectForm({ action }: NewProjectFormProps) {
           onClick={() => setMode("image")}
           className={`h-10 rounded-xl transition ${mode === "image" ? "bg-white font-medium text-slate-950 shadow-sm" : "text-slate-500"}`}
         >
-          ØªØµÙˆÛŒØ± Ù…Ø­ØµÙˆÙ„
+          تصویر محصول
         </button>
         <button
           type="button"
           onClick={() => setMode("text")}
           className={`h-10 rounded-xl transition ${mode === "text" ? "bg-white font-medium text-slate-950 shadow-sm" : "text-slate-500"}`}
         >
-          ØªØ³Øª Ù…ØªÙ† Ø¨Ù‡ ØªØµÙˆÛŒØ±
+          تست متن به تصویر
         </button>
       </div>
 
-      <Field label="Ø¹Ù†ÙˆØ§Ù† Ù¾Ø±ÙˆÚ˜Ù‡ (Ø§Ø®ØªÛŒØ§Ø±ÛŒ)" htmlFor="title">
+      <Field label="عنوان پروژه اختیاری" htmlFor="title">
         <input
           id="title"
           name="title"
           type="text"
-          placeholder={mode === "image" ? "Ù…Ø«Ù„Ø§: Ø§Ù†Ú¯Ø´ØªØ± Ø·Ù„Ø§ÛŒ Ø²Ù†Ø§Ù†Ù‡" : "Ù…Ø«Ù„Ø§: ØªØ³Øª Ø§ØªØµØ§Ù„ GapGPT"}
+          placeholder={mode === "image" ? "مثلا: انگشتر طلای زنانه" : "مثلا: تست اتصال GapGPT"}
           className={fieldControlClassName}
         />
       </Field>
 
       {mode === "image" ? (
         <Field
-          label="ØªØµÙˆÛŒØ± Ù…Ø­ØµÙˆÙ„"
+          label="تصویر محصول"
           htmlFor="image"
-          hint="ÙØ±Ù…Øªâ€ŒÙ‡Ø§ÛŒ Ù…Ø¬Ø§Ø²: JPG, PNG, WEBP - Ø­Ø¯Ø§Ú©Ø«Ø± Û±Û°MB"
+          hint="فرمت‌های مجاز: JPG، PNG، WEBP - حداکثر ۱۰MB"
         >
           <input
             required
@@ -69,23 +69,23 @@ export function NewProjectForm({ action }: NewProjectFormProps) {
         </Field>
       ) : (
         <Field
-          label="Ù¾Ø±Ø§Ù…Ù¾Øª ØªØ³Øª"
+          label="پرامپت تست"
           htmlFor="textPrompt"
-          hint="Ø§ÛŒÙ† Ø­Ø§Ù„Øª ÙÙ‚Ø· Ø§ØªØµØ§Ù„ Ùˆ Ù…Ø¯Ù„ Ù…ØªÙ† Ø¨Ù‡ ØªØµÙˆÛŒØ± GapGPT Ø±Ø§ ØªØ³Øª Ù…ÛŒâ€ŒÚ©Ù†Ø¯."
+          hint="این حالت فقط اتصال و مدل متن به تصویر GapGPT را تست می‌کند."
         >
           <textarea
             required
             id="textPrompt"
             name="textPrompt"
             rows={4}
-            placeholder="Ù…Ø«Ù„Ø§: A premium studio photo of a gold ring on a clean white background"
+            placeholder="مثلا: A premium studio photo of a gold ring on a clean white background"
             className="w-full resize-none rounded-xl border border-slate-200 px-3 py-3 text-sm outline-none ring-amber-200 transition focus:ring"
           />
         </Field>
       )}
 
       <fieldset className="space-y-2">
-        <legend className="text-sm text-slate-700">Ø§Ù†ØªØ®Ø§Ø¨ Ø³Ø¨Ú© Ø®Ø±ÙˆØ¬ÛŒ</legend>
+        <legend className="text-sm text-slate-700">انتخاب سبک خروجی</legend>
         <div className="grid gap-2">
           {STYLE_PRESETS.map((preset) => (
             <label
@@ -107,7 +107,7 @@ export function NewProjectForm({ action }: NewProjectFormProps) {
       ) : null}
 
       <Button type="submit" disabled={pending} size="full">
-        {pending ? "Ø¯Ø± Ø­Ø§Ù„ ØªÙˆÙ„ÛŒØ¯..." : mode === "image" ? "Ø¢Ù¾Ù„ÙˆØ¯ Ùˆ Ø´Ø±ÙˆØ¹ ØªÙˆÙ„ÛŒØ¯" : "Ø§Ø¬Ø±Ø§ÛŒ ØªØ³Øª Ù…ØªÙ† Ø¨Ù‡ ØªØµÙˆÛŒØ±"}
+        {pending ? "در حال تولید..." : mode === "image" ? "آپلود و شروع تولید" : "اجرای تست متن به تصویر"}
       </Button>
     </form>
   );

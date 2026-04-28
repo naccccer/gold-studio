@@ -4,7 +4,7 @@
 A mobile-first Farsi AI studio for turning weak jewelry/product photos into premium studio-quality product images with minimal friction.
 
 ## Current phase
-Phase 1 — MVP web app (mobile-first, tablet-friendly)
+Phase 1 - MVP web app (mobile-first, tablet-friendly)
 
 ## Phase 1 scope
 - Next.js app foundation

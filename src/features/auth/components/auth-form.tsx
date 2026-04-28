@@ -37,12 +37,12 @@ export function AuthForm({
 
         <form action={formAction} className="mt-6 space-y-4">
           {showName ? (
-            <Field label="Ù†Ø§Ù… (Ø§Ø®ØªÛŒØ§Ø±ÛŒ)">
+            <Field label="نام اختیاری">
               <input name="name" type="text" className={fieldControlClassName} />
             </Field>
           ) : null}
 
-          <Field label="Ø§ÛŒÙ…ÛŒÙ„">
+          <Field label="ایمیل">
             <input
               required
               name="email"
@@ -52,7 +52,7 @@ export function AuthForm({
             />
           </Field>
 
-          <Field label="Ø±Ù…Ø² Ø¹Ø¨ÙˆØ±">
+          <Field label="رمز عبور">
             <input
               required
               name="password"
@@ -70,7 +70,7 @@ export function AuthForm({
           ) : null}
 
           <Button type="submit" disabled={pending} size="full">
-            {pending ? "Ø¯Ø± Ø­Ø§Ù„ Ù¾Ø±Ø¯Ø§Ø²Ø´..." : submitLabel}
+            {pending ? "در حال پردازش..." : submitLabel}
           </Button>
         </form>
 

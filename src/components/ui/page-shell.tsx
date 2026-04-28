@@ -13,7 +13,7 @@ const maxWidthClasses: Record<NonNullable<PageShellProps["maxWidth"]>, string> =
 
 export function PageShell({ children, maxWidth = "md", className = "" }: PageShellProps) {
   return (
-    <section className={["mx-auto w-full space-y-4", maxWidthClasses[maxWidth], className].filter(Boolean).join(" ")}>
+    <section className={["mx-auto w-full space-y-5 sm:space-y-6", maxWidthClasses[maxWidth], className].filter(Boolean).join(" ")}>
       {children}
     </section>
   );

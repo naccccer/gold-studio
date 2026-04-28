@@ -1,25 +1,45 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --surface: #ffffff;
-  --muted: #64748b;
-  --border: #e2e8f0;
-  --accent: #b45309;
-  --danger: #b91c1c;
-  --radius-card: 1.5rem;
-  --shadow-soft: 0 24px 80px -32px rgba(15, 23, 42, 0.35);
+  --background: #f8f3eb;
+  --foreground: #211d19;
+  --surface: #fffdf8;
+  --surface-soft: #f3ede3;
+  --surface-muted: #ebe2d6;
+  --muted: #756e64;
+  --muted-foreground: #8a8175;
+  --border: #ded3c3;
+  --border-strong: #c7b89f;
+  --accent: #b89456;
+  --accent-soft: #eadcc4;
+  --accent-foreground: #2a2117;
+  --danger: #a33a32;
+  --danger-soft: #f4dedb;
+  --focus: #c8a46b;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --shadow-soft: 0 18px 56px -40px rgba(45, 34, 24, 0.42);
+  --shadow-focus: 0 0 0 3px rgba(200, 164, 107, 0.22);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
+  --color-surface-soft: var(--surface-soft);
+  --color-surface-muted: var(--surface-muted);
   --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-foreground: var(--accent-foreground);
   --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-focus: var(--focus);
 }
 
 * {
@@ -36,4 +56,37 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-vazirmatn), Tahoma, sans-serif;
+  font-feature-settings: "ss01" 0;
+  font-size: 15px;
+  line-height: 1.75;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (min-width: 640px) {
+  body {
+    font-size: 16px;
+  }
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent-foreground);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--foreground);
+  font-weight: 600;
+  letter-spacing: 0;
 }
