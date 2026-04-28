@@ -1,24 +1,28 @@
-import Link from "next/link";
+import { ButtonLink } from "@/components/ui/button";
 
 export default function MarketingPage() {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#fff7ed_0%,_#ffffff_42%,_#f8fafc_100%)] px-4 py-8 text-right text-slate-900">
-      <section className="mx-auto flex w-full max-w-md flex-col justify-center rounded-[2rem] border border-white/70 bg-white/80 p-6 shadow-[0_24px_80px_-32px_rgba(15,23,42,0.35)] backdrop-blur">
-        <p className="text-xs font-semibold tracking-[0.24em] text-amber-700">GOLD STUDIO</p>
-        <h1 className="mt-4 text-3xl font-semibold leading-tight text-slate-950">
-          تبدیل عکس خام محصول به تصویر استودیویی حرفه‌ای
-        </h1>
-        <p className="mt-3 text-sm leading-7 text-slate-600">
-          مناسب فروشندگان طلا و محصول: آپلود عکس، انتخاب سبک، تحویل خروجی آماده فروش.
-        </p>
+    <main className="min-h-screen px-4 py-10 text-right sm:py-14">
+      <section className="mx-auto w-full max-w-3xl space-y-8 rounded-[var(--radius-xl)] border border-border/80 bg-surface px-5 py-8 sm:px-8 sm:py-12">
+        <div className="space-y-4">
+          <p className="text-sm text-muted">Gold Studio</p>
+          <h1 className="max-w-2xl text-3xl font-semibold leading-tight text-foreground sm:text-4xl">
+            استودیوی هوشمند تصویر محصول
+            <br />
+            برای برندهایی که خروجی حرفه‌ای می‌خواهند.
+          </h1>
+          <p className="max-w-2xl text-sm leading-7 text-muted sm:text-base">
+            در چند دقیقه عکس خام محصول را به تصویر تبلیغاتی آماده فروش تبدیل کن؛ ساده، سریع و با تمرکز بر کیفیت نهایی.
+          </p>
+        </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <Link href="/signup" className="flex h-11 items-center justify-center rounded-full bg-slate-950 px-5 text-sm font-medium text-white transition-colors hover:bg-slate-800">
-            شروع رایگان
-          </Link>
-          <Link href="/login" className="flex h-11 items-center justify-center rounded-full border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50">
-            ورود
-          </Link>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <ButtonLink href="/signup" className="w-full sm:w-auto">
+            شروع پروژه جدید
+          </ButtonLink>
+          <ButtonLink href="/login" variant="secondary" className="w-full sm:w-auto">
+            ورود به حساب
+          </ButtonLink>
         </div>
       </section>
     </main>

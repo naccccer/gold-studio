@@ -91,7 +91,7 @@ Do not accidentally redesign:
 - Do not introduce new routes or change auth behavior.
 - Do not make nav items into loud pills or badge rows.
 
-### [ ] Phase 3 - Landing And Dashboard Home
+### [x] Phase 3 - Landing And Dashboard Home
 Objective: Make the public landing and signed-in home feel editorial and action-led, focused on starting the studio workflow.
 
 Usually affected:

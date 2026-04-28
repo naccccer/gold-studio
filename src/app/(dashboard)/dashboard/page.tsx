@@ -5,10 +5,23 @@ import { requireUserSession } from "@/lib/auth/session";
 export default async function DashboardPage() {
   const session = await requireUserSession();
 
-  const [user, projectCount, completedCount] = await Promise.all([
+  const [user, projectCount, completedCount, recentProjects] = await Promise.all([
     db.user.findUnique({ where: { id: session.userId } }),
     db.project.count({ where: { userId: session.userId } }),
     db.project.count({ where: { userId: session.userId, status: "COMPLETED" } }),
+    db.project.findMany({
+      where: { userId: session.userId },
+      orderBy: { createdAt: "desc" },
+      take: 3,
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        stylePreset: true,
+        sourceImageUrl: true,
+        createdAt: true,
+      },
+    }),
   ]);
 
   return (
@@ -16,6 +29,7 @@ export default async function DashboardPage() {
       userName={user?.name}
       projectCount={projectCount}
       completedCount={completedCount}
+      recentProjects={recentProjects}
     />
   );
 }

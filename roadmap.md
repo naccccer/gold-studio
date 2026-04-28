@@ -47,6 +47,7 @@ Phase 1 - MVP web app (mobile-first, tablet-friendly)
 - [x] Temporary unlimited credits bypass
 - [x] Admin panel
 - [x] MVP polish
+- [x] UI redesign phase 3 (landing + dashboard home)
 
 ## Phase 1 status
 Core MVP journey is now implemented end-to-end in-app: signup/login, create project, upload image, choose style, run GapGPT image generation, view result, and download output. Credits are temporarily unlimited for testing. Remaining execution dependency is environment setup (`DATABASE_URL`, `AUTH_SECRET`, `GAPGPT_API_KEY`) for runtime.
