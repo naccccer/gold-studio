@@ -16,6 +16,12 @@ Desktop behavior:
 - Shell/header should stay visually lighter than page content.
 - Do not introduce a heavy sidebar unless a future product phase requires it.
 
+Motion rules:
+- Shell transitions should be calm and orientation-preserving.
+- Avoid sliding the whole app frame in a way that makes navigation feel unstable.
+- Header/nav motion must stay lighter than page content and never steal attention from images.
+- Prefer shared motion constants over shell-local animation values.
+
 Anti-patterns:
 - Enterprise sidebars.
 - Dark admin bars.
@@ -58,6 +64,12 @@ Desktop behavior:
 - Navigation can sit in the header but must stay quiet.
 - Do not convert MVP navigation into a dense app console.
 
+Motion rules:
+- Active route changes may use a subtle underline, border, or surface transition.
+- Navigation feedback should feel immediate on tap and settled after selection.
+- Do not animate every nav item independently during normal use.
+- Avoid bouncing pills, sweeping highlights, or decorative hover movement.
+
 Anti-patterns:
 - Full enterprise sidebars.
 - Many equal-weight pills.
@@ -79,6 +91,12 @@ Desktop behavior:
 - Buttons may be inline, but the primary action must remain obvious.
 - Avoid oversized CTAs in app interiors.
 
+Motion rules:
+- Button motion should be tactile: subtle press, focus, disabled, and loading states.
+- Press feedback should be quick and quiet, never bouncy or playful.
+- Loading buttons should preserve width and avoid text jumping.
+- Prefer a refined progress/reveal state over a generic spinner when the action has visible progression.
+
 Anti-patterns:
 - Oversized rounded CTA pills everywhere.
 - Champagne/gold filled buttons as the default.
@@ -99,6 +117,12 @@ Mobile behavior:
 Desktop behavior:
 - Fields should not stretch to unreadable widths without reason.
 - Group related fields with spacing before adding containers.
+
+Motion rules:
+- Focus transitions should be visible, soft, and consistent across fields.
+- Validation messages may enter gently, but must not push layout in a surprising way.
+- Field motion should support clarity and correction, not decorate typing.
+- Respect reduced motion for focus and validation transitions.
 
 Anti-patterns:
 - Browser-default file/input styling as the final UI.
@@ -160,6 +184,12 @@ Desktop behavior:
 - Upload and preview may sit beside style choice only if the flow remains easy to follow.
 - Do not create a dense two-column form just because space exists.
 
+Motion rules:
+- Upload drag, tap, selected, replacement, and removal states should feel tactile and calm.
+- Image preview reveal should feel premium and stable, with no abrupt crop or layout jump.
+- Upload progress should communicate confidence without noisy spinners or decorative loops.
+- Motion must never obscure file guidance, errors, or the selected image.
+
 Anti-patterns:
 - Raw technical file input as the main visual.
 - Tiny upload targets.
@@ -180,6 +210,12 @@ Mobile behavior:
 Desktop behavior:
 - Grid layout is acceptable if each option remains calm and premium.
 - Visual samples may be introduced later, but must stay consistent.
+
+Motion rules:
+- Selection should feel deliberate through a smooth border, surface, or checkmark transition.
+- Cards may respond to tap/hover with subtle elevation or image polish, not movement for its own sake.
+- Avoid staggered card animations that make style selection feel like a marketing grid.
+- Long descriptions and prompt details should not animate into attention.
 
 Anti-patterns:
 - Pricing-card styling.
@@ -202,6 +238,12 @@ Desktop behavior:
 - Before/after comparison may use columns if both images remain large enough.
 - Generated result should still feel primary when complete.
 
+Motion rules:
+- Result reveal is allowed to be cinematic and slower than normal UI motion when it increases perceived quality.
+- Image preview hover/tap may gently emphasize inspectability without cropping, tilting, or distracting from product identity.
+- Source-to-result transitions should preserve spatial context.
+- Download availability should become clear through hierarchy and motion, not flashing or pulsing.
+
 Anti-patterns:
 - Result page as a file details page.
 - Tiny image thumbnails.
@@ -221,6 +263,12 @@ Mobile behavior:
 Desktop behavior:
 - Dialog width should stay modest.
 - Keep action hierarchy clear.
+
+Motion rules:
+- Dialog entry and exit should be smooth, modest, and fast enough to keep the decision feeling direct.
+- Backdrop changes should be calm and should not create dramatic theater.
+- Focus movement must remain accessible and reduced-motion friendly.
+- Avoid hiding multi-step workflows behind animated dialogs.
 
 Anti-patterns:
 - Dramatic overlays.
@@ -249,4 +297,3 @@ Anti-patterns:
 - Dense enterprise dashboards.
 - Admin metrics treated as product hero content.
 - Admin-specific styling that breaks the shared visual system.
-

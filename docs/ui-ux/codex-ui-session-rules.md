@@ -36,6 +36,16 @@ Also read `docs/conventions.md` before touching Persian copy or source files.
 - Do not create generic Tailwind component-library layouts.
 - Do not add decorative pills, badges, gradients, glows, or icon rows unless required by the phase and consistent with `design-language.md`.
 
+## Motion Implementation Rules
+- Implement motion only when the active phase includes it or the user explicitly requests it.
+- Use shared motion constants, CSS variables, or shared helpers where possible.
+- Avoid scattered one-off duration, delay, easing, transform, and transition values inside screens.
+- Respect `prefers-reduced-motion`; non-essential movement must be removed or simplified.
+- Do not add heavy animation libraries unless the user explicitly approves them.
+- Keep performance mobile-first: avoid layout-thrashing animation, expensive filters, large animated shadows, and unnecessary continuous loops.
+- Motion must support flow, focus, hierarchy, progress, or perceived quality.
+- Do not add random decorative animation, bouncy SaaS motion, noisy hover effects, or cheap loading spinners when a calmer progress/reveal pattern is possible.
+
 ## Persian Copy Integrity
 - Preserve UTF-8 Persian.
 - Never paste already-corrupted mojibake text.

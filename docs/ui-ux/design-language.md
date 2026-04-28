@@ -110,6 +110,30 @@ Measurable tendency:
 - Loading states should keep layout stable and explain what is happening in simple Farsi.
 - Errors should be readable and helpful without visual alarm.
 
+## Motion Language
+Motion should make Gold Studio feel slow, confident, tactile, and intentional. It should support the product photography flow, not decorate it.
+
+Apple-like means polished, consistent, responsive, and calm. It does not mean copying Apple visuals, using glossy effects, or adding motion for spectacle.
+
+Timing and easing:
+- Microinteractions should usually feel quick but soft: about 120-180ms.
+- Page, shell, modal, and image reveal transitions may be slower: about 220-360ms.
+- Generation and result reveal motion may feel more cinematic when useful, but should still respect user control and perceived speed.
+- Prefer smooth ease-out or custom luxury easing with a soft landing.
+- Avoid bouncy, springy SaaS motion unless a very small tactile press state truly needs it.
+
+Restraint and smoothness:
+- Motion must clarify focus, selection, progress, hierarchy, and completion.
+- Use fewer, better transitions rather than many small animated decorations.
+- Hover states should not wiggle, pulse, shimmer, or compete with images.
+- Loading should feel composed: progress, staged reveal, quiet skeleton, or image emergence before generic spinners.
+- Motion should never hide important Persian copy, delay a primary action, or make the interface feel childish.
+
+Measurable tendency:
+- A screen should have one dominant motion idea at a time.
+- Motion values should come from shared constants when implemented.
+- Reduced-motion users should receive stable state changes with minimal or no movement.
+
 ## Forbidden SaaS Patterns
 The following are banned unless the user explicitly asks for them and the design rationale is documented:
 
@@ -136,4 +160,3 @@ The following are banned unless the user explicitly asks for them and the design
 - Image placeholders that look unfinished or technical.
 - Browser-default input/button typography.
 - Dense enterprise tables as the primary user experience.
-

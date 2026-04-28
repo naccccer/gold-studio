@@ -153,6 +153,39 @@ Do not accidentally redesign:
 - Do not make failure states alarming or technical.
 - Do not crop jewelry/product images in a way that hides product identity.
 
+### [ ] Phase 5B - Motion System And Premium Microinteractions
+Objective: Define and implement a restrained motion system so Gold Studio feels premium, smooth, cinematic, and Apple-like in interaction quality without becoming noisy or playful.
+
+Usually affected:
+- `src/app/globals.css`
+- shared motion constants or helpers under `src/lib` if needed
+- `src/components/ui/page-shell.tsx`
+- `src/components/ui/button.tsx`
+- `src/components/ui/field.tsx`
+- upload, style selector, progress, modal, and result components under `src/features/projects/components`
+- route shells under `src/app/(dashboard)` only if transitions require shell support
+
+Execution goals:
+- Establish global motion principles, durations, easing, and reduced-motion behavior before adding broad animation.
+- Add calm page, shell, and navigation transitions that preserve orientation and hierarchy.
+- Make upload selection, style selection, generation progress, result reveal, modal entry/exit, image preview hover/tap, buttons, and fields feel tactile and intentional.
+- Prefer elegant progress and reveal patterns over cheap loading spinners when the state can be shown more gracefully.
+- Use motion to support product flow, focus, hierarchy, perceived quality, and confidence.
+
+Do not accidentally animate yet:
+- Do not animate admin data density, tables, auth security states, or hidden/low-value surfaces unless they are part of a verified user flow.
+- Do not add random decorative motion, ambient loops, sparkles, bouncing effects, or hover effects everywhere.
+- Do not create one-off animation values scattered across screens.
+- Do not introduce heavy animation libraries without explicit approval.
+- Do not let motion delay essential actions, obscure loading/error states, or make image review harder.
+
+Verification expectations:
+- Verify mobile first for smoothness, tap feedback, stable layout, and no jank during upload, generation, and result review.
+- Verify `prefers-reduced-motion` disables or simplifies non-essential movement while preserving state clarity.
+- Verify keyboard focus, hover, tap, and modal transitions remain clear and accessible.
+- Verify animations do not shift layout unexpectedly or crop/obscure jewelry/product images.
+- Run the standard UI checks after implementation: `npm run check:mojibake`, `npm run lint`, and `npm run build`.
+
 ### [ ] Phase 6 - Archive, Auth, And Admin Polish
 Objective: Bring secondary screens into the same design language while keeping them operational and lower priority than the core workflow.
 
