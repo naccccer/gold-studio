@@ -1,69 +1,252 @@
 # Gold Studio Component Principles
 
 ## App Shell
-The app shell should feel like entering a private studio workspace. It should be quiet, mobile-first, and light on chrome. The shell may frame the experience, but it must not compete with the workflow or images.
+Visual dominance order:
+1. Current workflow or primary content.
+2. Primary action, usually starting a project.
+3. Navigation and account/admin controls.
 
-Keep navigation visible enough to orient the user, but make the main action, usually creating a project, more prominent than browsing or metrics.
+Mobile behavior:
+- Use compact, wrapping or stacked navigation.
+- Keep shell padding comfortable but not bulky.
+- Do not let the header consume the first viewport.
+
+Desktop behavior:
+- Center content with a restrained max width.
+- Shell/header should stay visually lighter than page content.
+- Do not introduce a heavy sidebar unless a future product phase requires it.
+
+Anti-patterns:
+- Enterprise sidebars.
+- Dark admin bars.
+- Badge-heavy navigation.
+- Header chrome that visually dominates images or workflow.
 
 ## Headers
-Headers should establish context in a few words. Use concise Farsi titles and short supportive text only when it helps the next action.
+Visual dominance order:
+1. Screen title.
+2. Short context or next-step guidance.
+3. Secondary metadata.
 
-Avoid large dashboard headers, decorative labels, or repeated brand badges. Header typography should be confident, calm, and not oversized inside app screens.
+Mobile behavior:
+- Titles should wrap cleanly in Farsi.
+- Support copy should be short enough to scan.
+- Avoid multi-line decorative brand labels.
+
+Desktop behavior:
+- Headers may align with actions, but should not become dashboard mastheads.
+- Keep vertical spacing calm and predictable.
+
+Anti-patterns:
+- Oversized dashboard headings inside app screens.
+- Repeated brand eyebrows.
+- Long explanatory paragraphs.
+- Accent-colored headings used for decoration.
 
 ## Navigation
-Navigation should be minimal and route-based. Prefer a small set of clear destinations: studio home, projects, new project, admin when applicable, and logout.
+Visual dominance order:
+1. Primary workflow route, especially `پروژه جدید`.
+2. Current section orientation.
+3. Secondary routes and logout.
 
-Navigation should not become a full enterprise sidebar unless the product scope truly grows. On mobile, nav items must wrap or stack cleanly without crowding.
+Mobile behavior:
+- Navigation must remain tappable and avoid crowded rows.
+- Wrapping is acceptable if spacing remains composed.
+- Avoid horizontal scrolling nav for the MVP.
+
+Desktop behavior:
+- Navigation can sit in the header but must stay quiet.
+- Do not convert MVP navigation into a dense app console.
+
+Anti-patterns:
+- Full enterprise sidebars.
+- Many equal-weight pills.
+- Loud active states.
+- Icons without clear labels.
 
 ## Buttons
-Buttons should be restrained and intentional.
+Visual dominance order:
+1. Primary action.
+2. Secondary action.
+3. Tertiary/navigation action.
 
-Primary buttons use charcoal surfaces and soft white text. Secondary buttons use soft surfaces, muted borders, and charcoal text. Ghost buttons should be quiet and suited for secondary navigation. Champagne accents may appear for focus, selected, or premium emphasis, but not as loud filled default buttons.
+Mobile behavior:
+- Touch targets must be stable and comfortable.
+- Full-width buttons are acceptable for primary form submission.
+- Multiple buttons should stack when horizontal space is tight.
 
-Use restrained radii. Avoid defaulting to pill buttons unless the component is intentionally pill-shaped.
+Desktop behavior:
+- Buttons may be inline, but the primary action must remain obvious.
+- Avoid oversized CTAs in app interiors.
+
+Anti-patterns:
+- Oversized rounded CTA pills everywhere.
+- Champagne/gold filled buttons as the default.
+- Too many primary buttons on one screen.
+- Screen-local button styles that bypass `src/components/ui/button.tsx`.
 
 ## Fields
-Fields should feel calm and trustworthy. Use soft white backgrounds, muted stone borders, readable labels, and clear focus states.
+Visual dominance order:
+1. Input task.
+2. Label.
+3. Hint or validation message.
 
-Inputs must be large enough for mobile touch, with stable height and no cramped text. Hints should be concise. Error messages should be gentle but clear, using muted danger colors.
+Mobile behavior:
+- Inputs must be easy to tap.
+- Labels and error messages must not crowd the field.
+- File inputs should be visually adapted into upload modules in workflow phases.
+
+Desktop behavior:
+- Fields should not stretch to unreadable widths without reason.
+- Group related fields with spacing before adding containers.
+
+Anti-patterns:
+- Browser-default file/input styling as the final UI.
+- Loud focus rings.
+- Tiny labels.
+- Technical validation language when user-friendly Persian is possible.
 
 ## Surfaces
-Surfaces are paper-like containers, not decorative cards. Use them to group related work, not to make every piece of content into a card.
+Visual dominance order:
+1. Content inside the surface.
+2. Surface grouping.
+3. Border/shadow.
 
-Prefer soft borders and whitespace. Shadows should be rare. Avoid nested surfaces unless there is a real modal, repeated item, or framed tool.
+Mobile behavior:
+- Surfaces should not create nested scrolling or cramped cards.
+- Use fewer, more purposeful surfaces.
+
+Desktop behavior:
+- Surfaces may align into columns only when it improves workflow scanning.
+- Empty desktop space is acceptable and often desirable.
+
+Anti-patterns:
+- Cards inside cards.
+- Every content block as a card.
+- Strong shadows on repeated items.
+- High-contrast panels that overpower images.
 
 ## Status Pills
-Status pills should be calm and scannable. The default state is neutral and token-based.
+Visual dominance order:
+1. Status text.
+2. Semantic tone.
+3. Decorative shape, if any.
 
-Future semantic states should remain restrained:
-- pending: quiet waiting state, not warning-like
-- completed: premium success, subtle champagne rather than bright green
-- failed: muted danger, readable but not alarming
+Mobile behavior:
+- Pills must remain compact and readable.
+- They should not push important titles or actions out of view.
 
-Status pills should never become decorative badges.
+Desktop behavior:
+- Status can align with titles or rows, but should remain secondary.
+
+Anti-patterns:
+- Loud colored badges.
+- Status pills used as decoration.
+- Bright green/red status treatments.
+- Many pills competing in the same header.
 
 ## Upload Modules
-Upload modules should feel like the first studio action, not a technical file input. They need generous space, clear accepted file guidance, and a strong selected-file state.
+Visual dominance order:
+1. Upload action or selected image preview.
+2. File constraints and guidance.
+3. Secondary replacement/removal controls.
 
-The uploaded image preview should become more important than the form chrome once a file is selected. Keep validation and file constraints visible but secondary.
+Mobile behavior:
+- Upload area should be large and obvious.
+- Once selected, the image preview should become dominant.
+- File guidance should remain visible but secondary.
+
+Desktop behavior:
+- Upload and preview may sit beside style choice only if the flow remains easy to follow.
+- Do not create a dense two-column form just because space exists.
+
+Anti-patterns:
+- Raw technical file input as the main visual.
+- Tiny upload targets.
+- Upload modules that look like generic SaaS dropzones.
+- Too many helper notes before the user chooses a file.
 
 ## Style Selector Cards
-Style choices should feel like premium creative directions. Each option should be easy to compare, but the screen should not overwhelm users with too many simultaneous decisions.
+Visual dominance order:
+1. Selected style.
+2. Style name.
+3. Short description or visual sample.
 
-Use concise Farsi labels, short descriptions, selected-state clarity, and restrained visual emphasis. In future phases, style cards may include visual samples, but they must not look like generic pricing or feature cards.
+Mobile behavior:
+- Style options should be easy to compare without overwhelming.
+- Use vertical rhythm and clear selected states.
+- Avoid showing too many competing details.
+
+Desktop behavior:
+- Grid layout is acceptable if each option remains calm and premium.
+- Visual samples may be introduced later, but must stay consistent.
+
+Anti-patterns:
+- Pricing-card styling.
+- Feature-card styling.
+- Loud gold fills for selected state.
+- Long descriptions or technical prompt language in the UI.
 
 ## Result Galleries
-Result areas should prioritize visual review. Source and generated images need stable framing, clear labels, and enough space to inspect product quality.
+Visual dominance order:
+1. Generated result.
+2. Download/next action.
+3. Source image and generation metadata.
 
-The completed result should make download obvious. Pending and failed states should keep the frame stable and explain what happened without pushing users into technical details.
+Mobile behavior:
+- Result image should be easy to inspect.
+- Source and result can stack vertically.
+- Download action should be visible after the result without hunting.
 
-## Modals and Dialogs
-Use dialogs sparingly. They should interrupt only for confirmation, destructive actions, or focused tasks that cannot live comfortably inline.
+Desktop behavior:
+- Before/after comparison may use columns if both images remain large enough.
+- Generated result should still feel primary when complete.
 
-Dialogs should use the same soft surface, muted border, restrained radius, and clear action hierarchy as the rest of the system. Avoid dramatic overlays or heavy shadows.
+Anti-patterns:
+- Result page as a file details page.
+- Tiny image thumbnails.
+- Metadata stronger than image review.
+- Cropping that hides product shape or material.
+
+## Modals And Dialogs
+Visual dominance order:
+1. Required decision.
+2. Consequence or context.
+3. Secondary/cancel action.
+
+Mobile behavior:
+- Dialogs should fit comfortably and avoid hidden primary actions.
+- Prefer inline flows when possible.
+
+Desktop behavior:
+- Dialog width should stay modest.
+- Keep action hierarchy clear.
+
+Anti-patterns:
+- Dramatic overlays.
+- Heavy shadows.
+- Multi-step workflows hidden inside modals.
+- Dialogs used as decoration or layout shortcuts.
 
 ## Admin Screens
-Admin screens are operational, but they should still belong to Gold Studio. Keep them compact, readable, and calm.
+Visual dominance order:
+1. Operational task.
+2. User/project data needed for that task.
+3. Counts and secondary metadata.
 
-Admin should not receive the same editorial polish priority as the core user flow, but it must avoid harsh dashboard styling, loud amber panels, and dense enterprise chrome. Use practical rows, clear forms, and restrained token-based styling.
+Mobile behavior:
+- Rows may stack.
+- Forms must stay tappable.
+- Admin density can be higher than user flow, but not cramped.
+
+Desktop behavior:
+- Tables/rows may be practical, but keep styling aligned with tokens.
+- Admin screens should stay visibly secondary to the product workflow.
+
+Anti-patterns:
+- Dark admin chrome.
+- Loud amber panels.
+- Dense enterprise dashboards.
+- Admin metrics treated as product hero content.
+- Admin-specific styling that breaks the shared visual system.
 

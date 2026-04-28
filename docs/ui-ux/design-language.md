@@ -1,85 +1,139 @@
 # Gold Studio Design Language
 
-## Emotional Brand Mood
-Gold Studio should feel like a quiet luxury creative studio: private, attentive, editorial, and confident. The interface should suggest care and taste without looking ornamental. It should guide small sellers through a premium AI workflow with calm assurance.
+## Core Principle
+Gold Studio must look and feel like a calm luxury AI creative studio. Every screen should prioritize the user workflow and product images over system chrome, metrics, decoration, or generic components.
 
-Use restraint as the main luxury signal. The best screen should feel intentionally composed, not decorated.
+If a design choice makes the product feel like a startup SaaS dashboard, remove it.
+
+## Emotional Brand Mood
+- Private: the user feels they are entering a focused studio, not a public dashboard.
+- Editorial: composition, whitespace, and image framing should feel intentional.
+- Quietly premium: luxury comes from restraint, not ornament.
+- Helpful: the interface should guide non-technical sellers through AI generation without exposing technical complexity.
+- Confident: copy and hierarchy should be clear, short, and decisive.
 
 ## Typography Philosophy
 - Use Vazirmatn as the product typeface.
-- Treat Farsi as the primary language and RTL as the native layout direction.
-- Prefer clear hierarchy over dramatic size jumps.
-- Use medium weight for headings and important controls; avoid heavy bold unless it marks a true primary action.
-- Body copy should be short, warm, and useful.
-- Labels and captions should be quiet and readable, not tiny decorative text.
+- Farsi is the primary language; RTL is the default layout direction.
+- Typography hierarchy must rely on size, weight, spacing, and placement, not color noise.
+- Headings should usually be medium weight, charcoal, and calm.
+- Body text should be readable and concise.
+- Labels and captions must remain legible; never shrink them into decorative microcopy.
+- Buttons, inputs, tabs, status pills, and navigation must have deliberate typography.
 - Do not use negative letter spacing.
-- Do not rely on browser-default typography for buttons, inputs, tabs, or status elements.
+- Do not use multiple font families to create drama.
+
+Measurable tendency:
+- App screen headers should usually feel lighter than the main content module.
+- One screen should rarely need more than three visible text hierarchy levels above body/caption.
+- Avoid using accent color as a substitute for hierarchy.
 
 ## Whitespace Philosophy
-- Whitespace is a core luxury material.
-- Keep one primary decision visible at a time whenever possible.
-- Give image previews, upload modules, and result areas more room than metrics or secondary navigation.
-- Avoid dense card grids unless the content is truly an archive or repeated collection.
-- On mobile, use vertical rhythm and section breathing room instead of squeezing desktop chrome into a narrow viewport.
+- Whitespace is a primary luxury signal.
+- The eye should move through one decision at a time.
+- Upload, image preview, style choice, and generated result need more room than metrics, navigation, or settings.
+- Mobile screens should breathe vertically rather than compressing desktop density.
+- Desktop screens may widen content, but should not become dense dashboards.
+
+Measurable tendency:
+- Content modules should not fill every available gap with cards.
+- Related elements should be grouped by spacing before borders or shadows are added.
+- If a screen feels busy on mobile, remove or defer secondary information before reducing spacing.
 
 ## Color Hierarchy
 - Background: warm ivory.
-- Main surfaces: soft white with warmth, not pure clinical white.
-- Secondary surfaces: quiet ivory/stone tones.
-- Text: charcoal and warm dark neutrals.
-- Muted text: stone gray/brown neutrals.
-- Borders: muted stone, always soft.
-- Accent: restrained champagne-gold for focus, selected state, premium actions, and subtle admin hints.
-- Danger: muted red, never loud.
+- Main surface: soft white with warmth.
+- Secondary surface: quiet ivory/stone.
+- Primary text: charcoal.
+- Secondary text: muted stone.
+- Borders: muted stone.
+- Accent: restrained champagne-gold.
+- Danger: muted red.
 
-The accent color is not a theme flood. It should appear only where it helps hierarchy or interaction.
+Measurable tendency:
+- Accent gold must be sparse and must never become the dominant fill color of a screen.
+- Content surfaces should rarely exceed medium contrast from the page background.
+- Borders should separate, not frame aggressively.
+- Gold should mark focus, selected state, premium action, or subtle admin hint only.
+- Avoid bright green success, bright red errors, and saturated blues/purples.
 
-## Border and Radius Rules
-- Use borders to create soft structure, not heavy boxes.
-- Prefer muted stone borders over shadows for most separation.
-- Use restrained radii by default: small to medium corners feel more premium than oversized blobs.
-- Reserve larger radii for image frames or major shell containers only when the composition needs softness.
-- Avoid `rounded-full` except for status pills, small counters, or intentionally pill-shaped controls.
-- Avoid nested cards. If a surface already frames a section, inner content should usually be open, separated by spacing, rows, or subtle dividers.
+## Border And Radius Rules
+- Borders create quiet structure; they should not make the UI feel boxed-in.
+- Default radius should be restrained.
+- Larger radius is allowed for major shells or image frames only when it supports the composition.
+- `rounded-full` is reserved for true pills, tiny counters, and status pills.
+- Nested card structures are strongly discouraged.
+- Repeated list items should often use rows, spacing, or subtle dividers instead of heavy cards.
 
-## Shadow and Material Rules
-- Shadows should be rare, soft, and shallow.
-- Prefer paper-like surfaces over floating panels.
-- Do not use glow effects as decoration.
-- Do not use glassmorphism or heavy backdrop blur as a default visual language.
-- Main shells may use one soft shadow; repeated items should usually use borders and spacing.
+Measurable tendency:
+- Shell/header visual weight must stay lighter than content.
+- If everything is inside a rounded card, the screen is wrong.
+- If the first impression is "cards" rather than "workflow" or "image", redesign the composition.
+
+## Shadow And Material Rules
+- Shadows are rare.
+- Prefer borders and spacing over elevation.
+- Use one soft shell shadow at most when needed.
+- Repeated items should usually not have shadows.
+- Do not use glow effects.
+- Do not use glassmorphism or heavy backdrop blur as a default style.
+
+Measurable tendency:
+- A screen should not contain multiple competing elevated panels.
+- A shadow should never be stronger than the content it supports.
 
 ## Iconography Rules
-- Use icons only when they clarify action or scanning.
-- Prefer simple line icons with consistent stroke and size.
-- Do not use icons as filler decoration.
-- Buttons with common actions may use icons, but text should remain clear for Farsi users.
-- Icon color should follow text hierarchy: charcoal for primary, muted stone for secondary, champagne only for selected or premium emphasis.
+- Icons must clarify scanning or action.
+- Icons are not decoration.
+- Use simple line icons with consistent stroke and size when icons are introduced.
+- Icon color follows text hierarchy: charcoal for primary, muted stone for secondary, champagne only for selected or premium emphasis.
+- Do not create dense icon grids.
+- Do not replace clear Farsi labels with unexplained icons.
 
 ## Image Treatment Philosophy
-- Images are the product. They should dominate workflow and result screens.
-- Source and generated images need stable, elegant framing.
-- Avoid cropping product photos unexpectedly unless the surrounding component clearly communicates it as a preview.
-- Use neutral studio-like backgrounds around images.
-- Result screens should feel closer to an editorial review room than a file manager.
-- Empty states may use restrained visual samples, but never generic stock-like illustrations.
+- Images are the product experience.
+- Source and generated images should have stable, elegant frames.
+- The generated image should dominate result review screens.
+- Avoid unexpected crops that hide product identity.
+- Use neutral studio-like framing around images.
+- Empty states may use restrained visual samples, but must not look like stock art or placeholders.
+- Product images should feel inspectable, not decorative.
+
+Measurable tendency:
+- On workflow and result screens, image-related modules should attract the eye before metrics or navigation.
+- Image frames should be visually calmer than the image content.
 
 ## Interaction Tone
-- Interactions should feel calm and deliberate.
-- Hover/focus states should be subtle but visible.
-- Loading and generation states should reduce anxiety with clear progress language and stable layout.
-- Selected states should be obvious through border, surface, and small accent use, not loud color fills.
-- Error states should be helpful, human, and visually controlled.
+- Interactions should feel calm, precise, and reversible where possible.
+- Hover and focus states must be visible but subtle.
+- Selected states should be clear through border, surface, and sparse accent, not loud color fills.
+- Loading states should keep layout stable and explain what is happening in simple Farsi.
+- Errors should be readable and helpful without visual alarm.
+
+## Forbidden SaaS Patterns
+The following are banned unless the user explicitly asks for them and the design rationale is documented:
+
+- KPI dashboard cards as the main home screen.
+- Loud colored badges for normal statuses.
+- Dark admin bars or heavy enterprise top bars.
+- Oversized rounded CTA pills used everywhere.
+- Dense icon grids or decorative icon rows.
+- Startup gradient hero cliches.
+- Purple/blue SaaS gradients.
+- Glass panels and backdrop blur as a signature style.
+- Fake analytics charts, fake metrics, or invented proof numbers.
+- Enterprise sidebars for the MVP user flow.
+- Pricing-card visual language for style selection.
+- Marketing feature grids inside the actual app workflow.
+- Repeated card stacks where an editorial layout or guided workflow is needed.
 
 ## Forbidden Visual Patterns
-- Startup SaaS dashboard templates.
-- Analytics-first home screens.
-- Loud radial gradients, neon glows, and decorative blobs.
+- Generic Tailwind component-library layouts.
 - Amber dashboard cliches or gold overuse.
 - Giant rounded cards everywhere.
-- Dense enterprise tables as primary user experience.
-- Generic Tailwind component-library layouts.
 - Decorative pills, badges, or eyebrow labels that do not serve workflow.
 - Low-contrast beige monotone screens.
 - Image placeholders that look unfinished or technical.
+- Browser-default input/button typography.
+- Dense enterprise tables as the primary user experience.
 
