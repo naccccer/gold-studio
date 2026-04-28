@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUserSession } from "@/lib/auth/session";
 
@@ -21,7 +21,7 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
           <p className="text-xs text-slate-500">اعتبار باقی‌مانده</p>
-          <p className="mt-2 text-xl font-semibold">{user?.credits ?? 0}</p>
+          <p className="mt-2 text-xl font-semibold">نامحدود</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
           <p className="text-xs text-slate-500">کل پروژه‌ها</p>
@@ -37,7 +37,7 @@ export default async function DashboardPage() {
         href="/projects/new"
         className="inline-flex h-11 items-center justify-center rounded-full bg-slate-950 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
       >
-        شروع پروژه جدید
+        پروژه جدید
       </Link>
     </section>
   );

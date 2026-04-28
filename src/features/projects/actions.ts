@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
@@ -17,10 +17,6 @@ async function getReadyUser(userId: string) {
     return { error: "کاربر یافت نشد. دوباره وارد شوید." };
   }
 
-  if (user.credits < 1) {
-    return { error: "اعتبار شما کافی نیست. با پشتیبانی تماس بگیرید." };
-  }
-
   return { user };
 }
 
@@ -36,7 +32,7 @@ export async function createProjectAction(
   const stylePreset = getStylePreset(stylePresetId);
 
   if (!stylePreset) {
-    return { error: "سبک انتخاب شده معتبر نیست." };
+    return { error: "سبک انتخاب‌شده معتبر نیست." };
   }
 
   const readyUser = await getReadyUser(session.userId);
@@ -69,16 +65,10 @@ export async function createProjectAction(
       });
       const resultImageUrl = await saveGeneratedImage(generatedImage.imageBuffer);
 
-      await db.$transaction([
-        db.project.update({
-          where: { id: project.id },
-          data: { status: "COMPLETED", resultImageUrl, errorMessage: null },
-        }),
-        db.user.update({
-          where: { id: session.userId },
-          data: { credits: { decrement: 1 } },
-        }),
-      ]);
+      await db.project.update({
+        where: { id: project.id },
+        data: { status: "COMPLETED", resultImageUrl, errorMessage: null },
+      });
     } catch (error) {
       await db.project.update({
         where: { id: project.id },
@@ -117,16 +107,10 @@ export async function createProjectAction(
     });
     const resultImageUrl = await saveGeneratedImage(generatedImage.imageBuffer);
 
-    await db.$transaction([
-      db.project.update({
-        where: { id: project.id },
-        data: { status: "COMPLETED", resultImageUrl, errorMessage: null },
-      }),
-      db.user.update({
-        where: { id: session.userId },
-        data: { credits: { decrement: 1 } },
-      }),
-    ]);
+    await db.project.update({
+      where: { id: project.id },
+      data: { status: "COMPLETED", resultImageUrl, errorMessage: null },
+    });
   } catch (error) {
     await db.project.update({
       where: { id: project.id },

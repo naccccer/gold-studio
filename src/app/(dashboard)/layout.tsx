@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { requireUserSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
@@ -23,7 +23,7 @@ export default async function DashboardLayout({
             <div className="space-y-1">
               <h1 className="text-lg font-semibold text-slate-950">داشبورد کاربر</h1>
               <p className="text-sm text-slate-600">
-                {user?.name || user?.email} • اعتبار: {user?.credits ?? 0}
+                {user?.name || user?.email} • اعتبار: {"نامحدود"}
               </p>
             </div>
 
