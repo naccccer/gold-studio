@@ -1,57 +1,67 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ButtonLink } from "@/components/ui/button";
+import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
-import { StatusPill } from "@/components/ui/status-pill";
-import { Surface } from "@/components/ui/surface";
 import { STYLE_PRESETS, type StylePresetId } from "@/features/projects/presets";
 
 const styleLabelMap = new Map(STYLE_PRESETS.map((item) => [item.id, item.label]));
+
+const statusLabelMap: Record<string, string> = {
+  PENDING: "در حال تولید",
+  COMPLETED: "آماده",
+  FAILED: "ناموفق",
+};
 
 export type ProjectListItem = {
   id: string;
   title: string | null;
   status: string;
   stylePreset: StylePresetId;
+  sourceImageUrl: string;
+  createdAt: Date;
 };
 
 type ProjectsListScreenProps = {
   projects: ProjectListItem[];
 };
 
+const dateFormatter = new Intl.DateTimeFormat("fa-IR", { day: "numeric", month: "short" });
+
 export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
   return (
-    <PageShell>
-      <Surface padding="lg" className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900">پروژه‌های من</h2>
-          <p className="mt-1 text-sm text-slate-600">وضعیت تولید و خروجی هر پروژه را اینجا ببینید.</p>
-        </div>
-        <ButtonLink href="/projects/new" size="sm">
-          پروژه جدید
-        </ButtonLink>
-      </Surface>
+    <PageShell maxWidth="lg" className="space-y-6">
+      <header className="flex items-center justify-between gap-3">
+        <h2 className="font-display text-3xl text-foreground">آرشیو استودیو</h2>
+        <ButtonLink href="/projects/new" size="sm">پروژه جدید</ButtonLink>
+      </header>
 
-      <div className="space-y-3">
-        {projects.length === 0 ? (
-          <Surface padding="lg" className="text-sm text-slate-600">
-            هنوز پروژه‌ای ندارید.
-          </Surface>
-        ) : null}
-
-        {projects.map((project) => (
-          <Link
-            key={project.id}
-            href={`/projects/${project.id}`}
-            className="block rounded-3xl border border-slate-200 bg-white p-4 transition hover:border-amber-300"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <p className="font-medium text-slate-900">{project.title || "بدون عنوان"}</p>
-              <StatusPill>{project.status}</StatusPill>
+      {projects.length === 0 ? (
+        <section className="space-y-4 pt-3 text-center">
+          <JewelryImageFrame aspect="portrait" className="mx-auto max-w-sm bg-surface-soft">
+            <div className="flex h-full items-end justify-center p-6">
+              <p className="text-sm text-muted">با اولین پروژه، گالری برندت اینجا شکل می‌گیرد.</p>
             </div>
-            <p className="mt-2 text-xs text-slate-500">سبک: {styleLabelMap.get(project.stylePreset) ?? project.stylePreset}</p>
-          </Link>
-        ))}
-      </div>
+          </JewelryImageFrame>
+          <ButtonLink href="/projects/new" variant="secondary">شروع اولین پروژه</ButtonLink>
+        </section>
+      ) : (
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {projects.map((project) => (
+            <Link key={project.id} href={`/projects/${project.id}`} className="space-y-2">
+              <JewelryImageFrame className="bg-surface-soft">
+                <Image src={project.sourceImageUrl} alt={project.title || "پروژه"} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
+              </JewelryImageFrame>
+              <div className="space-y-1 px-1">
+                <p className="truncate text-sm font-medium text-foreground">{project.title || "بدون عنوان"}</p>
+                <p className="text-xs text-muted">
+                  {styleLabelMap.get(project.stylePreset) ?? project.stylePreset} · {statusLabelMap[project.status] ?? project.status} · {dateFormatter.format(project.createdAt)}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </section>
+      )}
     </PageShell>
   );
 }
