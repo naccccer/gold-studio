@@ -13,7 +13,7 @@ If a design choice makes the product feel like a startup SaaS dashboard, remove 
 - Confident: copy and hierarchy should be clear, short, and decisive.
 
 ## Typography Philosophy
-- Use Vazirmatn as the product typeface.
+- Use Vazirmatn as the default product UI/body typeface.
 - Farsi is the primary language; RTL is the default layout direction.
 - Typography hierarchy must rely on size, weight, spacing, and placement, not color noise.
 - Headings should usually be medium weight, charcoal, and calm.
@@ -21,6 +21,8 @@ If a design choice makes the product feel like a startup SaaS dashboard, remove 
 - Labels and captions must remain legible; never shrink them into decorative microcopy.
 - Buttons, inputs, tabs, status pills, and navigation must have deliberate typography.
 - Do not use negative letter spacing.
+- Use Doran only for short editorial display titles (usually 4-5 words max).
+- Do not use Doran for paragraphs, labels, buttons, forms, navigation, metadata, or helper text.
 - Do not use multiple font families to create drama.
 
 Measurable tendency:
