@@ -1,8 +1,9 @@
 import Image from "next/image";
 import { ButtonLink } from "@/components/ui/button";
+import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
+import { ProgressiveHint } from "@/components/ui/progressive-hint";
 import { StatusPill } from "@/components/ui/status-pill";
-import { Surface } from "@/components/ui/surface";
 import { STYLE_PRESETS, type StylePresetId } from "@/features/projects/presets";
 
 const styleLabelMap = new Map(STYLE_PRESETS.map((item) => [item.id, item.label]));
@@ -31,109 +32,62 @@ type DashboardHomeScreenProps = {
 
 const persianDateFormatter = new Intl.DateTimeFormat("fa-IR", {
   day: "numeric",
-  month: "long",
+  month: "short",
 });
 
-export function DashboardHomeScreen({
-  userName,
-  projectCount,
-  completedCount,
-  recentProjects,
-}: DashboardHomeScreenProps) {
+export function DashboardHomeScreen({ userName, recentProjects }: DashboardHomeScreenProps) {
+  const heroProject = recentProjects[0];
+
   return (
-    <PageShell maxWidth="lg" className="space-y-6 sm:space-y-8">
-      <Surface padding="lg" className="space-y-5 sm:space-y-6">
+    <PageShell maxWidth="lg" className="space-y-8 sm:space-y-10">
+      <section className="space-y-5 pt-2 sm:pt-4">
         <div className="space-y-3">
-          <p className="text-sm text-muted">استودیو شما آماده است</p>
-          <h2 className="text-2xl font-semibold leading-tight text-foreground sm:text-3xl">
-            سلام {userName || "دوست عزیز"}،
-            <br />
-            تصویر بعدی برندت را همین‌جا بساز.
-          </h2>
-          <p className="max-w-2xl text-sm leading-7 text-muted sm:text-base">
-            عکس خام محصول را آپلود کن، سبک را انتخاب کن و خروجی آماده فروش تحویل بگیر.
-          </p>
+          <h2 className="font-display text-4xl leading-tight text-foreground sm:text-5xl">استودیو تصویر طلا</h2>
+          <p className="text-sm text-muted">سلام {userName || "دوست عزیز"}، پروژه بعدی را همین حالا شروع کنید.</p>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <ButtonLink href="/projects/new" className="w-full sm:w-auto">
-            شروع پروژه جدید
-          </ButtonLink>
-          <ButtonLink href="/projects" variant="secondary" className="w-full sm:w-auto">
-            مشاهده آرشیو پروژه‌ها
-          </ButtonLink>
+        <JewelryImageFrame aspect="portrait" className="bg-surface-soft">
+          {heroProject ? (
+            <Image src={heroProject.sourceImageUrl} alt={heroProject.title || "پروژه اخیر"} fill className="object-cover" sizes="(max-width: 768px) 100vw, 540px" />
+          ) : (
+            <div className="flex h-full items-end bg-gradient-to-b from-surface to-surface-soft p-5">
+              <div className="space-y-2">
+                <p className="text-base font-medium text-foreground">اولین تصویر محصولت را بساز</p>
+                <p className="text-xs text-muted">پس‌زمینه ساده، نور تمیز، خروجی حرفه‌ای.</p>
+              </div>
+            </div>
+          )}
+        </JewelryImageFrame>
+
+        <div className="flex flex-col gap-3">
+          <ButtonLink href="/projects/new" className="w-full">شروع پروژه جدید</ButtonLink>
+          <ButtonLink href="/projects" variant="ghost" className="w-full">آرشیو پروژه‌ها</ButtonLink>
         </div>
-      </Surface>
+      </section>
 
       <section className="space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h3 className="text-base font-semibold text-foreground sm:text-lg">پروژه‌های اخیر</h3>
-            <p className="text-sm text-muted">آخرین کارهای استودیو برای ادامه سریع.</p>
-          </div>
-          <p className="text-xs text-muted sm:text-sm">
-            {projectCount} پروژه · {completedCount} خروجی آماده
-          </p>
+        <div className="flex items-end justify-between gap-3">
+          <h3 className="text-sm text-muted">پروژه‌های اخیر</h3>
+          <ProgressiveHint title="راهنما">برای مشاهده خروجی نهایی، روی هر تصویر بزنید.</ProgressiveHint>
         </div>
 
-        {recentProjects.length === 0 ? (
-          <Surface padding="lg" className="space-y-4 text-center sm:py-10">
-            <p className="text-lg font-medium text-foreground">هنوز پروژه‌ای ثبت نشده است.</p>
-            <p className="mx-auto max-w-md text-sm text-muted">
-              اولین عکس محصولت را وارد کن تا گالری استودیویی برندت شکل بگیرد.
-            </p>
-            <div className="pt-1">
-              <ButtonLink href="/projects/new" size="sm">
-                ساخت اولین پروژه
-              </ButtonLink>
-            </div>
-          </Surface>
-        ) : (
-          <div className="space-y-3 sm:space-y-4">
-            {recentProjects.map((project) => (
-              <Surface
-                key={project.id}
-                as="article"
-                padding="md"
-                className="overflow-hidden transition-colors hover:border-border-strong"
-              >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                  <div className="w-full shrink-0 sm:w-40">
-                    <div className="relative aspect-square overflow-hidden rounded-[var(--radius-md)] border border-border bg-surface-soft">
-                      <Image
-                        src={project.sourceImageUrl}
-                        alt={project.title || "پیش‌نمایش پروژه"}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 100vw, 160px"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex min-w-0 flex-1 flex-col gap-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-base font-semibold text-foreground">
-                        {project.title || "پروژه بدون عنوان"}
-                      </p>
-                      <StatusPill>{statusLabelMap[project.status] ?? project.status}</StatusPill>
-                    </div>
-
-                    <div className="space-y-1 text-sm text-muted">
-                      <p>سبک: {styleLabelMap.get(project.stylePreset) ?? project.stylePreset}</p>
-                      <p>ثبت: {persianDateFormatter.format(project.createdAt)}</p>
-                    </div>
-
-                    <div>
-                      <ButtonLink href={`/projects/${project.id}`} size="sm" variant="secondary">
-                        ادامه بررسی پروژه
-                      </ButtonLink>
-                    </div>
-                  </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {recentProjects.slice(0, 3).map((project) => (
+            <a key={project.id} href={`/projects/${project.id}`} className="space-y-2">
+              <JewelryImageFrame className="border-border/80">
+                <Image src={project.sourceImageUrl} alt={project.title || "پروژه"} fill className="object-cover" sizes="(max-width: 640px) 100vw, 280px" />
+              </JewelryImageFrame>
+              <div className="space-y-1 px-1">
+                <p className="truncate text-sm font-medium text-foreground">{project.title || "پروژه بدون عنوان"}</p>
+                <div className="flex items-center justify-between gap-2 text-xs text-muted">
+                  <span>{styleLabelMap.get(project.stylePreset) ?? project.stylePreset}</span>
+                  <span>{persianDateFormatter.format(project.createdAt)}</span>
                 </div>
-              </Surface>
-            ))}
-          </div>
-        )}
+                <StatusPill>{statusLabelMap[project.status] ?? project.status}</StatusPill>
+              </div>
+            </a>
+          ))}
+        </div>
       </section>
     </PageShell>
   );
