@@ -36,8 +36,6 @@ const persianDateFormatter = new Intl.DateTimeFormat("fa-IR", {
 });
 
 export function DashboardHomeScreen({ userName, recentProjects }: DashboardHomeScreenProps) {
-  const heroProject = recentProjects[0];
-
   return (
     <PageShell maxWidth="lg" className="space-y-8 sm:space-y-10">
       <section className="space-y-5 pt-2 sm:pt-4">
@@ -47,16 +45,12 @@ export function DashboardHomeScreen({ userName, recentProjects }: DashboardHomeS
         </div>
 
         <JewelryImageFrame aspect="portrait" className="bg-surface-soft">
-          {heroProject ? (
-            <Image src={heroProject.sourceImageUrl} alt={heroProject.title || "پروژه اخیر"} fill className="object-cover" sizes="(max-width: 768px) 100vw, 540px" />
-          ) : (
-            <div className="flex h-full items-end bg-gradient-to-b from-surface to-surface-soft p-5">
-              <div className="space-y-2">
-                <p className="text-base font-medium text-foreground">اولین تصویر محصولت را بساز</p>
-                <p className="text-xs text-muted">پس‌زمینه ساده، نور تمیز، خروجی حرفه‌ای.</p>
-              </div>
+          <div className="flex h-full items-end bg-gradient-to-b from-surface via-surface-soft to-surface-muted p-5">
+            <div className="space-y-2">
+              <p className="text-base font-medium text-foreground">نور نرم، پس‌زمینه تمیز</p>
+              <p className="text-xs text-muted">استودیو آماده تولید تصویر ادیتوریال جواهرات است.</p>
             </div>
-          )}
+          </div>
         </JewelryImageFrame>
 
         <div className="flex flex-col gap-3">
