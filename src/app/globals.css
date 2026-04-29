@@ -1,11 +1,3 @@
-@font-face {
-  font-family: "Vazirmatn";
-  src: local("Vazirmatn"), local("Vazirmatn Regular");
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-}
-
 @import "tailwindcss";
 
 :root {
@@ -58,7 +50,7 @@ body {
   min-height: 100vh;
   background: radial-gradient(circle at top, #fdf9f2 0%, var(--background) 42%);
   color: var(--foreground);
-  font-family: "Vazirmatn", Tahoma, sans-serif;
+  font-family: var(--font-vazirmatn), Tahoma, sans-serif;
   font-size: 15px;
   line-height: 1.8;
   text-rendering: optimizeLegibility;
@@ -73,15 +65,15 @@ body {
 
 h1,h2,h3,h4,h5,h6 {
   color: var(--foreground);
-  font-family: "Vazirmatn", Tahoma, sans-serif;
+  font-family: var(--font-vazirmatn), Tahoma, sans-serif;
   font-weight: 600;
   letter-spacing: 0;
 }
 
 .text-display {
-  font-family: var(--font-doran), "Vazirmatn", Tahoma, sans-serif;
+  font-family: var(--font-doran), var(--font-vazirmatn), Tahoma, sans-serif;
   font-weight: 700;
   line-height: 1.45;
 }
 
-.text-ui { font-family: "Vazirmatn", Tahoma, sans-serif; }
+.text-ui { font-family: var(--font-vazirmatn), Tahoma, sans-serif; }

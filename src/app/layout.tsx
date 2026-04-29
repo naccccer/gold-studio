@@ -1,6 +1,14 @@
 import type { Metadata } from "next";
+import { Vazirmatn } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
+
+const vazirmatn = Vazirmatn({
+  subsets: ["arabic"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-vazirmatn",
+  display: "swap",
+});
 
 const doran = localFont({
   src: [
@@ -22,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fa" dir="rtl" className={`${doran.variable} h-full`}>
+    <html lang="fa" dir="rtl" className={`${vazirmatn.variable} ${doran.variable} h-full`}>
       <body className="min-h-screen bg-background text-foreground antialiased">{children}</body>
     </html>
   );
