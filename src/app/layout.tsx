@@ -19,8 +19,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fa" dir="rtl" className={`${vazirmatn.variable} h-full`}>
-      <body className="min-h-screen bg-background text-foreground antialiased">
+    <html lang="fa" dir="rtl" className={`${vazirmatn.variable} h-full bg-background`}>
+      <body className="min-h-screen bg-background text-foreground antialiased selection:bg-accent-soft selection:text-accent-foreground">
         {children}
       </body>
     </html>

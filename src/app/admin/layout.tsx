@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { QuietMeta, StudioFrame } from "@/components/ui/studio-primitives";
 import { LogoutButton } from "@/features/auth/components/logout-button";
 
 export default function AdminLayout({
@@ -7,30 +8,30 @@ export default function AdminLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="min-h-screen bg-background px-4 py-5 text-right text-foreground sm:py-6">
-      <div className="mx-auto flex min-h-[calc(100vh-2.5rem)] w-full max-w-5xl flex-col overflow-hidden rounded-[var(--radius-xl)] border border-border/80 bg-surface/95">
-        <header className="border-b border-border/80 px-4 py-4 sm:px-6 sm:py-5">
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted">Gold Studio Admin</p>
-              <h1 className="text-lg font-medium text-foreground">اتاق مدیریت</h1>
-              <p className="text-sm text-muted">مدیریت کاربران، پروژه‌ها و اعتبارها به‌صورت دستی.</p>
-            </div>
+    <div className="min-h-screen bg-background pb-10 text-right text-foreground sm:pb-14">
+      <StudioFrame className="max-w-4xl space-y-5 pt-5 sm:space-y-7 sm:pt-7">
+        <header className="space-y-3 border-b border-border-soft pb-4">
+          <div className="space-y-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">GOLD STUDIO / ADMIN</p>
+            <h1 className="text-base font-semibold text-foreground">ابزار مدیریت داخلی</h1>
+            <QuietMeta>این بخش برای عملیات پشتیبانی است و بخشی از جریان اصلی استودیو نیست.</QuietMeta>
+          </div>
 
-            <nav className="flex flex-wrap items-center gap-2">
-              <Link
-                href="/dashboard"
-                className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] border border-accent-soft px-4 text-sm text-accent-foreground transition-colors hover:border-accent hover:bg-accent-soft"
-              >
-                داشبورد کاربر
+          <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted">
+            <Link href="/projects/new" className="font-medium text-foreground transition-colors hover:text-foreground-soft">
+              بازگشت به استودیو
+            </Link>
+            <div className="flex items-center gap-3">
+              <Link href="/dashboard" className="transition-colors hover:text-foreground">
+                خانه
               </Link>
               <LogoutButton />
-            </nav>
+            </div>
           </div>
         </header>
 
-        <div className="flex-1 px-4 py-5 sm:px-6 sm:py-7">{children}</div>
-      </div>
+        <main>{children}</main>
+      </StudioFrame>
     </div>
   );
 }

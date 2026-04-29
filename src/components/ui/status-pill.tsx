@@ -9,17 +9,17 @@ type StatusPillProps = {
 };
 
 const variantClasses: Record<StatusPillVariant, string> = {
-  neutral: "border-border bg-surface-soft text-muted",
-  pending: "border-border-strong bg-surface-soft text-accent-foreground",
-  completed: "border-accent-soft bg-accent-soft text-accent-foreground",
-  failed: "border-danger/30 bg-danger-soft text-danger",
+  neutral: "bg-surface-soft text-muted ring-border-soft",
+  pending: "bg-accent-soft/55 text-accent-foreground ring-accent/30",
+  completed: "bg-surface-contrast text-surface ring-surface-contrast",
+  failed: "bg-danger-soft text-danger ring-danger/30",
 };
 
 export function StatusPill({ children, variant = "neutral", className = "" }: StatusPillProps) {
   return (
     <span
       className={[
-        "inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium",
+        "inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset",
         variantClasses[variant],
         className,
       ]

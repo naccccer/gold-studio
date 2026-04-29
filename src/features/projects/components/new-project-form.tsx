@@ -1,10 +1,16 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Field, fieldControlClassName } from "@/components/ui/field";
-import { Surface } from "@/components/ui/surface";
+import {
+  EditorialSection,
+  FloatingActionDock,
+  ImageStage,
+  QuietMeta,
+  StudioFrame,
+} from "@/components/ui/studio-primitives";
 import type { ProjectFormState } from "@/features/projects/actions";
 import { STYLE_PRESETS } from "@/features/projects/presets";
 
@@ -13,17 +19,7 @@ const INITIAL_STATE: ProjectFormState = {};
 type GenerationMode = "image" | "text";
 
 type NewProjectFormProps = {
-  action: (
-    prevState: ProjectFormState,
-    formData: FormData,
-  ) => Promise<ProjectFormState>;
-};
-
-const styleConfidenceMap: Record<string, string> = {
-  CLEAN_WHITE: "مناسب کاتالوگ و فروشگاه",
-  WARM_LUXURY: "مناسب ویترین برند لوکس",
-  DRAMATIC_DARK: "مناسب کمپین‌های جسور",
-  SOFT_EDITORIAL: "مناسب محتوای شبکه اجتماعی",
+  action: (prevState: ProjectFormState, formData: FormData) => Promise<ProjectFormState>;
 };
 
 export function NewProjectForm({ action }: NewProjectFormProps) {
@@ -39,44 +35,42 @@ export function NewProjectForm({ action }: NewProjectFormProps) {
     };
   }, [previewUrl]);
 
-  const fileLabel = useMemo(() => {
-    if (!previewUrl) {
-      return "تصویر محصول را برای شروع انتخاب کنید";
-    }
-
-    return "برای جایگزینی تصویر، دوباره فایل انتخاب کنید";
-  }, [previewUrl]);
-
   return (
-    <form action={formAction} className="space-y-5 sm:space-y-6">
+    <form action={formAction} className="space-y-7 pb-20 sm:space-y-8 sm:pb-8">
       <input type="hidden" name="generationMode" value={mode} />
 
-      <Surface padding="lg" className="space-y-4">
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold text-foreground">۱) تصویر محصول</h3>
-          <p className="text-sm text-muted">یک عکس واضح وارد کنید تا استودیو بر همان تصویر تولید را آغاز کند.</p>
-        </div>
+      <StudioFrame className="px-0 sm:px-0">
+        <EditorialSection>
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="block-title">تصویر محصول</h3>
+            <QuietMeta>مرحله ۱</QuietMeta>
+          </div>
 
-        <div className="space-y-3">
-          <Field hint="فرمت‌های مجاز: JPG، PNG، WEBP - حداکثر ۱۰MB" htmlFor="image" className="space-y-3">
-            <label
-              htmlFor="image"
-              className="block cursor-pointer rounded-[var(--radius-lg)] border border-border bg-surface-soft p-4 sm:p-5"
-            >
+          <ImageStage className="p-0">
+            <label htmlFor="image" className="block cursor-pointer">
               {previewUrl ? (
-                <Image
-                  src={previewUrl}
-                  alt="پیش‌نمایش تصویر محصول"
-                  width={1200}
-                  height={1200}
-                  className="h-64 w-full rounded-[var(--radius-md)] border border-border object-cover sm:h-80"
-                />
-              ) : (
-                <div className="flex h-56 items-center justify-center rounded-[var(--radius-md)] border border-border bg-surface text-center sm:h-72">
-                  <div className="space-y-2 px-4">
-                    <p className="text-base font-medium text-foreground">{fileLabel}</p>
-                    <p className="text-sm text-muted">نور ساده و کادر تمیز بهترین خروجی را می‌دهد.</p>
+                <div className="space-y-3 p-3 sm:p-4">
+                  <Image
+                    src={previewUrl}
+                    alt="پیش‌نمایش تصویر محصول"
+                    width={1400}
+                    height={1400}
+                    className="h-[52vh] max-h-[560px] min-h-[340px] w-full rounded-[var(--radius-lg)] object-cover"
+                  />
+                  <div className="px-1 pb-1 text-center">
+                    <p className="text-sm font-medium text-foreground">برای تغییر تصویر دوباره لمس کن</p>
+                    <QuietMeta>JPG / PNG / WEBP — حداکثر ۱۰MB</QuietMeta>
                   </div>
+                </div>
+              ) : (
+                <div className="flex h-[56vh] min-h-[360px] flex-col items-center justify-center gap-4 px-5 py-8 text-center sm:min-h-[420px]">
+                  <div className="w-full max-w-[320px] space-y-2">
+                    <p className="section-title">تصویر محصولت را وارد کن</p>
+                    <QuietMeta>یک عکس واضح با کادر تمیز، بهترین خروجی را می‌دهد.</QuietMeta>
+                  </div>
+                  <span className="inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] bg-surface-contrast px-5 text-sm font-semibold text-surface">
+                    انتخاب تصویر
+                  </span>
                 </div>
               )}
             </label>
@@ -91,117 +85,117 @@ export function NewProjectForm({ action }: NewProjectFormProps) {
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 if (!file) {
+                  if (previewUrl) {
+                    URL.revokeObjectURL(previewUrl);
+                  }
                   setPreviewUrl(null);
                   return;
                 }
 
+                if (previewUrl) {
+                  URL.revokeObjectURL(previewUrl);
+                }
                 setPreviewUrl(URL.createObjectURL(file));
               }}
             />
-          </Field>
+          </ImageStage>
+        </EditorialSection>
 
-          <p className="text-sm text-muted">{fileLabel}</p>
-        </div>
-      </Surface>
+        <EditorialSection>
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="block-title">جهت هنری</h3>
+            <QuietMeta>مرحله ۲</QuietMeta>
+          </div>
 
-      <Surface padding="lg" className="space-y-4">
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold text-foreground">۲) انتخاب سبک خروجی</h3>
-          <p className="text-sm text-muted">سبکی را انتخاب کنید که با جایگاه برند و نوع کمپین شما هماهنگ باشد.</p>
-        </div>
-
-        <fieldset className="space-y-3">
-          <legend className="sr-only">انتخاب سبک خروجی</legend>
-          <div className="grid gap-3">
+          <fieldset className="grid gap-3 sm:grid-cols-2">
+            <legend className="sr-only">انتخاب جهت هنری</legend>
             {STYLE_PRESETS.map((preset) => (
-              <label
-                key={preset.id}
-                className="flex cursor-pointer items-start gap-3 rounded-[var(--radius-lg)] border border-border bg-surface p-4 transition-colors hover:border-border-strong"
-              >
+              <label key={preset.id} className="group cursor-pointer">
                 <input
                   type="radio"
                   name="stylePreset"
                   value={preset.id}
                   defaultChecked={preset.id === "CLEAN_WHITE"}
-                  className="mt-1"
+                  className="peer sr-only"
                 />
-                <span className="space-y-1">
-                  <span className="block text-sm font-semibold text-foreground">{preset.label}</span>
-                  <span className="block text-xs text-muted">{styleConfidenceMap[preset.id]}</span>
-                  <span className="block text-sm text-muted">{preset.description}</span>
-                </span>
+
+                <div className="space-y-3 rounded-[var(--radius-lg)] bg-surface-soft p-4 ring-1 ring-inset ring-border-soft transition peer-checked:bg-surface peer-checked:ring-2 peer-checked:ring-surface-contrast group-hover:ring-border">
+                  <div
+                    aria-hidden
+                    className={[
+                      "h-20 w-full rounded-[var(--radius-md)]",
+                      preset.id === "CLEAN_WHITE" && "bg-surface ring-1 ring-border-soft",
+                      preset.id === "WARM_LUXURY" && "bg-[#f2e7d6] ring-1 ring-[#d8c2a0]",
+                      preset.id === "DRAMATIC_DARK" && "bg-surface-contrast ring-1 ring-black/70",
+                      preset.id === "SOFT_EDITORIAL" && "bg-[#e7e4de] ring-1 ring-[#c7c0b4]",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                  />
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-foreground">{preset.label}</p>
+                    <QuietMeta>{preset.description}</QuietMeta>
+                  </div>
+                </div>
               </label>
             ))}
+          </fieldset>
+        </EditorialSection>
+
+        <EditorialSection>
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="block-title">جزئیات اختیاری</h3>
+            <QuietMeta>مرحله ۳</QuietMeta>
           </div>
-        </fieldset>
-      </Surface>
 
-      <Surface padding="lg" className="space-y-4">
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold text-foreground">۳) تنظیم نهایی</h3>
-          <p className="text-sm text-muted">عنوان پروژه را وارد کنید. حالت تست متن فقط برای بررسی فنی است.</p>
-        </div>
+          <div className="space-y-3 rounded-[var(--radius-lg)] bg-surface-soft p-4">
+            <Field label="عنوان پروژه" htmlFor="title" hint="برای نظم آرشیو؛ اختیاری است.">
+              <input id="title" name="title" type="text" placeholder="مثلا: کالکشن حلقه مینیمال" className={fieldControlClassName} />
+            </Field>
 
-        <div className="grid grid-cols-2 rounded-[var(--radius-md)] border border-border bg-surface-soft p-1 text-sm">
-          <button
-            type="button"
-            onClick={() => setMode("image")}
-            className={`h-10 rounded-[var(--radius-sm)] transition ${
-              mode === "image" ? "bg-surface font-medium text-foreground" : "text-muted"
-            }`}
-          >
-            تصویر محصول
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode("text")}
-            className={`h-10 rounded-[var(--radius-sm)] transition ${
-              mode === "text" ? "bg-surface font-medium text-foreground" : "text-muted"
-            }`}
-          >
-            تست متن به تصویر
-          </button>
-        </div>
-
-        <Field label="عنوان پروژه (اختیاری)" htmlFor="title">
-          <input
-            id="title"
-            name="title"
-            type="text"
-            placeholder={mode === "image" ? "مثلا: کالکشن حلقه مینیمال" : "مثلا: تست اتصال GapGPT"}
-            className={fieldControlClassName}
-          />
-        </Field>
-
-        {mode === "text" ? (
-          <Field
-            label="پرامپت تست"
-            htmlFor="textPrompt"
-            hint="این بخش فقط برای تست مدل متن به تصویر است و در مسیر اصلی کاربر قرار ندارد."
-          >
-            <textarea
-              required
-              id="textPrompt"
-              name="textPrompt"
-              rows={4}
-              placeholder="مثلا: A premium studio photo of a gold ring on a clean white background"
-              className="w-full resize-none rounded-[var(--radius-md)] border border-border bg-surface px-3 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-focus focus:shadow-[var(--shadow-focus)]"
-            />
-          </Field>
-        ) : null}
-      </Surface>
+            <details className="group rounded-[var(--radius-md)] bg-surface p-3 ring-1 ring-border-soft">
+              <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
+                اگر جهت خاصی مدنظر داری…
+              </summary>
+              <div className="mt-3 space-y-3">
+                <label className="flex items-center gap-2 text-sm text-muted">
+                  <input
+                    type="checkbox"
+                    checked={mode === "text"}
+                    onChange={(event) => setMode(event.target.checked ? "text" : "image")}
+                  />
+                  حالت آزمایش متن‌محور
+                </label>
+                {mode === "text" ? (
+                  <Field label="دستور متنی" htmlFor="textPrompt" hint="این بخش صرفا برای تست فنی است.">
+                    <textarea
+                      required
+                      id="textPrompt"
+                      name="textPrompt"
+                      rows={4}
+                      placeholder="مثلا: A premium studio photo of a gold ring on clean white background"
+                      className="w-full resize-none rounded-[var(--radius-md)] bg-surface px-3 py-3 text-sm text-foreground ring-1 ring-inset ring-border outline-none transition placeholder:text-muted-foreground focus-visible:ring-border-strong focus-visible:shadow-[var(--shadow-focus)]"
+                    />
+                  </Field>
+                ) : null}
+              </div>
+            </details>
+          </div>
+        </EditorialSection>
+      </StudioFrame>
 
       {state.error ? (
-        <p className="rounded-[var(--radius-md)] border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">{state.error}</p>
+        <p className="rounded-[var(--radius-md)] bg-danger-soft px-3 py-2 text-sm text-danger ring-1 ring-danger/25">{state.error}</p>
       ) : null}
 
-      <Surface padding="lg" className="space-y-3">
-        <h3 className="text-lg font-semibold text-foreground">۴) آغاز تولید</h3>
-        <p className="text-sm text-muted">پس از شروع، استودیو تصویر نهایی را آماده می‌کند و مستقیم به صفحه نتیجه می‌روید.</p>
-        <Button type="submit" disabled={pending} size="full">
-          {pending ? "در حال تولید..." : mode === "image" ? "شروع تولید تصویر استودیویی" : "اجرای تست متن به تصویر"}
-        </Button>
-      </Surface>
+      <FloatingActionDock className="sm:static sm:mt-6 sm:p-0 sm:shadow-none sm:ring-0 sm:backdrop-blur-none sm:bg-transparent">
+        <div className="w-full space-y-2 sm:w-auto sm:min-w-[320px]">
+          <Button type="submit" disabled={pending} size="full" variant="contrast">
+            {pending ? "در حال ساخت تصویر…" : mode === "image" ? "ساخت تصویر استودیویی" : "اجرای تست متن‌محور"}
+          </Button>
+          <QuietMeta className="px-1 text-center sm:text-right">نتیجه پس از تولید، مستقیم در اتاق نمایش باز می‌شود.</QuietMeta>
+        </div>
+      </FloatingActionDock>
     </form>
   );
 }
