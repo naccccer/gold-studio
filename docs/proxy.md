@@ -65,3 +65,13 @@ npm run dev
 ```
 
 Only keep proxy enabled for `npm run dev` when testing GapGPT generation and direct access fails.
+
+## Local-First Font Strategy (No External Dependency)
+- Keep UI fonts self-hosted in `public/fonts` and referenced from CSS (`@font-face`).
+- For Vazirmatn, place these files in `public/fonts/vazirmatn/`:
+  - `Vazirmatn-Regular.woff2`
+  - `Vazirmatn-Medium.woff2`
+  - `Vazirmatn-SemiBold.woff2`
+  - `Vazirmatn-Bold.woff2`
+- Do not rely on `next/font/google` for core UI typography in restricted-network environments.
+- If local files are missing, UI will fall back to system fonts until files are added.
