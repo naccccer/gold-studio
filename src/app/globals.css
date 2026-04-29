@@ -1,27 +1,27 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8f3eb;
-  --foreground: #211d19;
-  --surface: #fffdf8;
+  --background: #f6f1e8;
+  --foreground: #171411;
+  --surface: #fffdf9;
   --surface-soft: #f3ede3;
-  --surface-muted: #ebe2d6;
-  --muted: #756e64;
-  --muted-foreground: #8a8175;
-  --border: #ded3c3;
-  --border-strong: #c7b89f;
-  --accent: #b89456;
-  --accent-soft: #eadcc4;
-  --accent-foreground: #2a2117;
-  --danger: #a33a32;
-  --danger-soft: #f4dedb;
-  --focus: #c8a46b;
+  --surface-muted: #ece4d8;
+  --muted: #6d665d;
+  --muted-foreground: #847c71;
+  --border: #dcd1bf;
+  --border-strong: #bfa98a;
+  --accent: #b28b52;
+  --accent-soft: #ecdec8;
+  --accent-foreground: #2b2117;
+  --danger: #983b34;
+  --danger-soft: #f4dfdc;
+  --focus: #b28b52;
   --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.25rem;
-  --shadow-soft: 0 18px 56px -40px rgba(45, 34, 24, 0.42);
-  --shadow-focus: 0 0 0 3px rgba(200, 164, 107, 0.22);
+  --radius-md: 0.8rem;
+  --radius-lg: 1.15rem;
+  --radius-xl: 1.5rem;
+  --shadow-soft: 0 20px 45px -36px rgba(30, 23, 16, 0.34);
+  --shadow-focus: 0 0 0 3px rgba(178, 139, 82, 0.2);
 }
 
 @theme inline {
@@ -42,51 +42,38 @@
   --color-focus: var(--focus);
 }
 
-* {
-  box-sizing: border-box;
-}
-
-html {
-  background: var(--background);
-}
+* { box-sizing: border-box; }
+html { background: var(--background); }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--background);
+  background: radial-gradient(circle at top, #fdf9f2 0%, var(--background) 42%);
   color: var(--foreground);
-  font-family: var(--font-vazirmatn), Tahoma, sans-serif;
-  font-feature-settings: "ss01" 0;
+  font-family: var(--font-lahze), Tahoma, sans-serif;
   font-size: 15px;
-  line-height: 1.75;
+  line-height: 1.8;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-@media (min-width: 640px) {
-  body {
-    font-size: 16px;
-  }
-}
+@media (min-width: 640px) { body { font-size: 16px; } }
 
-::selection {
-  background: var(--accent-soft);
-  color: var(--accent-foreground);
-}
+::selection { background: var(--accent-soft); color: var(--accent-foreground); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 
-:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 3px;
-}
-
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+h1,h2,h3,h4,h5,h6 {
   color: var(--foreground);
-  font-weight: 600;
+  font-family: var(--font-doran), var(--font-lahze), Tahoma, sans-serif;
+  font-weight: 700;
   letter-spacing: 0;
 }
+
+.text-display {
+  font-family: var(--font-doran), var(--font-lahze), Tahoma, sans-serif;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.text-ui { font-family: var(--font-lahze), Tahoma, sans-serif; }
