@@ -16,21 +16,36 @@ export default async function DashboardLayout({
   });
 
   return (
-    <div className="min-h-screen bg-background px-4 pb-24 pt-6 text-right text-foreground">
-      <div className="mx-auto w-full max-w-5xl space-y-7">
-        <header className="space-y-5 border-b border-border/70 pb-5">
-          <div className="space-y-1.5">
-            <p className="text-display text-2xl text-foreground">استودیو طلایی شما</p>
-            <p className="text-sm text-muted">{user?.name || user?.email} • اعتبار: نامحدود</p>
+    <div className="min-h-screen bg-background px-4 pb-24 pt-4 text-right text-foreground sm:pt-5">
+      <div className="mx-auto w-full max-w-5xl space-y-6">
+        <header className="flex items-center justify-between gap-4 py-1">
+          <div className="space-y-0.5">
+            <Link href="/dashboard" className="font-display text-lg text-foreground sm:text-xl">
+              Gold Studio
+            </Link>
+            <p className="text-[10px] text-muted/70">{user?.name || user?.email}</p>
           </div>
 
-          <nav className="hidden flex-wrap items-center gap-2 text-sm md:flex">
-            <Link href="/projects/new" className="inline-flex h-10 items-center rounded-[var(--radius-md)] bg-foreground px-4 text-surface">پروژه جدید</Link>
-            <Link href="/dashboard" className="inline-flex h-10 items-center rounded-[var(--radius-md)] px-3 text-muted hover:text-foreground">داشبورد</Link>
-            <Link href="/projects" className="inline-flex h-10 items-center rounded-[var(--radius-md)] px-3 text-muted hover:text-foreground">پروژه‌ها</Link>
-            {session.role === "ADMIN" ? <Link href="/admin" className="inline-flex h-10 items-center rounded-[var(--radius-md)] border border-accent-soft px-3 text-accent-foreground">مدیریت</Link> : null}
+          <div className="hidden items-center gap-1.5 text-sm md:flex">
+            <Link
+              href="/projects/new"
+              className="inline-flex h-8 items-center rounded-[var(--radius-md)] border border-border bg-surface px-3 text-foreground"
+            >
+              پروژه جدید
+            </Link>
+            <Link href="/dashboard" className="inline-flex h-8 items-center rounded-[var(--radius-md)] px-2.5 text-muted hover:text-foreground">
+              خانه
+            </Link>
+            <Link href="/projects" className="inline-flex h-8 items-center rounded-[var(--radius-md)] px-2.5 text-muted hover:text-foreground">
+              آرشیو
+            </Link>
+            {session.role === "ADMIN" ? (
+              <Link href="/admin" className="inline-flex h-8 items-center rounded-[var(--radius-md)] px-2.5 text-muted hover:text-foreground">
+                مدیریت
+              </Link>
+            ) : null}
             <LogoutButton />
-          </nav>
+          </div>
         </header>
 
         <div className="space-y-6">{children}</div>
@@ -39,7 +54,7 @@ export default async function DashboardLayout({
       <MobileTabBar
         tabs={[
           { href: "/dashboard", label: "خانه", active: true },
-          { href: "/projects", label: "پروژه‌ها" },
+          { href: "/projects", label: "آرشیو" },
           { href: "/admin", label: "مدیریت", active: false },
           { href: "/dashboard", label: "پروفایل" },
         ]}

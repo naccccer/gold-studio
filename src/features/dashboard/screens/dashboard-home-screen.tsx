@@ -2,16 +2,15 @@ import Image from "next/image";
 import { ButtonLink } from "@/components/ui/button";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
-import { ProgressiveHint } from "@/components/ui/progressive-hint";
 import { STYLE_PRESETS, type StylePresetId } from "@/features/projects/presets";
-import { archiveItems, extras, homeHero } from "@/lib/placeholders/jewelry-images";
+import { archiveItems, homeHero } from "@/lib/placeholders/jewelry-images";
 
 const styleLabelMap = new Map(STYLE_PRESETS.map((item) => [item.id, item.label]));
 
 const statusLabelMap: Record<string, string> = {
-  PENDING: "در انتظار خروجی",
+  PENDING: "در انتظار",
   COMPLETED: "آماده",
-  FAILED: "نیازمند بازبینی",
+  FAILED: "بازبینی",
 };
 
 export type DashboardRecentProject = {
@@ -35,102 +34,79 @@ const persianDateFormatter = new Intl.DateTimeFormat("fa-IR", {
   month: "short",
 });
 
-export function DashboardHomeScreen({ userName, recentProjects }: DashboardHomeScreenProps) {
-  const previewImages = [...archiveItems.slice(0, 2), ...extras.slice(0, 2)];
-  const firstName = userName?.trim().split(/\s+/)[0];
-
+export function DashboardHomeScreen({ recentProjects }: DashboardHomeScreenProps) {
   return (
-    <PageShell maxWidth="lg" className="space-y-10 sm:space-y-12">
-      <section className="grid gap-6 pt-2 lg:grid-cols-[minmax(0,0.82fr)_minmax(360px,1fr)] lg:items-end">
-        <div className="space-y-6 lg:pb-10">
-          <div className="space-y-3">
-            <h2 className="font-display text-4xl leading-tight text-foreground sm:text-5xl">
-              استودیوی طلای شما
-            </h2>
-            <p className="max-w-xs text-sm text-muted">
-              {firstName ? `${firstName} عزیز، ` : ""}یک تصویر لوکس تازه بسازید.
-            </p>
-          </div>
-
-          <div className="max-w-xs space-y-3">
-            <ButtonLink href="/projects/new" size="full">
-              شروع پروژه جدید
-            </ButtonLink>
-            <ButtonLink href="/projects" variant="ghost" className="w-full">
-              دیدن آرشیو
-            </ButtonLink>
-          </div>
-
-          <ProgressiveHint title="نکته">یک عکس ساده از محصول برای شروع کافی است.</ProgressiveHint>
-        </div>
-
-        <JewelryImageFrame aspect="portrait" className="min-h-[460px] bg-surface-soft shadow-none">
+    <PageShell maxWidth="lg" className="space-y-7 sm:space-y-9">
+      <section className="space-y-3">
+        <JewelryImageFrame aspect="portrait" className="relative min-h-[540px] overflow-hidden rounded-[calc(var(--radius-lg)+4px)] border-border/80 bg-surface-soft shadow-none">
           <Image
             src={homeHero.src}
             alt={homeHero.alt}
             fill
             priority
             className="object-cover"
-            sizes="(max-width: 768px) 100vw, 560px"
+            sizes="(max-width: 768px) 100vw, 920px"
           />
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/45 to-transparent p-5">
-            <p className="text-sm font-medium text-surface">نور نرم، تمرکز روی جزئیات</p>
+
+          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent" />
+
+          <div className="absolute inset-x-0 bottom-0 space-y-4 p-5 sm:p-6">
+            <div className="space-y-1.5 text-surface">
+              <h2 className="font-display text-3xl leading-tight sm:text-4xl">نور، طلا، سکوت</h2>
+              <p className="text-xs text-surface/80">یک تصویر تمیز، یک خروجی حرفه‌ای.</p>
+            </div>
+
+            <div className="grid gap-2.5 sm:max-w-sm">
+              <ButtonLink href="/projects/new" className="h-11 rounded-[var(--radius-md)] border border-white/35 bg-white/14 text-surface backdrop-blur-sm hover:bg-white/20">
+                شروع پروژه جدید
+              </ButtonLink>
+              <ButtonLink href="/projects" variant="ghost" className="h-10 rounded-[var(--radius-md)] bg-black/20 text-surface hover:bg-black/30 hover:text-surface">
+                مشاهده آرشیو
+              </ButtonLink>
+            </div>
           </div>
         </JewelryImageFrame>
       </section>
 
-      <section className="space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-sm font-medium text-foreground">کارهای اخیر</h3>
-          <span className="text-xs text-muted">گالری کوتاه</span>
-        </div>
+      <section className="space-y-3">
+        <h3 className="text-xs text-muted">آخرین کارها</h3>
+        <div className="grid grid-cols-2 gap-4">
+          {(recentProjects.length > 0 ? recentProjects.slice(0, 4) : archiveItems.slice(0, 4)).map(
+            (item, index) => {
+              const isReal = "id" in item;
+              const imageSrc = isReal ? item.sourceImageUrl || archiveItems[index % archiveItems.length].src : item.src;
+              const imageAlt = isReal
+                ? item.title || archiveItems[index % archiveItems.length].alt
+                : item.alt;
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {recentProjects.length > 0
-            ? recentProjects.slice(0, 4).map((project, index) => {
-                const fallbackImage = previewImages[index % previewImages.length];
-                const thumbnailSrc = project.sourceImageUrl || fallbackImage.src;
-
-                return (
-                  <a key={project.id} href={`/projects/${project.id}`} className="group space-y-2">
-                    <JewelryImageFrame className="bg-surface-soft shadow-none transition group-hover:border-border-strong">
-                      <Image
-                        src={thumbnailSrc}
-                        alt={project.title || fallbackImage.alt}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 50vw, 240px"
-                      />
-                    </JewelryImageFrame>
-                    <div className="space-y-1 px-1">
-                      <p className="truncate text-sm font-medium text-foreground">
-                        {project.title || "پروژه بدون عنوان"}
-                      </p>
-                      <p className="truncate text-xs text-muted">
-                        <span>{styleLabelMap.get(project.stylePreset) ?? project.stylePreset}</span>
-                        <span className="px-1">·</span>
-                        <span>{statusLabelMap[project.status] ?? project.status}</span>
-                        <span className="px-1">·</span>
-                        <span>{persianDateFormatter.format(project.createdAt)}</span>
-                      </p>
-                    </div>
-                  </a>
-                );
-              })
-            : previewImages.map((placeholder) => (
-                <div key={placeholder.src} className="space-y-2">
-                  <JewelryImageFrame className="bg-surface-soft shadow-none">
+              return (
+                <a
+                  key={isReal ? item.id : item.src}
+                  href={isReal ? `/projects/${item.id}` : "/projects"}
+                  className="group space-y-2"
+                >
+                  <JewelryImageFrame className="bg-surface-soft shadow-none transition group-hover:border-border-strong">
                     <Image
-                      src={placeholder.src}
-                      alt={placeholder.alt}
+                      src={imageSrc}
+                      alt={imageAlt}
                       fill
                       className="object-cover"
-                      sizes="(max-width: 640px) 50vw, 240px"
+                      sizes="(max-width: 768px) 50vw, 360px"
                     />
                   </JewelryImageFrame>
-                  <p className="px-1 text-xs text-muted">{placeholder.title || "نمونه آرشیو"}</p>
-                </div>
-              ))}
+                  {isReal ? (
+                    <p className="truncate px-1 text-[11px] text-muted">
+                      {styleLabelMap.get(item.stylePreset) ?? item.stylePreset}
+                      <span className="px-1">·</span>
+                      {statusLabelMap[item.status] ?? item.status}
+                      <span className="px-1">·</span>
+                      {persianDateFormatter.format(item.createdAt)}
+                    </p>
+                  ) : null}
+                </a>
+              );
+            },
+          )}
         </div>
       </section>
     </PageShell>
