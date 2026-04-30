@@ -8,6 +8,7 @@ import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { ProgressiveHint } from "@/components/ui/progressive-hint";
 import type { ProjectFormState } from "@/features/projects/actions";
 import { STYLE_PRESETS } from "@/features/projects/presets";
+import { stylePresets as jewelryStylePresets, uploadPreview } from "@/lib/placeholders/jewelry-images";
 
 const INITIAL_STATE: ProjectFormState = {};
 type GenerationMode = "image" | "text";
@@ -43,12 +44,15 @@ export function NewProjectForm({ action }: NewProjectFormProps) {
               {previewUrl ? (
                 <Image src={previewUrl} alt="پیش‌نمایش تصویر محصول" fill className="object-cover" sizes="(max-width: 768px) 100vw, 640px" />
               ) : (
-                <div className="flex h-full items-end p-5">
-                  <div className="space-y-2">
-                    <p className="text-base font-medium text-foreground">تصویر محصول را وارد کنید</p>
-                    <p className="text-xs text-muted">نور نرم و کادر ساده، نتیجه بهتری می‌دهد.</p>
+                <>
+                  <Image src={uploadPreview.src} alt={uploadPreview.alt} fill className="object-cover" sizes="(max-width: 768px) 100vw, 640px" />
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent p-5">
+                    <div className="space-y-2 text-surface">
+                      <p className="text-base font-medium">تصویر محصول را وارد کنید</p>
+                      <p className="text-xs text-surface/80">نور نرم و کادر ساده، نتیجه بهتری می‌دهد.</p>
+                    </div>
                   </div>
-                </div>
+                </>
               )}
             </JewelryImageFrame>
             <p className="text-sm text-muted">{fileLabel}</p>
@@ -73,13 +77,22 @@ export function NewProjectForm({ action }: NewProjectFormProps) {
         <h3 className="text-sm text-muted">سبک خروجی</h3>
         <fieldset className="grid gap-3 sm:grid-cols-3">
           <legend className="sr-only">انتخاب سبک خروجی</legend>
-          {STYLE_PRESETS.slice(0, 3).map((preset) => (
-            <label key={preset.id} className="cursor-pointer space-y-2 rounded-[var(--radius-lg)] border border-border bg-surface p-3 transition hover:border-border-strong has-[:checked]:border-focus">
-              <input type="radio" name="stylePreset" value={preset.id} defaultChecked={preset.id === "CLEAN_WHITE"} className="sr-only" />
-              <p className="text-sm font-medium text-foreground">{preset.label}</p>
-              <p className="text-xs text-muted">{preset.description}</p>
-            </label>
-          ))}
+          {STYLE_PRESETS.slice(0, 3).map((preset, index) => {
+            const presetImage = jewelryStylePresets[index];
+
+            return (
+              <label key={preset.id} className="cursor-pointer space-y-2 rounded-[var(--radius-lg)] border border-border bg-surface p-3 transition hover:border-border-strong has-[:checked]:border-focus">
+                <input type="radio" name="stylePreset" value={preset.id} defaultChecked={preset.id === "CLEAN_WHITE"} className="sr-only" />
+                {presetImage ? (
+                  <JewelryImageFrame aspect="landscape" className="rounded-[var(--radius-md)] shadow-none">
+                    <Image src={presetImage.src} alt={presetImage.alt} fill className="object-cover" sizes="(max-width: 768px) 100vw, 220px" />
+                  </JewelryImageFrame>
+                ) : null}
+                <p className="text-sm font-medium text-foreground">{preset.label}</p>
+                <p className="text-xs text-muted">{preset.description}</p>
+              </label>
+            );
+          })}
         </fieldset>
       </section>
 
