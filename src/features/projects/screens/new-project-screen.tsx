@@ -11,11 +11,7 @@ type NewProjectScreenProps = {
 
 export function NewProjectScreen({ action }: NewProjectScreenProps) {
   return (
-    <PageShell maxWidth="lg" className="space-y-4">
-      <header className="space-y-1">
-        <h2 className="text-sm font-medium text-foreground">پروژه جدید</h2>
-      </header>
-
+    <PageShell maxWidth="lg" className="space-y-5">
       <NewProjectForm action={action} />
     </PageShell>
   );

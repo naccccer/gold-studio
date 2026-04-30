@@ -1,9 +1,7 @@
-import Image from "next/image";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
-import { ProgressiveHint } from "@/components/ui/progressive-hint";
-import { StatusPill } from "@/components/ui/status-pill";
+import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 import { STYLE_PRESETS, type StylePresetId } from "@/features/projects/presets";
 import { resultHeroDark, uploadPreview } from "@/lib/placeholders/jewelry-images";
 
@@ -11,11 +9,23 @@ const styleLabelMap = new Map(STYLE_PRESETS.map((item) => [item.id, item.label])
 
 const statusConfig: Record<
   string,
-  { label: string; variant: "pending" | "completed" | "failed" | "neutral"; supportCopy: string }
+  { label: string; supportCopy: string; actionLabel: string }
 > = {
-  PENDING: { label: "در حال آماده‌سازی", variant: "pending", supportCopy: "خروجی نهایی به‌زودی آماده می‌شود." },
-  COMPLETED: { label: "آماده", variant: "completed", supportCopy: "استودیو خروجی نهایی را تحویل داده است." },
-  FAILED: { label: "نیازمند بازبینی", variant: "failed", supportCopy: "تولید کامل نشد؛ می‌توانید پروژه تازه‌ای شروع کنید." },
+  PENDING: {
+    label: "در حال آماده‌سازی",
+    supportCopy: "خروجی نهایی در همین قاب ظاهر می‌شود.",
+    actionLabel: "در انتظار خروجی",
+  },
+  COMPLETED: {
+    label: "آماده",
+    supportCopy: "استودیو خروجی نهایی را تحویل داده است.",
+    actionLabel: "دانلود تصویر",
+  },
+  FAILED: {
+    label: "نیازمند بازبینی",
+    supportCopy: "تولید کامل نشد؛ می‌توانید دوباره شروع کنید.",
+    actionLabel: "خروجی آماده نیست",
+  },
 };
 
 export type ProjectDetail = {
@@ -25,98 +35,128 @@ export type ProjectDetail = {
   status: string;
   stylePreset: StylePresetId;
   errorMessage: string | null;
+  createdAt?: Date;
 };
 
 type ProjectDetailScreenProps = { project: ProjectDetail };
 
+const dateFormatter = new Intl.DateTimeFormat("fa-IR", { day: "numeric", month: "short" });
+
 export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
   const status = statusConfig[project.status] ?? {
-    label: project.status,
-    variant: "neutral" as const,
+    label: "ثبت شده",
     supportCopy: "وضعیت پروژه ثبت شد.",
+    actionLabel: "خروجی نهایی",
   };
   const hasResult = Boolean(project.resultImageUrl);
   const resultImageSrc = project.resultImageUrl || resultHeroDark.src;
   const sourceImageSrc = project.sourceImageUrl || uploadPreview.src;
+  const styleLabel = styleLabelMap.get(project.stylePreset) ?? "سبک انتخابی";
+  const projectDate = project.createdAt ? dateFormatter.format(project.createdAt) : null;
 
   return (
     <PageShell
       maxWidth="lg"
-      className="space-y-6 rounded-[var(--radius-xl)] bg-foreground px-3 py-4 text-surface sm:px-5 sm:py-6"
+      className="min-h-[calc(100vh-2rem)] space-y-4 rounded-[1.65rem] bg-[#11100e] px-3 py-4 pb-24 text-surface sm:px-5 sm:py-5"
     >
-      <header className="flex items-start justify-between gap-4 px-1">
-        <div className="space-y-1">
-          <h2 className="font-display text-3xl leading-tight text-surface">بررسی نتیجه</h2>
-          <p className="text-xs text-surface/60">
-            {project.title || "پروژه بدون عنوان"} · {styleLabelMap.get(project.stylePreset) ?? project.stylePreset}
-          </p>
-        </div>
-        <StatusPill variant={status.variant} className="border-white/15 bg-white/[0.08] text-surface">
+      <header className="flex items-center justify-between gap-4 px-1">
+        <ButtonLink
+          href="/projects"
+          variant="ghost"
+          size="sm"
+          className="h-9 px-2.5 text-xs text-surface/62 hover:bg-white/10 hover:text-surface"
+        >
+          آرشیو
+        </ButtonLink>
+        <p className="text-xs font-medium text-surface/72">بررسی نتیجه</p>
+        <span className="rounded-full border border-white/12 bg-white/[0.06] px-3 py-1 text-[11px] text-surface/70">
           {status.label}
-        </StatusPill>
+        </span>
       </header>
 
-      <section className="space-y-4">
-        <JewelryImageFrame aspect="portrait" className="min-h-[540px] border-white/15 bg-black shadow-none">
-          <Image
+      <section className="space-y-3">
+        <JewelryImageFrame
+          aspect="portrait"
+          className="rounded-[1.4rem] border-white/12 bg-black shadow-[0_34px_82px_-58px_rgba(0,0,0,0.95)] sm:min-h-[620px]"
+        >
+          <SafeJewelryImage
             src={resultImageSrc}
+            fallbackSrc={resultHeroDark.src}
+            fallbackAlt={resultHeroDark.alt}
             alt={hasResult ? "خروجی نهایی پروژه" : resultHeroDark.alt}
             fill
             priority
-            className="object-cover"
+            className="object-cover object-center"
             sizes="(max-width: 768px) 100vw, 760px"
           />
-          {!hasResult ? (
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-6">
-              <p className="text-sm font-medium text-surface">
-                {project.status === "FAILED" ? "خروجی نهایی آماده نشد." : "استودیو در حال آماده‌سازی تصویر است."}
-              </p>
+
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/78 via-black/24 to-transparent p-5">
+            <div className="space-y-2">
+              <h2 className="text-lg font-medium leading-8 text-surface">
+                {hasResult ? "خروجی نهایی" : project.status === "FAILED" ? "نیازمند بازبینی" : "در حال آماده‌سازی"}
+              </h2>
+              <p className="text-xs leading-6 text-surface/68">{status.supportCopy}</p>
             </div>
-          ) : null}
+          </div>
         </JewelryImageFrame>
 
-        {project.errorMessage ? (
-          <p className="rounded-[var(--radius-md)] border border-danger/40 bg-danger-soft px-3 py-2 text-xs text-danger">
-            {project.errorMessage}
-          </p>
-        ) : null}
+        <div className="flex items-center justify-between gap-3 px-1 text-[11px] text-surface/50">
+          <span>{styleLabel}</span>
+          {projectDate ? <span>{projectDate}</span> : null}
+        </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-[minmax(0,0.72fr)_minmax(260px,1fr)] md:items-end">
-        <div className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-white/10 bg-white/[0.04] p-3">
-          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-[var(--radius-md)] border border-white/15">
-            <Image
+      <section className="space-y-4 md:grid md:grid-cols-[minmax(0,0.6fr)_minmax(320px,0.8fr)] md:items-end md:gap-4 md:space-y-0">
+        <div className="flex items-center gap-3 border-t border-white/10 pt-3">
+          <div className="relative h-20 w-16 shrink-0 overflow-hidden rounded-[var(--radius-md)] border border-white/12 bg-white/[0.04]">
+            <SafeJewelryImage
               src={sourceImageSrc}
+              fallbackSrc={uploadPreview.src}
+              fallbackAlt={uploadPreview.alt}
               alt={project.sourceImageUrl ? "تصویر اولیه" : uploadPreview.alt}
               fill
               className="object-cover"
-              sizes="64px"
+              sizes="80px"
             />
           </div>
           <div className="space-y-1">
-            <p className="text-xs text-surface/55">تصویر اولیه</p>
-            <p className="text-xs text-surface/70">{status.supportCopy}</p>
+            <p className="text-xs font-medium text-surface/72">تصویر اولیه</p>
+            <p className="truncate text-[11px] text-surface/45">{project.title || styleLabel}</p>
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {hasResult ? (
-            <a href={project.resultImageUrl as string} download className={buttonClasses({ className: "h-12 w-full bg-accent text-accent-foreground hover:bg-accent-soft" })}>
-              دانلود خروجی نهایی
+            <a
+              href={project.resultImageUrl as string}
+              download
+              className={buttonClasses({
+                className:
+                  "h-12 w-full border border-[#d2ad72] bg-[#c69a5b] text-[13px] text-[#16110c] shadow-[0_20px_42px_-30px_rgba(198,154,91,0.9)] hover:bg-[#d6b174]",
+              })}
+            >
+              دانلود تصویر
             </a>
           ) : (
-            <ProgressiveHint title="نتیجه" className="border-white/15 bg-white/[0.04] text-surface/70">
-              <span>در همین قاب نمایش داده می‌شود.</span>
-            </ProgressiveHint>
+            <span className="flex h-12 w-full items-center justify-center rounded-[var(--radius-md)] border border-white/12 bg-white/[0.05] text-[13px] font-medium text-surface/42">
+              {status.actionLabel}
+            </span>
           )}
-          <ButtonLink href="/projects/new" variant="secondary" className="w-full border-white/15 bg-white/[0.04] text-surface hover:bg-white/10">
+          <ButtonLink
+            href="/projects/new"
+            variant="secondary"
+            className="h-11 w-full border-white/12 bg-white/[0.05] text-[13px] text-surface hover:bg-white/10"
+          >
             پروژه جدید
-          </ButtonLink>
-          <ButtonLink href="/projects" variant="ghost" className="w-full text-surface/70 hover:bg-white/10 hover:text-surface">
-            بازگشت به پروژه‌ها
           </ButtonLink>
         </div>
       </section>
+
+      {project.status === "FAILED" && project.errorMessage ? (
+        <p className="border-t border-white/10 pt-3 text-xs leading-6 text-surface/42">
+          تولید کامل نشد. برای نتیجه بهتر، تصویر واضح‌تری انتخاب کنید.
+        </p>
+      ) : null}
     </PageShell>
   );
 }

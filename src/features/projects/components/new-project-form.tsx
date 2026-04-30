@@ -7,10 +7,18 @@ import { Field, fieldControlClassName } from "@/components/ui/field";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import type { ProjectFormState } from "@/features/projects/actions";
 import { STYLE_PRESETS } from "@/features/projects/presets";
-import { stylePresets as jewelryStylePresets, uploadPreview } from "@/lib/placeholders/jewelry-images";
+import {
+  stylePresets as jewelryStylePresets,
+  uploadPreview,
+} from "@/lib/placeholders/jewelry-images";
 
 const INITIAL_STATE: ProjectFormState = {};
 type GenerationMode = "image" | "text";
+type CuratedStyleOption = {
+  label: string;
+  preset: (typeof STYLE_PRESETS)[number];
+  image: (typeof jewelryStylePresets)[number];
+};
 
 type NewProjectFormProps = {
   action: (
@@ -20,10 +28,10 @@ type NewProjectFormProps = {
 };
 
 const curatedStyleOptions = [
-  { preset: STYLE_PRESETS[0], image: jewelryStylePresets[0] },
-  { preset: STYLE_PRESETS[2], image: jewelryStylePresets[1] },
-  { preset: STYLE_PRESETS[1], image: jewelryStylePresets[2] },
-].filter((item) => item.preset && item.image);
+  { label: "طبیعی", preset: STYLE_PRESETS[0], image: jewelryStylePresets[3] },
+  { label: "دراماتیک", preset: STYLE_PRESETS[2], image: jewelryStylePresets[1] },
+  { label: "لوکس", preset: STYLE_PRESETS[1], image: jewelryStylePresets[4] },
+].filter((item): item is CuratedStyleOption => Boolean(item.preset && item.image));
 
 export function NewProjectForm({ action }: NewProjectFormProps) {
   const [mode, setMode] = useState<GenerationMode>("image");
@@ -39,13 +47,16 @@ export function NewProjectForm({ action }: NewProjectFormProps) {
   const fileLabel = useMemo(() => (previewUrl ? "جایگزینی" : "انتخاب تصویر"), [previewUrl]);
 
   return (
-    <form action={formAction} className="space-y-7">
+    <form action={formAction} className="space-y-5">
       <input type="hidden" name="generationMode" value={mode} />
 
-      <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.66fr)] lg:items-start">
-        <Field htmlFor="image" className="space-y-3">
-          <label htmlFor="image" className="group block cursor-pointer space-y-3">
-            <JewelryImageFrame aspect="portrait" className="min-h-[470px] bg-surface-soft shadow-none transition group-hover:border-border-strong">
+      <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.62fr)] lg:items-start">
+        <Field htmlFor="image" className="space-y-2">
+          <label htmlFor="image" className="group block cursor-pointer">
+            <JewelryImageFrame
+              aspect="square"
+              className="bg-surface-soft shadow-none transition group-hover:border-border-strong sm:aspect-[4/5] lg:min-h-[520px]"
+            >
               {previewUrl ? (
                 <Image
                   src={previewUrl}
@@ -64,15 +75,13 @@ export function NewProjectForm({ action }: NewProjectFormProps) {
                   sizes="(max-width: 768px) 100vw, 560px"
                 />
               )}
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/50 to-transparent p-5">
-                <div className="flex items-end justify-between gap-4 text-surface">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">{previewUrl ? "تصویر آماده" : "تصویر محصول"}</p>
-                    <p className="text-[11px] text-surface/75">JPG, PNG, WEBP</p>
-                  </div>
-                  <span className="rounded-full border border-white/35 bg-white/15 px-3 py-1 text-xs">
+
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/48 via-black/18 to-transparent p-4">
+                <div className="flex items-end justify-between gap-3 text-surface">
+                  <span className="rounded-full border border-white/40 bg-white/16 px-3 py-1.5 text-xs font-medium">
                     {fileLabel}
                   </span>
+                  <p className="text-[11px] font-medium text-surface/80">JPG, PNG, WEBP</p>
                 </div>
               </div>
             </JewelryImageFrame>
@@ -95,17 +104,15 @@ export function NewProjectForm({ action }: NewProjectFormProps) {
           />
         </Field>
 
-        <section className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <h3 className="text-xs text-muted">سبک</h3>
-          </div>
+        <section className="space-y-3 lg:pt-1">
+          <h3 className="text-xs font-medium text-foreground">انتخاب سبک</h3>
 
           <fieldset className="grid grid-cols-3 gap-2.5 lg:grid-cols-1">
             <legend className="sr-only">انتخاب سبک خروجی</legend>
-            {curatedStyleOptions.map(({ preset, image }) => (
+            {curatedStyleOptions.map(({ label, preset, image }) => (
               <label
                 key={preset.id}
-                className="group cursor-pointer space-y-2 rounded-[var(--radius-lg)] border border-transparent p-1 transition has-[:checked]:border-focus has-[:checked]:bg-surface"
+                className="group cursor-pointer space-y-2 rounded-[var(--radius-md)] border border-transparent p-1 transition has-[:checked]:border-border-strong has-[:checked]:bg-surface"
               >
                 <input
                   type="radio"
@@ -114,7 +121,10 @@ export function NewProjectForm({ action }: NewProjectFormProps) {
                   defaultChecked={preset.id === "CLEAN_WHITE"}
                   className="sr-only"
                 />
-                <JewelryImageFrame aspect="square" className="rounded-[var(--radius-md)] bg-surface-soft shadow-none">
+                <JewelryImageFrame
+                  aspect="square"
+                  className="rounded-[var(--radius-sm)] bg-surface-soft shadow-none ring-0 transition group-has-[:checked]:ring-1 group-has-[:checked]:ring-accent/45"
+                >
                   <Image
                     src={image.src}
                     alt={image.alt}
@@ -123,8 +133,8 @@ export function NewProjectForm({ action }: NewProjectFormProps) {
                     sizes="(max-width: 768px) 30vw, 220px"
                   />
                 </JewelryImageFrame>
-                <p className="truncate px-1 text-center text-xs font-medium text-foreground lg:text-right">
-                  {preset.label}
+                <p className="truncate px-1 text-center text-xs font-medium text-muted transition group-has-[:checked]:text-foreground lg:text-right">
+                  {label}
                 </p>
               </label>
             ))}
@@ -132,8 +142,25 @@ export function NewProjectForm({ action }: NewProjectFormProps) {
         </section>
       </section>
 
-      <details className="group rounded-[var(--radius-md)] border border-border/60 bg-surface/45 px-3 py-2">
-        <summary className="cursor-pointer text-xs text-muted">جزئیات بیشتر</summary>
+      {state.error ? (
+        <p className="rounded-[var(--radius-md)] border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
+          {state.error}
+        </p>
+      ) : null}
+
+      <section className="pb-1">
+        <Button
+          type="submit"
+          disabled={pending}
+          size="full"
+          className="h-12 rounded-[var(--radius-md)] bg-[#181511] text-[13px] shadow-[0_18px_34px_-28px_rgba(23,20,17,0.95)] hover:bg-[#26211b]"
+        >
+          {pending ? "در حال تولید..." : "ادامه و تولید تصویر"}
+        </Button>
+      </section>
+
+      <details className="group rounded-[var(--radius-md)] border border-border/50 bg-surface/35 px-3 py-2">
+        <summary className="cursor-pointer text-xs text-muted">تنظیمات بیشتر</summary>
         <div className="mt-4 space-y-4">
           <Field label="عنوان پروژه (اختیاری)" htmlFor="title">
             <input
@@ -176,18 +203,6 @@ export function NewProjectForm({ action }: NewProjectFormProps) {
           ) : null}
         </div>
       </details>
-
-      {state.error ? (
-        <p className="rounded-[var(--radius-md)] border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
-          {state.error}
-        </p>
-      ) : null}
-
-      <section className="space-y-3 pb-3">
-        <Button type="submit" disabled={pending} size="full" className="h-12">
-          {pending ? "در حال تولید..." : mode === "image" ? "ادامه و تولید تصویر" : "اجرای تست متنی"}
-        </Button>
-      </section>
     </form>
   );
 }
