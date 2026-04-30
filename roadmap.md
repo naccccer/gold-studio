@@ -53,9 +53,10 @@ Phase 1 - MVP web app (mobile-first, tablet-friendly)
 - [x] Optimized WebP jewelry placeholder asset pipeline
 - [x] Centralized jewelry placeholder image registry
 - [x] Jewelry placeholder registry wired into current UI fallbacks
+- [x] Visual reconstruction sprint 3 core screen composition rebuild
 
 ## Phase 1 status
-Core MVP journey is now implemented end-to-end in-app: signup/login, create project, upload image, choose style, run GapGPT image generation, view result, and download output. Credits are temporarily unlimited for testing. Optimized WebP jewelry placeholders are generated through the asset pipeline, exposed through a shared registry, and wired into current UI fallback states. Remaining execution dependency is environment setup (`DATABASE_URL`, `AUTH_SECRET`, `GAPGPT_API_KEY`) for runtime.
+Core MVP journey is now implemented end-to-end in-app: signup/login, create project, upload image, choose style, run GapGPT image generation, view result, and download output. Credits are temporarily unlimited for testing. Optimized WebP jewelry placeholders are generated through the asset pipeline, exposed through a shared registry, and wired into current UI fallback states. The home, archive, new project, and result review screens now follow the Jewelry Editorial Minimal direction with image-led mobile-first compositions. Remaining execution dependency is environment setup (`DATABASE_URL`, `AUTH_SECRET`, `GAPGPT_API_KEY`) for runtime.
 
 ## Rule
 This file must always be updated whenever scope, phases, or completed steps change.

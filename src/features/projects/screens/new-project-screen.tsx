@@ -12,12 +12,14 @@ type NewProjectScreenProps = {
 
 export function NewProjectScreen({ action }: NewProjectScreenProps) {
   return (
-    <PageShell maxWidth="lg" className="space-y-4 sm:space-y-6">
-      <section className="space-y-2">
-        <h2 className="font-display text-4xl leading-tight text-foreground sm:text-5xl">اتاق تولید تصویر</h2>
-        <p className="text-sm text-muted">عکس محصول، انتخاب سبک، شروع تولید.</p>
-        <ProgressiveHint title="نکته">فقط یک تصویر واضح کافی است.</ProgressiveHint>
-      </section>
+    <PageShell maxWidth="lg" className="space-y-5">
+      <header className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h2 className="font-display text-3xl leading-tight text-foreground">پروژه جدید</h2>
+          <p className="text-xs text-muted">تصویر، سبک، تولید</p>
+        </div>
+        <ProgressiveHint title="نکته">یک تصویر واضح کافی است.</ProgressiveHint>
+      </header>
 
       <NewProjectForm action={action} />
     </PageShell>
