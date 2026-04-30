@@ -113,7 +113,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
             پروژه جدید
           </ButtonLink>
           <ButtonLink href="/projects" variant="ghost" className="w-full text-surface/70 hover:bg-white/10 hover:text-surface">
-            بازگشت به آرشیو
+            بازگشت به پروژه‌ها
           </ButtonLink>
         </div>
       </section>
