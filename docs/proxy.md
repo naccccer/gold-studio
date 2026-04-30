@@ -2,6 +2,12 @@
 
 This repo is often used from Iran, where some external services may be blocked and proxy bandwidth can be expensive.
 
+## Prefer Offline By Default
+- Prefer offline/local workflows first for all development tasks.
+- Run checks, lint, build, Prisma against local DB, and UI work without internet/proxy whenever possible.
+- Only enable internet/proxy for tasks that strictly require external access (package install, Prisma engine download, model API calls, remote fetches).
+- After network-required commands finish, clear proxy env vars and return to offline/local mode.
+
 ## Use Proxy Only When Needed
 - Try external commands without proxy first when they normally work for you.
 - Use proxy for `npm install` only when npm registry access fails.
