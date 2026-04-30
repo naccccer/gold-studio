@@ -5,7 +5,6 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Field, fieldControlClassName } from "@/components/ui/field";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
-import { ProgressiveHint } from "@/components/ui/progressive-hint";
 import type { ProjectFormState } from "@/features/projects/actions";
 import { STYLE_PRESETS } from "@/features/projects/presets";
 import { stylePresets as jewelryStylePresets, uploadPreview } from "@/lib/placeholders/jewelry-images";
@@ -37,16 +36,16 @@ export function NewProjectForm({ action }: NewProjectFormProps) {
     };
   }, [previewUrl]);
 
-  const fileLabel = useMemo(() => (previewUrl ? "جایگزینی تصویر" : "انتخاب تصویر محصول"), [previewUrl]);
+  const fileLabel = useMemo(() => (previewUrl ? "جایگزینی" : "انتخاب تصویر"), [previewUrl]);
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} className="space-y-7">
       <input type="hidden" name="generationMode" value={mode} />
 
-      <section className="grid gap-6 lg:grid-cols-[minmax(360px,1fr)_minmax(280px,0.72fr)] lg:items-end">
+      <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.66fr)] lg:items-start">
         <Field htmlFor="image" className="space-y-3">
           <label htmlFor="image" className="group block cursor-pointer space-y-3">
-            <JewelryImageFrame aspect="portrait" className="min-h-[440px] bg-surface-soft shadow-none transition group-hover:border-border-strong">
+            <JewelryImageFrame aspect="portrait" className="min-h-[470px] bg-surface-soft shadow-none transition group-hover:border-border-strong">
               {previewUrl ? (
                 <Image
                   src={previewUrl}
@@ -68,8 +67,8 @@ export function NewProjectForm({ action }: NewProjectFormProps) {
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/50 to-transparent p-5">
                 <div className="flex items-end justify-between gap-4 text-surface">
                   <div className="space-y-1">
-                    <p className="text-base font-medium">{previewUrl ? "تصویر انتخاب شد" : "تصویر محصول"}</p>
-                    <p className="text-xs text-surface/75">JPG, PNG, WEBP · حداکثر ۱۰MB</p>
+                    <p className="text-sm font-medium">{previewUrl ? "تصویر آماده" : "تصویر محصول"}</p>
+                    <p className="text-[11px] text-surface/75">JPG, PNG, WEBP</p>
                   </div>
                   <span className="rounded-full border border-white/35 bg-white/15 px-3 py-1 text-xs">
                     {fileLabel}
@@ -96,13 +95,12 @@ export function NewProjectForm({ action }: NewProjectFormProps) {
           />
         </Field>
 
-        <section className="space-y-4">
+        <section className="space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <h3 className="text-sm font-medium text-foreground">انتخاب سبک</h3>
-            <ProgressiveHint title="راهنما">سه سبک پیشنهادی برای شروع سریع.</ProgressiveHint>
+            <h3 className="text-xs text-muted">سبک</h3>
           </div>
 
-          <fieldset className="grid grid-cols-3 gap-3 lg:grid-cols-1">
+          <fieldset className="grid grid-cols-3 gap-2.5 lg:grid-cols-1">
             <legend className="sr-only">انتخاب سبک خروجی</legend>
             {curatedStyleOptions.map(({ preset, image }) => (
               <label
@@ -134,7 +132,7 @@ export function NewProjectForm({ action }: NewProjectFormProps) {
         </section>
       </section>
 
-      <details className="group rounded-[var(--radius-md)] border border-border/70 bg-surface/55 px-3 py-2">
+      <details className="group rounded-[var(--radius-md)] border border-border/60 bg-surface/45 px-3 py-2">
         <summary className="cursor-pointer text-xs text-muted">جزئیات بیشتر</summary>
         <div className="mt-4 space-y-4">
           <Field label="عنوان پروژه (اختیاری)" htmlFor="title">
