@@ -66,6 +66,7 @@ export function DashboardHomeScreen({ recentProjects }: DashboardHomeScreenProps
             </div>
           </div>
         </JewelryImageFrame>
+      </section>
 
       <section className="space-y-3">
         <h3 className="text-xs text-muted">آخرین کارها</h3>
