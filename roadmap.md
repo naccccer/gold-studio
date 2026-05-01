@@ -41,6 +41,7 @@ Phase 1 — MVP web app (mobile-first, tablet-friendly)
 - [x] Auth
 - [x] Prisma + MySQL
 - [x] Dashboard shell
+- [x] Result reveal detail page
 - [ ] Upload flow
 - [ ] Style presets
 - [ ] Gemini integration

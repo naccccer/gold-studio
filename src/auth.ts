@@ -1,6 +1,6 @@
 import NextAuth from "next-auth";
-import type { UserRole } from "@prisma/client";
 import { credentialsProvider } from "@/features/auth/auth.config";
+import type { UserRole } from "@/lib/auth/roles";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   session: {
