@@ -5,7 +5,6 @@ function toStyleOption(style: {
   id: string;
   name: string;
   description: string;
-  prompt: string;
   previewImageUrl: string;
   sortOrder: number;
   controls?: Array<{
@@ -22,7 +21,6 @@ function toStyleOption(style: {
     id: style.id,
     label: style.name,
     description: style.description,
-    prompt: style.prompt,
     previewImageUrl: style.previewImageUrl,
     sortOrder: style.sortOrder,
     controls: style.controls ?? [],
@@ -44,7 +42,11 @@ export async function getUserVisibleStyles(): Promise<StyleOption[]> {
   return styles.map((style) => toStyleOption(style));
 }
 
-export async function getStyleForGeneration(styleId: string): Promise<StyleOption | null> {
+export type StyleForGeneration = StyleOption & {
+  prompt: string;
+};
+
+export async function getStyleForGeneration(styleId: string): Promise<StyleForGeneration | null> {
   const style = await db.creativeStyle.findFirst({
     where: {
       id: styleId,
@@ -59,7 +61,10 @@ export async function getStyleForGeneration(styleId: string): Promise<StyleOptio
   });
 
   if (style) {
-    return toStyleOption(style);
+    return {
+      ...toStyleOption(style),
+      prompt: style.prompt,
+    };
   }
 
   return null;

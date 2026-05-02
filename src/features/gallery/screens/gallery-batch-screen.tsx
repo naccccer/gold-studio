@@ -2,13 +2,13 @@ import Link from "next/link";
 import { ArrowRight, Layers3 } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button";
 import { PageShell } from "@/components/ui/page-shell";
-import { STYLE_PRESETS, type StylePresetId } from "@/features/projects/presets";
+import { ProjectStatusRefresh } from "@/features/projects/components/project-status-refresh";
 
 export type GalleryBatchDetail = {
   id: string;
   title: string | null;
   status: string;
-  stylePreset: StylePresetId;
+  style: { name: string };
   outputPreset: string;
   items: Array<{
     id: string;
@@ -21,11 +21,20 @@ type GalleryBatchScreenProps = {
   batch: GalleryBatchDetail;
 };
 
-const styleLabelMap = new Map(STYLE_PRESETS.map((style) => [style.id, style.label]));
+const statusLabelMap: Record<string, string> = {
+  QUEUED: "در صف تولید",
+  PROCESSING: "در حال تولید",
+  COMPLETED: "آماده",
+  FAILED: "نیازمند تکرار",
+};
 
 export function GalleryBatchScreen({ batch }: GalleryBatchScreenProps) {
+  const isActive = batch.status === "QUEUED" || batch.status === "PROCESSING";
+
   return (
     <PageShell maxWidth="md" className="space-y-5 pb-4">
+      <ProjectStatusRefresh active={isActive} />
+
       <ButtonLink href="/gallery" variant="ghost" size="sm" className="w-fit">
         <ArrowRight aria-hidden="true" className="h-4 w-4" />
         بازگشت به گالری
@@ -37,9 +46,9 @@ export function GalleryBatchScreen({ batch }: GalleryBatchScreenProps) {
           تولید دسته‌ای
         </h2>
         <p className="text-sm leading-7 text-muted">
-          {batch.items.length.toLocaleString("fa-IR")} تصویر با سبک {styleLabelMap.get(batch.stylePreset) ?? batch.stylePreset} ثبت شد.
+          {batch.items.length.toLocaleString("fa-IR")} تصویر با سبک {batch.style.name} ثبت شد.
         </p>
-        <p className="text-xs text-muted">وضعیت: {batch.status}</p>
+        <p className="text-xs text-muted">وضعیت: {statusLabelMap[batch.status] ?? batch.status}</p>
       </section>
 
       <section className="space-y-2">
@@ -48,7 +57,7 @@ export function GalleryBatchScreen({ batch }: GalleryBatchScreenProps) {
           return item.project ? (
             <Link key={item.id} href={`/projects/${item.project.id}`} className="flex items-center justify-between rounded-[var(--radius-md)] border border-border/70 bg-surface px-3 py-3 text-sm">
               <span className="truncate">{title}</span>
-              <span className="text-xs text-muted">{item.project.status}</span>
+              <span className="text-xs text-muted">{statusLabelMap[item.project.status] ?? item.project.status}</span>
             </Link>
           ) : (
             <div key={item.id} className="flex items-center justify-between rounded-[var(--radius-md)] border border-border/70 bg-surface px-3 py-3 text-sm">

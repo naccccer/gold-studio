@@ -13,6 +13,9 @@ export default async function GalleryBatchPage({
   const batch = (await db.generationBatch.findFirst({
     where: { id: batchId, userId: session.userId },
     include: {
+      style: {
+        select: { name: true },
+      },
       items: {
         include: {
           asset: { select: { title: true, originalName: true } },

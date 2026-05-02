@@ -1,12 +1,11 @@
 import { Images } from "lucide-react";
 import { Surface } from "@/components/ui/surface";
-import { STYLE_PRESETS, type StylePresetId } from "@/features/projects/presets";
 
 export type AdminProjectListItem = {
   id: string;
   title: string | null;
   status: string;
-  stylePreset: StylePresetId;
+  style: { name: string };
   createdAt: Date;
   user: {
     email: string;
@@ -18,7 +17,6 @@ type AdminProjectsScreenProps = {
   projects: AdminProjectListItem[];
 };
 
-const styleLabelMap = new Map(STYLE_PRESETS.map((style) => [style.id, style.label]));
 const dateFormatter = new Intl.DateTimeFormat("fa-IR", { day: "numeric", month: "short" });
 
 export function AdminProjectsScreen({ projects }: AdminProjectsScreenProps) {
@@ -50,7 +48,7 @@ export function AdminProjectsScreen({ projects }: AdminProjectsScreenProps) {
                 </span>
               </div>
               <p className="mt-2 text-xs text-muted">
-                {styleLabelMap.get(project.stylePreset) ?? project.stylePreset}
+                {project.style.name}
                 <span className="px-1">·</span>
                 {dateFormatter.format(project.createdAt)}
               </p>

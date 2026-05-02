@@ -117,7 +117,7 @@ Objective: Make upload, style selection, and generation feel like one guided cre
 Usually affected:
 - `src/features/projects/screens/new-project-screen.tsx`
 - `src/features/projects/components/new-project-form.tsx`
-- `src/features/projects/presets.ts`
+- `src/features/projects/presets.ts` style catalog types
 - possible new project-only components under `src/features/projects/components`
 - shared primitives only if the pattern will be reused
 

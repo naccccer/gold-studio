@@ -17,7 +17,9 @@ export default async function DashboardPage() {
         id: true,
         title: true,
         status: true,
-        stylePreset: true,
+        style: {
+          select: { name: true },
+        },
         sourceImageUrl: true,
         createdAt: true,
       },

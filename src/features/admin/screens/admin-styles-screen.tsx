@@ -1,12 +1,11 @@
 import Image from "next/image";
-import { Eye, EyeOff, Palette, Save, SlidersHorizontal } from "lucide-react";
+import { Eye, EyeOff, Palette, Plus, Save, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Surface } from "@/components/ui/surface";
-import { updateCreativeStyleAction } from "@/features/admin/actions";
+import { createCreativeStyleAction, updateCreativeStyleAction } from "@/features/admin/actions";
 
 type AdminStyleItem = {
   id: string;
-  preset: string;
   name: string;
   description: string;
   prompt: string;
@@ -52,6 +51,51 @@ export function AdminStylesScreen({ styles }: AdminStylesScreenProps) {
         </span>
       </div>
 
+      <form action={createCreativeStyleAction} className="grid gap-3 rounded-[var(--radius-lg)] border border-border/70 bg-surface-soft/35 p-3">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Plus aria-hidden="true" className="h-4 w-4" />
+            سبک تازه
+          </h3>
+          <Button type="submit" size="sm">
+            <Save aria-hidden="true" className="h-4 w-4" />
+            ساخت سبک
+          </Button>
+        </div>
+        <div className="grid gap-3 md:grid-cols-[1fr_120px]">
+          <label className="grid gap-1.5">
+            <span className="text-xs text-muted">نام سبک</span>
+            <input name="name" className="h-10 rounded-[var(--radius-md)] border border-border bg-surface px-3 text-sm text-foreground outline-none focus:border-border-strong" />
+          </label>
+          <label className="grid gap-1.5">
+            <span className="text-xs text-muted">ترتیب</span>
+            <input name="sortOrder" type="number" defaultValue={styles.length * 10 + 10} className="h-10 rounded-[var(--radius-md)] border border-border bg-surface px-3 text-sm text-foreground outline-none focus:border-border-strong" />
+          </label>
+        </div>
+        <label className="grid gap-1.5">
+          <span className="text-xs text-muted">توضیح کوتاه کاربر</span>
+          <input name="description" className="h-10 rounded-[var(--radius-md)] border border-border bg-surface px-3 text-sm text-foreground outline-none focus:border-border-strong" />
+        </label>
+        <label className="grid gap-1.5">
+          <span className="text-xs text-muted">آدرس تصویر پیش‌نمایش</span>
+          <input name="previewImageUrl" defaultValue="/images/placeholders/jewelry/style-minimal.webp" dir="ltr" className="h-10 rounded-[var(--radius-md)] border border-border bg-surface px-3 text-left text-sm text-foreground outline-none focus:border-border-strong" />
+        </label>
+        <label className="grid gap-1.5">
+          <span className="text-xs text-muted">پرامپت داخلی</span>
+          <textarea name="prompt" rows={3} className="resize-none rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2 text-sm leading-7 text-foreground outline-none focus:border-border-strong" />
+        </label>
+        <div className="flex flex-wrap gap-2 text-xs text-muted">
+          <label className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5">
+            <input name="isActive" type="checkbox" defaultChecked className="accent-[#c89f61]" />
+            فعال
+          </label>
+          <label className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5">
+            <input name="isUserVisible" type="checkbox" defaultChecked className="accent-[#c89f61]" />
+            نمایش به کاربر
+          </label>
+        </div>
+      </form>
+
       <div className="grid gap-4">
         {styles.map((style) => (
           <form key={style.id} action={updateCreativeStyleAction} className="grid gap-4 rounded-[var(--radius-lg)] border border-border/70 bg-surface-soft/35 p-3 md:grid-cols-[180px_1fr]">
@@ -64,9 +108,6 @@ export function AdminStylesScreen({ styles }: AdminStylesScreenProps) {
               <div className="flex flex-wrap gap-2 text-[11px]">
                 <span className="rounded-full border border-border bg-surface px-2 py-1 text-muted">
                   {style.category?.name ?? "بدون دسته"}
-                </span>
-                <span className="rounded-full border border-border bg-surface px-2 py-1 text-muted" dir="ltr">
-                  {style.preset}
                 </span>
               </div>
             </div>

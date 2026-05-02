@@ -38,7 +38,7 @@ Default journey:
 ## Phase 1 - Gallery-First Foundation And Core UI
 Prompt:
 ```text
-Build Gold Studio as a gallery-first premium product image studio. Preserve auth, owner-scoped access, existing project compatibility, and GapGPT integration. Add /gallery, five-slot mobile nav, ProductAsset data model, batch creation from selected assets, and project creation from either fresh upload or Gallery asset.
+Build Gold Studio as a gallery-first premium product image studio. Preserve auth, owner-scoped access, server-side API behavior, and GapGPT integration. Add /gallery, five-slot mobile nav, ProductAsset data model, batch creation from selected assets, and project creation from either fresh upload or Gallery asset.
 ```
 
 Scope:
@@ -52,7 +52,7 @@ Acceptance criteria:
 - Fresh project uploads create Gallery assets.
 - `/projects/new?assetId=...` starts generation from a Gallery asset.
 - `/projects` remains focused on generated outputs.
-- Existing projects with only `sourceImageUrl` remain readable.
+- Projects are created through the current Gallery-first data model.
 - User-facing text-to-image controls are removed.
 
 Verification:
@@ -95,7 +95,7 @@ Acceptance criteria:
 - [x] Gallery batch generation uses the same active catalog.
 - [x] Prompt text never appears in user-facing creation UI.
 - [x] Admin can edit, deactivate, reorder, and preview seeded styles.
-- [ ] Arbitrary new style creation is deferred until style selection moves from enum presets to dynamic style IDs.
+- [x] Admin can create arbitrary new styles without Prisma enum changes.
 
 Verification:
 ```powershell
@@ -113,14 +113,14 @@ Completion checklist:
 ## Phase 3 - Dynamic Style IDs
 Prompt:
 ```text
-Replace enum-bound style selection with dynamic style IDs while preserving compatibility for old projects. Add admin create/delete or archive behavior for styles, and keep user-facing style selection reading only active, visible catalog records.
+Replace enum-bound style selection with dynamic style IDs. Add admin create/archive behavior for styles, and keep user-facing style selection reading only active, visible catalog records.
 ```
 
 Acceptance criteria:
-- `Project` and `GenerationBatch` can reference a `CreativeStyle` record directly.
-- Existing enum-backed projects remain readable.
-- Admin can create new styles without a Prisma enum migration.
-- User style cards still hide prompt text and inactive styles.
+- [x] `Project` and `GenerationBatch` reference a `CreativeStyle` record directly through `styleId`.
+- [x] New project and Gallery batch creation submit dynamic style IDs.
+- [x] Admin can create, edit, deactivate, hide, and reorder styles without a Prisma enum migration.
+- [x] User style cards hide prompt text and inactive/hidden styles.
 
 ## Phase 4 - Async Generation
 Prompt:
@@ -129,10 +129,10 @@ Move generation to a DB-backed async model with queued, processing, completed, a
 ```
 
 Acceptance criteria:
-- Project and batch creation can enter queued/processing before completion.
-- Pending screens are real and returnable.
-- Failed jobs are visible to admin.
-- Existing completed projects remain readable.
+- [x] Project and batch creation enter queued/processing before completion.
+- [x] Result and batch screens are returnable while work is queued or processing.
+- [x] Failed jobs remain visible in admin project lists.
+- [x] Generation stays inside the single Next.js repo without Redis.
 
 ## Phase 5 - S3-Compatible Storage
 Prompt:

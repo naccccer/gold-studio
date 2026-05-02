@@ -13,7 +13,8 @@ enum UserRole {
 }
 
 enum ProjectStatus {
-  PENDING
+  QUEUED
+  PROCESSING
   COMPLETED
   FAILED
 }
@@ -24,7 +25,8 @@ enum ProductAssetStatus {
 }
 
 enum GenerationBatchStatus {
-  PENDING
+  QUEUED
+  PROCESSING
   COMPLETED
   FAILED
 }
@@ -58,7 +60,7 @@ model Project {
   title          String?
   sourceImageUrl String
   resultImageUrl String?
-  status         ProjectStatus @default(PENDING)
+  status         ProjectStatus @default(QUEUED)
   styleId        String
   style          CreativeStyle @relation(fields: [styleId], references: [id], onDelete: Restrict)
   prompt         String
@@ -182,7 +184,7 @@ model GenerationBatch {
   styleId      String
   style        CreativeStyle         @relation(fields: [styleId], references: [id], onDelete: Restrict)
   outputPreset String
-  status       GenerationBatchStatus @default(PENDING)
+  status       GenerationBatchStatus @default(QUEUED)
   items        GenerationBatchItem[]
   createdAt    DateTime              @default(now())
   updatedAt    DateTime              @updatedAt

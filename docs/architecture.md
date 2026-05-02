@@ -13,7 +13,8 @@
 - Optional source organization is represented by `AssetCollection`.
 - Generated outputs are represented by `Project`.
 - Batch generation is represented by `GenerationBatch` and `GenerationBatchItem`.
-- Existing projects can still rely on `sourceImageUrl` without `sourceAssetId`.
+- Projects reference their selected `CreativeStyle` through `styleId`.
+- Generation starts as `QUEUED`, moves to `PROCESSING`, and then ends as `COMPLETED` or `FAILED`.
 
 ## Folder Boundaries
 - Routes live in `src/app`.
@@ -31,8 +32,8 @@
 - Existing GapGPT boundary until intentionally migrated.
 
 ## Planned Architecture
-- Style catalog as Prisma/MySQL records.
-- DB-backed generation jobs before external queues.
+- Style catalog as Prisma/MySQL records, with admin-managed creation, visibility, active state, and ordering.
+- DB-backed generation jobs run inside the Next.js app for MVP.
 - Storage adapter with local dev and S3-compatible production support.
 - Provider-agnostic billing/access boundary for an Iran-friendly gateway.
 

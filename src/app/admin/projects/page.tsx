@@ -6,6 +6,9 @@ export default async function AdminProjectsPage() {
     orderBy: { createdAt: "desc" },
     take: 30,
     include: {
+      style: {
+        select: { name: true },
+      },
       user: {
         select: {
           email: true,

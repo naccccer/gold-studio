@@ -5,13 +5,11 @@ import { ButtonLink } from "@/components/ui/button";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
-import { STYLE_PRESETS, type StylePresetId } from "@/features/projects/presets";
 import { archiveItems, homeHero } from "@/lib/placeholders/jewelry-images";
 
-const styleLabelMap = new Map(STYLE_PRESETS.map((item) => [item.id, item.label]));
-
 const statusLabelMap: Record<string, string> = {
-  PENDING: "در حال آماده‌سازی",
+  QUEUED: "در صف تولید",
+  PROCESSING: "در حال تولید",
   COMPLETED: "آماده",
   FAILED: "نیازمند تکرار",
 };
@@ -20,7 +18,7 @@ export type DashboardRecentProject = {
   id: string;
   title: string | null;
   status: string;
-  stylePreset: StylePresetId;
+  style: { name: string };
   sourceImageUrl: string;
   resultImageUrl?: string | null;
   createdAt: Date;
@@ -94,7 +92,7 @@ export function DashboardHomeScreen({ recentProjects }: DashboardHomeScreenProps
                 </JewelryImageFrame>
                 {isReal ? (
                   <p className="truncate px-1 text-[11px] leading-5 text-muted">
-                    {styleLabelMap.get(item.stylePreset) ?? item.stylePreset}
+                    {item.style.name}
                     <span className="px-1">·</span>
                     {statusLabelMap[item.status] ?? item.status}
                   </p>

@@ -3,19 +3,23 @@ import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
-import { STYLE_PRESETS, type StylePresetId } from "@/features/projects/presets";
+import { ProjectStatusRefresh } from "@/features/projects/components/project-status-refresh";
 import { resultHeroDark, uploadPreview } from "@/lib/placeholders/jewelry-images";
-
-const styleLabelMap = new Map(STYLE_PRESETS.map((item) => [item.id, item.label]));
 
 const statusConfig: Record<
   string,
   { label: string; supportCopy: string; actionLabel: string; heroTitle: string }
 > = {
-  PENDING: {
-    label: "در حال آماده‌سازی",
-    supportCopy: "خروجی نهایی به‌زودی در همین صفحه آماده می‌شود.",
-    actionLabel: "در انتظار خروجی",
+  QUEUED: {
+    label: "در صف تولید",
+    supportCopy: "پروژه ثبت شد و به‌زودی وارد مرحله تولید می‌شود. می‌توانید بعدا به همین صفحه برگردید.",
+    actionLabel: "در صف تولید",
+    heroTitle: "پروژه در صف تولید است",
+  },
+  PROCESSING: {
+    label: "در حال تولید",
+    supportCopy: "خروجی نهایی در حال ساخت است و همین صفحه پس از آماده شدن به‌روزرسانی می‌شود.",
+    actionLabel: "در حال تولید",
     heroTitle: "تصویر در حال آماده‌سازی است",
   },
   COMPLETED: {
@@ -37,7 +41,7 @@ export type ProjectDetail = {
   sourceImageUrl: string;
   resultImageUrl: string | null;
   status: string;
-  stylePreset: StylePresetId;
+  style: { name: string };
   errorMessage: string | null;
   createdAt?: Date;
 };
@@ -55,13 +59,16 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
   };
   const hasResult = Boolean(project.resultImageUrl);
   const isFailed = project.status === "FAILED";
+  const isActive = project.status === "QUEUED" || project.status === "PROCESSING";
   const resultImageSrc = project.resultImageUrl || resultHeroDark.src;
   const sourceImageSrc = project.sourceImageUrl || uploadPreview.src;
-  const styleLabel = styleLabelMap.get(project.stylePreset) ?? "سبک انتخابی";
+  const styleLabel = project.style.name;
   const projectDate = project.createdAt ? dateFormatter.format(project.createdAt) : null;
 
   return (
     <PageShell maxWidth="lg" className="space-y-4 pb-4 text-surface">
+      <ProjectStatusRefresh active={isActive} />
+
       <header className="flex items-center justify-between px-0.5">
         <ButtonLink href="/projects" variant="ghost" size="sm" className="h-9 px-2 text-xs text-surface/65 hover:bg-white/[0.08] hover:text-surface">
           <ArrowRight aria-hidden="true" className="h-4 w-4" />

@@ -31,7 +31,7 @@ export const resultHeroDark = image("result-hero-dark.webp", {
   styleLabel: "استودیوی تیره",
 });
 
-export const stylePresets = [
+export const styleSamples = [
   image("style-minimal.webp", {
     alt: "نمونه سبک مینیمال برای عکاسی جواهر",
     title: "مینیمال",
@@ -137,7 +137,7 @@ export const jewelryPlaceholderImages = {
   homeHero,
   uploadPreview,
   resultHeroDark,
-  stylePresets,
+  styleSamples,
   archiveItems,
   extras,
 };
@@ -146,6 +146,6 @@ export const jewelryPlaceholderImageCount =
   1 +
   1 +
   1 +
-  stylePresets.length +
+  styleSamples.length +
   archiveItems.length +
   extras.length;

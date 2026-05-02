@@ -8,6 +8,11 @@ export default async function ProjectsPage() {
   const projects = (await db.project.findMany({
     where: { userId: session.userId },
     orderBy: { createdAt: "desc" },
+    include: {
+      style: {
+        select: { name: true },
+      },
+    },
   })) as ProjectListItem[];
 
   return <ProjectsListScreen projects={projects} />;

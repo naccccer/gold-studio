@@ -7,7 +7,6 @@ export type StyleOption = {
   id: string;
   label: string;
   description: string;
-  prompt: string;
   previewImageUrl: string;
   sortOrder: number;
   controls?: Array<{

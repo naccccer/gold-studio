@@ -1,11 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { db } from "@/lib/db";
 import { requireUserSession } from "@/lib/auth/session";
+import { processImageProject, processTextProject } from "@/lib/generation/jobs";
 import { getStyleForGeneration } from "@/lib/styles";
-import { readStoredUpload, saveGeneratedImage, saveTextPromptSourceImage, saveUploadedFile } from "@/lib/uploads";
-import { generateStyledImageWithGapGpt, generateTextImageWithGapGpt } from "@/lib/ai/gapgpt";
+import { saveTextPromptSourceImage, saveUploadedFile } from "@/lib/uploads";
 
 export type ProjectFormState = {
   error?: string;
@@ -37,40 +38,6 @@ function buildPrompt(basePrompt: string, formData: FormData) {
   return promptParts.join("\n");
 }
 
-async function completeImageProject({
-  projectId,
-  sourceBuffer,
-  mimeType,
-  stylePrompt,
-}: {
-  projectId: string;
-  sourceBuffer: Buffer;
-  mimeType: string;
-  stylePrompt: string;
-}) {
-  try {
-    const generatedImage = await generateStyledImageWithGapGpt({
-      sourceBuffer,
-      mimeType,
-      stylePrompt,
-    });
-    const resultImageUrl = await saveGeneratedImage(generatedImage.imageBuffer);
-
-    await db.project.update({
-      where: { id: projectId },
-      data: { status: "COMPLETED", resultImageUrl, errorMessage: null },
-    });
-  } catch (error) {
-    await db.project.update({
-      where: { id: projectId },
-      data: {
-        status: "FAILED",
-        errorMessage: error instanceof Error ? error.message : "خطا در تولید تصویر با GapGPT رخ داد.",
-      },
-    });
-  }
-}
-
 export async function createProjectAction(
   _prevState: ProjectFormState,
   formData: FormData,
@@ -80,10 +47,10 @@ export async function createProjectAction(
   const title = String(formData.get("title") ?? "").trim();
   const mode = String(formData.get("generationMode") ?? "image");
   const sourceAssetId = String(formData.get("sourceAssetId") ?? "").trim();
-  const stylePresetId = String(formData.get("stylePreset") ?? "");
-  const stylePreset = await getStyleForGeneration(stylePresetId);
+  const styleId = String(formData.get("styleId") ?? "");
+  const style = await getStyleForGeneration(styleId);
 
-  if (!stylePreset) {
+  if (!style) {
     return { error: "سبک انتخاب‌شده معتبر نیست." };
   }
 
@@ -92,7 +59,7 @@ export async function createProjectAction(
     return readyUser;
   }
 
-  const stylePrompt = buildPrompt(stylePreset.prompt, formData);
+  const stylePrompt = buildPrompt(style.prompt, formData);
 
   if (mode === "text") {
     const textPrompt = String(formData.get("textPrompt") ?? "").trim();
@@ -106,33 +73,13 @@ export async function createProjectAction(
         userId: session.userId,
         title: title || "تست متن به تصویر",
         sourceImageUrl,
-        stylePreset: stylePreset.preset,
+        styleId: style.id,
         prompt: `${textPrompt}\n\n${stylePrompt}`,
-        status: "PENDING",
+        status: "QUEUED",
       },
     });
 
-    try {
-      const generatedImage = await generateTextImageWithGapGpt({
-        prompt: textPrompt,
-        stylePrompt,
-      });
-      const resultImageUrl = await saveGeneratedImage(generatedImage.imageBuffer);
-
-      await db.project.update({
-        where: { id: project.id },
-        data: { status: "COMPLETED", resultImageUrl, errorMessage: null },
-      });
-    } catch (error) {
-      await db.project.update({
-        where: { id: project.id },
-        data: {
-          status: "FAILED",
-          errorMessage: error instanceof Error ? error.message : "خطا در تست متن به تصویر با GapGPT رخ داد.",
-        },
-      });
-    }
-
+    after(() => processTextProject({ projectId: project.id, textPrompt, stylePrompt }));
     redirect(`/projects/${project.id}`);
   }
 
@@ -145,26 +92,19 @@ export async function createProjectAction(
       return { error: "تصویر گالری یافت نشد." };
     }
 
-    const source = await readStoredUpload(asset.storageKey, asset.mimeType);
     const project = await db.project.create({
       data: {
         userId: session.userId,
         sourceAssetId: asset.id,
         title: title || asset.title || asset.originalName || null,
         sourceImageUrl: asset.fileUrl,
-        stylePreset: stylePreset.preset,
+        styleId: style.id,
         prompt: stylePrompt,
-        status: "PENDING",
+        status: "QUEUED",
       },
     });
 
-    await completeImageProject({
-      projectId: project.id,
-      sourceBuffer: source.buffer,
-      mimeType: source.mimeType,
-      stylePrompt,
-    });
-
+    after(() => processImageProject(project.id));
     redirect(`/projects/${project.id}`);
   }
 
@@ -191,18 +131,12 @@ export async function createProjectAction(
       sourceAssetId: asset.id,
       title: title || null,
       sourceImageUrl: uploaded.publicUrl,
-      stylePreset: stylePreset.preset,
+      styleId: style.id,
       prompt: stylePrompt,
-      status: "PENDING",
+      status: "QUEUED",
     },
   });
 
-  await completeImageProject({
-    projectId: project.id,
-    sourceBuffer: uploaded.buffer,
-    mimeType: uploaded.mimeType,
-    stylePrompt,
-  });
-
+  after(() => processImageProject(project.id));
   redirect(`/projects/${project.id}`);
 }

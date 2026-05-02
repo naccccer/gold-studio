@@ -98,9 +98,9 @@ export function GalleryScreen({ assets, styles, uploadAction, batchAction }: Gal
             <span className="text-[11px] text-muted">تولید دسته‌ای</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <select name="stylePreset" defaultValue={styles[0]?.preset ?? "CLEAN_WHITE"} className="h-10 rounded-[var(--radius-md)] border border-border bg-surface px-2 text-sm">
+            <select name="styleId" defaultValue={styles[0]?.id ?? ""} className="h-10 rounded-[var(--radius-md)] border border-border bg-surface px-2 text-sm">
               {styles.map((style) => (
-                <option key={style.id} value={style.preset}>
+                <option key={style.id} value={style.id}>
                   {style.label}
                 </option>
               ))}

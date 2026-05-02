@@ -1,11 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { generateStyledImageWithGapGpt } from "@/lib/ai/gapgpt";
+import { after } from "next/server";
 import { requireUserSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { processGenerationBatch } from "@/lib/generation/jobs";
 import { getStyleForGeneration } from "@/lib/styles";
-import { readStoredUpload, saveGeneratedImage, saveUploadedFile } from "@/lib/uploads";
+import { saveUploadedFile } from "@/lib/uploads";
 
 export async function uploadGalleryAssetsAction(formData: FormData) {
   const session = await requireUserSession();
@@ -37,11 +38,11 @@ export async function uploadGalleryAssetsAction(formData: FormData) {
 export async function createBatchFromGalleryAction(formData: FormData) {
   const session = await requireUserSession();
   const assetIds = formData.getAll("assetIds").map(String).filter(Boolean);
-  const stylePresetId = String(formData.get("stylePreset") ?? "CLEAN_WHITE");
+  const styleId = String(formData.get("styleId") ?? "");
   const outputPreset = String(formData.get("outputPreset") ?? "post");
-  const stylePreset = await getStyleForGeneration(stylePresetId);
+  const style = await getStyleForGeneration(styleId);
 
-  if (assetIds.length === 0 || !stylePreset) {
+  if (assetIds.length === 0 || !style) {
     redirect("/gallery");
   }
 
@@ -62,13 +63,11 @@ export async function createBatchFromGalleryAction(formData: FormData) {
     data: {
       userId: session.userId,
       title: `${assets.length} تصویر`,
-      stylePreset: stylePreset.preset,
+      styleId: style.id,
       outputPreset,
-      status: "PENDING",
+      status: "QUEUED",
     },
   });
-
-  let completedCount = 0;
 
   for (const asset of assets) {
     const project = await db.project.create({
@@ -77,9 +76,9 @@ export async function createBatchFromGalleryAction(formData: FormData) {
         sourceAssetId: asset.id,
         title: asset.title || asset.originalName || null,
         sourceImageUrl: asset.fileUrl,
-        stylePreset: stylePreset.preset,
-        prompt: `${stylePreset.prompt}\nOutput preset: ${outputPreset}.`,
-        status: "PENDING",
+        styleId: style.id,
+        prompt: `${style.prompt}\nOutput preset: ${outputPreset}.`,
+        status: "QUEUED",
       },
     });
 
@@ -90,36 +89,8 @@ export async function createBatchFromGalleryAction(formData: FormData) {
         projectId: project.id,
       },
     });
-
-    try {
-      const source = await readStoredUpload(asset.storageKey, asset.mimeType);
-      const generatedImage = await generateStyledImageWithGapGpt({
-        sourceBuffer: source.buffer,
-        mimeType: source.mimeType,
-        stylePrompt: `${stylePreset.prompt}\nOutput preset: ${outputPreset}.`,
-      });
-      const resultImageUrl = await saveGeneratedImage(generatedImage.imageBuffer);
-
-      await db.project.update({
-        where: { id: project.id },
-        data: { status: "COMPLETED", resultImageUrl, errorMessage: null },
-      });
-      completedCount += 1;
-    } catch (error) {
-      await db.project.update({
-        where: { id: project.id },
-        data: {
-          status: "FAILED",
-          errorMessage: error instanceof Error ? error.message : "خطا در تولید دسته‌ای رخ داد.",
-        },
-      });
-    }
   }
 
-  await db.generationBatch.update({
-    where: { id: batch.id },
-    data: { status: completedCount > 0 ? "COMPLETED" : "FAILED" },
-  });
-
+  after(() => processGenerationBatch(batch.id));
   redirect(`/gallery/batches/${batch.id}`);
 }

@@ -16,6 +16,11 @@ export default async function ProjectDetailPage({
       id: projectId,
       userId: session.userId,
     },
+    include: {
+      style: {
+        select: { name: true },
+      },
+    },
   });
 
   if (!project) {

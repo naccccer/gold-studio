@@ -7,7 +7,7 @@ import { Check, ChevronLeft, Images, Info, Sparkles, Upload } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import type { ProjectFormState } from "@/features/projects/actions";
-import type { StyleControlOption, StyleOption, StylePresetId } from "@/features/projects/presets";
+import type { StyleControlOption, StyleOption } from "@/features/projects/presets";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 
 const INITIAL_STATE: ProjectFormState = {};
@@ -74,7 +74,7 @@ export function NewProjectForm({
   const [selectedAsset, setSelectedAsset] = useState<GalleryAssetOption | null>(initiallySelectedAsset);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [outputPreset, setOutputPreset] = useState<OutputPresetId>("post");
-  const [selectedStyle, setSelectedStyle] = useState<StylePresetId>(defaultStyle?.preset ?? "CLEAN_WHITE");
+  const [selectedStyle, setSelectedStyle] = useState(defaultStyle?.id ?? "");
   const [modelGender, setModelGender] = useState("woman");
   const [modesty, setModesty] = useState("65");
 
@@ -85,7 +85,7 @@ export function NewProjectForm({
   }, [previewUrl]);
 
   const selectedStyleData = useMemo(
-    () => styles.find((preset) => preset.preset === selectedStyle) ?? defaultStyle,
+    () => styles.find((preset) => preset.id === selectedStyle) ?? defaultStyle,
     [defaultStyle, selectedStyle, styles],
   );
   const modelControls = selectedStyleData?.controls ?? [];
@@ -101,7 +101,7 @@ export function NewProjectForm({
     const nextGenderControl = style.controls?.find((control) => control.key === "modelGender");
     const nextModestyControl = style.controls?.find((control) => control.key === "modesty");
 
-    setSelectedStyle(style.preset);
+    setSelectedStyle(style.id);
     setModelGender(nextGenderControl?.defaultValue ?? "woman");
     setModesty(nextModestyControl?.defaultValue ?? "65");
   }
@@ -268,11 +268,11 @@ export function NewProjectForm({
           <fieldset className="grid grid-cols-2 gap-3">
             <legend className="sr-only">انتخاب سبک خروجی</legend>
             {styles.map((preset) => {
-              const checked = selectedStyle === preset.preset;
+              const checked = selectedStyle === preset.id;
 
               return (
                 <label key={preset.id} className={`group cursor-pointer space-y-2 rounded-[var(--radius-md)] border p-1.5 transition ${checked ? "border-border-strong bg-surface" : "border-border/60 bg-surface/45"}`}>
-                  <input type="radio" name="stylePreset" value={preset.preset} checked={checked} onChange={() => selectStyle(preset)} className="sr-only" />
+                  <input type="radio" name="styleId" value={preset.id} checked={checked} onChange={() => selectStyle(preset)} className="sr-only" />
                   <JewelryImageFrame aspect="square" className="rounded-[var(--radius-sm)] bg-surface-soft shadow-none">
                     <Image src={preset.previewImageUrl} alt={preset.label} fill className="object-cover" sizes="(max-width: 768px) 45vw, 220px" />
                     {checked ? (

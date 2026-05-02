@@ -4,14 +4,13 @@ import { ButtonLink } from "@/components/ui/button";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
-import { STYLE_PRESETS, type StylePresetId } from "@/features/projects/presets";
 import { archiveItems, extras } from "@/lib/placeholders/jewelry-images";
 
 const galleryFallbacks = [...archiveItems, ...extras];
-const styleLabelMap = new Map(STYLE_PRESETS.map((item) => [item.id, item.label]));
 const premiumFallbackTitles = ["انگشتر زمرد", "حلقه کلاسیک", "گردنبند طلا", "دستبند مینیمال", "گوشواره طلایی", "ست عروس"];
 const statusLabelMap: Record<string, string> = {
-  PENDING: "در حال آماده‌سازی",
+  QUEUED: "در صف تولید",
+  PROCESSING: "در حال تولید",
   COMPLETED: "آماده",
   FAILED: "نیازمند تکرار",
 };
@@ -20,7 +19,7 @@ export type ProjectListItem = {
   id: string;
   title: string | null;
   status: string;
-  stylePreset: StylePresetId;
+  style: { name: string };
   resultImageUrl: string | null;
   sourceImageUrl: string | null;
   createdAt: Date;
@@ -87,7 +86,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                 <div className="space-y-1 px-0.5">
                   <p className="truncate text-sm text-foreground">{projectTitle}</p>
                   <p className="truncate text-[10px] text-muted/70">
-                    {styleLabelMap.get(project.stylePreset) ?? project.stylePreset}
+                    {project.style.name}
                     <span className="px-1">·</span>
                     {statusLabelMap[project.status] ?? project.status}
                     <span className="px-1">·</span>

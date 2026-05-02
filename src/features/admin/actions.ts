@@ -53,3 +53,33 @@ export async function updateCreativeStyleAction(formData: FormData) {
   revalidatePath("/projects/new");
   revalidatePath("/gallery");
 }
+
+export async function createCreativeStyleAction(formData: FormData) {
+  await requireAdminSession();
+
+  const name = String(formData.get("name") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const prompt = String(formData.get("prompt") ?? "").trim();
+  const previewImageUrl = String(formData.get("previewImageUrl") ?? "").trim();
+  const sortOrder = Number(formData.get("sortOrder") ?? 0);
+
+  if (!name || !description || !prompt || !previewImageUrl || Number.isNaN(sortOrder)) {
+    return;
+  }
+
+  await db.creativeStyle.create({
+    data: {
+      name,
+      description,
+      prompt,
+      previewImageUrl,
+      sortOrder: Math.floor(sortOrder),
+      isActive: formData.has("isActive"),
+      isUserVisible: formData.has("isUserVisible"),
+    },
+  });
+
+  revalidatePath("/admin/styles");
+  revalidatePath("/projects/new");
+  revalidatePath("/gallery");
+}
