@@ -1,11 +1,12 @@
 import { DashboardFrame } from "@/components/ui/dashboard-frame";
+import type { ReactNode } from "react";
 import { requireUserSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 
 export default async function DashboardLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: ReactNode;
 }>) {
   const session = await requireUserSession();
   const user = await db.user.findUnique({

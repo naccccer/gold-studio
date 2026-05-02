@@ -41,7 +41,7 @@ export function AuthForm({
         </div>
 
         <div className="overflow-hidden rounded-[1.35rem] border border-border/70 bg-surface">
-          <div className="relative h-36 w-full">
+          <div className="relative h-32 w-full">
             <Image src={homeHero.src} alt={homeHero.alt} fill sizes="(max-width: 640px) 100vw, 420px" className="object-cover object-[52%_58%]" priority />
           </div>
           <div className="space-y-1 px-4 py-4">

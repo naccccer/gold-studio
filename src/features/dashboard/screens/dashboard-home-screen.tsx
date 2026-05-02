@@ -8,7 +8,7 @@ import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 import { archiveItems, homeHero } from "@/lib/placeholders/jewelry-images";
 
 const statusLabelMap: Record<string, string> = {
-  QUEUED: "در صف تولید",
+  QUEUED: "در صف",
   PROCESSING: "در حال تولید",
   COMPLETED: "آماده",
   FAILED: "نیازمند تکرار",
@@ -35,7 +35,7 @@ export function DashboardHomeScreen({ recentProjects }: DashboardHomeScreenProps
   const previewItems = recentProjects.length > 0 ? recentProjects.slice(0, 4) : archiveItems.slice(0, 4);
 
   return (
-    <PageShell maxWidth="lg" className="space-y-7">
+    <PageShell maxWidth="lg" className="space-y-6">
       <section className="space-y-4">
         <JewelryImageFrame aspect="portrait" className="mx-auto w-full rounded-[1.65rem] border-white/80 bg-surface shadow-[0_30px_80px_-58px_rgba(23,20,17,0.65)]">
           <Image
@@ -49,9 +49,9 @@ export function DashboardHomeScreen({ recentProjects }: DashboardHomeScreenProps
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/62 via-black/18 to-transparent p-5 text-surface">
             <p className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/25 px-2.5 py-1 text-[10px]">
               <Sparkles aria-hidden="true" className="h-3 w-3" />
-              آماده ساخت تصویر محصول
+              آماده ساخت
             </p>
-            <h2 className="mt-2 text-xl font-semibold text-surface">یک تصویر تازه بسازید</h2>
+            <h2 className="mt-2 text-xl font-semibold text-surface">تصویر تازه بسازید</h2>
           </div>
         </JewelryImageFrame>
 
@@ -65,7 +65,7 @@ export function DashboardHomeScreen({ recentProjects }: DashboardHomeScreenProps
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-sm font-semibold text-foreground">آخرین کارها</h2>
           <ButtonLink href="/projects" variant="ghost" size="sm" className="h-8 px-2.5 text-[11px] text-muted">
-            مشاهده همه
+            همه
             <ArrowLeft aria-hidden="true" className="h-3.5 w-3.5" />
           </ButtonLink>
         </div>

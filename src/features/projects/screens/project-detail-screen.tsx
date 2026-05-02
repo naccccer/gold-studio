@@ -11,28 +11,28 @@ const statusConfig: Record<
   { label: string; supportCopy: string; actionLabel: string; heroTitle: string }
 > = {
   QUEUED: {
-    label: "در صف تولید",
-    supportCopy: "پروژه ثبت شد و به‌زودی وارد مرحله تولید می‌شود. می‌توانید بعدا به همین صفحه برگردید.",
+    label: "در صف",
+    supportCopy: "پروژه ثبت شد. می‌توانید بعدا به همین صفحه برگردید.",
     actionLabel: "در صف تولید",
-    heroTitle: "پروژه در صف تولید است",
+    heroTitle: "در صف تولید",
   },
   PROCESSING: {
     label: "در حال تولید",
-    supportCopy: "خروجی نهایی در حال ساخت است و همین صفحه پس از آماده شدن به‌روزرسانی می‌شود.",
+    supportCopy: "خروجی در حال آماده‌سازی است.",
     actionLabel: "در حال تولید",
-    heroTitle: "تصویر در حال آماده‌سازی است",
+    heroTitle: "در حال آماده‌سازی",
   },
   COMPLETED: {
     label: "آماده",
-    supportCopy: "خروجی نهایی آماده بررسی، مقایسه و دانلود است.",
+    supportCopy: "خروجی آماده دانلود است.",
     actionLabel: "دانلود تصویر",
     heroTitle: "خروجی نهایی",
   },
   FAILED: {
-    label: "نیازمند تکرار",
-    supportCopy: "تولید کامل نشد. با همان مسیر ساده می‌توانید دوباره تلاش کنید.",
+    label: "ناموفق",
+    supportCopy: "تولید کامل نشد. دوباره تلاش کنید.",
     actionLabel: "تلاش دوباره",
-    heroTitle: "تولید نیازمند تکرار است",
+    heroTitle: "نیازمند تکرار",
   },
 };
 
@@ -52,7 +52,7 @@ const dateFormatter = new Intl.DateTimeFormat("fa-IR", { day: "numeric", month: 
 
 export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
   const status = statusConfig[project.status] ?? {
-    label: "ثبت شده",
+    label: "ثبت‌شده",
     supportCopy: "وضعیت پروژه ثبت شد.",
     actionLabel: "خروجی نهایی",
     heroTitle: "پروژه ثبت شد",
@@ -68,14 +68,6 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
   return (
     <PageShell maxWidth="lg" className="space-y-4 pb-4 text-surface">
       <ProjectStatusRefresh active={isActive} />
-
-      <header className="flex items-center justify-between px-0.5">
-        <ButtonLink href="/projects" variant="ghost" size="sm" className="h-9 px-2 text-xs text-surface/65 hover:bg-white/[0.08] hover:text-surface">
-          <ArrowRight aria-hidden="true" className="h-4 w-4" />
-          بازگشت
-        </ButtonLink>
-        <span className="text-[11px] text-surface/42">بررسی نتیجه</span>
-      </header>
 
       <section className="space-y-3">
         <JewelryImageFrame
@@ -99,7 +91,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               {status.label}
             </p>
             <h1 className="text-xl font-semibold text-surface">{status.heroTitle}</h1>
-            <p className="max-w-[34ch] text-xs leading-6 text-surface/64">{status.supportCopy}</p>
+            <p className="max-w-[32ch] text-xs leading-6 text-surface/64">{status.supportCopy}</p>
           </div>
         </JewelryImageFrame>
 
@@ -127,12 +119,13 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               <Images aria-hidden="true" className="h-3.5 w-3.5" />
               قبل و بعد
             </p>
-            <p className="truncate text-xs text-surface/70">{project.title || "تصویر ورودی پروژه"}</p>
+            <p className="truncate text-xs text-surface/70">{project.title || "تصویر ورودی"}</p>
           </div>
         </div>
-        <p className="text-xs leading-6 text-surface/55">
-          تصویر اولیه برای مقایسه کنار نتیجه نگه داشته شده است. خروجی نهایی باید همچنان هویت، فرم و جزئیات محصول را حفظ کند.
-        </p>
+        <ButtonLink href="/projects" variant="ghost" className="h-11 w-full border border-white/10 bg-transparent text-[13px] text-surface/80 hover:bg-white/[0.06] hover:text-surface">
+          <ArrowRight aria-hidden="true" className="h-4 w-4" />
+          پروژه‌ها
+        </ButtonLink>
       </section>
 
       <section className="space-y-2.5">
@@ -146,7 +139,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
             })}
           >
             <Download aria-hidden="true" className="h-4 w-4" />
-            دانلود تصویر
+            دانلود
           </a>
         ) : isFailed ? (
           <ButtonLink href="/projects/new" className="h-12 w-full text-[13px]">
@@ -159,16 +152,10 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
           </span>
         )}
 
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <ButtonLink href="/projects/new" variant="secondary" className="h-11 w-full border-white/10 bg-white/[0.05] text-[13px] text-surface hover:bg-white/[0.11]">
-            <Plus aria-hidden="true" className="h-4 w-4" />
-            پروژه جدید
-          </ButtonLink>
-          <ButtonLink href="/projects" variant="ghost" className="h-11 w-full border border-white/10 bg-transparent text-[13px] text-surface/80 hover:bg-white/[0.06] hover:text-surface">
-            <Images aria-hidden="true" className="h-4 w-4" />
-            پروژه‌ها
-          </ButtonLink>
-        </div>
+        <ButtonLink href="/projects/new" variant="secondary" className="h-11 w-full border-white/10 bg-white/[0.05] text-[13px] text-surface hover:bg-white/[0.11]">
+          <Plus aria-hidden="true" className="h-4 w-4" />
+          پروژه جدید
+        </ButtonLink>
       </section>
     </PageShell>
   );

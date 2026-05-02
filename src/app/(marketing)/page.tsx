@@ -29,7 +29,7 @@ export default function MarketingPage() {
             <h1 className="text-display text-[2.35rem] leading-[1.35] text-foreground sm:text-5xl">
               استودیوی تصویر طلا
             </h1>
-            <p className="max-w-[30ch] text-sm leading-7 text-muted">
+            <p className="max-w-[28ch] text-sm leading-7 text-muted">
               عکس خام محصول را به تصویر تمیز و آماده فروش تبدیل کنید.
             </p>
           </div>

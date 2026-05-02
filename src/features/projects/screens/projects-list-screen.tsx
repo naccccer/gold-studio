@@ -9,7 +9,7 @@ import { archiveItems, extras } from "@/lib/placeholders/jewelry-images";
 const galleryFallbacks = [...archiveItems, ...extras];
 const premiumFallbackTitles = ["انگشتر زمرد", "حلقه کلاسیک", "گردنبند طلا", "دستبند مینیمال", "گوشواره طلایی", "ست عروس"];
 const statusLabelMap: Record<string, string> = {
-  QUEUED: "در صف تولید",
+  QUEUED: "در صف",
   PROCESSING: "در حال تولید",
   COMPLETED: "آماده",
   FAILED: "نیازمند تکرار",
@@ -33,11 +33,11 @@ const dateFormatter = new Intl.DateTimeFormat("fa-IR", { day: "numeric", month: 
 
 export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
   return (
-    <PageShell maxWidth="lg" className="space-y-5 pb-4">
+    <PageShell maxWidth="lg" className="space-y-4 pb-4">
       <div className="flex justify-end">
-        <ButtonLink href="/projects/new" size="sm" className="h-9 rounded-[var(--radius-md)] px-3 text-[12px]">
+        <ButtonLink href="/projects/new" size="sm" className="h-9 rounded-full px-3 text-[12px]">
           <Plus aria-hidden="true" className="h-4 w-4" />
-          پروژه جدید
+          جدید
         </ButtonLink>
       </div>
 
@@ -55,7 +55,6 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
               sizes="(max-width: 768px) 100vw, 680px"
             />
           </JewelryImageFrame>
-          <p className="text-center text-sm leading-7 text-muted">اولین تصویر محصول را بسازید و آرشیو تصویری برندتان را شروع کنید.</p>
           <ButtonLink href="/projects/new" className="w-full">
             <Plus aria-hidden="true" className="h-4 w-4" />
             شروع اولین پروژه

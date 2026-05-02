@@ -46,18 +46,13 @@ export function GalleryScreen({ assets, styles, uploadAction, batchAction }: Gal
   }
 
   return (
-    <PageShell maxWidth="lg" className="space-y-5 pb-4">
+    <PageShell maxWidth="lg" className="space-y-4 pb-4">
       <section className="grid gap-3 rounded-[1.25rem] border border-border/70 bg-surface px-4 py-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="inline-flex items-center gap-2 text-base font-semibold text-foreground">
-              <Images aria-hidden="true" className="h-4 w-4" />
-              گالری تصاویر خام
-            </h2>
-            <p className="mt-1 text-sm leading-7 text-muted">
-              عکس‌های محصول را جمع کنید، بعد هر زمان خواستید از آن‌ها خروجی بسازید.
-            </p>
-          </div>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Images aria-hidden="true" className="h-4 w-4" />
+            تصاویر خام
+          </h2>
           {assets.length > 0 ? (
             <button
               type="button"
@@ -65,7 +60,7 @@ export function GalleryScreen({ assets, styles, uploadAction, batchAction }: Gal
                 setSelecting((value) => !value);
                 setSelectedIds([]);
               }}
-              className="inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-border px-3 text-xs text-muted"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-3 text-xs text-muted transition hover:bg-surface-soft"
             >
               <Layers3 aria-hidden="true" className="h-3.5 w-3.5" />
               {selecting ? "لغو" : "انتخاب"}
@@ -73,15 +68,14 @@ export function GalleryScreen({ assets, styles, uploadAction, batchAction }: Gal
           ) : null}
         </div>
 
-        <form action={uploadAction} className="grid gap-2">
+        <form action={uploadAction} className="grid grid-cols-[1fr_auto] gap-2">
           <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-md)] border border-border bg-surface-soft text-sm font-medium text-foreground">
             <Upload aria-hidden="true" className="h-4 w-4" />
-            آپلود چند تصویر
+            آپلود
             <input name="images" type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" />
           </label>
-          <Button type="submit" variant="secondary" size="full">
+          <Button type="submit" variant="secondary" className="h-11 px-4" aria-label="افزودن به گالری">
             <Plus aria-hidden="true" className="h-4 w-4" />
-            افزودن به گالری
           </Button>
         </form>
       </section>
@@ -93,7 +87,7 @@ export function GalleryScreen({ assets, styles, uploadAction, batchAction }: Gal
           ))}
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold text-foreground">
-              {selectedIds.length.toLocaleString("fa-IR")} تصویر انتخاب شد
+              {selectedIds.length.toLocaleString("fa-IR")} تصویر
             </h2>
             <span className="text-[11px] text-muted">تولید دسته‌ای</span>
           </div>
@@ -125,9 +119,7 @@ export function GalleryScreen({ assets, styles, uploadAction, batchAction }: Gal
           <JewelryImageFrame aspect="portrait" className="rounded-[1.25rem] bg-surface-soft shadow-none">
             <Image src={uploadPreview.src} alt={uploadPreview.alt} fill priority className="object-cover" sizes="(max-width: 768px) 100vw, 680px" />
           </JewelryImageFrame>
-          <p className="text-center text-sm leading-7 text-muted">
-            گالری هنوز خالی است. چند عکس خام از محصولاتتان اضافه کنید.
-          </p>
+          <p className="text-center text-sm leading-7 text-muted">چند عکس خام اضافه کنید و بعد از آن‌ها خروجی بسازید.</p>
         </section>
       ) : (
         <section className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 sm:gap-4">
@@ -165,7 +157,7 @@ export function GalleryScreen({ assets, styles, uploadAction, batchAction }: Gal
                   {!selecting ? (
                     <ButtonLink href={`/projects/new?assetId=${asset.id}`} variant="ghost" size="sm" className="h-8 w-full border border-border/60 text-[11px]">
                       <Sparkles aria-hidden="true" className="h-3.5 w-3.5" />
-                      تولید از این تصویر
+                      تولید
                     </ButtonLink>
                   ) : null}
                 </div>

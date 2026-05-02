@@ -1,9 +1,9 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { clearSession, createSession } from "@/lib/auth/session";
+import { db } from "@/lib/db";
 
 export type AuthFormState = {
   error?: string;
