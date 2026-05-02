@@ -9,22 +9,25 @@ const styleLabelMap = new Map(STYLE_PRESETS.map((item) => [item.id, item.label])
 
 const statusConfig: Record<
   string,
-  { label: string; supportCopy: string; actionLabel: string }
+  { label: string; supportCopy: string; actionLabel: string; heroTitle: string }
 > = {
   PENDING: {
     label: "در حال آماده‌سازی",
-    supportCopy: "خروجی نهایی در همین قاب ظاهر می‌شود.",
+    supportCopy: "خروجی نهایی به‌زودی در همین قاب نمایش داده می‌شود.",
     actionLabel: "در انتظار خروجی",
+    heroTitle: "در حال آماده‌سازی خروجی",
   },
   COMPLETED: {
     label: "آماده",
-    supportCopy: "استودیو خروجی نهایی را تحویل داده است.",
+    supportCopy: "خروجی نهایی آماده دانلود است.",
     actionLabel: "دانلود تصویر",
+    heroTitle: "خروجی نهایی",
   },
   FAILED: {
     label: "نیازمند بازبینی",
-    supportCopy: "تولید کامل نشد؛ می‌توانید دوباره شروع کنید.",
+    supportCopy: "تولید کامل نشد؛ با یک تصویر واضح‌تر دوباره تلاش کنید.",
     actionLabel: "خروجی آماده نیست",
+    heroTitle: "تولید نیازمند تکرار است",
   },
 };
 
@@ -40,13 +43,14 @@ export type ProjectDetail = {
 
 type ProjectDetailScreenProps = { project: ProjectDetail };
 
-const dateFormatter = new Intl.DateTimeFormat("fa-IR", { day: "numeric", month: "short" });
+const dateFormatter = new Intl.DateTimeFormat("fa-IR", { day: "numeric", month: "long" });
 
 export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
   const status = statusConfig[project.status] ?? {
     label: "ثبت شده",
     supportCopy: "وضعیت پروژه ثبت شد.",
     actionLabel: "خروجی نهایی",
+    heroTitle: "پروژه ثبت شد",
   };
   const hasResult = Boolean(project.resultImageUrl);
   const resultImageSrc = project.resultImageUrl || resultHeroDark.src;
@@ -57,71 +61,68 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
   return (
     <PageShell
       maxWidth="lg"
-      className="min-h-[calc(100vh-2rem)] space-y-4 rounded-[1.65rem] bg-[#11100e] px-3 py-4 pb-24 text-surface sm:px-5 sm:py-5"
+      className="min-h-[calc(100vh-2rem)] space-y-4 rounded-[1.75rem] bg-[#0d0c0a] px-3 py-4 pb-20 text-surface sm:px-5"
     >
-      <header className="flex items-center justify-between gap-4 px-1">
+      <header className="flex items-center justify-between px-0.5">
         <ButtonLink
           href="/projects"
           variant="ghost"
           size="sm"
-          className="h-9 px-2.5 text-xs text-surface/62 hover:bg-white/10 hover:text-surface"
+          className="h-9 px-2 text-xs text-surface/65 hover:bg-white/[0.08] hover:text-surface"
         >
-          آرشیو
+          بازگشت به آرشیو
         </ButtonLink>
-        <p className="text-xs font-medium text-surface/72">بررسی نتیجه</p>
-        <span className="rounded-full border border-white/12 bg-white/[0.06] px-3 py-1 text-[11px] text-surface/70">
-          {status.label}
-        </span>
+        <span className="text-[11px] text-surface/42">مرور خروجی</span>
       </header>
 
       <section className="space-y-3">
         <JewelryImageFrame
           aspect="portrait"
-          className="rounded-[1.4rem] border-white/12 bg-black shadow-[0_34px_82px_-58px_rgba(0,0,0,0.95)] sm:min-h-[620px]"
+          className="overflow-hidden rounded-[1.45rem] border border-white/12 bg-black shadow-[0_38px_100px_-64px_rgba(0,0,0,1)] sm:min-h-[640px]"
         >
           <SafeJewelryImage
             src={resultImageSrc}
             fallbackSrc={resultHeroDark.src}
             fallbackAlt={resultHeroDark.alt}
-            alt={hasResult ? "خروجی نهایی پروژه" : resultHeroDark.alt}
+            alt={hasResult ? "" : resultHeroDark.alt}
             fill
             priority
             className="object-cover object-center"
             sizes="(max-width: 768px) 100vw, 760px"
           />
 
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/78 via-black/24 to-transparent p-5">
-            <div className="space-y-2">
-              <h2 className="text-lg font-medium leading-8 text-surface">
-                {hasResult ? "خروجی نهایی" : project.status === "FAILED" ? "نیازمند بازبینی" : "در حال آماده‌سازی"}
-              </h2>
-              <p className="text-xs leading-6 text-surface/68">{status.supportCopy}</p>
-            </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/18 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 space-y-2 p-5">
+            <p className="inline-flex w-fit rounded-full border border-white/15 bg-black/30 px-2.5 py-1 text-[10px] text-surface/72">
+              {status.label}
+            </p>
+            <h1 className="text-xl font-medium text-surface">{status.heroTitle}</h1>
+            <p className="max-w-[32ch] text-xs leading-6 text-surface/62">{status.supportCopy}</p>
           </div>
         </JewelryImageFrame>
 
-        <div className="flex items-center justify-between gap-3 px-1 text-[11px] text-surface/50">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3 text-[11px] text-surface/55">
           <span>{styleLabel}</span>
           {projectDate ? <span>{projectDate}</span> : null}
         </div>
       </section>
 
-      <section className="space-y-4 md:grid md:grid-cols-[minmax(0,0.6fr)_minmax(320px,0.8fr)] md:items-end md:gap-4 md:space-y-0">
-        <div className="flex items-center gap-3 border-t border-white/10 pt-3">
-          <div className="relative h-20 w-16 shrink-0 overflow-hidden rounded-[var(--radius-md)] border border-white/12 bg-white/[0.04]">
+      <section className="grid gap-4">
+        <div className="flex items-center gap-3">
+          <div className="relative h-16 w-14 shrink-0 overflow-hidden rounded-[0.8rem] border border-white/12 bg-white/[0.04]">
             <SafeJewelryImage
               src={sourceImageSrc}
               fallbackSrc={uploadPreview.src}
               fallbackAlt={uploadPreview.alt}
-              alt={project.sourceImageUrl ? "تصویر اولیه" : uploadPreview.alt}
+              alt=""
               fill
               className="object-cover"
-              sizes="80px"
+              sizes="56px"
             />
           </div>
           <div className="space-y-1">
-            <p className="text-xs font-medium text-surface/72">تصویر اولیه</p>
-            <p className="truncate text-[11px] text-surface/45">{project.title || styleLabel}</p>
+            <p className="text-[11px] text-surface/45">تصویر اولیه</p>
+            <p className="truncate text-xs text-surface/68">{project.title || styleLabel}</p>
           </div>
         </div>
 
@@ -132,31 +133,34 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               download
               className={buttonClasses({
                 className:
-                  "h-12 w-full border border-[#d2ad72] bg-[#c69a5b] text-[13px] text-[#16110c] shadow-[0_20px_42px_-30px_rgba(198,154,91,0.9)] hover:bg-[#d6b174]",
+                  "h-12 w-full border border-[#ddbc85] bg-[#d3ad74] text-[13px] text-[#16110c] shadow-[0_22px_42px_-32px_rgba(211,173,116,0.95)] hover:bg-[#e0bf8b]",
               })}
             >
               دانلود تصویر
             </a>
           ) : (
-            <span className="flex h-12 w-full items-center justify-center rounded-[var(--radius-md)] border border-white/12 bg-white/[0.05] text-[13px] font-medium text-surface/42">
+            <span className="flex h-12 w-full items-center justify-center rounded-[var(--radius-md)] border border-white/10 bg-white/[0.04] text-[13px] font-medium text-surface/50">
               {status.actionLabel}
             </span>
           )}
-          <ButtonLink
-            href="/projects/new"
-            variant="secondary"
-            className="h-11 w-full border-white/12 bg-white/[0.05] text-[13px] text-surface hover:bg-white/10"
-          >
-            پروژه جدید
-          </ButtonLink>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <ButtonLink
+              href="/projects/new"
+              variant="secondary"
+              className="h-11 w-full border-white/10 bg-white/[0.05] text-[13px] text-surface hover:bg-white/[0.11]"
+            >
+              پروژه جدید
+            </ButtonLink>
+            <ButtonLink
+              href="/projects"
+              variant="ghost"
+              className="h-11 w-full border border-white/10 bg-transparent text-[13px] text-surface/80 hover:bg-white/[0.06] hover:text-surface"
+            >
+              بازگشت به آرشیو
+            </ButtonLink>
+          </div>
         </div>
       </section>
-
-      {project.status === "FAILED" && project.errorMessage ? (
-        <p className="border-t border-white/10 pt-3 text-xs leading-6 text-surface/42">
-          تولید کامل نشد. برای نتیجه بهتر، تصویر واضح‌تری انتخاب کنید.
-        </p>
-      ) : null}
     </PageShell>
   );
 }
