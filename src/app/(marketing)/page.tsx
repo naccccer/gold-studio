@@ -6,15 +6,27 @@ export default function MarketingPage() {
   return (
     <main className="min-h-screen overflow-hidden bg-background px-4 pb-6 pt-5 text-right text-foreground sm:px-8">
       <section className="mx-auto flex min-h-[calc(100svh-2.75rem)] w-full max-w-md flex-col">
-        <header className="flex items-start justify-between gap-4">
+        <header className="flex items-center justify-between gap-3">
           <div className="text-left leading-none text-muted" dir="ltr">
             <p className="font-display text-[18px] tracking-[0.16em] text-accent-foreground">GOLD</p>
             <p className="mt-1 text-[9px] tracking-[0.42em] text-accent">STUDIO</p>
           </div>
-          <ButtonLink href="/login" variant="secondary" size="sm" className="h-9 w-9 rounded-full p-0" aria-label="ورود به حساب">
+          <ButtonLink
+            href="/login"
+            variant="secondary"
+            size="sm"
+            className="h-10 w-10 rounded-full border-border/80 p-0 text-foreground"
+            aria-label="ورود به حساب"
+          >
             <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
-              <circle cx="12" cy="8" r="3.4" fill="currentColor" opacity="0.82" />
-              <path d="M5.75 19.2c.33-2.86 2.66-4.73 6.25-4.73 3.6 0 5.92 1.87 6.25 4.73" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              <circle cx="12" cy="8" r="3.3" fill="none" stroke="currentColor" strokeWidth="1.5" />
+              <path
+                d="M5.75 19.2c.33-2.86 2.66-4.73 6.25-4.73 3.6 0 5.92 1.87 6.25 4.73"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
             </svg>
           </ButtonLink>
         </header>
