@@ -11,8 +11,11 @@ export default function MarketingPage() {
             <p className="font-display text-[18px] tracking-[0.16em] text-accent-foreground">GOLD</p>
             <p className="mt-1 text-[9px] tracking-[0.42em] text-accent">STUDIO</p>
           </div>
-          <ButtonLink href="/login" variant="secondary" size="sm" className="h-9 rounded-full px-4 text-sm">
-            حساب
+          <ButtonLink href="/login" variant="secondary" size="sm" className="h-9 w-9 rounded-full p-0" aria-label="ورود به حساب">
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
+              <circle cx="12" cy="8" r="3.4" fill="currentColor" opacity="0.82" />
+              <path d="M5.75 19.2c.33-2.86 2.66-4.73 6.25-4.73 3.6 0 5.92 1.87 6.25 4.73" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
           </ButtonLink>
         </header>
 
