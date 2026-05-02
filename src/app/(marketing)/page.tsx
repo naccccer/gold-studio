@@ -5,7 +5,7 @@ import { homeHero } from "@/lib/placeholders/jewelry-images";
 export default function MarketingPage() {
   return (
     <main className="min-h-screen overflow-hidden bg-background px-4 pb-6 pt-5 text-right text-foreground sm:px-8">
-      <section className="mx-auto flex min-h-[calc(100svh-2.75rem)] w-full max-w-5xl flex-col">
+      <section className="mx-auto flex min-h-[calc(100svh-2.75rem)] w-full max-w-md flex-col">
         <header className="flex items-start justify-between gap-4">
           <div className="text-left leading-none text-muted" dir="ltr">
             <p className="font-display text-[18px] tracking-[0.16em] text-accent-foreground">GOLD</p>
@@ -26,15 +26,16 @@ export default function MarketingPage() {
           </span>
         </header>
 
-        <div className="relative mt-8 flex flex-1 flex-col justify-end">
-          <div className="absolute inset-x-0 top-0 z-10 max-w-[15rem] space-y-2">
-            <h1 className="font-display text-[2.45rem] font-bold leading-[1.38] text-foreground sm:text-5xl">
+        <div className="mt-7 space-y-4">
+          <div className="space-y-1">
+            <h1 className="font-display text-[2.4rem] font-bold leading-[1.36] text-foreground sm:text-5xl">
               طلای حرفه‌ای
             </h1>
-            <p className="text-sm leading-7 text-muted">تصویر محصول، آماده فروش.</p>
+            <p className="text-sm text-muted">تصویر محصول، آماده فروش.</p>
           </div>
 
-          <div className="relative mx-auto mt-20 h-[58svh] min-h-[430px] w-full max-w-sm overflow-hidden rounded-[2.1rem] bg-surface shadow-[0_30px_80px_-54px_rgba(23,20,17,0.55)] sm:max-w-lg">
+          <div className="overflow-hidden rounded-[2.05rem] border border-border/70 bg-surface shadow-[0_30px_80px_-54px_rgba(23,20,17,0.55)]">
+            <div className="relative h-[58svh] min-h-[430px] w-full">
             <Image
               src={homeHero.src}
               alt={homeHero.alt}
@@ -43,15 +44,16 @@ export default function MarketingPage() {
               className="object-cover object-[52%_58%]"
               sizes="(max-width: 768px) 100vw, 560px"
             />
-          </div>
+            </div>
 
-          <div className="relative z-10 -mt-16 mr-auto grid w-[calc(100%-1.5rem)] max-w-[19rem] gap-2.5 rounded-[1.35rem] border border-white/75 bg-surface/92 p-3 shadow-[0_22px_70px_-48px_rgba(23,20,17,0.7)]">
-            <ButtonLink href="/signup" className="h-12 rounded-[1rem] text-[13px]">
-              شروع پروژه جدید
-            </ButtonLink>
-            <ButtonLink href="/login" variant="secondary" className="h-11 rounded-[1rem] bg-transparent text-[13px]">
-              ورود به حساب
-            </ButtonLink>
+            <div className="grid gap-2.5 border-t border-border/60 bg-surface px-3.5 pb-3.5 pt-3">
+              <ButtonLink href="/signup" className="h-12 rounded-[1rem] text-[13px]">
+                شروع پروژه جدید
+              </ButtonLink>
+              <ButtonLink href="/login" variant="secondary" className="h-11 rounded-[1rem] bg-transparent text-[13px]">
+                ورود به حساب
+              </ButtonLink>
+            </div>
           </div>
         </div>
       </section>
