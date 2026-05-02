@@ -3,23 +3,18 @@ import { ButtonLink } from "@/components/ui/button";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
-import { STYLE_PRESETS, type StylePresetId } from "@/features/projects/presets";
+import { type StylePresetId } from "@/features/projects/presets";
 import { archiveItems, extras } from "@/lib/placeholders/jewelry-images";
 
-const styleLabelMap = new Map(STYLE_PRESETS.map((item) => [item.id, item.label]));
 const galleryFallbacks = [...archiveItems, ...extras];
-
-const statusLabelMap: Record<string, string> = {
-  PENDING: "در انتظار",
-  COMPLETED: "آماده",
-  FAILED: "نیازمند بازبینی",
-};
+const premiumFallbackTitles = ["انگشتر زمرد", "حلقه کلاسیک", "گردنبند طلا", "دستبند مینیمال", "گوشواره طلایی", "ست عروس", "پلاک ظریف", "مدال طلایی"];
 
 export type ProjectListItem = {
   id: string;
   title: string | null;
   status: string;
   stylePreset: StylePresetId;
+  resultImageUrl: string | null;
   sourceImageUrl: string | null;
   createdAt: Date;
 };
@@ -33,15 +28,11 @@ const dateFormatter = new Intl.DateTimeFormat("fa-IR", { day: "numeric", month: 
 export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
   return (
     <PageShell maxWidth="lg" className="space-y-6 pb-4">
-      <header className="space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <h1 className="text-lg font-medium text-foreground">پروژه‌ها</h1>
-          <ButtonLink href="/projects/new" size="sm" className="h-9 rounded-[var(--radius-md)] px-3 text-[12px]">
-            پروژه جدید
-          </ButtonLink>
-        </div>
-        <p className="text-xs text-muted">گالری منتخب خروجی‌ها</p>
-      </header>
+      <div className="flex justify-end">
+        <ButtonLink href="/projects/new" size="sm" className="h-8 rounded-[var(--radius-md)] px-3 text-[11px]">
+          پروژه جدید
+        </ButtonLink>
+      </div>
 
       {projects.length === 0 ? (
         <section className="space-y-4">
@@ -66,10 +57,14 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
         <section className="grid grid-cols-2 gap-x-3 gap-y-4 sm:gap-x-4 sm:gap-y-5">
           {projects.map((project, index) => {
             const fallbackImage = galleryFallbacks[index % galleryFallbacks.length];
-            const styleLabel = styleLabelMap.get(project.stylePreset) ?? "سبک انتخابی";
-            const statusLabel = statusLabelMap[project.status] ?? "ثبت شده";
-            const projectTitle = project.title?.trim() || fallbackImage.title || "پروژه جواهر";
+            const fallbackTitle = premiumFallbackTitles[index % premiumFallbackTitles.length];
+            const rawTitle = project.title?.trim() ?? "";
+            const isGenericTitle = rawTitle.startsWith("نمونه") || rawTitle.includes("آرشیو");
+            const projectTitle = rawTitle && !isGenericTitle ? rawTitle : fallbackTitle;
+            const resultImage = project.resultImageUrl?.trim() || null;
             const sourceImage = project.sourceImageUrl?.trim() || null;
+            const prioritizedImage = resultImage ?? fallbackImage.src;
+            const lastResortImage = sourceImage ?? fallbackImage.src;
 
             return (
               <Link key={project.id} href={`/projects/${project.id}`} className="group block space-y-2.5">
@@ -78,8 +73,8 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                   className="rounded-[1rem] border-border/60 bg-surface-soft shadow-none transition group-hover:border-border-strong"
                 >
                   <SafeJewelryImage
-                    src={sourceImage}
-                    fallbackSrc={fallbackImage.src}
+                    src={prioritizedImage}
+                    fallbackSrc={lastResortImage}
                     fallbackAlt={fallbackImage.alt}
                     alt=""
                     fill
@@ -90,11 +85,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
 
                 <div className="space-y-1 px-0.5">
                   <p className="truncate text-sm text-foreground">{projectTitle}</p>
-                  <p className="truncate text-[11px] text-muted/90">
-                    {statusLabel}
-                    <span className="px-1">·</span>
-                    {styleLabel}
-                    <span className="px-1">·</span>
+                  <p className="truncate text-[10px] text-muted/70">
                     {dateFormatter.format(project.createdAt)}
                   </p>
                 </div>
