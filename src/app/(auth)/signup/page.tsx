@@ -5,7 +5,7 @@ export default function SignupPage() {
   return (
     <AuthForm
       title="ساخت حساب جدید"
-      description="در کمتر از یک دقیقه حساب بسازید و اولین تصویر را تولید کنید."
+      description="حساب خود را بسازید و شروع کنید."
       action={signupAction}
       submitLabel="ساخت حساب"
       showName

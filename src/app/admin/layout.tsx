@@ -10,8 +10,8 @@ export default function AdminLayout({
     <div className="min-h-screen bg-background px-4 pb-16 pt-6 text-right text-foreground">
       <div className="mx-auto w-full max-w-5xl space-y-6">
         <header className="space-y-3 border-b border-border/70 pb-5">
-          <p className="text-display text-2xl">اتاق مدیریت</p>
-          <p className="text-sm text-muted">مدیریت کاربران، پروژه‌ها و اعتبارها.</p>
+          <p className="text-display text-xl">مدیریت داخلی</p>
+          <p className="text-sm text-muted">برای بررسی کاربران و اعتبارها.</p>
           <nav className="flex flex-wrap items-center gap-2">
             <Link href="/dashboard" className="inline-flex h-10 items-center rounded-[var(--radius-md)] border border-border px-3 text-sm text-muted hover:text-foreground">
               داشبورد کاربر
