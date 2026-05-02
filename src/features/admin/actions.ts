@@ -21,3 +21,35 @@ export async function updateUserCreditsAction(formData: FormData) {
 
   revalidatePath("/admin");
 }
+
+export async function updateCreativeStyleAction(formData: FormData) {
+  await requireAdminSession();
+
+  const styleId = String(formData.get("styleId") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const prompt = String(formData.get("prompt") ?? "").trim();
+  const previewImageUrl = String(formData.get("previewImageUrl") ?? "").trim();
+  const sortOrder = Number(formData.get("sortOrder") ?? 0);
+
+  if (!styleId || !name || !description || !prompt || !previewImageUrl || Number.isNaN(sortOrder)) {
+    return;
+  }
+
+  await db.creativeStyle.update({
+    where: { id: styleId },
+    data: {
+      name,
+      description,
+      prompt,
+      previewImageUrl,
+      sortOrder: Math.floor(sortOrder),
+      isActive: formData.has("isActive"),
+      isUserVisible: formData.has("isUserVisible"),
+    },
+  });
+
+  revalidatePath("/admin/styles");
+  revalidatePath("/projects/new");
+  revalidatePath("/gallery");
+}

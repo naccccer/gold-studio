@@ -26,7 +26,7 @@ const doran = localFont({
 
 export const metadata: Metadata = {
   title: "Gold Studio",
-  description: "استودیوی هوشمند ساخت تصاویر حرفه‌ای محصول",
+  description: "استودیوی هوشمند ساخت تصاویر حرفه‌ای محصول و جواهرات",
 };
 
 export default function RootLayout({

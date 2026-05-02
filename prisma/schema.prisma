@@ -18,11 +18,20 @@ enum ProjectStatus {
   FAILED
 }
 
-enum StylePreset {
-  CLEAN_WHITE
-  WARM_LUXURY
-  DRAMATIC_DARK
-  SOFT_EDITORIAL
+enum ProductAssetStatus {
+  READY
+  ARCHIVED
+}
+
+enum GenerationBatchStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum StyleControlType {
+  CHOICE
+  RANGE
 }
 
 model User {
@@ -33,6 +42,9 @@ model User {
   role         UserRole  @default(USER)
   credits      Int       @default(5)
   projects     Project[]
+  assets       ProductAsset[]
+  collections  AssetCollection[]
+  batches      GenerationBatch[]
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 }
@@ -41,15 +53,155 @@ model Project {
   id             String        @id @default(cuid())
   userId         String
   user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceAssetId  String?
+  sourceAsset    ProductAsset? @relation(fields: [sourceAssetId], references: [id], onDelete: SetNull)
   title          String?
   sourceImageUrl String
   resultImageUrl String?
   status         ProjectStatus @default(PENDING)
-  stylePreset    StylePreset
+  styleId        String
+  style          CreativeStyle @relation(fields: [styleId], references: [id], onDelete: Restrict)
   prompt         String
   errorMessage   String?
+  batchItems     GenerationBatchItem[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
   @@index([userId, createdAt])
+  @@index([sourceAssetId])
+  @@index([styleId])
+}
+
+model StyleCategory {
+  id        String          @id @default(cuid())
+  slug      String          @unique
+  name      String
+  sortOrder Int             @default(0)
+  styles    CreativeStyle[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+model CreativeStyle {
+  id              String          @id @default(cuid())
+  categoryId      String?
+  category        StyleCategory?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  name            String
+  description     String
+  prompt          String           @db.Text
+  previewImageUrl String
+  previewSource   String           @default("placeholder")
+  sortOrder       Int              @default(0)
+  isActive        Boolean          @default(true)
+  isUserVisible   Boolean          @default(true)
+  variants        StyleVariant[]
+  controls        StyleControl[]
+  projects        Project[]
+  batches         GenerationBatch[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([categoryId])
+  @@index([isActive, isUserVisible, sortOrder])
+}
+
+model StyleVariant {
+  id              String        @id @default(cuid())
+  styleId         String
+  style           CreativeStyle @relation(fields: [styleId], references: [id], onDelete: Cascade)
+  name            String
+  prompt          String        @db.Text
+  previewImageUrl String?
+  sortOrder       Int           @default(0)
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([styleId, sortOrder])
+}
+
+model StyleControl {
+  id           String           @id @default(cuid())
+  styleId      String
+  style        CreativeStyle    @relation(fields: [styleId], references: [id], onDelete: Cascade)
+  key          String
+  label        String
+  type         StyleControlType
+  optionsJson  String?          @db.Text
+  defaultValue String?
+  minValue     Int?
+  maxValue     Int?
+  sortOrder    Int              @default(0)
+  isActive     Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@unique([styleId, key])
+  @@index([styleId, sortOrder])
+}
+
+model AssetCollection {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  assets    ProductAsset[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([userId, createdAt])
+}
+
+model ProductAsset {
+  id              String                @id @default(cuid())
+  userId          String
+  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collectionId    String?
+  collection      AssetCollection?      @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  fileUrl         String
+  storageKey      String
+  mimeType        String
+  originalName    String?
+  title           String?
+  notes           String?
+  status          ProductAssetStatus    @default(READY)
+  projects        Project[]
+  batchItems      GenerationBatchItem[]
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([collectionId])
+}
+
+model GenerationBatch {
+  id           String                @id @default(cuid())
+  userId       String
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String?
+  styleId      String
+  style        CreativeStyle         @relation(fields: [styleId], references: [id], onDelete: Restrict)
+  outputPreset String
+  status       GenerationBatchStatus @default(PENDING)
+  items        GenerationBatchItem[]
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([styleId])
+}
+
+model GenerationBatchItem {
+  id        String          @id @default(cuid())
+  batchId   String
+  batch     GenerationBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  assetId   String
+  asset     ProductAsset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  projectId String?
+  project   Project?        @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  createdAt DateTime        @default(now())
+
+  @@index([batchId])
+  @@index([assetId])
+  @@index([projectId])
 }

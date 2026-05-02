@@ -1,3 +1,4 @@
+import { Save } from "lucide-react";
 import { updateUserCreditsAction } from "@/features/admin/actions";
 
 type CreditsFormProps = {
@@ -14,12 +15,14 @@ export function CreditsForm({ userId, credits }: CreditsFormProps) {
         type="number"
         min={0}
         defaultValue={credits}
-        className="h-9 w-20 rounded-lg border border-amber-200 px-2 text-sm"
+        aria-label="اعتبار"
+        className="h-9 w-20 rounded-[var(--radius-sm)] border border-border bg-surface px-2 text-sm text-foreground outline-none focus:border-focus focus:shadow-[var(--shadow-focus)]"
       />
       <button
         type="submit"
-        className="h-9 rounded-lg bg-amber-700 px-3 text-xs font-medium text-white transition hover:bg-amber-800"
+        className="inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-foreground px-3 text-xs font-medium text-surface transition hover:bg-[#27231f]"
       >
+        <Save aria-hidden="true" className="h-3.5 w-3.5" />
         ذخیره
       </button>
     </form>

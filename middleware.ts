@@ -9,6 +9,8 @@ export function middleware(request: NextRequest) {
 
   const needsAuth =
     pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/account") ||
+    pathname.startsWith("/gallery") ||
     pathname.startsWith("/projects") ||
     pathname.startsWith("/admin");
 
@@ -21,5 +23,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/projects/:path*", "/admin/:path*"],
+  matcher: ["/dashboard/:path*", "/account/:path*", "/gallery/:path*", "/projects/:path*", "/admin/:path*"],
 };

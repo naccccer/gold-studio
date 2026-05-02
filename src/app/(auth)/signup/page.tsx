@@ -4,10 +4,10 @@ import { signupAction } from "@/features/auth/actions";
 export default function SignupPage() {
   return (
     <AuthForm
-      title="ساخت حساب جدید"
-      description="حساب خود را بسازید و شروع کنید."
+      title="ساخت حساب"
+      description="یک حساب بسازید و اولین تصویر استودیویی محصول را آماده کنید."
       action={signupAction}
-      submitLabel="ساخت حساب"
+      submitLabel="شروع"
       showName
       secondaryHref="/login"
       secondaryLabel="قبلا ثبت‌نام کرده‌ام"

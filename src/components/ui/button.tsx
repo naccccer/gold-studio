@@ -5,10 +5,10 @@ type ButtonVariant = "primary" | "secondary" | "ghost" | "admin";
 type ButtonSize = "sm" | "md" | "full";
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: "bg-foreground text-surface hover:bg-[#2a2520]",
-  secondary: "border border-border bg-surface text-foreground hover:border-border-strong",
+  primary: "bg-foreground text-surface hover:bg-[#27231f]",
+  secondary: "border border-border bg-surface text-foreground hover:border-border-strong hover:bg-surface-soft/60",
   ghost: "text-muted hover:bg-surface-soft hover:text-foreground",
-  admin: "border border-accent-soft bg-surface text-accent-foreground hover:border-accent hover:bg-accent-soft/80",
+  admin: "border border-border bg-surface text-foreground hover:border-border-strong hover:bg-surface-soft",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -19,7 +19,7 @@ const sizeClasses: Record<ButtonSize, string> = {
 
 export function buttonClasses({ variant = "primary", size = "md", className = "" }: { variant?: ButtonVariant; size?: ButtonSize; className?: string } = {}) {
   return [
-    "inline-flex items-center justify-center rounded-[var(--radius-md)] font-medium transition disabled:opacity-60 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+    "inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] font-medium transition disabled:opacity-60 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
     variantClasses[variant],
     sizeClasses[size],
     className,

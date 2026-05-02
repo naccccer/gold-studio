@@ -5,11 +5,11 @@ export default function LoginPage() {
   return (
     <AuthForm
       title="ورود به حساب"
-      description="برای ورود به استودیو حساب خود را باز کنید."
+      description="برای ادامه ساخت تصاویر محصول وارد استودیوی خود شوید."
       action={loginAction}
       submitLabel="ورود"
       secondaryHref="/signup"
-      secondaryLabel="حساب ندارم، ثبت‌نام"
+      secondaryLabel="حساب ندارم"
     />
   );
 }

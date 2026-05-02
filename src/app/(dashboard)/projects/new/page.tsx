@@ -1,9 +1,30 @@
 import { createProjectAction } from "@/features/projects/actions";
 import { NewProjectScreen } from "@/features/projects/screens/new-project-screen";
 import { requireUserSession } from "@/lib/auth/session";
+import { db } from "@/lib/db";
+import { getUserVisibleStyles } from "@/lib/styles";
 
-export default async function NewProjectPage() {
-  await requireUserSession();
+export default async function NewProjectPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ assetId?: string }>;
+}) {
+  const session = await requireUserSession();
+  const params = await searchParams;
+  const [galleryAssets, styles] = await Promise.all([
+    db.productAsset.findMany({
+      where: { userId: session.userId, status: "READY" },
+      orderBy: { createdAt: "desc" },
+      take: 12,
+      select: {
+        id: true,
+        fileUrl: true,
+        title: true,
+        originalName: true,
+      },
+    }),
+    getUserVisibleStyles(),
+  ]);
 
-  return <NewProjectScreen action={createProjectAction} />;
+  return <NewProjectScreen action={createProjectAction} galleryAssets={galleryAssets} styles={styles} selectedAssetId={params?.assetId} />;
 }

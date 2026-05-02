@@ -10,14 +10,10 @@ export default async function DashboardLayout({
   const session = await requireUserSession();
   const user = await db.user.findUnique({
     where: { id: session.userId },
-    select: { name: true, email: true, role: true },
+    select: { name: true, email: true },
   });
 
   const quietName = user?.name || user?.email || "حساب کاربری";
 
-  return (
-    <DashboardFrame userLabel={quietName} isAdmin={session.role === "ADMIN"}>
-      {children}
-    </DashboardFrame>
-  );
+  return <DashboardFrame userLabel={quietName}>{children}</DashboardFrame>;
 }

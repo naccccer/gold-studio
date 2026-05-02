@@ -8,6 +8,7 @@ Gold Studio is a mobile-first Farsi/RTL web app for turning low-quality jewelry/
 - Tailwind CSS
 - Prisma + MySQL
 - GapGPT OpenAI-compatible image API
+- lucide-react icons
 
 ## Setup
 1. Install dependencies:
@@ -54,6 +55,13 @@ Gold Studio is a mobile-first Farsi/RTL web app for turning low-quality jewelry/
 - `/` landing
 - `/signup` and `/login`
 - `/dashboard`
+- `/gallery`
+- `/gallery/[assetId]`
+- `/gallery/batches/[batchId]`
+- `/account`
 - `/projects/new`
 - `/projects` and `/projects/[projectId]`
 - `/admin`
+- `/admin/projects`
+- `/admin/access`
+- `/admin/styles`
