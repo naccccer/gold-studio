@@ -6,7 +6,7 @@
 - Tailwind CSS.
 - Prisma with MySQL.
 - GapGPT OpenAI-compatible image API.
-- Local filesystem upload storage for current MVP.
+- Storage adapter with local filesystem development storage and optional S3-compatible production storage.
 
 ## Product Boundaries
 - Gallery source assets are represented by `ProductAsset`.
@@ -34,7 +34,6 @@
 ## Planned Architecture
 - Style catalog as Prisma/MySQL records, with admin-managed creation, visibility, active state, and ordering.
 - DB-backed generation jobs run inside the Next.js app for MVP.
-- Storage adapter with local dev and S3-compatible production support.
 - Provider-agnostic billing/access boundary for an Iran-friendly gateway.
 
 ## UI Architecture Rules

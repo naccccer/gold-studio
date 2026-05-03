@@ -13,6 +13,7 @@ This repo is often used from Iran, where some external services may be blocked a
 - Use proxy for `npm install` only when npm registry access fails.
 - Use proxy for `npx prisma generate` when Prisma needs to download engines from `binaries.prisma.sh`.
 - Use proxy while running image generation only if GapGPT is unreachable directly.
+- Use proxy for S3-compatible storage only if your object storage endpoint is blocked directly.
 - Do not use proxy for local MySQL, local file edits, normal TypeScript checks, or local app pages that do not call GapGPT.
 
 ## v2rayN PowerShell Setup

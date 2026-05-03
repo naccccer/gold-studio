@@ -4,7 +4,7 @@
 No major code change is needed for a live test if the server has:
 - Node.js 20+
 - MySQL reachable from the app
-- writable project filesystem for `public/uploads`
+- writable project filesystem for `public/uploads` when using local storage
 - outbound access to GapGPT
 
 Run on the server:
@@ -25,12 +25,32 @@ GAPGPT_BASE_URL="https://api.gapgpt.app/v1"
 GAPGPT_IMAGE_MODEL="gemini-3.1-flash-image-preview"
 GAPGPT_IMAGE_SIZE="1024x1024"
 ADMIN_EMAIL="admin@example.com"
+STORAGE_DRIVER="local"
 ```
+
+For S3-compatible object storage in production:
+```env
+STORAGE_DRIVER="s3"
+S3_ENDPOINT="https://hot.ir-central1.arvanstorage.ir"
+S3_REGION="ir-central1"
+S3_BUCKET="gold-studio"
+S3_ACCESS_KEY_ID="YOUR_ACCESS_KEY"
+S3_SECRET_ACCESS_KEY="YOUR_SECRET_KEY"
+S3_PUBLIC_BASE_URL="https://gold-studio.hot.ir-central1.arvanstorage.ir"
+S3_FORCE_PATH_STYLE="true"
+```
+
+Notes:
+- Existing local `fileUrl` values such as `/uploads/source/...` remain valid.
+- New uploads and generated results use the configured storage driver.
+- `S3_PUBLIC_BASE_URL` should point to a public bucket URL, CDN URL, or storage custom domain that can serve images directly.
+- For the current Arvan bucket setup, API writes succeed with `https://hot.ir-central1.arvanstorage.ir` and `S3_FORCE_PATH_STYLE="true"`.
+- Public fetches from `https://gold-studio.hot.ir-central1.arvanstorage.ir/...` still return `403 AccessDenied` until bucket/object public-read access is enabled in Arvan.
 
 ## Serverless Hosting
 Do not use the current upload implementation unchanged on serverless hosting.
 
-Current code writes uploaded and generated images to `public/uploads`. Serverless filesystems are often read-only or temporary, so images can disappear.
+Current code can write uploaded and generated images to either `public/uploads` or an S3-compatible bucket. Serverless filesystems are often read-only or temporary, so use S3-compatible storage there.
 
 Before serverless live testing, move image storage to a persistent service such as S3, Cloudflare R2, or another object storage provider.
 

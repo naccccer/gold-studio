@@ -32,6 +32,7 @@ Default journey:
 - [x] Add Prisma-backed dynamic style catalog and `/admin/styles`.
 - [x] Move generation to queued/processing/completed/failed DB-backed jobs.
 - [x] Run a whole-product UI clarity pass before storage work.
+- [x] Add storage adapter with local and S3-compatible storage support.
 
 ## Phase 1 - Gallery-First Foundation And Core UI
 Prompt:
@@ -129,9 +130,9 @@ Introduce a storage adapter and support S3-compatible upload/result storage whil
 ```
 
 Acceptance criteria:
-- Gallery assets and generated results can use configured S3-compatible storage.
-- Local dev still works.
-- Storage env vars and deployment notes are documented.
+- [x] Gallery assets and generated results can use configured S3-compatible storage.
+- [x] Local dev still works.
+- [x] Storage env vars and deployment notes are documented.
 
 ## Phase 7 - Billing Groundwork
 Prompt:

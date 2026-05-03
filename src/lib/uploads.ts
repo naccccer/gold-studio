@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { buildStorageKey, readStorageObject, saveStorageObject, storagePublicUrl } from "@/lib/storage";
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const SOURCE_UPLOAD_DIR = path.join("uploads", "source");
@@ -10,18 +9,6 @@ function extensionFromType(type: string) {
   if (type === "image/png") return "png";
   if (type === "image/webp") return "webp";
   return "jpg";
-}
-
-function publicUrlFromStorageKey(storageKey: string) {
-  return `/${storageKey.split(path.sep).join("/")}`;
-}
-
-function publicPathFromStorageKey(storageKey: string) {
-  const normalized = path.normalize(storageKey);
-  if (normalized.startsWith("..") || path.isAbsolute(normalized)) {
-    throw new Error("مسیر فایل معتبر نیست.");
-  }
-  return path.join(process.cwd(), "public", normalized);
 }
 
 function escapeSvgText(value: string) {
@@ -53,40 +40,37 @@ export async function saveUploadedFile(file: File): Promise<StoredUpload> {
 
   const buffer = Buffer.from(await file.arrayBuffer());
   const ext = extensionFromType(file.type);
-  const filename = `${randomUUID()}.${ext}`;
-  const storageKey = path.join(SOURCE_UPLOAD_DIR, filename);
-  const targetPath = publicPathFromStorageKey(storageKey);
-
-  await mkdir(path.dirname(targetPath), { recursive: true });
-  await writeFile(targetPath, buffer);
+  const storageKey = buildStorageKey(SOURCE_UPLOAD_DIR, ext);
+  const publicUrl = await saveStorageObject({
+    buffer,
+    contentType: file.type,
+    key: storageKey,
+  });
 
   return {
     buffer,
     mimeType: file.type,
-    publicUrl: publicUrlFromStorageKey(storageKey),
+    publicUrl,
     storageKey,
     originalName: file.name || null,
   };
 }
 
 export async function readStoredUpload(storageKey: string, mimeType: string) {
-  const buffer = await readFile(publicPathFromStorageKey(storageKey));
-  return { buffer, mimeType };
+  return readStorageObject(storageKey, mimeType);
 }
 
 export async function saveGeneratedImage(buffer: Buffer) {
-  const filename = `${randomUUID()}.png`;
-  const storageKey = path.join(RESULT_UPLOAD_DIR, filename);
-  const targetPath = publicPathFromStorageKey(storageKey);
-  await mkdir(path.dirname(targetPath), { recursive: true });
-  await writeFile(targetPath, buffer);
-  return publicUrlFromStorageKey(storageKey);
+  const storageKey = buildStorageKey(RESULT_UPLOAD_DIR, "png");
+  return saveStorageObject({
+    buffer,
+    contentType: "image/png",
+    key: storageKey,
+  });
 }
 
 export async function saveTextPromptSourceImage(prompt: string) {
-  const filename = `${randomUUID()}.svg`;
-  const storageKey = path.join(SOURCE_UPLOAD_DIR, filename);
-  const targetPath = publicPathFromStorageKey(storageKey);
+  const storageKey = buildStorageKey(SOURCE_UPLOAD_DIR, "svg");
   const safePrompt = escapeSvgText(prompt);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">
   <rect width="800" height="800" fill="#f6f1e8"/>
@@ -95,7 +79,10 @@ export async function saveTextPromptSourceImage(prompt: string) {
   <text x="400" y="402" text-anchor="middle" font-family="Tahoma, Arial, sans-serif" font-size="20" fill="#6d665d">${safePrompt}</text>
 </svg>`;
 
-  await mkdir(path.dirname(targetPath), { recursive: true });
-  await writeFile(targetPath, svg);
-  return publicUrlFromStorageKey(storageKey);
+  await saveStorageObject({
+    buffer: Buffer.from(svg, "utf8"),
+    contentType: "image/svg+xml",
+    key: storageKey,
+  });
+  return storagePublicUrl(storageKey);
 }
