@@ -18,6 +18,10 @@ function getSessionSecret() {
   return secret;
 }
 
+function shouldUseSecureCookies() {
+  return process.env.NODE_ENV === "production" && process.env.ALLOW_INSECURE_COOKIES !== "true";
+}
+
 function sign(value: string) {
   return createHmac("sha256", getSessionSecret()).update(value).digest("hex");
 }
@@ -53,7 +57,7 @@ export async function createSession(payload: SessionPayload) {
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: shouldUseSecureCookies(),
     sameSite: "lax",
     maxAge: ONE_WEEK_SECONDS,
     path: "/",

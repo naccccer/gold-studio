@@ -39,7 +39,7 @@ export async function getUserVisibleStyles(): Promise<StyleOption[]> {
     },
   });
 
-  return styles.map((style) => toStyleOption(style));
+  return styles.map((style: Parameters<typeof toStyleOption>[0]) => toStyleOption(style));
 }
 
 export type StyleForGeneration = StyleOption & {
