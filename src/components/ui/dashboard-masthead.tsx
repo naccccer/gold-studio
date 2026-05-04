@@ -54,15 +54,15 @@ export function DashboardMasthead({ userLabel }: DashboardMastheadProps) {
 
           <h1 className="truncate text-sm font-semibold text-foreground">{context.title}</h1>
 
-          <Link href="/dashboard" className="shrink-0 text-left leading-none" dir="ltr" aria-label="Gold Studio">
-            <span className="block font-display text-[11px] tracking-[0.16em] text-accent-foreground">GOLD</span>
+          <Link href="/dashboard" className="shrink-0 text-left leading-none" dir="ltr" aria-label="OVALA">
+            <span className="block font-display text-[11px] tracking-[0.16em] text-accent-foreground">OVALA</span>
             <span className="mt-0.5 block text-[6px] tracking-[0.34em] text-accent">STUDIO</span>
           </Link>
         </div>
 
         <div className="hidden items-center justify-between gap-4 rounded-[1.25rem] border border-border/70 bg-surface/85 px-3 py-2 shadow-[var(--shadow-soft)] backdrop-blur md:flex">
-          <Link href="/dashboard" className="shrink-0 text-left leading-none" dir="ltr" aria-label="Gold Studio">
-            <span className="block font-display text-[16px] tracking-[0.14em] text-accent-foreground">GOLD</span>
+          <Link href="/dashboard" className="shrink-0 text-left leading-none" dir="ltr" aria-label="OVALA">
+            <span className="block font-display text-[16px] tracking-[0.14em] text-accent-foreground">OVALA</span>
             <span className="mt-1 block text-[8px] tracking-[0.34em] text-accent">STUDIO</span>
           </Link>
 

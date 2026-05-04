@@ -12,7 +12,7 @@ type AccountScreenProps = {
 
 export function AccountScreen({ name, email, role, credits }: AccountScreenProps) {
   const isAdmin = role === "ADMIN";
-  const displayName = name || "کاربر Gold Studio";
+  const displayName = name || "کاربر OVALA";
 
   return (
     <PageShell maxWidth="md" className="space-y-4">

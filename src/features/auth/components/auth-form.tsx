@@ -36,7 +36,7 @@ export function AuthForm({
     <main className="min-h-screen bg-background px-4 py-5 text-right text-foreground">
       <section className="mx-auto flex min-h-[calc(100svh-2.5rem)] w-full max-w-sm flex-col justify-center gap-4">
         <div className="text-left leading-none" dir="ltr">
-          <p className="font-display text-[17px] tracking-[0.16em] text-accent-foreground">GOLD</p>
+          <p className="font-display text-[17px] tracking-[0.16em] text-accent-foreground">OVALA</p>
           <p className="mt-1 text-[8px] tracking-[0.38em] text-accent">STUDIO</p>
         </div>
 

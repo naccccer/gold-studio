@@ -1,6 +1,6 @@
-# Gold Studio MVP
+# OVALA MVP
 
-Gold Studio is a mobile-first Farsi/RTL web app for turning low-quality jewelry/product photos into premium studio-style images.
+OVALA is a mobile-first Farsi/RTL web app for turning low-quality jewelry/product photos into premium studio-style images.
 
 ## Tech
 - Next.js App Router

@@ -23,7 +23,7 @@ export default async function AdminLayout({
         <header className="space-y-4 border-b border-border/70 pb-5">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-[11px] font-medium text-muted">Gold Studio Admin</p>
+              <p className="text-[11px] font-medium text-muted">OVALA Admin</p>
               <h1 className="text-display text-[2rem] leading-tight text-foreground">مدیریت</h1>
               <p className="mt-1 text-sm leading-7 text-muted">فضای عملیاتی برای پشتیبانی، دسترسی و سبک‌ها.</p>
             </div>

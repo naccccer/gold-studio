@@ -25,7 +25,7 @@ const doran = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Gold Studio",
+  title: "OVALA",
   description: "استودیوی هوشمند ساخت تصاویر حرفه‌ای محصول و جواهرات",
 };
 

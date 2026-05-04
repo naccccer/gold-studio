@@ -19,7 +19,7 @@ export default function MarketingPage() {
           </ButtonLink>
 
           <div className="text-left leading-none" dir="ltr">
-            <p className="font-display text-[18px] tracking-[0.16em] text-accent-foreground">GOLD</p>
+            <p className="font-display text-[18px] tracking-[0.16em] text-accent-foreground">OVALA</p>
             <p className="mt-1 text-[9px] tracking-[0.42em] text-accent">STUDIO</p>
           </div>
         </header>
@@ -27,7 +27,7 @@ export default function MarketingPage() {
         <div className="mt-7 flex flex-1 flex-col justify-end gap-4">
           <div className="space-y-2">
             <h1 className="text-display text-[2.35rem] leading-[1.35] text-foreground sm:text-5xl">
-              استودیوی تصویر طلا
+              استودیوی تصویر OVALA
             </h1>
             <p className="max-w-[28ch] text-sm leading-7 text-muted">
               عکس خام محصول را به تصویر تمیز و آماده فروش تبدیل کنید.
