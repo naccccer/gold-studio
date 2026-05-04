@@ -1,0 +1,2 @@
+ALTER TABLE `Project`
+  MODIFY `prompt` TEXT NOT NULL;

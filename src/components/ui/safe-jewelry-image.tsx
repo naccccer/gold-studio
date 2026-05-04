@@ -21,12 +21,15 @@ export function SafeJewelryImage({
   const [brokenSrc, setBrokenSrc] = useState<string | null>(null);
   const currentSrc = src && brokenSrc !== src ? src : fallbackSrc;
   const isFallback = currentSrc === fallbackSrc;
+  const shouldBypassOptimization = typeof currentSrc === "string" && currentSrc.startsWith("/uploads/");
 
   return (
     <Image
       {...props}
+      key={currentSrc}
       src={currentSrc}
       alt={isFallback ? fallbackAlt ?? alt : alt}
+      unoptimized={shouldBypassOptimization}
       onError={(event) => {
         if (src && !isFallback) {
           setBrokenSrc(src);
