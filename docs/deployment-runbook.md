@@ -119,6 +119,9 @@ npx prisma migrate deploy
 npm run build
 ```
 
+Prisma packages must stay on matching major versions.
+If `@prisma/client` and `prisma` are on `6.x`, keep `@prisma/adapter-mariadb` on `6.x` too.
+
 Start the app:
 
 ```bash
