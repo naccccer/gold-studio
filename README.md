@@ -50,6 +50,7 @@ Gold Studio is a mobile-first Farsi/RTL web app for turning low-quality jewelry/
 
 ## Live test notes
 - Read `docs/live-test.md` before deploying. VPS-style hosting works with the current filesystem upload flow; serverless hosting needs persistent object storage first.
+- Read `docs/deployment-runbook.md` for the actual VPS deployment/update checklist, PM2/Nginx setup, and post-commit server update flow.
 
 ## Routes
 - `/` landing

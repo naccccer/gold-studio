@@ -33,6 +33,7 @@ Default journey:
 - [x] Move generation to queued/processing/completed/failed DB-backed jobs.
 - [x] Run a whole-product UI clarity pass before storage work.
 - [x] Add storage adapter with local and S3-compatible storage support.
+- [x] Add a VPS deployment and server update runbook.
 
 ## Phase 1 - Gallery-First Foundation And Core UI
 Prompt:
