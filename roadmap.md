@@ -34,6 +34,7 @@ Default journey:
 - [x] Run a whole-product UI clarity pass before storage work.
 - [x] Add storage adapter with local and S3-compatible storage support.
 - [x] Add a VPS deployment and server update runbook.
+- [x] Simplify auth UX and support email-or-phone password login with nullable email plus unique phone.
 
 ## Phase 1 - Gallery-First Foundation And Core UI
 Prompt:

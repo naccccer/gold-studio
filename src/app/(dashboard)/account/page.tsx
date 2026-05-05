@@ -7,12 +7,12 @@ export default async function AccountPage() {
   const session = await requireUserSession();
   const user = await db.user.findUnique({
     where: { id: session.userId },
-    select: { name: true, email: true, role: true, credits: true },
+    select: { name: true, email: true, phone: true, role: true, credits: true },
   });
 
   if (!user) {
     notFound();
   }
 
-  return <AccountScreen name={user.name} email={user.email} role={user.role} credits={user.credits} />;
+  return <AccountScreen name={user.name} email={user.email} phone={user.phone} role={user.role} credits={user.credits} />;
 }

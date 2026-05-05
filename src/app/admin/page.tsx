@@ -12,6 +12,7 @@ export default async function AdminPage() {
       select: {
         id: true,
         email: true,
+        phone: true,
         name: true,
         role: true,
         credits: true,

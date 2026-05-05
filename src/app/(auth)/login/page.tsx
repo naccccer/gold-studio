@@ -5,11 +5,12 @@ export default function LoginPage() {
   return (
     <AuthForm
       title="ورود"
-      description="برای ادامه وارد استودیوی خود شوید."
       action={loginAction}
       submitLabel="ورود"
+      mode="login"
       secondaryHref="/signup"
       secondaryLabel="ساخت حساب"
+      secondaryPrefix="حساب ندارید؟"
     />
   );
 }

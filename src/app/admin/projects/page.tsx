@@ -12,6 +12,7 @@ export default async function AdminProjectsPage() {
       user: {
         select: {
           email: true,
+          phone: true,
           name: true,
         },
       },

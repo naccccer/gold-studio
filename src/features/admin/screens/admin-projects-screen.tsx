@@ -1,5 +1,6 @@
 import { Images } from "lucide-react";
 import { Surface } from "@/components/ui/surface";
+import { getUserDisplayName } from "@/lib/auth/user-identity";
 
 export type AdminProjectListItem = {
   id: string;
@@ -8,7 +9,8 @@ export type AdminProjectListItem = {
   style: { name: string };
   createdAt: Date;
   user: {
-    email: string;
+    email: string | null;
+    phone: string | null;
     name: string | null;
   };
 };
@@ -40,7 +42,7 @@ export function AdminProjectsScreen({ projects }: AdminProjectsScreenProps) {
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-foreground">{project.title || "پروژه بدون عنوان"}</p>
                   <p className="mt-1 truncate text-xs text-muted" dir="ltr">
-                    {project.user.name || project.user.email}
+                    {getUserDisplayName(project.user)}
                   </p>
                 </div>
                 <span className="rounded-full border border-border bg-surface px-2.5 py-1 text-[10px] text-muted">

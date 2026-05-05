@@ -5,12 +5,12 @@ export default function SignupPage() {
   return (
     <AuthForm
       title="ساخت حساب"
-      description="شروع کنید و اولین تصویر استودیویی محصول را بسازید."
       action={signupAction}
       submitLabel="شروع"
-      showName
+      mode="signup"
       secondaryHref="/login"
-      secondaryLabel="ورود به حساب"
+      secondaryLabel="ورود"
+      secondaryPrefix="قبلا حساب دارید؟"
     />
   );
 }

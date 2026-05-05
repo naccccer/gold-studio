@@ -2,17 +2,20 @@ import { BadgeCheck, CircleHelp, Coins, CreditCard, Shield, Sparkles, User } fro
 import { ButtonLink } from "@/components/ui/button";
 import { PageShell } from "@/components/ui/page-shell";
 import { LogoutButton } from "@/features/auth/components/logout-button";
+import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 
 type AccountScreenProps = {
   name: string | null;
-  email: string;
+  email: string | null;
+  phone: string | null;
   role: string;
   credits: number;
 };
 
-export function AccountScreen({ name, email, role, credits }: AccountScreenProps) {
+export function AccountScreen({ name, email, phone, role, credits }: AccountScreenProps) {
   const isAdmin = role === "ADMIN";
-  const displayName = name || "کاربر OVALA";
+  const displayName = getUserDisplayName({ name, email, phone });
+  const identifier = getUserIdentifier({ email, phone });
 
   return (
     <PageShell maxWidth="md" className="space-y-4">
@@ -26,7 +29,7 @@ export function AccountScreen({ name, email, role, credits }: AccountScreenProps
               <div className="min-w-0">
                 <h2 className="truncate text-base font-semibold text-foreground">{displayName}</h2>
                 <p className="truncate text-xs text-muted" dir="ltr">
-                  {email}
+                  {identifier}
                 </p>
               </div>
             </div>
