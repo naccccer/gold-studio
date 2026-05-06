@@ -126,3 +126,50 @@ h1,h2,h3,h4,h5,h6 {
     left: 65%;
   }
 }
+
+@keyframes ovala-auth-concept-reveal {
+  0%, 100% { clip-path: inset(0 56% 0 0); }
+  50% { clip-path: inset(0 18% 0 0); }
+}
+
+@keyframes ovala-auth-concept-divider {
+  0%, 100% { left: 44%; }
+  50% { left: 82%; }
+}
+
+.ov-auth-concept-after {
+  animation: ovala-auth-concept-reveal 6.4s ease-in-out infinite;
+}
+
+.ov-auth-concept-divider {
+  animation: ovala-auth-concept-divider 6.4s ease-in-out infinite;
+}
+
+.ov-auth-concept-divider::after {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  height: 2rem;
+  width: 2rem;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  border: 1px solid rgba(255, 253, 249, 0.75);
+  background: rgba(23, 20, 17, 0.68);
+  box-shadow: 0 18px 34px -22px rgba(23, 20, 17, 0.8);
+  content: "";
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ov-auth-concept-after,
+  .ov-auth-concept-divider {
+    animation: none;
+  }
+
+  .ov-auth-concept-after {
+    clip-path: inset(0 32% 0 0);
+  }
+
+  .ov-auth-concept-divider {
+    left: 68%;
+  }
+}

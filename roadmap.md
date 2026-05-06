@@ -147,6 +147,42 @@ Acceptance criteria:
 - Admin can inspect/manage access state.
 - Creative flow only blocks when access rules require it.
 
+## Brand Identity - Studio OVALA Logo Set
+Prompt:
+```text
+Create a production-ready Studio OVALA logo set from the approved source vector files. Preserve the oval O, champagne dot and arc, thin slash, rounded black strokes, and STUDIO subtitle. Deliver brand assets and a short usage guide without wiring the app UI yet.
+```
+
+Acceptance criteria:
+- [x] Logo master SVGs live in `public/brand`.
+- [x] Logo set includes primary, horizontal, wordmark, compact mark, app icon, favicon, watermark, light, and dark variants.
+- [x] Brand usage guide documents logo usage, palette, typography mood, image style, motifs, and avoid rules.
+- [x] App favicon and metadata remain unchanged for this phase.
+
+## UI Identity Direction - Approval Board
+Prompt:
+```text
+Create a visual approval board for the first Studio OVALA UI direction using the reference collage format, tailored to the brand and showing the simple Farsi RTL user flow before wiring UI code.
+```
+
+Acceptance criteria:
+- [x] Approval board uses the real OVALA logo assets from `public/brand`.
+- [x] Board follows the reference collage structure while staying premium, calm, image-led, and jewelry-focused.
+- [x] Board shows the simple user flow: home, gallery, style selection, and result.
+- [ ] Import or recreate the board in Figma once the Figma MCP plan limit is available again.
+
+## Design Prototype - Simple User Flow
+Prompt:
+```text
+Create a local reviewable UI design prototype for the simple user flow as the best alternative to Figma. Keep it mobile-first, Farsi-first, calm, image-led, premium, and grounded in the Studio OVALA brand system. Cover Home, Gallery/source selection, New Project guidance, Processing, and Result review without wiring production logic.
+```
+
+Acceptance criteria:
+- [x] Prototype lives at `/design/user-flow`.
+- [x] Flow includes Home, source photo selection, project setup, processing, and result review frames.
+- [x] Uses Studio OVALA brand assets, ivory/soft-black/champagne palette, and existing jewelry placeholder imagery.
+- [x] Screenshot artifact captured for review.
+
 ## Phase 8 - QA And Consistency Hardening
 Prompt:
 ```text

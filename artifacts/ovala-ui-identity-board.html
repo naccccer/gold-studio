@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Studio OVALA UI Identity Board</title>
+    <style>
+      @font-face {
+        font-family: "Vazir";
+        src: url("../public/fonts/Vazir-Regular-FD.woff2") format("woff2");
+        font-weight: 400;
+      }
+      @font-face {
+        font-family: "Vazir";
+        src: url("../public/fonts/Vazir-Bold-FD.woff2") format("woff2");
+        font-weight: 700;
+      }
+      @font-face {
+        font-family: "Doran";
+        src: url("../public/fonts/Doran-Bold.woff2") format("woff2");
+        font-weight: 700;
+      }
+
+      :root {
+        --ivory: #f7f3ea;
+        --ink: #11100e;
+        --champagne: #c7a96b;
+        --taupe: #b8aea0;
+        --mist: #e6e1d8;
+        --paper: #fffdf8;
+        --soft: #f0e9dd;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #e9e1d3;
+        color: var(--ink);
+        font-family: Vazir, Tahoma, sans-serif;
+        overflow: hidden;
+      }
+
+      .board {
+        width: 1400px;
+        min-height: 1980px;
+        margin: 0 auto;
+        padding: 36px;
+        background: var(--ivory);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 30px;
+      }
+
+      .panel {
+        position: relative;
+        overflow: hidden;
+        border-radius: 28px;
+        background: var(--paper);
+      }
+
+      .hero {
+        grid-column: 1 / -1;
+        height: 340px;
+        background: linear-gradient(rgba(17, 16, 14, 0.18), rgba(17, 16, 14, 0.18)),
+          url("../public/images/placeholders/jewelry/result-hero-dark.webp") center / cover;
+      }
+
+      .hero::after {
+        position: absolute;
+        inset: 0;
+        backdrop-filter: blur(6px) grayscale(0.25);
+        content: "";
+      }
+
+      .swatches {
+        position: absolute;
+        z-index: 2;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 115px;
+        direction: ltr;
+      }
+
+      .swatch {
+        width: 154px;
+        height: 154px;
+        border-radius: 50%;
+        box-shadow: 0 22px 50px rgba(17, 16, 14, 0.12);
+      }
+
+      .mock-card {
+        grid-column: span 5;
+        height: 350px;
+        background: #e5dfd3;
+      }
+
+      .sign {
+        grid-column: span 7;
+        height: 350px;
+        background: linear-gradient(rgba(17, 16, 14, 0.2), rgba(17, 16, 14, 0.2)),
+          url("../public/images/placeholders/jewelry/archive-08.webp") center / cover;
+        filter: grayscale(0.55);
+      }
+
+      .logo-sign {
+        position: absolute;
+        left: 92px;
+        top: 108px;
+        width: 540px;
+        height: 138px;
+        border-radius: 5px;
+        background: rgba(255, 253, 248, 0.9);
+        box-shadow: 0 18px 55px rgba(17, 16, 14, 0.22);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 30px 48px;
+      }
+
+      .logo-sign img {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+
+      .cards-scene {
+        position: absolute;
+        inset: 0;
+        background: #e8dfcf;
+      }
+
+      .business-card {
+        position: absolute;
+        width: 270px;
+        height: 150px;
+        padding: 22px;
+        border-radius: 4px;
+        box-shadow: 0 24px 42px rgba(17, 16, 14, 0.16);
+        direction: ltr;
+      }
+
+      .business-card img {
+        width: 160px;
+      }
+
+      .business-card p {
+        margin: 18px 0 0;
+        color: rgba(17, 16, 14, 0.58);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .card-light {
+        left: 125px;
+        top: 66px;
+        background: var(--paper);
+        transform: rotate(-9deg);
+      }
+
+      .card-dark {
+        left: 250px;
+        top: 160px;
+        background: var(--ink);
+        color: var(--ivory);
+        transform: rotate(8deg);
+      }
+
+      .card-dark p {
+        color: rgba(247, 243, 234, 0.72);
+      }
+
+      .arc {
+        position: absolute;
+        width: 300px;
+        height: 300px;
+        border: 46px solid var(--champagne);
+        border-radius: 50%;
+        opacity: 0.34;
+      }
+
+      .arc.one {
+        right: -120px;
+        top: 26px;
+      }
+
+      .arc.two {
+        left: -118px;
+        bottom: -132px;
+      }
+
+      .logo-block {
+        grid-column: span 7;
+        height: 350px;
+        background: var(--ivory);
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 60px 62px;
+        direction: ltr;
+      }
+
+      .logo-block img {
+        width: 600px;
+      }
+
+      .phone-panel {
+        grid-column: span 5;
+        grid-row: span 2;
+        height: 590px;
+        background: #e4ded2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .phone {
+        width: 310px;
+        height: 545px;
+        border-radius: 38px;
+        background: var(--paper);
+        border: 10px solid var(--ink);
+        padding: 22px;
+        box-shadow: 0 28px 70px rgba(17, 16, 14, 0.22);
+      }
+
+      .phone-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        direction: rtl;
+      }
+
+      .phone-header img {
+        width: 62px;
+      }
+
+      .pill {
+        border-radius: 999px;
+        border: 1px solid rgba(199, 169, 107, 0.5);
+        color: #6f5b33;
+        font-size: 12px;
+        padding: 4px 10px;
+      }
+
+      .phone h2 {
+        margin: 18px 0 12px;
+        font-size: 24px;
+        line-height: 1.45;
+      }
+
+      .phone-photo {
+        height: 206px;
+        border-radius: 22px;
+        background: url("../public/images/placeholders/jewelry/upload-preview.webp") center / cover;
+      }
+
+      .phone-actions {
+        display: grid;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .button {
+        border-radius: 999px;
+        padding: 13px 18px;
+        text-align: center;
+        font-weight: 700;
+        font-size: 14px;
+      }
+
+      .button.primary {
+        background: var(--ink);
+        color: var(--ivory);
+      }
+
+      .button.secondary {
+        border: 1px solid var(--mist);
+        color: #544c42;
+      }
+
+      .nav {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 20px;
+        color: #807568;
+        font-size: 11px;
+      }
+
+      .quote {
+        grid-column: span 7;
+        height: 210px;
+        border-radius: 28px;
+        background: var(--ink);
+        color: var(--ivory);
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 46px;
+      }
+
+      .quote p {
+        margin: 0;
+        max-width: 650px;
+        font-family: Doran, Vazir, sans-serif;
+        font-size: 38px;
+        line-height: 1.45;
+        text-align: right;
+      }
+
+      .quote span {
+        color: var(--champagne);
+      }
+
+      .flow-strip {
+        grid-column: 1 / -1;
+        height: 305px;
+        border-radius: 32px;
+        background: #060605;
+        padding: 34px 36px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 30px;
+        direction: rtl;
+      }
+
+      .flow-card {
+        overflow: hidden;
+        border-radius: 13px;
+        background: var(--paper);
+        position: relative;
+        min-width: 0;
+      }
+
+      .flow-card.photo {
+        background-size: cover;
+        background-position: center;
+      }
+
+      .flow-card .content {
+        position: absolute;
+        inset: 0;
+        padding: 22px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .flow-card h3 {
+        margin: 0;
+        font-size: 23px;
+        line-height: 1.25;
+      }
+
+      .flow-card p {
+        margin: 8px 0 0;
+        color: #5f574e;
+        font-size: 13px;
+        line-height: 1.7;
+      }
+
+      .flow-card.dark {
+        background: #161412;
+        color: var(--ivory);
+      }
+
+      .flow-card.dark p {
+        color: rgba(247, 243, 234, 0.68);
+      }
+
+      .tiny-logo {
+        width: 92px;
+        opacity: 0.92;
+      }
+
+      .watermark {
+        position: absolute;
+        inset: auto 20px 18px auto;
+        width: 116px;
+        opacity: 0.35;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="board">
+      <section class="grid">
+        <div class="panel hero">
+          <div class="swatches">
+            <div class="swatch" style="background: #11100e"></div>
+            <div class="swatch" style="background: #c7a96b"></div>
+            <div class="swatch" style="background: #f7f3ea"></div>
+            <div class="swatch" style="background: #b8aea0"></div>
+          </div>
+        </div>
+
+        <div class="panel mock-card">
+          <div class="cards-scene">
+            <span class="arc one"></span>
+            <span class="arc two"></span>
+            <div class="business-card card-light">
+              <img src="../public/brand/ovala-horizontal.svg" alt="Studio OVALA" />
+              <p>AI product photography studio<br />Jewelry, gold, watches</p>
+            </div>
+            <div class="business-card card-dark">
+              <img src="../public/brand/ovala-primary-dark.svg" alt="Studio OVALA" />
+              <p>Premium catalog imagery<br />Persian-first guided flow</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel sign">
+          <div class="logo-sign">
+            <img src="../public/brand/ovala-horizontal.svg" alt="Studio OVALA sign" />
+          </div>
+        </div>
+
+        <div class="panel logo-block">
+          <img src="../public/brand/ovala-primary.svg" alt="Studio OVALA primary logo" />
+        </div>
+
+        <div class="panel phone-panel">
+          <div class="phone">
+            <div class="phone-header">
+              <img src="../public/brand/ovala-mark.svg" alt="OVALA mark" />
+              <span class="pill">پروژه جدید</span>
+            </div>
+            <h2>عکس محصول را انتخاب کنید</h2>
+            <div class="phone-photo"></div>
+            <div class="phone-actions">
+              <div class="button primary">ادامه و انتخاب سبک</div>
+              <div class="button secondary">انتخاب از گالری</div>
+            </div>
+            <div class="nav">
+              <span>خانه</span>
+              <span>گالری</span>
+              <span>جدید</span>
+              <span>پروژه‌ها</span>
+              <span>حساب</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="quote">
+          <p>از عکس معمولی تا تصویر <span>استودیویی آرام</span> برای فروش بهتر.</p>
+        </div>
+
+        <div class="flow-strip">
+          <div class="flow-card photo" style="background-image: url('../public/images/placeholders/jewelry/archive-01.webp')">
+            <img class="watermark" src="../public/brand/ovala-watermark.svg" alt="" />
+            <div class="content">
+              <div>
+                <h3>خانه</h3>
+                <p>شروع سریع، آخرین خروجی‌ها و مسیر واضح برای پروژه جدید.</p>
+              </div>
+              <img class="tiny-logo" src="../public/brand/ovala-mark.svg" alt="" />
+            </div>
+          </div>
+
+          <div class="flow-card">
+            <div class="content">
+              <div>
+                <h3>گالری</h3>
+                <p>عکس‌های منبع محصول، جدا از خروجی‌های نهایی.</p>
+              </div>
+              <img class="tiny-logo" src="../public/brand/ovala-horizontal.svg" alt="" />
+            </div>
+          </div>
+
+          <div class="flow-card photo" style="background-image: url('../public/images/placeholders/jewelry/style-minimal.webp')">
+            <div class="content">
+              <div>
+                <h3>انتخاب سبک</h3>
+                <p>کاتالوگ تمیز، لوکس تیره، طبیعی یا طلایی بدون پرامپت پیچیده.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flow-card dark">
+            <div class="content">
+              <div>
+                <h3>نتیجه</h3>
+                <p>بررسی خروجی، ذخیره، دانلود و ساخت نسخه‌های بیشتر.</p>
+              </div>
+              <img class="tiny-logo" src="../public/brand/ovala-primary-dark.svg" alt="" />
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
