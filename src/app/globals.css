@@ -90,6 +90,30 @@ h1,h2,h3,h4,h5,h6 {
   50% { left: 86%; }
 }
 
+@keyframes ovalaProcessingStep {
+  0%, 4% { opacity: 0; transform: translateY(10px) scale(.98); }
+  10%, 30% { opacity: 1; transform: translateY(0) scale(1); }
+  36%, 100% { opacity: 0; transform: translateY(-10px) scale(.98); }
+}
+
+@keyframes ovalaProcessingScan {
+  0%, 100% { opacity: 0; transform: translateY(0); }
+  18%, 70% { opacity: .9; }
+  50% { transform: translateY(306px); }
+}
+
+@keyframes ovalaLoadingPulse {
+  0% { opacity: 0; transform: scale(.72); }
+  35% { opacity: .72; }
+  100% { opacity: 0; transform: scale(1.24); }
+}
+
+@keyframes ovalaLoadingSweep {
+  0%, 100% { transform: translateX(120%); opacity: 0; }
+  45% { opacity: 1; }
+  70% { transform: translateX(-120%); opacity: 0; }
+}
+
 .auth-before-after-reveal {
   animation: before-after-reveal 5.8s ease-in-out infinite;
 }
@@ -114,7 +138,10 @@ h1,h2,h3,h4,h5,h6 {
 
 @media (prefers-reduced-motion: reduce) {
   .auth-before-after-reveal,
-  .auth-before-after-divider {
+  .auth-before-after-divider,
+  .animate-\[ovalaProcessingScan_3s_ease-in-out_infinite\],
+  .animate-\[ovalaLoadingPulse_2\.4s_ease-in-out_infinite\],
+  .animate-\[ovalaLoadingPulse_2\.4s_ease-in-out_infinite_600ms\] {
     animation: none;
   }
 

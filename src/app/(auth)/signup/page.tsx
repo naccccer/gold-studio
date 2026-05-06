@@ -6,7 +6,7 @@ export default function SignupPage() {
     <AuthForm
       title="ساخت حساب"
       action={signupAction}
-      submitLabel="شروع"
+      submitLabel="ساخت حساب"
       mode="signup"
       secondaryHref="/login"
       secondaryLabel="ورود"

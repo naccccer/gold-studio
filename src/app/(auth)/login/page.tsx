@@ -6,7 +6,7 @@ export default function LoginPage() {
     <AuthForm
       title="ورود"
       action={loginAction}
-      submitLabel="ورود"
+      submitLabel="ورود به استودیو"
       mode="login"
       secondaryHref="/signup"
       secondaryLabel="ساخت حساب"

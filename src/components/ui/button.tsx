@@ -5,16 +5,16 @@ type ButtonVariant = "primary" | "secondary" | "ghost" | "admin";
 type ButtonSize = "sm" | "md" | "full";
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: "bg-foreground text-surface hover:bg-[#27231f]",
-  secondary: "border border-border bg-surface text-foreground hover:border-border-strong hover:bg-surface-soft/60",
+  primary: "bg-foreground text-surface shadow-[0_20px_34px_-28px_rgba(17,16,14,0.85)] hover:bg-[#27231f]",
+  secondary: "border border-border bg-surface/68 text-foreground hover:border-border-strong hover:bg-surface/90",
   ghost: "text-muted hover:bg-surface-soft hover:text-foreground",
   admin: "border border-border bg-surface text-foreground hover:border-border-strong hover:bg-surface-soft",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
   sm: "h-10 px-4 text-sm",
-  md: "h-11 px-5 text-sm",
-  full: "h-11 w-full px-5 text-sm",
+  md: "h-12 px-5 text-sm",
+  full: "h-12 w-full px-5 text-sm",
 };
 
 export function buttonClasses({ variant = "primary", size = "md", className = "" }: { variant?: ButtonVariant; size?: ButtonSize; className?: string } = {}) {

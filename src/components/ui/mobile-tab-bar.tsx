@@ -33,6 +33,7 @@ function isActivePath(pathname: string, tab: TabItem) {
 
 export function MobileTabBar({ tabs, centerAction }: MobileTabBarProps) {
   const pathname = usePathname();
+  const centerActive = pathname === centerAction.href || pathname.startsWith(`${centerAction.href}/`);
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 md:hidden" aria-label="ناوبری اصلی">
@@ -60,7 +61,11 @@ export function MobileTabBar({ tabs, centerAction }: MobileTabBarProps) {
           <Link
             href={centerAction.href}
             aria-label={centerAction.label}
-            className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full border border-[#d8bd8d] bg-[#c89f61] text-surface shadow-[0_18px_34px_-22px_rgba(43,33,23,0.9)] transition hover:bg-[#bb9256]"
+            aria-current={centerActive ? "page" : undefined}
+            className={[
+              "mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full border text-surface shadow-[0_18px_34px_-22px_rgba(43,33,23,0.9)] transition",
+              centerActive ? "border-foreground bg-foreground" : "border-[#d8bd8d] bg-[#c89f61] hover:bg-[#bb9256]",
+            ].join(" ")}
           >
             <Plus aria-hidden="true" className="h-5 w-5" strokeWidth={1.8} />
           </Link>

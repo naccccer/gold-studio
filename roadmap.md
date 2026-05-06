@@ -1,199 +1,246 @@
 # Gold Studio Roadmap
 
-## Current Direction
-Gold Studio is a mobile-first, Farsi-only, RTL-first AI image studio for jewelry, gold, watches, and luxury accessories.
+## Direction
+Gold Studio / Studio OVALA is now moving from the approved `/design/user-flow` prototype into the production app.
 
-The product is built around two connected workspaces:
+The next work is not to keep expanding the prototype. The prototype is the user-flow source of truth for visual direction, interaction rhythm, spacing, typography, image treatment, and mobile navigation.
 
-- `گالری`: source product photos, upload, organization, selection, and batch starts.
-- `پروژه‌ها`: generated outputs, queued/processing/failed/completed jobs, review, retry, and download.
+Core product direction:
+- Farsi-first and RTL-first.
+- Mobile-first.
+- Premium, minimal, calm, image-led, and trustworthy.
+- Guided assistant experience, not a SaaS dashboard.
+- Jewelry, gold, watches, and luxury accessories only.
+- No user-facing prompt-heavy or text-to-image experience.
+- Admin remains separate and should be redesigned as its own operational product area.
 
-Main signed-in navigation:
+Primary user navigation:
 
 ```text
-خانه | گالری | + | پروژه‌ها | حساب
+خانه | گالری | پروژه جدید | پروژه‌ها | حساب
 ```
 
-Default journey:
+Workspace ownership:
+- `گالری`: uploaded source product photos.
+- `پروژه‌ها`: generated outputs and generation status.
+- `حساب`: identity, credits/subscription, support, FAQ, referral code, admin entry, logout.
 
-```text
-ورود / ثبت‌نام -> گالری یا پروژه جدید -> انتخاب تصویر -> انتخاب کادر خروجی -> انتخاب سبک -> تولید -> بررسی نتیجه -> دانلود
-```
+## Phase 1 - Freeze Prototype And Extract UI System
+Goal: turn the current `/design/user-flow` prototype into a practical implementation reference.
 
-## Rebuild Status
-- [x] Add `lucide-react` for one consistent icon system.
-- [x] Replace signed-in shell with real mobile IA: `خانه`, `گالری`, center `پروژه جدید`, `پروژه‌ها`, `حساب`.
-- [x] Add `/account` for identity, access state, logout, and admin entry.
-- [x] Add `/gallery` as the source-photo workspace.
-- [x] Add Prisma models for source assets, collections, generation batches, and batch items.
-- [x] Let fresh uploads create `ProductAsset` records.
-- [x] Let project creation start from fresh upload or Gallery asset.
-- [x] Add batch generation from selected Gallery assets.
-- [x] Add Prisma-backed dynamic style catalog and `/admin/styles`.
-- [x] Move generation to queued/processing/completed/failed DB-backed jobs.
-- [x] Run a whole-product UI clarity pass before storage work.
-- [x] Add storage adapter with local and S3-compatible storage support.
-- [x] Add a VPS deployment and server update runbook.
-- [x] Simplify auth UX and support email-or-phone password login with nullable email plus unique phone.
+Status: Completed on 2026-05-06. The approved prototype remains available at `/design/user-flow`; production now has shared UI primitives for brand logo usage, RTL top bars, mobile navigation active states, button treatments, image frames, auth image backdrops, bottom action docks, and processing canvases.
 
-## Phase 1 - Gallery-First Foundation And Core UI
-Prompt:
-```text
-Build Gold Studio as a gallery-first premium product image studio. Preserve auth, owner-scoped access, server-side API behavior, and GapGPT integration. Add /gallery, five-slot mobile nav, ProductAsset data model, batch creation from selected assets, and project creation from either fresh upload or Gallery asset.
-```
+Tasks:
+- Treat `src/app/design/user-flow/page.tsx` as the approved user-flow design reference.
+- Extract shared UI decisions into reusable app patterns:
+  - mobile phone-shell proportions translated into real responsive screens
+  - bottom navigation behavior and active states
+  - primary/secondary button styles
+  - RTL top bars and back-button placement
+  - image-led card/frame treatment
+  - auth full-bleed image style
+  - processing and result action alignment
+- Keep existing Studio OVALA logo assets from `public/brand`.
+- Keep Vazirmatn as the app UI font.
+- Keep champagne gold sparse.
+- Do not carry prototype-only wrapper UI into production routes.
 
 Acceptance criteria:
-- [x] Mobile nav uses `خانه`, `گالری`, center `+`, `پروژه‌ها`, and `حساب`.
-- [x] `/gallery` supports multi-upload, asset grid, selection mode, asset detail, and batch creation.
-- [x] Fresh project uploads create Gallery assets.
-- [x] `/projects/new?assetId=...` starts generation from a Gallery asset.
-- [x] `/projects` remains focused on generated outputs.
-- [x] User-facing text-to-image controls are removed.
+- Implementation has a small shared UI foundation instead of copy-pasted prototype markup.
+- Production pages can match the prototype without duplicating the prototype route structure.
+- `/design/user-flow` remains available as a review reference.
 
 Verification:
+
 ```powershell
 npm run check:mojibake
 npm run lint
 npm run build
 ```
 
-## Phase 2 - Style Catalog Data And Admin Library
-Prompt:
+## Phase 2 - Apply Prototype To Auth And App Shell
+Goal: make the first real app surfaces match the approved direction.
+
+Status: Completed on 2026-05-06. Login/signup now use full-bleed product imagery with solid bottom action panels, the identity label is `موبایل / ایمیل`, phone examples render LTR, and the signed-in shell uses the shared RTL top bar plus the approved five-part navigation.
+
+Routes:
+- `src/app/(auth)/login`
+- `src/app/(auth)/signup`
+- signed-in shell/navigation used by dashboard routes
+
+Tasks:
+- Rebuild login and signup with full-bleed product imagery, no text over images, and clear bottom actions.
+- Use `موبایل / ایمیل` as the primary identity field label.
+- Ensure phone-number examples render LTR.
+- Remove generic dashboard feel from the signed-in shell.
+- Implement mobile nav exactly as:
+
 ```text
-Introduce Prisma-backed style catalog models for admin-manageable styles, preview images, ordering, visibility, categories, optional user controls, and variants. Support placeholder preview assets now and keep user-facing style cards simple and visual.
+خانه | گالری | پروژه جدید | پروژه‌ها | حساب
 ```
 
 Acceptance criteria:
-- [x] Styles are first-class DB records.
-- [x] User style selection reads active styles only.
-- [x] Gallery batch generation uses the same active catalog.
-- [x] Prompt text never appears in user-facing creation UI.
-- [x] Admin can edit, deactivate, reorder, and preview seeded styles.
+- Auth screens feel premium and image-led.
+- Mobile nav labels, active states, and center project action match the prototype.
+- Back buttons sit correctly for RTL screens.
+- No mojibake in touched files.
 
 Verification:
+
 ```powershell
 npm run check:mojibake
 npm run lint
 npm run build
 ```
 
-## Phase 3 - Dynamic Style IDs
-Prompt:
+Screenshot QA:
+- Capture `393x852` screenshots for login, signup, and one signed-in route.
+
+## Phase 3 - Apply Prototype To User Creation Flow
+Goal: rebuild the core user journey around the approved guided flow.
+
+Routes:
+- home/dashboard route
+- `/gallery`
+- `/projects/new`
+- project processing state
+- project result/review route
+- `/projects`
+
+Tasks:
+- Home: image-led Studio OVALA entry with a clear `پروژه جدید` action.
+- Gallery: source-photo workspace with upload actions, image grid, left-side thumbnail controls, and bottom-aligned `ادامه` CTA.
+- New Project: selected image preview, clear aspect ratio options:
+
 ```text
-Replace enum-bound style selection with dynamic style IDs. Add admin create/archive behavior for styles, and keep user-facing style selection reading only active, visible catalog records.
+پست ۱:۱ | استوری ۹:۱۶ | بنر ۱۶:۹
 ```
 
-Acceptance criteria:
-- [x] `Project` and `GenerationBatch` reference a `CreativeStyle` record directly through `styleId`.
-- [x] New project and Gallery batch creation submit dynamic style IDs.
-- [x] Admin can create, edit, deactivate, hide, and reorder styles without a Prisma enum migration.
-- [x] User style cards hide prompt text and inactive/hidden styles.
-
-## Phase 4 - Async Generation
-Prompt:
-```text
-Move generation to a DB-backed async model with queued, processing, completed, and failed states. Keep the MVP single-repo and avoid Redis unless explicitly approved.
-```
+- Style selection: visual style cards only; no prompt text in user-facing UI.
+- Processing: calm loading canvas, one animated status line at a time, visible loading motion, stable bottom actions.
+- Result: no watermark label, no `نگه‌دار: قبل` badge, fullscreen affordance, hold/hover before-image behavior, bottom-aligned `ذخیره` and `نسخه دیگر`.
+- Projects: keep generated outputs/status separate from Gallery source assets.
 
 Acceptance criteria:
-- [x] Project and batch creation enter queued/processing before completion.
-- [x] Result and batch screens are returnable while work is queued or processing.
-- [x] Failed jobs remain visible in admin project lists.
-- [x] Generation stays inside the single Next.js repo without Redis.
-
-## Phase 5 - Product UI Clarity And Consistency Pass
-Prompt:
-```text
-Run a whole-product UI clarity and consistency pass for Gold Studio before storage work. Keep product behavior unchanged. Make the signed-in app cleaner, more premium, less text-heavy, and more consistent across creation, gallery, projects, result, account, auth, landing, and admin baseline. Replace large/messy mastheads with a slim context-aware mobile header. Use minimal visible labels, icon-led actions, and contextual help through mobile bottom sheets or desktop popovers. Improve Account into a polished membership/profile hub. Run npm run check:mojibake, npm run lint, and npm run build. Capture 393x852 screenshots for key user routes when browser tooling is available.
-```
-
-Acceptance criteria:
-- [x] Creation flow is less text-heavy at 393x852.
-- [x] Style cards show image and name by default; selected style reveals details and controls.
-- [x] Mobile header is compact, consistent, and task-aware.
-- [x] Account is a membership/profile hub with identity, credits, access, admin entry, support, and logout.
-- [x] Icon buttons have accessible names; high-consequence actions still include text.
-- [x] No visible mojibake in touched user-facing files.
+- Core journey matches the prototype behaviorally and visually.
+- Gallery and Projects remain clearly separated.
+- All primary actions align consistently near the bottom of mobile screens.
+- No user-facing text-to-image or prompt controls.
 
 Verification:
+
 ```powershell
 npm run check:mojibake
 npm run lint
 npm run build
 ```
 
-Screenshots:
-- Capture mobile 393x852 screenshots for `/dashboard`, `/gallery`, `/projects/new` upload step, `/projects/new` style step, `/projects`, `/projects/[projectId]`, `/account`, and `/admin` when browser QA is requested or available.
+Screenshot QA:
+- Capture `393x852` screenshots for home, gallery, new project, processing, result, and projects.
 
-## Phase 6 - S3-Compatible Storage
-Prompt:
-```text
-Introduce a storage adapter and support S3-compatible upload/result storage while keeping local storage for development. Do not break existing public upload paths.
-```
+## Phase 4 - Apply Prototype To Account And Billing Groundwork
+Goal: turn Account into the production membership/profile hub.
 
-Acceptance criteria:
-- [x] Gallery assets and generated results can use configured S3-compatible storage.
-- [x] Local dev still works.
-- [x] Storage env vars and deployment notes are documented.
+Route:
+- `/account`
 
-## Phase 7 - Billing Groundwork
-Prompt:
-```text
-Prepare subscription/access UI and data boundaries for a future Iran-friendly payment gateway. Keep provider choice open.
-```
-
-Acceptance criteria:
-- Account shows plan/access state.
-- Admin can inspect/manage access state.
-- Creative flow only blocks when access rules require it.
-
-## Brand Identity - Studio OVALA Logo Set
-Prompt:
-```text
-Create a production-ready Studio OVALA logo set from the approved source vector files. Preserve the oval O, champagne dot and arc, thin slash, rounded black strokes, and STUDIO subtitle. Deliver brand assets and a short usage guide without wiring the app UI yet.
-```
+Tasks:
+- Show identity, phone/email, current plan, remaining credits.
+- Include actions:
+  - خرید اعتبار یا اشتراک
+  - ورود به بخش ادمین for admins only
+  - پشتیبانی
+  - سوالات پرتکرار
+  - مشخصات
+  - دریافت کد معرف
+  - تنظیمات خروجی
+  - امنیت حساب
+  - خروج از حساب with a muted red warning style
+- Do not duplicate Gallery navigation inside Account.
+- Keep billing/provider details abstract until payment provider selection.
 
 Acceptance criteria:
-- [x] Logo master SVGs live in `public/brand`.
-- [x] Logo set includes primary, horizontal, wordmark, compact mark, app icon, favicon, watermark, light, and dark variants.
-- [x] Brand usage guide documents logo usage, palette, typography mood, image style, motifs, and avoid rules.
-- [x] App favicon and metadata remain unchanged for this phase.
+- Account feels like a calm profile/membership hub.
+- Admin entry is visible only for admin users.
+- Logout is visually distinct and mildly destructive.
+- Credit/subscription UI can later connect to billing without redesign.
 
-## UI Identity Direction - Approval Board
-Prompt:
-```text
-Create a visual approval board for the first Studio OVALA UI direction using the reference collage format, tailored to the brand and showing the simple Farsi RTL user flow before wiring UI code.
+Verification:
+
+```powershell
+npm run check:mojibake
+npm run lint
+npm run build
 ```
 
-Acceptance criteria:
-- [x] Approval board uses the real OVALA logo assets from `public/brand`.
-- [x] Board follows the reference collage structure while staying premium, calm, image-led, and jewelry-focused.
-- [x] Board shows the simple user flow: home, gallery, style selection, and result.
-- [ ] Import or recreate the board in Figma once the Figma MCP plan limit is available again.
+Screenshot QA:
+- Capture `393x852` screenshot for account.
 
-## Design Prototype - Simple User Flow
-Prompt:
-```text
-Create a local reviewable UI design prototype for the simple user flow as the best alternative to Figma. Keep it mobile-first, Farsi-first, calm, image-led, premium, and grounded in the Studio OVALA brand system. Cover Home, Gallery/source selection, New Project guidance, Processing, and Result review without wiring production logic.
+## Phase 5 - Admin Redesign As Separate Product Area
+Goal: redesign admin intentionally after the user flow lands.
+
+Routes:
+- `/admin`
+- `/admin/access`
+- `/admin/projects`
+- `/admin/styles`
+
+Tasks:
+- Do not force the user-app image-led design onto admin.
+- Use a calm operational layout with denser information, clearer tables/lists, filters, and status handling.
+- Preserve admin responsibilities:
+  - style catalog management
+  - project/job inspection
+  - access/subscription/credit management
+  - internal controls and debugging
+- Keep text-to-image or prompt-heavy controls admin/internal only.
+- Ensure `/account` remains the admin entry point for admin users.
+
+Acceptance criteria:
+- Admin is usable for repeated operational work.
+- Admin does not feel like a marketing page or decorative prototype.
+- Admin remains visually related to Studio OVALA but more functional and dense.
+
+Verification:
+
+```powershell
+npm run check:mojibake
+npm run lint
+npm run build
 ```
 
-Acceptance criteria:
-- [x] Prototype lives at `/design/user-flow`.
-- [x] Flow includes Home, source photo selection, project setup, processing, and result review frames.
-- [x] Uses Studio OVALA brand assets, ivory/soft-black/champagne palette, and existing jewelry placeholder imagery.
-- [x] Screenshot artifact captured for review.
+Screenshot QA:
+- Capture `393x852` and desktop screenshots for key admin routes.
 
-## Phase 8 - QA And Consistency Hardening
-Prompt:
-```text
-Run a full UI/UX QA pass across public, auth, home, Gallery, project creation, result review, Projects, Account, and Admin routes. Fix RTL, mojibake, mobile overflow, icon consistency, spacing, and state gaps. Capture required 393x852 screenshots.
-```
+## Phase 6 - Final QA And Hardening
+Goal: catch visual, RTL, route, and state issues before calling the rebuild complete.
+
+Tasks:
+- Full route pass across auth, home, gallery, project creation, processing, result, projects, account, and admin.
+- Check loading, empty, failed, completed, and access-blocked states.
+- Check mobile overflow at `393x852`.
+- Check desktop does not look broken, even though mobile is primary.
+- Remove prototype-only labels, unused UI fragments, and duplicated helpers.
+- Keep docs short and current.
 
 Acceptance criteria:
-- No obvious visual drift.
+- No obvious visual drift from the approved prototype on user routes.
 - No mojibake.
-- No mobile overflow at 393x852.
-- Verification commands pass or known unrelated failures are documented.
+- No mobile overflow.
+- No prompt text in user-facing creation flow.
+- Admin remains separate and operational.
 
-## Maintenance Rule
-Update this file whenever scope, phase status, or product direction changes.
+Verification:
+
+```powershell
+npm run check:mojibake
+npm run lint
+npm run build
+```
+
+If build fails only because of the known PrismaClient issue in `src/lib/db.ts`, report it as unrelated and unchanged.
+
+## Current Priority
+Start with Phase 1, then implement Phases 2-4 before redesigning admin.
+
+Do not expand `/design/user-flow` into every app page. Use it as the approved reference and move the real product forward.
