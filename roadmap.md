@@ -244,3 +244,9 @@ If build fails only because of the known PrismaClient issue in `src/lib/db.ts`, 
 Start with Phase 1, then implement Phases 2-4 before redesigning admin.
 
 Do not expand `/design/user-flow` into every app page. Use it as the approved reference and move the real product forward.
+
+## Local Dev Notes
+- Added isolated local MariaDB helper scripts for this project to avoid dependency on broken global XAMPP data:
+  - `npm run db:start`
+  - `npm run db:stop`
+- The isolated DB uses `.local-mariadb` and `127.0.0.1:3307` as configured in `.env`.
