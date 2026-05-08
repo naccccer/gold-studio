@@ -90,6 +90,21 @@ h1,h2,h3,h4,h5,h6 {
   50% { left: 86%; }
 }
 
+@keyframes ovalaHeroSlideA {
+  0%, 28%, 100% { opacity: 1; transform: scale(1); }
+  34%, 94% { opacity: 0; transform: scale(1.03); }
+}
+
+@keyframes ovalaHeroSlideB {
+  0%, 27%, 68%, 100% { opacity: 0; transform: scale(1.03); }
+  34%, 61% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes ovalaHeroSlideC {
+  0%, 60%, 100% { opacity: 0; transform: scale(1.03); }
+  68%, 94% { opacity: 1; transform: scale(1); }
+}
+
 @keyframes ovalaProcessingStep {
   0%, 4% { opacity: 0; transform: translateY(10px) scale(.98); }
   10%, 30% { opacity: 1; transform: translateY(0) scale(1); }
@@ -139,6 +154,9 @@ h1,h2,h3,h4,h5,h6 {
 @media (prefers-reduced-motion: reduce) {
   .auth-before-after-reveal,
   .auth-before-after-divider,
+  .animate-\[ovalaHeroSlideA_12s_ease-in-out_infinite\],
+  .animate-\[ovalaHeroSlideB_12s_ease-in-out_infinite\],
+  .animate-\[ovalaHeroSlideC_12s_ease-in-out_infinite\],
   .animate-\[ovalaProcessingScan_3s_ease-in-out_infinite\],
   .animate-\[ovalaLoadingPulse_2\.4s_ease-in-out_infinite\],
   .animate-\[ovalaLoadingPulse_2\.4s_ease-in-out_infinite_600ms\] {

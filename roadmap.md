@@ -99,6 +99,8 @@ Screenshot QA:
 ## Phase 3 - Apply Prototype To User Creation Flow
 Goal: rebuild the core user journey around the approved guided flow.
 
+Status: Completed on 2026-05-07. Home, Gallery, New Project, processing/result states, and Projects now follow the guided RTL flow with bottom-aligned primary actions, style-card-only selection, dedicated processing canvas behavior, hold-to-preview for source image comparison, and clearer separation between source assets and generated outputs.
+
 Routes:
 - home/dashboard route
 - `/gallery`
@@ -141,6 +143,8 @@ Screenshot QA:
 ## Phase 4 - Apply Prototype To Account And Billing Groundwork
 Goal: turn Account into the production membership/profile hub.
 
+Status: Completed on 2026-05-07. Account now presents identity, phone/email identifier, current plan and remaining credits, includes the required action list with admin-only admin entry, keeps billing details abstract, and uses a muted destructive logout treatment.
+
 Route:
 - `/account`
 
@@ -179,6 +183,8 @@ Screenshot QA:
 ## Phase 5 - Admin Redesign As Separate Product Area
 Goal: redesign admin intentionally after the user flow lands.
 
+Status: Completed on 2026-05-07. Admin routes now use a separate operational layout with denser project/status visibility, clearer access-credit management, and internal style catalog controls while keeping admin-only responsibilities isolated from user-facing creation flows.
+
 Routes:
 - `/admin`
 - `/admin/access`
@@ -214,6 +220,13 @@ Screenshot QA:
 
 ## Phase 6 - Final QA And Hardening
 Goal: catch visual, RTL, route, and state issues before calling the rebuild complete.
+
+Status: Completed on 2026-05-07. Final pass completed across user and admin routes with no mojibake, lint-clean and build-clean output, consistent mobile-first action alignment, and additional hardening to keep text-to-image generation restricted to admin/internal usage.
+
+2026-05-08 follow-up polish:
+- Fixed dark project-detail top-bar contrast on mobile so the title stays readable over dark processing/result backgrounds.
+- Removed the `محصول | زمینه | نور` processing chip row from both production and the `/design/user-flow` reference.
+- Gallery uploads now auto-submit immediately after file selection and show explicit upload feedback in the picker area.
 
 Tasks:
 - Full route pass across auth, home, gallery, project creation, processing, result, projects, account, and admin.

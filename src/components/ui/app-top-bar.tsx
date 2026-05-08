@@ -23,6 +23,10 @@ export function AppTopBar({
   className = "",
 }: AppTopBarProps) {
   const dark = tone === "dark";
+  const logoLinkClassName = [
+    "shrink-0 transition",
+    dark ? "inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/12 bg-white/[0.04] shadow-[0_18px_30px_-24px_rgba(0,0,0,0.92)]" : "",
+  ].filter(Boolean).join(" ");
 
   if (centeredLogo) {
     return (
@@ -52,13 +56,13 @@ export function AppTopBar({
           </Link>
         ) : null}
         {title ? (
-          <h1 className={["truncate text-[15px] font-semibold leading-none", dark ? "text-surface" : "text-foreground"].join(" ")}>
+          <h1 className={["truncate text-[15px] font-semibold leading-none", dark ? "!text-[#fffdf9]" : "!text-foreground"].join(" ")}>
             {title}
           </h1>
         ) : null}
       </div>
 
-      <Link href={logoHref} aria-label="OVALA Studio" className="shrink-0">
+      <Link href={logoHref} aria-label="OVALA Studio" className={logoLinkClassName}>
         <BrandLogo variant={logoVariant} />
       </Link>
     </header>

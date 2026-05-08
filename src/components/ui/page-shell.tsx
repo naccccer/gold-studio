@@ -8,15 +8,15 @@ type PageShellProps = {
 
 const maxWidthClasses: Record<NonNullable<PageShellProps["maxWidth"]>, string> = {
   phone: "max-w-[393px]",
-  md: "max-w-3xl",
-  lg: "max-w-5xl",
+  md: "max-w-[393px] md:max-w-3xl",
+  lg: "max-w-[393px] md:max-w-5xl",
 };
 
 export function PageShell({ children, maxWidth = "md", className = "" }: PageShellProps) {
   return (
     <section
       className={[
-        "mx-auto flex min-h-[calc(100svh-8.5rem)] w-full flex-col space-y-6",
+        "mx-auto flex min-h-[calc(100svh-8.5rem)] w-full flex-col",
         maxWidthClasses[maxWidth],
         className,
       ].filter(Boolean).join(" ")}

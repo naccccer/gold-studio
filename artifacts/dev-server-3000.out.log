@@ -1,0 +1,13 @@
+
+> gold-studio@0.1.0 dev
+> next dev --hostname 127.0.0.1 --port 3000
+
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://127.0.0.1:3000
+- Network:       http://127.0.0.1:3000
+- Environments: .env
+✓ Ready in 356ms
+Creating turbopack project { dir: 'C:\\xampp\\htdocs\\gold-studio', testMode: true }
+
+ GET /gallery 200 in 1262ms (next.js: 884ms, application-code: 378ms)
+ GET /gallery 200 in 960ms (next.js: 782ms, application-code: 178ms)

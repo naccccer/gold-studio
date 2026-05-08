@@ -62,16 +62,20 @@ export async function createProjectAction(
   const stylePrompt = buildPrompt(style.prompt, formData);
 
   if (mode === "text") {
+    if (session.role !== "ADMIN") {
+      return { error: "این قابلیت فقط در بخش ادمین در دسترس است." };
+    }
+
     const textPrompt = String(formData.get("textPrompt") ?? "").trim();
     if (textPrompt.length < 3) {
-      return { error: "برای تست متن به تصویر، یک پرامپت کوتاه وارد کنید." };
+      return { error: "برای اجرای تست داخلی، یک ورودی کوتاه ثبت کنید." };
     }
 
     const sourceImageUrl = await saveTextPromptSourceImage(textPrompt);
     const project = await db.project.create({
       data: {
         userId: session.userId,
-        title: title || "تست متن به تصویر",
+        title: title || "تست داخلی متن به تصویر",
         sourceImageUrl,
         styleId: style.id,
         prompt: `${textPrompt}\n\n${stylePrompt}`,

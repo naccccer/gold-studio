@@ -36,17 +36,19 @@ function navClass(active: boolean) {
 export function DashboardMasthead({ userLabel }: DashboardMastheadProps) {
   const pathname = usePathname();
   const context = pageContext(pathname);
+  const isHome = pathname === "/dashboard";
   const isProjectDetail = /^\/projects\/[^/]+$/.test(pathname);
 
   return (
     <>
       <div className="md:hidden">
         <AppTopBar
-          title={context.title}
+          title={isHome ? undefined : context.title}
           backHref={context.parent}
-          logoVariant="mark"
+          centeredLogo={isHome}
+          logoVariant={isHome ? "primary" : "mark"}
           tone={isProjectDetail ? "dark" : "light"}
-          className={isProjectDetail ? "mb-3" : "mb-4"}
+          className={isHome ? "mb-4" : isProjectDetail ? "mb-3" : "mb-4"}
         />
       </div>
 

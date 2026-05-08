@@ -686,19 +686,6 @@ function ProcessingScreen() {
               </p>
             ))}
           </div>
-          <div className="mt-1.5 grid grid-cols-3 gap-2 text-center">
-            {["محصول", "زمینه", "نور"].map((item, index) => (
-              <span
-                key={item}
-                className={`relative overflow-hidden rounded-[0.75rem] px-2 py-2 text-[10px] font-medium ${
-                  index === 2 ? "bg-[#11100e] text-[#fffdf9]" : "bg-white/64 text-[#6d665d]"
-                }`}
-              >
-                {index === 2 ? <span className="absolute inset-0 animate-[loadingSweep_1.9s_ease-in-out_infinite] bg-gradient-to-l from-transparent via-white/16 to-transparent" /> : null}
-                {item}
-              </span>
-            ))}
-          </div>
         </div>
 
         <div className="flex w-full items-center justify-center gap-2 py-1">

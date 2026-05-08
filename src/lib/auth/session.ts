@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { db } from "@/lib/db";
 
 const SESSION_COOKIE = "gold_session";
 const ONE_WEEK_SECONDS = 60 * 60 * 24 * 7;
@@ -86,8 +87,18 @@ export async function requireUserSession() {
 
 export async function requireAdminSession() {
   const session = await requireUserSession();
-  if (session.role !== "ADMIN") {
+  const user = await db.user.findUnique({
+    where: { id: session.userId },
+    select: { role: true },
+  });
+
+  if (!user || user.role !== "ADMIN") {
     redirect("/dashboard");
   }
+
+  if (session.role !== "ADMIN") {
+    await createSession({ userId: session.userId, role: "ADMIN" });
+  }
+
   return session;
 }
