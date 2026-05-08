@@ -1,0 +1,24 @@
+[browser] Image with src "/uploads/source/145becd0-7485-4be9-8ad4-2f2c3966f933.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+⨯ Error: Invalid src prop (https://gold-studio.hot.ir-central1.arvanstorage.ir/uploads/source/680b4e5d-5224-466b-ab12-0489364824e2.jpg) on `next/image`, hostname "gold-studio.hot.ir-central1.arvanstorage.ir" is not configured under images in your `next.config.js`
+See more info: https://nextjs.org/docs/messages/next-image-unconfigured-host
+    at ignore-listed frames {
+  digest: '3894844058@E231'
+}
+[browser] Uncaught Error: Invalid src prop (https://gold-studio.hot.ir-central1.arvanstorage.ir/uploads/source/680b4e5d-5224-466b-ab12-0489364824e2.jpg) on `next/image`, hostname "gold-studio.hot.ir-central1.arvanstorage.ir" is not configured under images in your `next.config.js`
+See more info: https://nextjs.org/docs/messages/next-image-unconfigured-host
+    at Array.map (<anonymous>)
+    at <unknown> (src/features/gallery/screens/gallery-screen.tsx:181:23)
+    at Array.map (<anonymous>)
+    at GalleryScreen (src/features/gallery/screens/gallery-screen.tsx:162:21)
+    at GalleryPage (src\app\(dashboard)\gallery\page.tsx:22:10)
+  179 |                       }`}
+  180 |                     >
+> 181 |                       <Image
+      |                       ^
+  182 |                         src={asset.fileUrl}
+  183 |                         alt={title}
+  184 |                         fill
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⚠ Found a change in next.config.ts. Restarting the server to apply the changes...
+⚠ Found a change in next.config.ts. Restarting the server to apply the changes...

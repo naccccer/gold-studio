@@ -227,6 +227,8 @@ Status: Completed on 2026-05-07. Final pass completed across user and admin rout
 - Fixed dark project-detail top-bar contrast on mobile so the title stays readable over dark processing/result backgrounds.
 - Removed the `محصول | زمینه | نور` processing chip row from both production and the `/design/user-flow` reference.
 - Gallery uploads now auto-submit immediately after file selection and show explicit upload feedback in the picker area.
+- Gallery intake now separates `دوربین` from `آپلود`, opens a dedicated crop step immediately after selection, and keeps the raw upload running in the background.
+- Gallery crop now opens as a modal on top of `/gallery`, and saving or skipping the crop keeps the user inside Gallery instead of redirecting into project creation.
 
 Tasks:
 - Full route pass across auth, home, gallery, project creation, processing, result, projects, account, and admin.

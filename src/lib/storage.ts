@@ -75,6 +75,14 @@ function requiredStorageEnv(name: string) {
   return value;
 }
 
+function normalizeStorageUrl(value: string) {
+  if (/^[a-z][a-z\d+\-.]*:\/\//i.test(value)) {
+    return value;
+  }
+
+  return `https://${value}`;
+}
+
 function getS3Client() {
   if (s3Client) {
     return s3Client;
@@ -82,7 +90,7 @@ function getS3Client() {
 
   const config: S3ClientConfig = {
     region: requiredStorageEnv("S3_REGION"),
-    endpoint: requiredStorageEnv("S3_ENDPOINT"),
+    endpoint: normalizeStorageUrl(requiredStorageEnv("S3_ENDPOINT")),
     credentials: {
       accessKeyId: requiredStorageEnv("S3_ACCESS_KEY_ID"),
       secretAccessKey: requiredStorageEnv("S3_SECRET_ACCESS_KEY"),
@@ -103,7 +111,7 @@ function getS3PublicBaseUrl() {
   if (!value) {
     throw new Error("S3_PUBLIC_BASE_URL env var is required when STORAGE_DRIVER=s3.");
   }
-  return value.replace(/\/+$/, "");
+  return normalizeStorageUrl(value).replace(/\/+$/, "");
 }
 
 const s3StorageAdapter: StorageAdapter = {

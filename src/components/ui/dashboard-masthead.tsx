@@ -14,6 +14,7 @@ type DashboardMastheadProps = {
 const titles: Array<{ match: (pathname: string) => boolean; title: string; parent?: string }> = [
   { match: (pathname) => pathname === "/projects/new", title: "پروژه جدید", parent: "/dashboard" },
   { match: (pathname) => pathname.startsWith("/gallery/batches/"), title: "دسته تولید", parent: "/gallery" },
+  { match: (pathname) => pathname === "/gallery/crop", title: "کراپ", parent: "/gallery" },
   { match: (pathname) => /^\/gallery\/[^/]+$/.test(pathname), title: "تصویر خام", parent: "/gallery" },
   { match: (pathname) => pathname.startsWith("/gallery"), title: "گالری" },
   { match: (pathname) => /^\/projects\/[^/]+$/.test(pathname), title: "نتیجه", parent: "/projects" },

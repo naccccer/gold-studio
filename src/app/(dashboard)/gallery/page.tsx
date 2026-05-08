@@ -1,4 +1,4 @@
-import { createBatchFromGalleryAction, uploadGalleryAssetsAction } from "@/features/gallery/actions";
+import { createBatchFromGalleryAction } from "@/features/gallery/actions";
 import { GalleryScreen, type GalleryAssetItem } from "@/features/gallery/screens/gallery-screen";
 import { requireUserSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
@@ -19,5 +19,5 @@ export default async function GalleryPage() {
     getUserVisibleStyles(),
   ]);
 
-  return <GalleryScreen assets={assets as GalleryAssetItem[]} styles={styles} uploadAction={uploadGalleryAssetsAction} batchAction={createBatchFromGalleryAction} />;
+  return <GalleryScreen assets={assets as GalleryAssetItem[]} styles={styles} batchAction={createBatchFromGalleryAction} />;
 }

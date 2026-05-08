@@ -1,13 +1,62 @@
 
 > gold-studio@0.1.0 dev
-> next dev --hostname 127.0.0.1 --port 3000
+> next dev
 
 ▲ Next.js 16.2.4 (Turbopack)
-- Local:         http://127.0.0.1:3000
-- Network:       http://127.0.0.1:3000
+- Local:         http://localhost:3000
+- Network:       http://172.25.164.167:3000
 - Environments: .env
-✓ Ready in 356ms
+✓ Ready in 324ms
 Creating turbopack project { dir: 'C:\\xampp\\htdocs\\gold-studio', testMode: true }
 
- GET /gallery 200 in 1262ms (next.js: 884ms, application-code: 378ms)
- GET /gallery 200 in 960ms (next.js: 782ms, application-code: 178ms)
+ GET /gallery 200 in 1168ms (next.js: 308ms, application-code: 860ms)
+ GET /gallery/cmoxf912l0001jbpoj761sxln 200 in 528ms (next.js: 455ms, application-code: 73ms)
+ GET /gallery 200 in 42ms (next.js: 4ms, application-code: 37ms)
+ GET /gallery 307 in 86ms (next.js: 5ms, application-code: 81ms)
+ GET /login 200 in 179ms (next.js: 50ms, application-code: 129ms)
+ GET /gallery 500 in 251ms (next.js: 7ms, application-code: 245ms)
+✓ Compiled in 766ms
+ GET /gallery 200 in 224ms (next.js: 6ms, application-code: 218ms)
+ GET /gallery 200 in 557ms (next.js: 178ms, application-code: 379ms)
+ GET /gallery 200 in 139ms (next.js: 12ms, application-code: 127ms)
+ GET /gallery?cropUploadId=8cd9dc79-e77c-45da-8ffe-464fa40e1ff8 200 in 228ms (next.js: 6ms, application-code: 222ms)
+ POST /api/gallery/uploads 200 in 240ms (next.js: 193ms, application-code: 47ms)
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://172.25.164.167:3000
+- Environments: .env
+✓ Ready in 265ms
+Creating turbopack project { dir: 'C:\\xampp\\htdocs\\gold-studio', testMode: true }
+
+ GET /gallery 200 in 770ms (next.js: 359ms, application-code: 412ms)
+ GET /gallery?cropUploadId=8cd9dc79-e77c-45da-8ffe-464fa40e1ff8 200 in 1373ms (next.js: 1116ms, application-code: 257ms)
+ GET /gallery 200 in 20ms (next.js: 6ms, application-code: 14ms)
+ GET /gallery 200 in 39ms (next.js: 3ms, application-code: 36ms)
+ GET /gallery?cropUploadId=4386e11c-939c-4bff-92da-b405dfa8ae07 200 in 241ms (next.js: 5ms, application-code: 236ms)
+ POST /api/gallery/uploads 200 in 263ms (next.js: 194ms, application-code: 69ms)
+ POST /api/gallery/uploads/cmoxfjpoi0001jb34gogxhdgm/crop 200 in 733ms (next.js: 691ms, application-code: 42ms)
+ GET /gallery 200 in 823ms (next.js: 812ms, application-code: 11ms)
+ GET /gallery 200 in 144ms (next.js: 5ms, application-code: 140ms)
+ GET /gallery 200 in 117ms (next.js: 16ms, application-code: 101ms)
+ GET /gallery/cmoxe8wjy0009jbto09e7cv8x 200 in 488ms (next.js: 428ms, application-code: 60ms)
+ GET /gallery 200 in 42ms (next.js: 4ms, application-code: 38ms)
+ GET /projects 200 in 98ms (next.js: 41ms, application-code: 57ms)
+ GET /projects/cmoxb8jpd0001jbtogup85qps 200 in 473ms (next.js: 410ms, application-code: 63ms)
+ GET /projects 200 in 87ms (next.js: 9ms, application-code: 78ms)
+ GET /gallery 200 in 44ms (next.js: 5ms, application-code: 39ms)
+ GET /projects/new?assetId=cmoxf912l0001jbpoj761sxln 200 in 131ms (next.js: 43ms, application-code: 88ms)
+ GET /projects/cmoxfky7y0003jb34tj1ojekp 200 in 901ms (next.js: 832ms, application-code: 70ms)
+ POST /projects/new?assetId=cmoxf912l0001jbpoj761sxln 303 in 1001ms (next.js: 4ms, application-code: 997ms)
+  └─ ƒ createProjectAction({}, {}) in 29ms src/features/projects/actions.ts
+ GET /projects/cmoxfky7y0003jb34tj1ojekp 200 in 66ms (next.js: 17ms, application-code: 49ms)
+ GET /projects/cmoxfky7y0003jb34tj1ojekp 200 in 58ms (next.js: 11ms, application-code: 47ms)
+ GET /projects/cmoxfky7y0003jb34tj1ojekp 200 in 56ms (next.js: 12ms, application-code: 44ms)
+ GET /projects/cmoxfky7y0003jb34tj1ojekp 200 in 169ms (next.js: 14ms, application-code: 155ms)
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://172.25.164.167:3000
+- Environments: .env
+✓ Ready in 299ms
+Creating turbopack project { dir: 'C:\\xampp\\htdocs\\gold-studio', testMode: true }
+
+ GET /projects/cmoxfky7y0003jb34tj1ojekp 200 in 763ms (next.js: 545ms, application-code: 217ms)

@@ -2,12 +2,18 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Camera, Check, Ellipsis, Sparkles, Upload } from "lucide-react";
-import { useRef, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { useState } from "react";
 import { ActionDock } from "@/components/ui/action-dock";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { PageShell } from "@/components/ui/page-shell";
+import {
+  createPendingGalleryUpload,
+  startPendingGalleryUpload,
+  waitForPendingGalleryUpload,
+} from "@/features/gallery/client-upload-store";
+import { GalleryCropScreen } from "@/features/gallery/screens/gallery-crop-screen";
 import type { StyleOption } from "@/features/projects/presets";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 
@@ -23,31 +29,15 @@ export type GalleryAssetItem = {
 type GalleryScreenProps = {
   assets: GalleryAssetItem[];
   styles: StyleOption[];
-  uploadAction: (formData: FormData) => Promise<void>;
   batchAction: (formData: FormData) => Promise<void>;
 };
 
-function UploadSubmitButton({ uploadReady }: { uploadReady: boolean }) {
-  const { pending } = useFormStatus();
-
-  return (
-    <button
-      type="submit"
-      disabled={!uploadReady || pending}
-      className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#efe2cd] px-4 text-sm font-medium text-[#8b6835] transition disabled:opacity-40"
-      aria-label={pending ? "در حال آپلود تصاویر" : "آپلود تصاویر"}
-    >
-      <Upload aria-hidden={true} className="h-4 w-4" />
-      <span>{pending ? "در حال آپلود..." : "آپلود"}</span>
-    </button>
-  );
-}
-
-export function GalleryScreen({ assets, styles, uploadAction, batchAction }: GalleryScreenProps) {
+export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [uploadReady, setUploadReady] = useState(false);
-  const [selectedUploadCount, setSelectedUploadCount] = useState(0);
-  const uploadFormRef = useRef<HTMLFormElement>(null);
+  const [pickerError, setPickerError] = useState<string | null>(null);
+  const cropUploadId = searchParams.get("cropUploadId");
 
   function toggleAsset(assetId: string) {
     setSelectedIds((current) =>
@@ -55,50 +45,103 @@ export function GalleryScreen({ assets, styles, uploadAction, batchAction }: Gal
     );
   }
 
+  function beginCropFlow(file: File | null, source: "camera" | "files") {
+    if (!file) {
+      return;
+    }
+
+    setPickerError(null);
+
+    try {
+      const pendingUpload = createPendingGalleryUpload(file, source);
+      void startPendingGalleryUpload(pendingUpload.id);
+
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.set("cropUploadId", pendingUpload.id);
+      router.push(`/gallery?${nextParams.toString()}`, { scroll: false });
+    } catch (error) {
+      setPickerError(error instanceof Error ? error.message : "شروع آپلود تصویر ممکن نشد.");
+    }
+  }
+
+  function closeCropOverlay(options?: { refresh?: boolean }) {
+    const uploadId = cropUploadId;
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.delete("cropUploadId");
+    const nextQuery = nextParams.toString();
+
+    router.replace(nextQuery ? `/gallery?${nextQuery}` : "/gallery", { scroll: false });
+
+    if (options?.refresh) {
+      router.refresh();
+      return;
+    }
+
+    if (uploadId) {
+      void waitForPendingGalleryUpload(uploadId)
+        .then(() => {
+          router.refresh();
+        })
+        .catch(() => undefined);
+    }
+  }
+
   return (
     <PageShell maxWidth="lg" className="space-y-5 pb-3">
       <div className="flex min-h-[calc(100svh-12rem)] flex-col gap-5">
-        <form
-          ref={uploadFormRef}
-          action={uploadAction}
-          className="rounded-[1.35rem] border border-dashed border-accent bg-surface/62 p-4"
-        >
+        <section className="rounded-[1.35rem] border border-dashed border-accent bg-surface/62 p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-base font-semibold text-[#7b7164]">عکس محصول را اضافه کن</h2>
-              <p className="mt-1 text-xs text-muted">
-                {uploadReady ? `${selectedUploadCount} تصویر آماده ارسال است...` : "بعد از انتخاب عکس، آپلود خودکار شروع می شود."}
-              </p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <label
-                htmlFor="gallery-upload"
-                className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-[#efe2cd] text-[#8b6835]"
-                aria-label="انتخاب تصویر"
+                htmlFor="gallery-camera-input"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#efe2cd] px-4 text-sm font-medium text-[#8b6835]"
+                aria-label="باز کردن دوربین"
               >
-                <Camera aria-hidden={true} className="h-5 w-5" />
+                <Camera aria-hidden={true} className="h-4 w-4" />
+                <span>دوربین</span>
               </label>
-              <UploadSubmitButton uploadReady={uploadReady} />
+              <label
+                htmlFor="gallery-file-input"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#efe2cd] px-4 text-sm font-medium text-[#8b6835]"
+                aria-label="باز کردن فایل‌ها"
+              >
+                <Upload aria-hidden={true} className="h-4 w-4" />
+                <span>آپلود</span>
+              </label>
             </div>
           </div>
+
           <input
-            id="gallery-upload"
-            name="images"
+            id="gallery-camera-input"
             type="file"
-            accept="image/jpeg,image/png,image/webp"
-            multiple
+            accept="image/*"
+            capture="environment"
             className="sr-only"
             onChange={(event) => {
-              const count = event.target.files?.length ?? 0;
-              setSelectedUploadCount(count);
-              setUploadReady(count > 0);
-
-              if (count > 0) {
-                uploadFormRef.current?.requestSubmit();
-              }
+              beginCropFlow(event.target.files?.[0] ?? null, "camera");
+              event.currentTarget.value = "";
             }}
           />
-        </form>
+          <input
+            id="gallery-file-input"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="sr-only"
+            onChange={(event) => {
+              beginCropFlow(event.target.files?.[0] ?? null, "files");
+              event.currentTarget.value = "";
+            }}
+          />
+        </section>
+
+        {pickerError ? (
+          <p className="rounded-[1rem] border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
+            {pickerError}
+          </p>
+        ) : null}
 
         {assets.length === 0 ? (
           <section className="space-y-3">
@@ -135,12 +178,11 @@ export function GalleryScreen({ assets, styles, uploadAction, batchAction }: Gal
                           : "border-white/72"
                       }`}
                     >
-                      <Image
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
                         src={asset.fileUrl}
                         alt={title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 50vw, 240px"
+                        className="h-full w-full object-cover"
                       />
                       <span className="absolute bottom-2 left-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#11100e]/48 text-surface backdrop-blur">
                         <Ellipsis aria-hidden={true} className="h-4 w-4" />
@@ -188,6 +230,8 @@ export function GalleryScreen({ assets, styles, uploadAction, batchAction }: Gal
           )}
         </ActionDock>
       </div>
+
+      {cropUploadId ? <GalleryCropScreen uploadId={cropUploadId} onClose={closeCropOverlay} /> : null}
     </PageShell>
   );
 }
