@@ -279,6 +279,10 @@ Status: Completed on 2026-05-07. Final pass completed across user and admin rout
 - Gallery, New Project, Project Detail, Projects, Gallery Asset, and Home recent project views now prefer storage-key-derived display URLs when available, which also recovers generated outputs that were saved but showed placeholders.
 - Kept the internal `/api/storage/[...key]` route available only for a future intentional S3/private-bucket migration.
 
+2026-05-09 Prisma client hardening:
+- Moved Prisma client generation to repo-owned `src/generated/prisma` instead of the default `node_modules/.prisma` output.
+- Added `npm run db:generate` to `dev`, `build`, and `postinstall` so schema changes do not leave runtime delegates like `db.userSubscription` stale.
+
 Tasks:
 - Full route pass across auth, home, gallery, project creation, processing, result, projects, account, and admin.
 - Check loading, empty, failed, completed, and access-blocked states.

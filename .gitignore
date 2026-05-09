@@ -48,3 +48,4 @@ raw-placeholders/
 *.tif
 *.tiff
 *.heic
+/src/generated/prisma
