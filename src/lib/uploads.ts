@@ -4,6 +4,7 @@ import { buildStorageKey, readStorageObject, saveStorageObject, storagePublicUrl
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const SOURCE_UPLOAD_DIR = path.join("uploads", "source");
 const RESULT_UPLOAD_DIR = path.join("uploads", "result");
+const RECEIPT_UPLOAD_DIR = path.join("uploads", "receipts");
 
 function extensionFromType(type: string) {
   if (type === "image/png") return "png";
@@ -65,6 +66,27 @@ export async function saveGeneratedImage(buffer: Buffer) {
   const publicUrl = await saveStorageObject({
     buffer,
     contentType: "image/png",
+    key: storageKey,
+  });
+
+  return { publicUrl, storageKey };
+}
+
+export async function saveReceiptFile(file: File) {
+  if (!ALLOWED_TYPES.has(file.type)) {
+    throw new Error("فرمت رسید باید JPG، PNG یا WEBP باشد.");
+  }
+
+  const maxSizeBytes = 8 * 1024 * 1024;
+  if (file.size > maxSizeBytes) {
+    throw new Error("حجم رسید باید کمتر از ۸ مگابایت باشد.");
+  }
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const storageKey = buildStorageKey(RECEIPT_UPLOAD_DIR, extensionFromType(file.type));
+  const publicUrl = await saveStorageObject({
+    buffer,
+    contentType: file.type,
     key: storageKey,
   });
 

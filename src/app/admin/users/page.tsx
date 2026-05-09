@@ -159,6 +159,14 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
                   <div>
                     <p className="font-semibold text-foreground">{request.package.title}</p>
                     <p className="text-xs text-muted">{formatIrr(request.amount, request.currency)} · {formatAdminDate(request.createdAt)}</p>
+                    {request.receiptImageUrl ? (
+                      <a href={request.receiptImageUrl} target="_blank" rel="noreferrer" className="mt-1 block text-xs text-[#7b5d31]">
+                        مشاهده رسید پرداخت
+                      </a>
+                    ) : (
+                      <p className="mt-1 text-xs text-danger">رسید هنوز ارسال نشده است.</p>
+                    )}
+                    {request.receiptNote ? <p className="mt-1 text-xs text-muted">{request.receiptNote}</p> : null}
                   </div>
                   <AdminStatus status={request.status} />
                   {request.status === "PENDING" ? (

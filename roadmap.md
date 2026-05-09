@@ -251,6 +251,11 @@ Status: Completed on 2026-05-07. Final pass completed across user and admin rout
 - Added package/subscription groundwork with public Account purchase requests, manual admin approval, credit ledger events, and active subscription credit consumption before purchased credits.
 - Added minimal admin audit and provider event logging for retries, archives, style edits, package changes, purchases, and generation provider outcomes.
 
+2026-05-09 manual payment update:
+- Switched v1 purchases to کارت‌به‌کارت with admin-managed cardholder/card number/payment instructions.
+- Added receipt upload from Account and receipt review before admin approval.
+- Removed Assets from the admin navigation and split package management into separate پکیج and اعتبار sections with starter, studio, and professional monthly package defaults.
+
 Tasks:
 - Full route pass across auth, home, gallery, project creation, processing, result, projects, account, and admin.
 - Check loading, empty, failed, completed, and access-blocked states.

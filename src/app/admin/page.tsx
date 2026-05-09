@@ -110,6 +110,13 @@ export default async function AdminPage() {
                   <p className="text-xs text-muted">
                     {getUserDisplayName(request.user)} · {formatIrr(request.amount, request.currency)}
                   </p>
+                  {request.receiptImageUrl ? (
+                    <a href={request.receiptImageUrl} target="_blank" rel="noreferrer" className="mt-1 block text-xs text-[#7b5d31]">
+                      مشاهده رسید
+                    </a>
+                  ) : (
+                    <p className="mt-1 text-xs text-danger">رسید ارسال نشده است.</p>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <form action={approvePurchaseRequestAction}>

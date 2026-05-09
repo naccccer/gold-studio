@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Boxes, CreditCard, Gauge, ImageIcon, Images, Palette, Users } from "lucide-react";
+import { ArrowRight, Boxes, CreditCard, Gauge, Images, Palette, Users } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button";
 import { requireAdminSession } from "@/lib/auth/session";
 
@@ -7,10 +7,9 @@ const adminNav = [
   { href: "/admin", label: "نمای کلی", icon: Gauge },
   { href: "/admin/projects", label: "پروژه‌ها", icon: Images },
   { href: "/admin/users", label: "کاربران", icon: Users },
-  { href: "/admin/packages", label: "بسته‌ها", icon: CreditCard },
+  { href: "/admin/packages", label: "پکیج و اعتبار", icon: CreditCard },
   { href: "/admin/styles", label: "سبک‌ها", icon: Palette },
   { href: "/admin/provider", label: "عملیات AI", icon: Boxes },
-  { href: "/admin/assets", label: "دارایی‌ها", icon: ImageIcon },
 ];
 
 export default async function AdminLayout({
@@ -28,7 +27,7 @@ export default async function AdminLayout({
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Gold Studio Ops</p>
               <h1 className="mt-1 text-xl font-semibold text-foreground">پنل ادمین</h1>
-              <p className="mt-1 text-xs leading-6 text-muted">عملیات، دسترسی، بسته‌ها و کیفیت تولید</p>
+              <p className="mt-1 text-xs leading-6 text-muted">عملیات، پرداخت، دسترسی و کیفیت تولید</p>
             </div>
             <ButtonLink href="/account" variant="secondary" size="sm" className="shrink-0 lg:mt-4 lg:w-full">
               <ArrowRight aria-hidden="true" className="h-4 w-4" />

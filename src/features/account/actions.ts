@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireUserSession } from "@/lib/auth/session";
+import { saveReceiptFile } from "@/lib/uploads";
 
 export async function createPurchaseRequestAction(formData: FormData) {
   const session = await requireUserSession();
@@ -44,6 +45,43 @@ export async function createPurchaseRequestAction(formData: FormData) {
       },
     });
   }
+
+  revalidatePath("/account");
+}
+
+export async function submitPurchaseReceiptAction(formData: FormData) {
+  const session = await requireUserSession();
+  const requestId = String(formData.get("requestId") ?? "").trim();
+  const receiptNote = String(formData.get("receiptNote") ?? "").trim();
+  const receipt = formData.getAll("receipt").find((value): value is File => value instanceof File && value.size > 0);
+
+  if (!requestId || !(receipt instanceof File)) {
+    return;
+  }
+
+  const request = await db.purchaseRequest.findFirst({
+    where: {
+      id: requestId,
+      userId: session.userId,
+      status: "PENDING",
+    },
+    select: { id: true },
+  });
+
+  if (!request) {
+    return;
+  }
+
+  const uploaded = await saveReceiptFile(receipt);
+  await db.purchaseRequest.update({
+    where: { id: request.id },
+    data: {
+      receiptImageUrl: uploaded.publicUrl,
+      receiptStorageKey: uploaded.storageKey,
+      receiptNote: receiptNote || null,
+      receiptSubmittedAt: new Date(),
+    },
+  });
 
   revalidatePath("/account");
 }

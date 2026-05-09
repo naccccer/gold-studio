@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AccountPage() {
   const session = await requireUserSession();
-  const [user, packages, pendingRequests, activeSubscription] = await Promise.all([
+  const [user, packages, purchaseRequests, activeSubscription, paymentSettings] = await Promise.all([
     db.user.findUnique({
       where: { id: session.userId },
       select: { name: true, email: true, phone: true, role: true, credits: true },
@@ -28,13 +28,23 @@ export default async function AccountPage() {
     }),
     db.purchaseRequest.findMany({
       where: { userId: session.userId, status: "PENDING" },
-      select: { packageId: true },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        packageId: true,
+        amount: true,
+        currency: true,
+        receiptImageUrl: true,
+        receiptSubmittedAt: true,
+        package: { select: { title: true } },
+      },
     }),
     db.userSubscription.findFirst({
       where: { userId: session.userId, status: "ACTIVE", currentPeriodEnd: { gt: new Date() } },
       orderBy: { currentPeriodEnd: "desc" },
       include: { package: { select: { title: true } } },
     }),
+    db.paymentSettings.findUnique({ where: { id: "default" } }),
   ]);
 
   if (!user) {
@@ -49,7 +59,8 @@ export default async function AccountPage() {
       role={user.role}
       credits={user.credits}
       packages={packages}
-      pendingPackageIds={pendingRequests.map((request) => request.packageId)}
+      pendingRequests={purchaseRequests}
+      paymentSettings={paymentSettings}
       activeSubscription={
         activeSubscription
           ? {

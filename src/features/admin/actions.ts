@@ -22,8 +22,45 @@ function revalidateAdmin() {
   revalidatePath("/admin/packages");
   revalidatePath("/admin/projects");
   revalidatePath("/admin/styles");
-  revalidatePath("/admin/assets");
   revalidatePath("/account");
+}
+
+export async function updatePaymentSettingsAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const cardholderName = text(formData, "cardholderName");
+  const cardNumber = text(formData, "cardNumber");
+  const instructions = text(formData, "instructions");
+
+  if (!cardholderName || !cardNumber) {
+    return;
+  }
+
+  await db.paymentSettings.upsert({
+    where: { id: "default" },
+    create: {
+      id: "default",
+      cardholderName,
+      cardNumber,
+      instructions: instructions || null,
+      isActive: formData.has("isActive"),
+    },
+    update: {
+      cardholderName,
+      cardNumber,
+      instructions: instructions || null,
+      isActive: formData.has("isActive"),
+    },
+  });
+
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: "payment_settings.update",
+    targetType: "PaymentSettings",
+    targetId: "default",
+    summary: "تنظیمات کارت‌به‌کارت به‌روزرسانی شد.",
+  });
+
+  revalidateAdmin();
 }
 
 export async function createBillingPackageAction(formData: FormData) {
@@ -50,7 +87,7 @@ export async function createBillingPackageAction(formData: FormData) {
       periodDays,
       sortOrder: integer(formData, "sortOrder"),
       isActive: formData.has("isActive"),
-      isPublic: formData.has("isPublic"),
+      isPublic: formData.has("isActive"),
     },
   });
 
@@ -91,7 +128,7 @@ export async function updateBillingPackageAction(formData: FormData) {
       periodDays,
       sortOrder: integer(formData, "sortOrder"),
       isActive: formData.has("isActive"),
-      isPublic: formData.has("isPublic"),
+      isPublic: formData.has("isActive"),
     },
   });
 
@@ -106,18 +143,37 @@ export async function updateBillingPackageAction(formData: FormData) {
   revalidateAdmin();
 }
 
-export async function archiveBillingPackageAction(formData: FormData) {
+export async function deleteBillingPackageAction(formData: FormData) {
   const session = await requireAdminSession();
   const packageId = text(formData, "packageId");
   if (!packageId) return;
 
-  await db.billingPackage.update({
+  const billingPackage = await db.billingPackage.findUnique({
     where: { id: packageId },
-    data: { archivedAt: new Date(), isActive: false, isPublic: false },
+    select: {
+      title: true,
+      _count: { select: { purchaseRequests: true, subscriptions: true, creditEvents: true } },
+    },
   });
+
+  if (!billingPackage) return;
+
+  const hasHistory =
+    billingPackage._count.purchaseRequests > 0 ||
+    billingPackage._count.subscriptions > 0 ||
+    billingPackage._count.creditEvents > 0;
+
+  if (hasHistory) {
+    await db.billingPackage.update({
+      where: { id: packageId },
+      data: { isActive: false, isPublic: false },
+    });
+  } else {
+    await db.billingPackage.delete({ where: { id: packageId } });
+  }
   await logAdminAudit({
     actorAdminId: session.userId,
-    action: "package.archive",
+    action: "package.delete",
     targetType: "BillingPackage",
     targetId: packageId,
     summary: "بسته آرشیو شد.",
@@ -262,6 +318,7 @@ export async function approvePurchaseRequestAction(formData: FormData) {
       include: { package: true, user: { select: { credits: true } } },
     });
     if (!request || request.status !== "PENDING") return null;
+    if (!request.receiptImageUrl) return null;
 
     await tx.purchaseRequest.update({
       where: { id: request.id },

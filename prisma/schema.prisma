@@ -301,21 +301,34 @@ model UserSubscription {
 }
 
 model PurchaseRequest {
-  id        String                @id @default(cuid())
-  userId    String
-  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  packageId String
-  package   BillingPackage        @relation(fields: [packageId], references: [id], onDelete: Restrict)
-  status    PurchaseRequestStatus @default(PENDING)
-  amount    Int
-  currency  String                @default("IRR")
-  adminNote String?               @db.Text
-  createdAt DateTime              @default(now())
-  updatedAt DateTime              @updatedAt
+  id                 String                @id @default(cuid())
+  userId             String
+  user               User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  packageId          String
+  package            BillingPackage        @relation(fields: [packageId], references: [id], onDelete: Restrict)
+  status             PurchaseRequestStatus @default(PENDING)
+  amount             Int
+  currency           String                @default("IRR")
+  receiptImageUrl    String?
+  receiptStorageKey  String?
+  receiptNote        String?               @db.Text
+  receiptSubmittedAt DateTime?
+  adminNote          String?               @db.Text
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
 
   @@index([userId, status])
   @@index([packageId])
   @@index([status, createdAt])
+}
+
+model PaymentSettings {
+  id             String   @id @default("default")
+  cardholderName String
+  cardNumber     String
+  instructions   String?  @db.Text
+  isActive       Boolean  @default(true)
+  updatedAt      DateTime @updatedAt
 }
 
 model CreditEvent {
