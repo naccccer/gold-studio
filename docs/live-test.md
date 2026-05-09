@@ -30,7 +30,7 @@ ADMIN_EMAIL="admin@example.com"
 STORAGE_DRIVER="local"
 ```
 
-For S3-compatible object storage in production:
+Optional later S3-compatible object storage:
 ```env
 STORAGE_DRIVER="s3"
 S3_ENDPOINT="https://hot.ir-central1.arvanstorage.ir"
@@ -44,10 +44,9 @@ S3_FORCE_PATH_STYLE="true"
 
 Notes:
 - Existing local `fileUrl` values such as `/uploads/source/...` remain valid.
+- For the current live test, keep `STORAGE_DRIVER="local"` and make sure `public/uploads` is writable by the app process.
 - New uploads and generated results use the configured storage driver.
-- `S3_PUBLIC_BASE_URL` should point to a public bucket URL, CDN URL, or storage custom domain that can serve images directly.
-- For the current Arvan bucket setup, API writes succeed with `https://hot.ir-central1.arvanstorage.ir` and `S3_FORCE_PATH_STYLE="true"`.
-- Public fetches from `https://gold-studio.hot.ir-central1.arvanstorage.ir/...` still return `403 AccessDenied` until bucket/object public-read access is enabled in Arvan.
+- If S3 is enabled later, the app can serve S3-backed uploads through `/api/storage/[...key]` so the bucket does not need public-read access for in-app image display.
 
 ## Serverless Hosting
 Do not use the current upload implementation unchanged on serverless hosting.

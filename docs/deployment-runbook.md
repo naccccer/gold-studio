@@ -106,6 +106,8 @@ S3_FORCE_PATH_STYLE="true"
 Notes:
 - `ALLOW_INSECURE_COOKIES="true"` is a temporary local/live-IP workaround only before HTTPS is ready.
 - After SSL is active, switch it back to `false` or remove it.
+- Current live setup should use `STORAGE_DRIVER="local"` and a writable `public/uploads` directory.
+- S3-compatible storage is optional for a later move away from local disk; only switch to `STORAGE_DRIVER="s3"` when that migration is intentional.
 - Rotate secrets immediately if they were pasted into chat, screenshots, or logs.
 
 ## First Deploy

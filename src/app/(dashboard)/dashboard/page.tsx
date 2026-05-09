@@ -1,6 +1,7 @@
 import { DashboardHomeScreen } from "@/features/dashboard/screens/dashboard-home-screen";
 import { db } from "@/lib/db";
 import { requireUserSession } from "@/lib/auth/session";
+import { storagePublicUrl } from "@/lib/storage";
 
 export default async function DashboardPage() {
   const session = await requireUserSession();
@@ -22,6 +23,10 @@ export default async function DashboardPage() {
         },
         sourceImageUrl: true,
         resultImageUrl: true,
+        resultStorageKey: true,
+        sourceAsset: {
+          select: { storageKey: true },
+        },
         createdAt: true,
       },
     }),
@@ -32,7 +37,11 @@ export default async function DashboardPage() {
       userName={user?.name}
       projectCount={projectCount}
       completedCount={completedCount}
-      recentProjects={recentProjects}
+      recentProjects={recentProjects.map((project) => ({
+        ...project,
+        sourceImageUrl: project.sourceAsset?.storageKey ? storagePublicUrl(project.sourceAsset.storageKey) : project.sourceImageUrl,
+        resultImageUrl: project.resultStorageKey ? storagePublicUrl(project.resultStorageKey) : project.resultImageUrl,
+      }))}
     />
   );
 }

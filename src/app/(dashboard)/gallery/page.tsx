@@ -2,6 +2,7 @@ import { createBatchFromGalleryAction } from "@/features/gallery/actions";
 import { GalleryScreen, type GalleryAssetItem } from "@/features/gallery/screens/gallery-screen";
 import { requireUserSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { storagePublicUrl } from "@/lib/storage";
 import { getUserVisibleStyles } from "@/lib/styles";
 
 export default async function GalleryPage() {
@@ -19,5 +20,10 @@ export default async function GalleryPage() {
     getUserVisibleStyles(),
   ]);
 
-  return <GalleryScreen assets={assets as GalleryAssetItem[]} styles={styles} batchAction={createBatchFromGalleryAction} />;
+  const displayAssets = assets.map((asset) => ({
+    ...asset,
+    fileUrl: storagePublicUrl(asset.storageKey),
+  }));
+
+  return <GalleryScreen assets={displayAssets as GalleryAssetItem[]} styles={styles} batchAction={createBatchFromGalleryAction} />;
 }

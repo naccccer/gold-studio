@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { ProjectDetailScreen, type ProjectDetail } from "@/features/projects/screens/project-detail-screen";
 import { db } from "@/lib/db";
 import { requireUserSession } from "@/lib/auth/session";
+import { storagePublicUrl } from "@/lib/storage";
 
 export default async function ProjectDetailPage({
   params,
@@ -21,6 +22,9 @@ export default async function ProjectDetailPage({
       style: {
         select: { name: true },
       },
+      sourceAsset: {
+        select: { storageKey: true },
+      },
     },
   });
 
@@ -28,5 +32,17 @@ export default async function ProjectDetailPage({
     notFound();
   }
 
-  return <ProjectDetailScreen project={project as ProjectDetail} />;
+  return (
+    <ProjectDetailScreen
+      project={
+        {
+          ...project,
+          sourceImageUrl: project.sourceAsset?.storageKey
+            ? storagePublicUrl(project.sourceAsset.storageKey)
+            : project.sourceImageUrl,
+          resultImageUrl: project.resultStorageKey ? storagePublicUrl(project.resultStorageKey) : project.resultImageUrl,
+        } as ProjectDetail
+      }
+    />
+  );
 }

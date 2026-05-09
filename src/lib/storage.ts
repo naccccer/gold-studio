@@ -116,18 +116,10 @@ function getS3Bucket() {
   return requiredStorageEnv("S3_BUCKET");
 }
 
-function getS3PublicBaseUrl() {
-  const value = process.env.S3_PUBLIC_BASE_URL?.trim();
-  if (!value) {
-    throw new Error("S3_PUBLIC_BASE_URL env var is required when STORAGE_DRIVER=s3.");
-  }
-  return normalizeStorageUrl(value).replace(/\/+$/, "");
-}
-
 const s3StorageAdapter: StorageAdapter = {
   kind: S3_STORAGE_KIND,
   getPublicUrl(key) {
-    return `${getS3PublicBaseUrl()}/${normalizeKey(key)}`;
+    return `/api/storage/${normalizeKey(key)}`;
   },
   async readObject(key, fallbackMimeType) {
     const response = await getS3Client().send(
@@ -158,7 +150,7 @@ const s3StorageAdapter: StorageAdapter = {
       }),
     );
 
-    return `${getS3PublicBaseUrl()}/${normalizedKey}`;
+    return this.getPublicUrl(normalizedKey);
   },
   async deleteObject(key) {
     await getS3Client().send(
@@ -180,6 +172,11 @@ export function buildStorageKey(directory: string, extension: string) {
 
 export function storagePublicUrl(key: string) {
   return getStorageAdapter().getPublicUrl(key);
+}
+
+export function isAllowedStorageKey(key: string) {
+  const normalized = normalizeKey(key);
+  return normalized.startsWith("uploads/") && !normalized.includes("../") && !normalized.startsWith("/");
 }
 
 export async function saveStorageObject(input: SaveObjectInput) {

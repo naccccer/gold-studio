@@ -2,6 +2,7 @@ import { createProjectAction } from "@/features/projects/actions";
 import { NewProjectScreen } from "@/features/projects/screens/new-project-screen";
 import { requireUserSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { storagePublicUrl } from "@/lib/storage";
 import { getUserVisibleStyles } from "@/lib/styles";
 
 export default async function NewProjectPage({
@@ -19,6 +20,7 @@ export default async function NewProjectPage({
       select: {
         id: true,
         fileUrl: true,
+        storageKey: true,
         title: true,
         originalName: true,
       },
@@ -34,7 +36,7 @@ export default async function NewProjectPage({
   return (
     <NewProjectScreen
       action={createProjectAction}
-      galleryAssets={galleryAssets}
+      galleryAssets={galleryAssets.map((asset) => ({ ...asset, fileUrl: storagePublicUrl(asset.storageKey) }))}
       styles={styles}
       selectedAssetId={params?.assetId}
       defaultOutputPreset={defaultOutputPreset}

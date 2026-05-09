@@ -272,6 +272,11 @@ Status: Completed on 2026-05-07. Final pass completed across user and admin rout
 - Added database-backed Account pages for profile, referral rewards, output defaults, password changes, FAQ, and two-way support tickets.
 - Added admin support operations for contact settings, support tickets, and FAQ management.
 
+2026-05-09 live storage display fix:
+- Confirmed the current live setup should stay on `STORAGE_DRIVER="local"` with writable `public/uploads`.
+- Gallery, New Project, Project Detail, Projects, Gallery Asset, and Home recent project views now prefer storage-key-derived display URLs when available, which also recovers generated outputs that were saved but showed placeholders.
+- Kept the internal `/api/storage/[...key]` route available only for a future intentional S3/private-bucket migration.
+
 Tasks:
 - Full route pass across auth, home, gallery, project creation, processing, result, projects, account, and admin.
 - Check loading, empty, failed, completed, and access-blocked states.
