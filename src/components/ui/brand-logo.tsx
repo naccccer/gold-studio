@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-type BrandLogoVariant = "mark" | "wordmark" | "primary" | "primary-dark";
+type BrandLogoVariant = "mark" | "mark-light" | "wordmark" | "primary" | "primary-dark";
 
 type BrandLogoProps = {
   variant?: BrandLogoVariant;
@@ -11,6 +11,13 @@ type BrandLogoProps = {
 const logoConfig: Record<BrandLogoVariant, { src: string; width: number; height: number; alt: string; className: string }> = {
   mark: {
     src: "/brand/ovala-mark.svg",
+    width: 32,
+    height: 32,
+    alt: "OVALA",
+    className: "h-8 w-8",
+  },
+  "mark-light": {
+    src: "/brand/ovala-mark-light.svg",
     width: 32,
     height: 32,
     alt: "OVALA",

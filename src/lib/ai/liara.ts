@@ -8,8 +8,13 @@ const DEFAULT_IMAGE_SIZE = "2048x2048";
 const DEFAULT_IMAGE_QUALITY = "2K";
 const DEFAULT_FALLBACK_LONG_EDGE = 2048;
 const SUPPORTED_IMAGE_QUALITIES = new Set(["1K", "2K", "4K"]);
-const GENERATION_PROMPT_SUFFIX =
-  "Return one final premium studio product image. Preserve the exact product identity, shape, material, and jewelry details from the input image.";
+const GENERATION_PROMPT_SUFFIX = [
+  "Return one final premium studio product image based on the input product photo.",
+  "The input product is the strict identity reference. Preserve the exact product shape, proportions, silhouette, metal color, gemstone count and placement, chain or clasp design, watch face, engravings, material finish, and all visible jewelry details.",
+  "Do not redesign, simplify, add, remove, replace, resize, recolor, or hallucinate product parts.",
+  "Make the image look like a real high-end studio photograph with natural optics, believable lighting, realistic reflections, and true material texture.",
+  "Avoid AI-looking gloss, CGI, 3D render, plastic surfaces, over-smoothing, over-sharpening, artificial sparkle, surreal lighting, distorted geometry, and fake luxury effects.",
+].join("\n");
 
 type GenerateImageInput = {
   sourceBuffer: Buffer;

@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 
 export default async function AdminProjectsPage() {
   const projects = (await db.project.findMany({
+    where: { archivedAt: null },
     orderBy: { createdAt: "desc" },
     take: 30,
     include: {

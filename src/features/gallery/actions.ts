@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { requireUserSession } from "@/lib/auth/session";
@@ -51,6 +52,7 @@ export async function createBatchFromGalleryAction(formData: FormData) {
       id: { in: assetIds },
       userId: session.userId,
       status: "READY",
+      archivedAt: null,
     },
     orderBy: { createdAt: "asc" },
   });
@@ -93,4 +95,38 @@ export async function createBatchFromGalleryAction(formData: FormData) {
 
   after(() => processGenerationBatch(batch.id));
   redirect(`/gallery/batches/${batch.id}`);
+}
+
+export async function renameAssetAction(formData: FormData) {
+  const session = await requireUserSession();
+  const assetId = String(formData.get("assetId") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
+
+  if (!assetId || title.length === 0 || title.length > 80) {
+    return;
+  }
+
+  await db.productAsset.updateMany({
+    where: { id: assetId, userId: session.userId, status: "READY", archivedAt: null },
+    data: { title },
+  });
+
+  revalidatePath("/gallery");
+}
+
+export async function archiveAssetAction(formData: FormData) {
+  const session = await requireUserSession();
+  const assetIds = formData.getAll("assetId").map(String).map((id) => id.trim()).filter(Boolean);
+
+  if (assetIds.length === 0) {
+    return;
+  }
+
+  await db.productAsset.updateMany({
+    where: { id: { in: assetIds }, userId: session.userId, status: "READY", archivedAt: null },
+    data: { status: "ARCHIVED", archivedAt: new Date() },
+  });
+
+  revalidatePath("/gallery");
+  revalidatePath("/dashboard");
 }

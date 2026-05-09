@@ -62,16 +62,19 @@ model Project {
   title          String?
   sourceImageUrl String
   resultImageUrl String?
+  resultStorageKey String?
   status         ProjectStatus @default(QUEUED)
   styleId        String
   style          CreativeStyle @relation(fields: [styleId], references: [id], onDelete: Restrict)
   prompt         String        @db.Text
   errorMessage   String?
+  archivedAt     DateTime?
   batchItems     GenerationBatchItem[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
   @@index([userId, createdAt])
+  @@index([userId, archivedAt])
   @@index([sourceAssetId])
   @@index([styleId])
 }
@@ -169,12 +172,14 @@ model ProductAsset {
   title           String?
   notes           String?
   status          ProductAssetStatus    @default(READY)
+  archivedAt      DateTime?
   projects        Project[]
   batchItems      GenerationBatchItem[]
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
 
   @@index([userId, createdAt])
+  @@index([userId, archivedAt])
   @@index([collectionId])
 }
 

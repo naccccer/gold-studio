@@ -1,37 +1,39 @@
-import { AlertTriangle, Download, Images, Maximize2, Plus, RefreshCcw } from "lucide-react";
+"use client";
+
+import { useEffect, useState } from "react";
+import { AlertTriangle, Download, Images, Maximize2, Plus, RefreshCcw, X } from "lucide-react";
 import { ActionDock } from "@/components/ui/action-dock";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { PageShell } from "@/components/ui/page-shell";
 import { ProcessingCanvas } from "@/components/ui/processing-canvas";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
+import { retryProjectAction } from "@/features/projects/actions";
 import { ProjectStatusRefresh } from "@/features/projects/components/project-status-refresh";
 import { resultHeroDark, uploadPreview } from "@/lib/placeholders/jewelry-images";
 
-const statusConfig: Record<string, { label: string; supportCopy: string; actionLabel: string }> = {
+const statusConfig: Record<string, { label: string; supportCopy: string }> = {
   QUEUED: {
     label: "در صف",
-    supportCopy: "پروژه ثبت شد و به زودی وارد پردازش می شود.",
-    actionLabel: "در صف تولید",
+    supportCopy: "پروژه ثبت شد و به زودی وارد پردازش می‌شود.",
   },
   PROCESSING: {
     label: "در حال تولید",
-    supportCopy: "خروجی در حال آماده سازی است.",
-    actionLabel: "در حال تولید",
+    supportCopy: "خروجی در حال آماده‌سازی است.",
   },
   COMPLETED: {
     label: "آماده",
     supportCopy: "خروجی نهایی آماده دانلود است.",
-    actionLabel: "دانلود تصویر",
   },
   FAILED: {
     label: "ناموفق",
     supportCopy: "تولید کامل نشد. دوباره تلاش کنید.",
-    actionLabel: "تلاش دوباره",
   },
 };
 
 export type ProjectDetail = {
+  id: string;
   title: string | null;
+  sourceAssetId: string | null;
   sourceImageUrl: string;
   resultImageUrl: string | null;
   status: string;
@@ -43,54 +45,86 @@ export type ProjectDetail = {
 type ProjectDetailScreenProps = { project: ProjectDetail };
 
 export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
+  const [fullscreen, setFullscreen] = useState(false);
+  const [showBefore, setShowBefore] = useState(false);
   const status = statusConfig[project.status] ?? {
     label: "ثبت شده",
     supportCopy: "وضعیت پروژه ثبت شد.",
-    actionLabel: "خروجی نهایی",
   };
   const hasResult = Boolean(project.resultImageUrl);
   const isActive = project.status === "QUEUED" || project.status === "PROCESSING";
   const resultImageSrc = project.resultImageUrl || resultHeroDark.src;
   const sourceImageSrc = project.sourceImageUrl || uploadPreview.src;
+  const newVersionHref = project.sourceAssetId ? `/projects/new?assetId=${project.sourceAssetId}` : "/projects/new";
+
+  useEffect(() => {
+    if (!fullscreen) {
+      return;
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setFullscreen(false);
+      }
+    }
+
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [fullscreen]);
 
   if (isActive) {
     return (
-      <PageShell maxWidth="lg" className="space-y-3 pb-3 text-surface">
+      <PageShell maxWidth="lg" className="h-[calc(100svh-9.8rem)] overflow-hidden pb-1 text-surface">
         <ProjectStatusRefresh active={true} />
 
-        <section className="space-y-3">
+        <section className="flex h-full flex-col gap-3 overflow-hidden">
           <ProcessingCanvas
             imageSrc={sourceImageSrc}
             imageAlt="در حال پردازش تصویر"
-            steps={["تشخیص محصول", "پاک سازی زمینه", "ساخت خروجی نهایی"]}
+            steps={["تشخیص محصول", "پاک‌سازی زمینه", "ساخت خروجی نهایی"]}
+            className="min-h-0 flex-1"
+            frameClassName="h-[calc(100%-4.6rem)] min-h-0"
           />
 
-          <div className="flex w-full items-center justify-center gap-2 py-1">
+          <div className="flex w-full shrink-0 items-center justify-center gap-2 py-1">
             <span className="h-1.5 w-8 rounded-full bg-accent" />
             <span className="h-1.5 w-8 rounded-full bg-accent/46" />
             <span className="h-1.5 w-8 rounded-full bg-accent/24" />
           </div>
-        </section>
 
-        <ActionDock sticky columns={2}>
-          <ButtonLink href="/projects/new" className="h-12 w-full rounded-[1rem] text-sm">
-            <Plus aria-hidden={true} className="h-4 w-4" />
-            پروژه جدید
-          </ButtonLink>
-          <ButtonLink href="/gallery" variant="secondary" className="h-12 w-full rounded-[1rem] text-sm">
-            <Images aria-hidden={true} className="h-4 w-4" />
-            بازگشت به گالری
-          </ButtonLink>
-        </ActionDock>
+          <ActionDock columns={2} className="shrink-0 pb-1">
+            <ButtonLink href={newVersionHref} className="h-12 w-full rounded-[1rem] text-sm">
+              <Plus aria-hidden={true} className="h-4 w-4" />
+              پروژه جدید
+            </ButtonLink>
+            <ButtonLink href="/gallery" variant="secondary" className="h-12 w-full rounded-[1rem] text-sm">
+              <Images aria-hidden={true} className="h-4 w-4" />
+              بازگشت به گالری
+            </ButtonLink>
+          </ActionDock>
+        </section>
       </PageShell>
     );
   }
 
   if (hasResult && project.status === "COMPLETED") {
     return (
-      <PageShell maxWidth="lg" className="space-y-4 pb-3 text-surface">
-        <section className="flex min-h-[calc(100svh-12rem)] flex-col gap-4">
-          <div className="group relative h-[536px] cursor-zoom-in overflow-hidden rounded-[1.6rem] border border-white/12 bg-[#11100e] shadow-[0_28px_58px_-46px_rgba(17,16,14,0.82)]">
+      <PageShell maxWidth="lg" className="h-[calc(100svh-9.8rem)] overflow-hidden pb-1 text-surface">
+        <section className="flex h-full flex-col gap-3 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setFullscreen(true)}
+            onPointerDown={() => setShowBefore(true)}
+            onPointerLeave={() => setShowBefore(false)}
+            onPointerCancel={() => setShowBefore(false)}
+            onPointerUp={() => setShowBefore(false)}
+            className="group relative min-h-0 flex-1 cursor-zoom-in overflow-hidden rounded-[1.45rem] border border-white/12 bg-[#11100e] text-right shadow-[0_28px_58px_-46px_rgba(17,16,14,0.82)]"
+            aria-label="نمایش تمام صفحه خروجی"
+          >
             <SafeJewelryImage
               src={resultImageSrc}
               fallbackSrc={resultHeroDark.src}
@@ -107,15 +141,15 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               fallbackAlt={uploadPreview.alt}
               alt="تصویر اولیه"
               fill
-              className="pointer-events-none object-cover object-[46%_55%] opacity-0 transition duration-300 group-hover:opacity-100 group-active:opacity-100"
+              className={`pointer-events-none object-cover object-[46%_55%] transition duration-150 ${showBefore ? "opacity-100" : "opacity-0"}`}
               sizes="(max-width: 768px) 100vw, 760px"
             />
             <div className="absolute left-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-black/28 text-surface backdrop-blur">
               <Maximize2 aria-hidden={true} className="h-4.5 w-4.5" />
             </div>
-          </div>
+          </button>
 
-          <ActionDock className="mt-auto grid-cols-2 pb-3" columns={2}>
+          <ActionDock className="shrink-0 pb-1" columns={2}>
             <a
               href={project.resultImageUrl as string}
               download
@@ -126,20 +160,60 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               <Download aria-hidden={true} className="h-4 w-4" />
               ذخیره
             </a>
-            <ButtonLink href="/projects/new" variant="secondary" className="h-12 w-full rounded-[1rem] text-sm">
+            <ButtonLink href={newVersionHref} variant="secondary" className="h-12 w-full rounded-[1rem] text-sm">
               <RefreshCcw aria-hidden={true} className="h-4 w-4" />
               نسخه دیگر
             </ButtonLink>
           </ActionDock>
         </section>
+
+        {fullscreen ? (
+          <div className="fixed inset-0 z-50 bg-black text-surface" role="dialog" aria-modal="true">
+            <button
+              type="button"
+              onClick={() => setFullscreen(false)}
+              aria-label="بستن نمایش تمام صفحه"
+              className="absolute left-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/16 bg-white/10 text-white backdrop-blur"
+            >
+              <X aria-hidden={true} className="h-5 w-5" />
+            </button>
+            <div
+              className="relative h-full w-full"
+              onPointerDown={() => setShowBefore(true)}
+              onPointerLeave={() => setShowBefore(false)}
+              onPointerCancel={() => setShowBefore(false)}
+              onPointerUp={() => setShowBefore(false)}
+            >
+              <SafeJewelryImage
+                src={resultImageSrc}
+                fallbackSrc={resultHeroDark.src}
+                fallbackAlt={resultHeroDark.alt}
+                alt={project.title || "خروجی نهایی محصول"}
+                fill
+                priority
+                className="object-contain"
+                sizes="100vw"
+              />
+              <SafeJewelryImage
+                src={sourceImageSrc}
+                fallbackSrc={uploadPreview.src}
+                fallbackAlt={uploadPreview.alt}
+                alt="تصویر اولیه"
+                fill
+                className={`pointer-events-none object-contain transition duration-150 ${showBefore ? "opacity-100" : "opacity-0"}`}
+                sizes="100vw"
+              />
+            </div>
+          </div>
+        ) : null}
       </PageShell>
     );
   }
 
   return (
-    <PageShell maxWidth="lg" className="space-y-4 pb-3 text-surface">
-      <section className="space-y-4">
-        <div className="relative h-[420px] overflow-hidden rounded-[1.45rem] border border-white/12 bg-[#1a1713] shadow-[0_28px_58px_-46px_rgba(17,16,14,0.82)]">
+    <PageShell maxWidth="lg" className="h-[calc(100svh-9.8rem)] overflow-hidden pb-1 text-surface">
+      <section className="flex h-full flex-col gap-3 overflow-hidden">
+        <div className="relative min-h-0 flex-1 overflow-hidden rounded-[1.45rem] border border-white/12 bg-[#1a1713] shadow-[0_28px_58px_-46px_rgba(17,16,14,0.82)]">
           <SafeJewelryImage
             src={sourceImageSrc}
             fallbackSrc={uploadPreview.src}
@@ -160,18 +234,23 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
             </p>
           </div>
         </div>
+        <ActionDock className="shrink-0 pb-1">
+          <form action={retryProjectAction}>
+            <input type="hidden" name="projectId" value={project.id} />
+            <button
+              type="submit"
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[1rem] bg-foreground text-sm font-medium text-surface shadow-[0_20px_34px_-28px_rgba(17,16,14,0.85)] transition hover:bg-[#27231f]"
+            >
+              <RefreshCcw aria-hidden={true} className="h-4 w-4" />
+              تلاش دوباره
+            </button>
+          </form>
+          <ButtonLink href="/projects" variant="secondary" className="h-11 w-full rounded-[1rem] text-sm">
+            <Images aria-hidden={true} className="h-4 w-4" />
+            پروژه‌ها
+          </ButtonLink>
+        </ActionDock>
       </section>
-
-      <ActionDock sticky className="space-y-2.5">
-        <ButtonLink href="/projects/new" size="full" className="h-12 rounded-[1rem]">
-          <RefreshCcw aria-hidden={true} className="h-4 w-4" />
-          تلاش دوباره
-        </ButtonLink>
-        <ButtonLink href="/projects" variant="secondary" className="h-11 w-full rounded-[1rem] text-sm">
-          <Images aria-hidden={true} className="h-4 w-4" />
-          پروژه ها
-        </ButtonLink>
-      </ActionDock>
     </PageShell>
   );
 }

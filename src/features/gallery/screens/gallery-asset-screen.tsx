@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
@@ -17,6 +17,9 @@ export type GalleryAssetDetail = {
     id: string;
     title: string | null;
     status: string;
+    resultImageUrl: string | null;
+    sourceImageUrl: string;
+    createdAt: Date;
   }>;
 };
 
@@ -25,17 +28,18 @@ type GalleryAssetScreenProps = {
 };
 
 const dateFormatter = new Intl.DateTimeFormat("fa-IR", { day: "numeric", month: "long" });
+const statusLabelMap: Record<string, string> = {
+  QUEUED: "در صف",
+  PROCESSING: "در حال ساخت",
+  COMPLETED: "آماده",
+  FAILED: "نیازمند تکرار",
+};
 
 export function GalleryAssetScreen({ asset }: GalleryAssetScreenProps) {
   const title = asset.title || asset.originalName || "تصویر محصول";
 
   return (
     <PageShell maxWidth="lg" className="space-y-5 pb-4">
-      <ButtonLink href="/gallery" variant="ghost" size="sm" className="w-fit">
-        <ArrowRight aria-hidden="true" className="h-4 w-4" />
-        بازگشت به گالری
-      </ButtonLink>
-
       <JewelryImageFrame aspect="portrait" className="rounded-[1.25rem] bg-surface-soft shadow-none">
         <SafeJewelryImage
           src={asset.fileUrl}
@@ -66,13 +70,30 @@ export function GalleryAssetScreen({ asset }: GalleryAssetScreenProps) {
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-foreground">خروجی‌های ساخته‌شده</h2>
         {asset.projects.length === 0 ? (
-          <p className="rounded-[1rem] border border-border/70 bg-surface px-4 py-4 text-sm text-muted">هنوز خروجی‌ای از این تصویر ساخته نشده است.</p>
+          <p className="rounded-[1rem] border border-border/70 bg-surface px-4 py-4 text-sm text-muted">
+            هنوز خروجی‌ای از این تصویر ساخته نشده است.
+          </p>
         ) : (
-          <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-3">
             {asset.projects.map((project) => (
-              <Link key={project.id} href={`/projects/${project.id}`} className="flex items-center justify-between rounded-[var(--radius-md)] border border-border/70 bg-surface px-3 py-3 text-sm">
-                <span className="truncate">{project.title || "خروجی محصول"}</span>
-                <span className="text-xs text-muted">{project.status}</span>
+              <Link key={project.id} href={`/projects/${project.id}`} className="group block">
+                <div className="relative h-[136px] overflow-hidden rounded-[1rem] border border-white/75 bg-[#ebe2d6] transition group-hover:border-border-strong">
+                  <SafeJewelryImage
+                    src={project.resultImageUrl || project.sourceImageUrl}
+                    alt={project.title || "خروجی محصول"}
+                    fallbackSrc={uploadPreview.src}
+                    fallbackAlt={uploadPreview.alt}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 50vw, 240px"
+                  />
+                  <span className="absolute right-2 top-2 rounded-full bg-black/48 px-2.5 py-1 text-[10px] text-surface backdrop-blur">
+                    {statusLabelMap[project.status] ?? project.status}
+                  </span>
+                  <span className="absolute bottom-2 right-2 rounded-full bg-surface/84 px-2 py-0.5 text-[10px] font-medium text-muted backdrop-blur">
+                    {dateFormatter.format(project.createdAt)}
+                  </span>
+                </div>
               </Link>
             ))}
           </div>

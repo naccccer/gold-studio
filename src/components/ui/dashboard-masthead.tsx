@@ -47,7 +47,7 @@ export function DashboardMasthead({ userLabel }: DashboardMastheadProps) {
           title={isHome ? undefined : context.title}
           backHref={context.parent}
           centeredLogo={isHome}
-          logoVariant={isHome ? "primary" : "mark"}
+          logoVariant={isHome ? "primary" : isProjectDetail ? "mark-light" : "mark"}
           tone={isProjectDetail ? "dark" : "light"}
           className={isHome ? "mb-4" : isProjectDetail ? "mb-3" : "mb-4"}
         />

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { GetObjectCommand, PutObjectCommand, S3Client, type S3ClientConfig } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client, type S3ClientConfig } from "@aws-sdk/client-s3";
 
 const LOCAL_STORAGE_KIND = "local";
 const S3_STORAGE_KIND = "s3";
@@ -24,6 +24,7 @@ type StorageAdapter = {
   getPublicUrl: (key: string) => string;
   readObject: (key: string, fallbackMimeType: string) => Promise<StoredObject>;
   saveObject: (input: SaveObjectInput) => Promise<string>;
+  deleteObject: (key: string) => Promise<void>;
 };
 
 function getStorageKind(): StorageKind {
@@ -62,6 +63,15 @@ const localStorageAdapter: StorageAdapter = {
     await mkdir(path.dirname(targetPath), { recursive: true });
     await writeFile(targetPath, buffer);
     return getLocalPublicUrl(key);
+  },
+  async deleteObject(key) {
+    try {
+      await unlink(getLocalPublicPath(key));
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        throw error;
+      }
+    }
   },
 };
 
@@ -150,6 +160,14 @@ const s3StorageAdapter: StorageAdapter = {
 
     return `${getS3PublicBaseUrl()}/${normalizedKey}`;
   },
+  async deleteObject(key) {
+    await getS3Client().send(
+      new DeleteObjectCommand({
+        Bucket: getS3Bucket(),
+        Key: normalizeKey(key),
+      }),
+    );
+  },
 };
 
 function getStorageAdapter() {
@@ -170,4 +188,8 @@ export async function saveStorageObject(input: SaveObjectInput) {
 
 export async function readStorageObject(key: string, fallbackMimeType: string) {
   return getStorageAdapter().readObject(key, fallbackMimeType);
+}
+
+export async function deleteStorageObject(key: string) {
+  return getStorageAdapter().deleteObject(key);
 }

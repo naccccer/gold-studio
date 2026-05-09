@@ -3,11 +3,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Camera, Check, Ellipsis, Sparkles, Upload } from "lucide-react";
+import { ArrowLeft, Camera, Check, Download, Edit3, Eye, Sparkles, Trash2, Upload } from "lucide-react";
 import { useState } from "react";
 import { ActionDock } from "@/components/ui/action-dock";
 import { Button, ButtonLink } from "@/components/ui/button";
+import {
+  contextMenuDangerItemClasses,
+  contextMenuItemClasses,
+  ItemContextMenu,
+} from "@/components/ui/item-context-menu";
 import { PageShell } from "@/components/ui/page-shell";
+import { archiveAssetAction, renameAssetAction } from "@/features/gallery/actions";
 import {
   createPendingGalleryUpload,
   startPendingGalleryUpload,
@@ -89,27 +95,25 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
   return (
     <PageShell maxWidth="lg" className="space-y-5 pb-3">
       <div className="flex min-h-[calc(100svh-12rem)] flex-col gap-5">
-        <section className="rounded-[1.35rem] border border-dashed border-accent bg-surface/62 p-4">
+        <section className="rounded-[1.15rem] border border-dashed border-accent/62 bg-surface/52 px-3 py-3">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-semibold text-[#7b7164]">عکس محصول را اضافه کن</h2>
+              <h2 className="text-sm font-medium text-[#7b7164]">عکس محصول را اضافه کن</h2>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <label
                 htmlFor="gallery-camera-input"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#efe2cd] px-4 text-sm font-medium text-[#8b6835]"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#efe2cd] text-[#8b6835]"
                 aria-label="باز کردن دوربین"
               >
-                <Camera aria-hidden={true} className="h-4 w-4" />
-                <span>دوربین</span>
+                <Camera aria-hidden={true} className="h-4.5 w-4.5" />
               </label>
               <label
                 htmlFor="gallery-file-input"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#efe2cd] px-4 text-sm font-medium text-[#8b6835]"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#efe2cd] text-[#8b6835]"
                 aria-label="باز کردن فایل‌ها"
               >
-                <Upload aria-hidden={true} className="h-4 w-4" />
-                <span>آپلود</span>
+                <Upload aria-hidden={true} className="h-4.5 w-4.5" />
               </label>
             </div>
           </div>
@@ -184,9 +188,6 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                         alt={title}
                         className="h-full w-full object-cover"
                       />
-                      <span className="absolute bottom-2 left-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#11100e]/48 text-surface backdrop-blur">
-                        <Ellipsis aria-hidden={true} className="h-4 w-4" />
-                      </span>
                       {selected ? (
                         <span className="absolute left-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full bg-foreground text-surface">
                           <Check aria-hidden={true} className="h-4 w-4" />
@@ -194,35 +195,118 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                       ) : null}
                     </div>
                   </button>
-                  <Link
-                    href={`/gallery/${asset.id}`}
-                    aria-label={`جزئیات ${title}`}
-                    className="absolute bottom-2 left-2 h-7 w-7 rounded-full"
-                  />
+                  <div className="absolute bottom-2 left-2">
+                    <ItemContextMenu label={`منوی ${title}`} align="right">
+                      <Link href={`/gallery/${asset.id}`} className={contextMenuItemClasses}>
+                        <Eye aria-hidden={true} className="h-3.5 w-3.5" />
+                        مشاهده جزئیات
+                      </Link>
+                      <Link href={`/projects/new?assetId=${asset.id}`} className={contextMenuItemClasses}>
+                        <Sparkles aria-hidden={true} className="h-3.5 w-3.5" />
+                        ساخت پروژه
+                      </Link>
+                      <a href={asset.fileUrl} download className={contextMenuItemClasses}>
+                        <Download aria-hidden={true} className="h-3.5 w-3.5" />
+                        دانلود عکس
+                      </a>
+                      <form action={renameAssetAction} className="space-y-1.5 px-1 py-1.5">
+                        <input type="hidden" name="assetId" value={asset.id} />
+                        <label className="flex items-center gap-1.5 text-[11px] font-medium text-muted">
+                          <Edit3 aria-hidden={true} className="h-3.5 w-3.5" />
+                          تغییر نام
+                        </label>
+                        <div className="flex gap-1.5">
+                          <input
+                            name="title"
+                            defaultValue={title}
+                            maxLength={80}
+                            className="min-w-0 flex-1 rounded-[0.65rem] border border-border bg-white px-2 py-1.5 text-xs outline-none focus:border-border-strong"
+                          />
+                          <button type="submit" className="rounded-[0.65rem] bg-foreground px-2.5 text-xs text-surface">
+                            ثبت
+                          </button>
+                        </div>
+                      </form>
+                      <form
+                        action={archiveAssetAction}
+                        onSubmit={(event) => {
+                          if (!window.confirm("این عکس به آرشیو می‌رود و بعد از ۱۴ روز حذف کامل می‌شود. ادامه می‌دهید؟")) {
+                            event.preventDefault();
+                          }
+                        }}
+                      >
+                        <input type="hidden" name="assetId" value={asset.id} />
+                        <button type="submit" className={contextMenuDangerItemClasses}>
+                          <Trash2 aria-hidden={true} className="h-3.5 w-3.5" />
+                          حذف
+                        </button>
+                      </form>
+                    </ItemContextMenu>
+                  </div>
                 </article>
               );
             })}
           </section>
         )}
 
-        <ActionDock sticky>
+        <ActionDock sticky className={selectedIds.length > 0 ? "!grid-cols-[2.25rem_minmax(0,1fr)] items-center" : ""}>
           {selectedIds.length === 1 ? (
-            <ButtonLink href={`/projects/new?assetId=${selectedIds[0]}`} size="full" className="h-12 rounded-[1rem]">
-              ادامه
-              <ArrowLeft aria-hidden={true} className="h-4 w-4" />
-            </ButtonLink>
-          ) : selectedIds.length > 1 ? (
-            <form action={batchAction}>
-              {selectedIds.map((id) => (
-                <input key={id} type="hidden" name="assetIds" value={id} />
-              ))}
-              <input type="hidden" name="styleId" value={styles[0]?.id ?? ""} />
-              <input type="hidden" name="outputPreset" value="post" />
-              <Button type="submit" size="full" className="h-12 rounded-[1rem]">
-                <Sparkles aria-hidden={true} className="h-4 w-4" />
+            <>
+              <form
+                action={archiveAssetAction}
+                onSubmit={(event) => {
+                  if (!window.confirm("آیتم انتخاب‌شده به آرشیو می‌رود و بعد از ۱۴ روز حذف کامل می‌شود. ادامه می‌دهید؟")) {
+                    event.preventDefault();
+                  }
+                }}
+              >
+                <input type="hidden" name="assetId" value={selectedIds[0]} />
+                <button
+                  type="submit"
+                  aria-label="حذف"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#d92d20] text-white shadow-[0_12px_22px_-16px_rgba(217,45,32,0.9)] transition hover:bg-[#b42318] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+                >
+                  <Trash2 aria-hidden={true} className="h-3.5 w-3.5" />
+                </button>
+              </form>
+              <ButtonLink href={`/projects/new?assetId=${selectedIds[0]}`} className="col-span-1 h-12 w-full rounded-[1rem]">
                 ادامه
-              </Button>
-            </form>
+                <ArrowLeft aria-hidden={true} className="h-4 w-4" />
+              </ButtonLink>
+            </>
+          ) : selectedIds.length > 1 ? (
+            <>
+              <form
+                action={archiveAssetAction}
+                onSubmit={(event) => {
+                  if (!window.confirm("آیتم‌های انتخاب‌شده به آرشیو می‌روند و بعد از ۱۴ روز حذف کامل می‌شوند. ادامه می‌دهید؟")) {
+                    event.preventDefault();
+                  }
+                }}
+              >
+                {selectedIds.map((id) => (
+                  <input key={id} type="hidden" name="assetId" value={id} />
+                ))}
+                <button
+                  type="submit"
+                  aria-label="حذف"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#d92d20] text-white shadow-[0_12px_22px_-16px_rgba(217,45,32,0.9)] transition hover:bg-[#b42318] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+                >
+                  <Trash2 aria-hidden={true} className="h-3.5 w-3.5" />
+                </button>
+              </form>
+              <form action={batchAction}>
+                {selectedIds.map((id) => (
+                  <input key={id} type="hidden" name="assetIds" value={id} />
+                ))}
+                <input type="hidden" name="styleId" value={styles[0]?.id ?? ""} />
+                <input type="hidden" name="outputPreset" value="post" />
+                <Button type="submit" className="h-12 w-full rounded-[1rem]">
+                  <Sparkles aria-hidden={true} className="h-4 w-4" />
+                  ادامه
+                </Button>
+              </form>
+            </>
           ) : (
             <Button type="button" size="full" className="h-12 rounded-[1rem]" disabled>
               ادامه

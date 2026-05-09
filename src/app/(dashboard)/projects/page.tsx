@@ -6,7 +6,7 @@ export default async function ProjectsPage() {
   const session = await requireUserSession();
 
   const projects = (await db.project.findMany({
-    where: { userId: session.userId },
+    where: { userId: session.userId, archivedAt: null },
     orderBy: { createdAt: "desc" },
     include: {
       style: {

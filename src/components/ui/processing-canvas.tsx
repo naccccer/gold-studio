@@ -6,12 +6,14 @@ type ProcessingCanvasProps = {
   imageSrc: string | StaticImageData;
   imageAlt?: string;
   steps: string[];
+  className?: string;
+  frameClassName?: string;
 };
 
-export function ProcessingCanvas({ imageSrc, imageAlt = "", steps }: ProcessingCanvasProps) {
+export function ProcessingCanvas({ imageSrc, imageAlt = "", steps, className = "", frameClassName = "" }: ProcessingCanvasProps) {
   return (
-    <div className="space-y-3">
-      <div className="relative h-[430px] w-full overflow-hidden rounded-[1.6rem] border border-white/80 bg-surface-muted shadow-[0_28px_58px_-46px_rgba(17,16,14,0.78)]">
+    <div className={["space-y-3", className].filter(Boolean).join(" ")}>
+      <div className={["relative h-[430px] w-full overflow-hidden rounded-[1.6rem] border border-white/80 bg-surface-muted shadow-[0_28px_58px_-46px_rgba(17,16,14,0.78)]", frameClassName].filter(Boolean).join(" ")}>
         <Image
           src={imageSrc}
           alt={imageAlt}

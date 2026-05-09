@@ -44,11 +44,11 @@ export async function processImageProject(projectId: string) {
       mimeType: source.mimeType,
       stylePrompt: project.prompt,
     });
-    const resultImageUrl = await saveGeneratedImage(generatedImage.imageBuffer);
+    const result = await saveGeneratedImage(generatedImage.imageBuffer);
 
     await db.project.update({
       where: { id: projectId },
-      data: { status: "COMPLETED", resultImageUrl, errorMessage: null },
+      data: { status: "COMPLETED", resultImageUrl: result.publicUrl, resultStorageKey: result.storageKey, errorMessage: null },
     });
   } catch (error) {
     await db.project.update({
@@ -80,11 +80,11 @@ export async function processTextProject({
       prompt: textPrompt,
       stylePrompt,
     });
-    const resultImageUrl = await saveGeneratedImage(generatedImage.imageBuffer);
+    const result = await saveGeneratedImage(generatedImage.imageBuffer);
 
     await db.project.update({
       where: { id: projectId },
-      data: { status: "COMPLETED", resultImageUrl, errorMessage: null },
+      data: { status: "COMPLETED", resultImageUrl: result.publicUrl, resultStorageKey: result.storageKey, errorMessage: null },
     });
   } catch (error) {
     await db.project.update({

@@ -96,9 +96,5 @@ export async function requireAdminSession() {
     redirect("/dashboard");
   }
 
-  if (session.role !== "ADMIN") {
-    await createSession({ userId: session.userId, role: "ADMIN" });
-  }
-
   return session;
 }

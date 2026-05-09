@@ -7,10 +7,10 @@ export default async function DashboardPage() {
 
   const [user, projectCount, completedCount, recentProjects] = await Promise.all([
     db.user.findUnique({ where: { id: session.userId } }),
-    db.project.count({ where: { userId: session.userId } }),
-    db.project.count({ where: { userId: session.userId, status: "COMPLETED" } }),
+    db.project.count({ where: { userId: session.userId, archivedAt: null } }),
+    db.project.count({ where: { userId: session.userId, status: "COMPLETED", archivedAt: null } }),
     db.project.findMany({
-      where: { userId: session.userId },
+      where: { userId: session.userId, archivedAt: null },
       orderBy: { createdAt: "desc" },
       take: 3,
       select: {
@@ -21,6 +21,7 @@ export default async function DashboardPage() {
           select: { name: true },
         },
         sourceImageUrl: true,
+        resultImageUrl: true,
         createdAt: true,
       },
     }),

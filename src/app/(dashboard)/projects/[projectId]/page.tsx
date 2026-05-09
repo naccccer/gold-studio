@@ -15,6 +15,7 @@ export default async function ProjectDetailPage({
     where: {
       id: projectId,
       userId: session.userId,
+      archivedAt: null,
     },
     include: {
       style: {

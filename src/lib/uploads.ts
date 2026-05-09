@@ -62,11 +62,13 @@ export async function readStoredUpload(storageKey: string, mimeType: string) {
 
 export async function saveGeneratedImage(buffer: Buffer) {
   const storageKey = buildStorageKey(RESULT_UPLOAD_DIR, "png");
-  return saveStorageObject({
+  const publicUrl = await saveStorageObject({
     buffer,
     contentType: "image/png",
     key: storageKey,
   });
+
+  return { publicUrl, storageKey };
 }
 
 export async function saveTextPromptSourceImage(prompt: string) {

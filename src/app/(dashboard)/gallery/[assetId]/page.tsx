@@ -11,14 +11,18 @@ export default async function GalleryAssetPage({
   const session = await requireUserSession();
   const { assetId } = await params;
   const asset = (await db.productAsset.findFirst({
-    where: { id: assetId, userId: session.userId },
+    where: { id: assetId, userId: session.userId, status: "READY", archivedAt: null },
     include: {
       projects: {
+        where: { archivedAt: null },
         orderBy: { createdAt: "desc" },
         select: {
           id: true,
           title: true,
           status: true,
+          resultImageUrl: true,
+          sourceImageUrl: true,
+          createdAt: true,
         },
       },
     },

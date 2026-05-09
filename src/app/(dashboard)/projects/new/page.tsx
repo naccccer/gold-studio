@@ -13,7 +13,7 @@ export default async function NewProjectPage({
   const params = await searchParams;
   const [galleryAssets, styles] = await Promise.all([
     db.productAsset.findMany({
-      where: { userId: session.userId, status: "READY" },
+      where: { userId: session.userId, status: "READY", archivedAt: null },
       orderBy: { createdAt: "desc" },
       take: 12,
       select: {

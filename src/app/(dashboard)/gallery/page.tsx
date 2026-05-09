@@ -8,7 +8,7 @@ export default async function GalleryPage() {
   const session = await requireUserSession();
   const [assets, styles] = await Promise.all([
     db.productAsset.findMany({
-      where: { userId: session.userId, status: "READY" },
+      where: { userId: session.userId, status: "READY", archivedAt: null },
       orderBy: { createdAt: "desc" },
       include: {
         projects: {

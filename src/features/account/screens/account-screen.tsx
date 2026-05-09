@@ -67,7 +67,7 @@ function AccountRow({ item }: { item: AccountRowItem }) {
 }
 
 export function AccountScreen({ name, email, phone, role, credits }: AccountScreenProps) {
-  const isAdmin = role === "ADMIN";
+  const isAdmin = role.toUpperCase() === "ADMIN";
   const displayName = getUserDisplayName({ name, email, phone });
   const identifier = getUserIdentifier({ email, phone });
 
@@ -96,24 +96,22 @@ export function AccountScreen({ name, email, phone, role, credits }: AccountScre
               <p className="mt-1 text-sm font-semibold text-foreground">استودیو</p>
             </div>
           </div>
+          {isAdmin ? (
+            <ButtonLink
+              href="/admin"
+              size="full"
+              className="mt-3 h-12 rounded-[1rem] border border-[#d6c29c] bg-[#1f1b16] text-surface hover:bg-[#30291f]"
+            >
+              <Shield aria-hidden={true} className="h-4 w-4" />
+              ورود به پنل ادمین
+            </ButtonLink>
+          ) : null}
         </section>
 
         <button type="button" className={buttonClasses({ size: "full", className: "h-12 rounded-[1rem]" })}>
           <CreditCard aria-hidden={true} className="h-4 w-4" />
           خرید اعتبار یا اشتراک
         </button>
-
-        {isAdmin ? (
-          <ButtonLink
-            href="/admin"
-            variant="secondary"
-            size="full"
-            className="h-12 rounded-[1rem] border-[#d6c29c] bg-[#efe2cd]/72 text-[#6f542b] hover:bg-[#efe2cd]"
-          >
-            <Shield aria-hidden={true} className="h-4 w-4" />
-            ورود به بخش ادمین
-          </ButtonLink>
-        ) : null}
 
         <div className="grid grid-cols-2 gap-3">
           <button

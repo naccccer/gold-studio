@@ -235,6 +235,15 @@ Status: Completed on 2026-05-07. Final pass completed across user and admin rout
 - Switched Liara generation to try native `2048x2048` first, then retry once with an OpenAI-compatible size and long-edge upscale only if Liara rejects the native size.
 - Updated Liara quality defaults to `2K` because Liara's Gemini image endpoint accepts `1K`, `2K`, or `4K` instead of OpenAI-style `high`.
 
+2026-05-09 UI/UX refinement batch:
+- Gallery upload entry is quieter, uses icon-only camera/upload controls, and asset cards now have full context menus.
+- Projects grid hides title/style captions, adds full context menus, and uses the light logomark on dark project-detail backgrounds.
+- New Project is now a simple wizard: source, size, then style, without showing the Gallery grid inside the route.
+- Completed project results are image-first and support an internal fullscreen viewer.
+- Added soft archive behavior for assets/projects plus a `cleanup:archives` retention script for 14-day hard deletion.
+- Recent Home thumbnails now prefer generated outputs, New Project image frames open file upload, failed project cards are visually muted with retry entry, and admin entry is more prominent in Account.
+- Style prompts now prioritize exact product preservation, natural studio realism, non-AI-looking output, and realistic human skin texture for model-based generations.
+
 Tasks:
 - Full route pass across auth, home, gallery, project creation, processing, result, projects, account, and admin.
 - Check loading, empty, failed, completed, and access-blocked states.
@@ -261,7 +270,7 @@ npm run build
 If build fails only because of the known PrismaClient issue in `src/lib/db.ts`, report it as unrelated and unchanged.
 
 ## Current Priority
-Start with Phase 1, then implement Phases 2-4 before redesigning admin.
+Prototype application is complete. Current priority is production hardening, UI/UX refinement, provider QA, and release readiness.
 
 Do not expand `/design/user-flow` into every app page. Use it as the approved reference and move the real product forward.
 
