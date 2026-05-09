@@ -8,6 +8,20 @@ const DEFAULT_IMAGE_SIZE = "2048x2048";
 const DEFAULT_IMAGE_QUALITY = "2K";
 const DEFAULT_FALLBACK_LONG_EDGE = 2048;
 const SUPPORTED_IMAGE_QUALITIES = new Set(["1K", "2K", "4K"]);
+const TRANSIENT_RETRY_DELAYS_MS = [1500, 4000, 9000];
+const RETRYABLE_HTTP_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
+const RETRYABLE_NETWORK_PATTERNS = [
+  "client network socket disconnected before secure tls connection was established",
+  "econnreset",
+  "etimedout",
+  "eai_again",
+  "enotfound",
+  "und_err_socket",
+  "und_err_connect_timeout",
+  "socket hang up",
+  "fetch failed",
+  "tls connection",
+];
 const GENERATION_PROMPT_SUFFIX = [
   "Return one final premium studio product image based on the input product photo.",
   "The input product is the strict identity reference. Preserve the exact product shape, proportions, silhouette, metal color, gemstone count and placement, chain or clasp design, watch face, engravings, material finish, and all visible jewelry details.",
@@ -74,12 +88,13 @@ function getLiaraConfig() {
     size: (liaraApiKey ? readEnv("LIARA_IMAGE_SIZE") : readEnv("LIARA_IMAGE_SIZE", ["GAPGPT_IMAGE_SIZE"])) || DEFAULT_IMAGE_SIZE,
     quality: readEnv("LIARA_IMAGE_QUALITY", ["GAPGPT_IMAGE_QUALITY"]) || DEFAULT_IMAGE_QUALITY,
     fallbackLongEdge: Number.parseInt(readEnv("LIARA_FALLBACK_LONG_EDGE", ["GAPGPT_OUTPUT_MIN_SIZE"]) || "", 10),
+    allowUpscaleFallback: readEnv("LIARA_ALLOW_UPSCALE_FALLBACK") === "true",
   };
 }
 
 function getLiaraClient(apiKey: string, baseURL: string) {
   if (!cachedClient) {
-    cachedClient = new OpenAI({ apiKey, baseURL });
+    cachedClient = new OpenAI({ apiKey, baseURL, maxRetries: 0 });
   }
 
   return cachedClient;
@@ -105,6 +120,94 @@ function getImageQuality(quality: string) {
 
 function getProviderImageQuality(quality: string): NonNullable<ImageEditParams["quality"] & ImageGenerateParams["quality"]> {
   return getImageQuality(quality) as NonNullable<ImageEditParams["quality"] & ImageGenerateParams["quality"]>;
+}
+
+function retryDelay(attemptIndex: number) {
+  const baseDelay = TRANSIENT_RETRY_DELAYS_MS[attemptIndex] ?? TRANSIENT_RETRY_DELAYS_MS[TRANSIENT_RETRY_DELAYS_MS.length - 1];
+  return baseDelay + Math.floor(Math.random() * 350);
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function collectErrorText(error: unknown, depth = 0): string {
+  if (depth > 3 || typeof error !== "object" || error === null) {
+    return typeof error === "string" ? error : "";
+  }
+
+  const maybeError = error as {
+    message?: unknown;
+    code?: unknown;
+    cause?: unknown;
+    error?: { message?: unknown; code?: unknown };
+  };
+
+  return [
+    typeof maybeError.message === "string" ? maybeError.message : "",
+    typeof maybeError.code === "string" ? maybeError.code : "",
+    typeof maybeError.error?.message === "string" ? maybeError.error.message : "",
+    typeof maybeError.error?.code === "string" ? maybeError.error.code : "",
+    collectErrorText(maybeError.cause, depth + 1),
+  ].join(" ");
+}
+
+function statusFromError(error: unknown, depth = 0): number | null {
+  if (depth > 3 || typeof error !== "object" || error === null) {
+    return null;
+  }
+
+  const maybeError = error as {
+    status?: unknown;
+    cause?: unknown;
+    error?: { status?: unknown };
+  };
+
+  if (typeof maybeError.status === "number") {
+    return maybeError.status;
+  }
+
+  if (typeof maybeError.error?.status === "number") {
+    return maybeError.error.status;
+  }
+
+  return statusFromError(maybeError.cause, depth + 1);
+}
+
+function isRetryableProviderError(error: unknown) {
+  const status = statusFromError(error);
+  if (status !== null) {
+    return RETRYABLE_HTTP_STATUSES.has(status);
+  }
+
+  const message = collectErrorText(error).toLowerCase();
+  const statusMatch = message.match(/\bstatus\s+(\d{3})\b/);
+  if (statusMatch && RETRYABLE_HTTP_STATUSES.has(Number.parseInt(statusMatch[1], 10))) {
+    return true;
+  }
+
+  return RETRYABLE_NETWORK_PATTERNS.some((pattern) => message.includes(pattern));
+}
+
+async function withTransientRetry<T>(operation: () => Promise<T>): Promise<T> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= TRANSIENT_RETRY_DELAYS_MS.length; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      if (attempt === TRANSIENT_RETRY_DELAYS_MS.length || !isRetryableProviderError(error)) {
+        throw error;
+      }
+
+      await wait(retryDelay(attempt));
+    }
+  }
+
+  throw lastError;
 }
 
 async function fetchGeneratedImage(url: string) {
@@ -267,12 +370,13 @@ async function upscaleToLongEdge(imageBuffer: Buffer, longEdge: number): Promise
 async function generateWithFallback(
   size: string,
   fallbackLongEdge: number,
+  allowUpscaleFallback: boolean,
   generate: (requestSize: string) => Promise<ImagesResponse>,
 ) {
   try {
     return await extractGeneratedImage(await generate(size));
   } catch (error) {
-    if (!isUnsupportedSizeError(error)) {
+    if (!allowUpscaleFallback || !isUnsupportedSizeError(error)) {
       throw error;
     }
 
@@ -293,6 +397,7 @@ async function editWithLiaraFallback({
   size,
   quality,
   fallbackLongEdge,
+  allowUpscaleFallback,
 }: {
   client: OpenAI;
   model: string;
@@ -301,6 +406,7 @@ async function editWithLiaraFallback({
   size: string;
   quality: string;
   fallbackLongEdge: number;
+  allowUpscaleFallback: boolean;
 }) {
   try {
     return await extractGeneratedImage(
@@ -313,7 +419,7 @@ async function editWithLiaraFallback({
       }),
     );
   } catch (nativeError) {
-    if (!isUnsupportedEditOptionError(nativeError)) {
+    if (!allowUpscaleFallback || !isUnsupportedEditOptionError(nativeError)) {
       throw nativeError;
     }
 
@@ -359,21 +465,28 @@ export async function generateStyledImageWithLiara({
   mimeType,
   stylePrompt,
 }: GenerateImageInput): Promise<LiaraImageResult> {
-  const { apiKey, baseURL, model, size, quality, fallbackLongEdge } = getLiaraConfig();
+  const { apiKey, baseURL, model, size, quality, fallbackLongEdge, allowUpscaleFallback } = getLiaraConfig();
   const client = getLiaraClient(apiKey, baseURL);
   const image = await toFile(sourceBuffer, `source.${extensionFromMimeType(mimeType)}`, { type: mimeType });
 
   try {
-    return await editWithLiaraFallback({
-      client,
-      model,
-      image,
-      prompt: `${stylePrompt}\n\n${GENERATION_PROMPT_SUFFIX}`,
-      size,
-      quality,
-      fallbackLongEdge,
-    });
+    return await withTransientRetry(() =>
+      editWithLiaraFallback({
+        client,
+        model,
+        image,
+        prompt: `${stylePrompt}\n\n${GENERATION_PROMPT_SUFFIX}`,
+        size,
+        quality,
+        fallbackLongEdge,
+        allowUpscaleFallback,
+      }),
+    );
   } catch (error) {
+    if (isRetryableProviderError(error)) {
+      throw new LiaraGenerationError("Liara temporary network error after retries.", error);
+    }
+
     if (error instanceof LiaraGenerationError) {
       throw error;
     }
@@ -392,20 +505,26 @@ export async function generateTextImageWithLiara({
   prompt,
   stylePrompt,
 }: GenerateTextImageInput): Promise<LiaraImageResult> {
-  const { apiKey, baseURL, model, size, quality, fallbackLongEdge } = getLiaraConfig();
+  const { apiKey, baseURL, model, size, quality, fallbackLongEdge, allowUpscaleFallback } = getLiaraConfig();
   const client = getLiaraClient(apiKey, baseURL);
 
   try {
-    return await generateWithFallback(size, fallbackLongEdge, (requestSize) =>
-      client.images.generate({
-        model,
-        prompt: `${prompt}\n\n${stylePrompt}\n\nReturn one final premium studio product image suitable for e-commerce.`,
-        size: getImageSize(requestSize),
-        quality: getProviderImageQuality(quality),
-        n: 1,
-      }),
+    return await withTransientRetry(() =>
+      generateWithFallback(size, fallbackLongEdge, allowUpscaleFallback, (requestSize) =>
+        client.images.generate({
+          model,
+          prompt: `${prompt}\n\n${stylePrompt}\n\nReturn one final premium studio product image suitable for e-commerce.`,
+          size: getImageSize(requestSize),
+          quality: getProviderImageQuality(quality),
+          n: 1,
+        }),
+      ),
     );
   } catch (error) {
+    if (isRetryableProviderError(error)) {
+      throw new LiaraGenerationError("Liara temporary network error after retries.", error);
+    }
+
     if (error instanceof LiaraGenerationError) {
       throw error;
     }

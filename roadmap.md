@@ -234,6 +234,8 @@ Status: Completed on 2026-05-07. Final pass completed across user and admin rout
 - Migrated the OpenAI-compatible image provider boundary from GapGPT naming to Liara defaults while keeping old `GAPGPT_*` env vars as temporary fallbacks.
 - Switched Liara generation to try native `2048x2048` first, then retry once with an OpenAI-compatible size and long-edge upscale only if Liara rejects the native size.
 - Updated Liara quality defaults to `2K` because Liara's Gemini image endpoint accepts `1K`, `2K`, or `4K` instead of OpenAI-style `high`.
+- Added retry with backoff for temporary Liara network/provider failures without requiring proxy, plus a clearer user-facing retry message after exhausted attempts.
+- Switched default Liara image model to `google/gemini-3-pro-image-preview` for native 2K requests and disabled upscale fallback unless explicitly enabled.
 
 2026-05-09 UI/UX refinement batch:
 - Gallery upload entry is quieter, uses icon-only camera/upload controls, and asset cards now have full context menus.
@@ -243,6 +245,11 @@ Status: Completed on 2026-05-07. Final pass completed across user and admin rout
 - Added soft archive behavior for assets/projects plus a `cleanup:archives` retention script for 14-day hard deletion.
 - Recent Home thumbnails now prefer generated outputs, New Project image frames open file upload, failed project cards are visually muted with retry entry, and admin entry is more prominent in Account.
 - Style prompts now prioritize exact product preservation, natural studio realism, non-AI-looking output, and realistic human skin texture for model-based generations.
+
+2026-05-09 admin operations rebuild:
+- Rebuilt admin information architecture around overview, projects, users, packages, styles, provider operations, and assets.
+- Added package/subscription groundwork with public Account purchase requests, manual admin approval, credit ledger events, and active subscription credit consumption before purchased credits.
+- Added minimal admin audit and provider event logging for retries, archives, style edits, package changes, purchases, and generation provider outcomes.
 
 Tasks:
 - Full route pass across auth, home, gallery, project creation, processing, result, projects, account, and admin.

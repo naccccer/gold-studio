@@ -4,6 +4,7 @@ import type { ComponentType } from "react";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { PageShell } from "@/components/ui/page-shell";
 import { LogoutButton } from "@/features/auth/components/logout-button";
+import { createPurchaseRequestAction } from "@/features/account/actions";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { archiveItems } from "@/lib/placeholders/jewelry-images";
 
@@ -13,6 +14,25 @@ type AccountScreenProps = {
   phone: string | null;
   role: string;
   credits: number;
+  packages: AccountPackage[];
+  pendingPackageIds: string[];
+  activeSubscription: {
+    title: string;
+    creditsPerPeriod: number;
+    creditsUsedThisPeriod: number;
+    currentPeriodEnd: Date;
+  } | null;
+};
+
+type AccountPackage = {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  priceAmount: number;
+  currency: string;
+  credits: number;
+  periodDays: number | null;
 };
 
 type AccountRowItem = {
@@ -66,10 +86,28 @@ function AccountRow({ item }: { item: AccountRowItem }) {
   );
 }
 
-export function AccountScreen({ name, email, phone, role, credits }: AccountScreenProps) {
+const dateFormatter = new Intl.DateTimeFormat("fa-IR", { day: "numeric", month: "short" });
+
+function formatPrice(amount: number, currency: string) {
+  return `${amount.toLocaleString("fa-IR")} ${currency === "IRR" ? "ریال" : currency}`;
+}
+
+export function AccountScreen({
+  name,
+  email,
+  phone,
+  role,
+  credits,
+  packages,
+  pendingPackageIds,
+  activeSubscription,
+}: AccountScreenProps) {
   const isAdmin = role.toUpperCase() === "ADMIN";
   const displayName = getUserDisplayName({ name, email, phone });
   const identifier = getUserIdentifier({ email, phone });
+  const remainingSubscriptionCredits = activeSubscription
+    ? Math.max(0, activeSubscription.creditsPerPeriod - activeSubscription.creditsUsedThisPeriod)
+    : 0;
 
   return (
     <PageShell maxWidth="md" className="space-y-3 pb-3">
@@ -93,9 +131,41 @@ export function AccountScreen({ name, email, phone, role, credits }: AccountScre
             </div>
             <div className="rounded-[1rem] bg-white/62 px-3 py-2.5">
               <p className="text-[11px] font-medium text-muted">پلن فعلی</p>
-              <p className="mt-1 text-sm font-semibold text-foreground">استودیو</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">
+                {activeSubscription?.title ?? "استودیو"}
+              </p>
             </div>
           </div>
+          {activeSubscription ? (
+            <div className="mt-3 rounded-[1rem] bg-white/62 px-3 py-2.5">
+              <div className="flex items-center justify-between gap-3 text-xs text-muted">
+                <span>اعتبار اشتراک</span>
+                <span>
+                  {remainingSubscriptionCredits.toLocaleString("fa-IR")} از{" "}
+                  {activeSubscription.creditsPerPeriod.toLocaleString("fa-IR")}
+                </span>
+              </div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#e3d8c8]">
+                <div
+                  className="h-full rounded-full bg-[#9b773f]"
+                  style={{
+                    width: `${Math.max(
+                      0,
+                      Math.min(
+                        100,
+                        activeSubscription.creditsPerPeriod > 0
+                          ? (remainingSubscriptionCredits / activeSubscription.creditsPerPeriod) * 100
+                          : 0,
+                      ),
+                    )}%`,
+                  }}
+                />
+              </div>
+              <p className="mt-2 text-[11px] text-muted">
+                پایان دوره: {dateFormatter.format(activeSubscription.currentPeriodEnd)}
+              </p>
+            </div>
+          ) : null}
           {isAdmin ? (
             <ButtonLink
               href="/admin"
@@ -112,6 +182,54 @@ export function AccountScreen({ name, email, phone, role, credits }: AccountScre
           <CreditCard aria-hidden={true} className="h-4 w-4" />
           خرید اعتبار یا اشتراک
         </button>
+
+        {packages.length > 0 ? (
+          <section className="space-y-2.5">
+            {packages.map((billingPackage) => {
+              const pending = pendingPackageIds.includes(billingPackage.id);
+
+              return (
+                <form
+                  key={billingPackage.id}
+                  action={createPurchaseRequestAction}
+                  className="rounded-[1.05rem] border border-white/72 bg-surface/64 p-3 text-right"
+                >
+                  <input type="hidden" name="packageId" value={billingPackage.id} />
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{billingPackage.title}</p>
+                      <p className="mt-1 text-[11px] leading-5 text-muted">{billingPackage.description}</p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-[#efe2cd] px-2.5 py-1 text-[10px] font-semibold text-[#806033]">
+                      {billingPackage.type === "SUBSCRIPTION" ? "اشتراک" : "بسته"}
+                    </span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
+                    <span>
+                      {billingPackage.credits.toLocaleString("fa-IR")} اعتبار
+                      {billingPackage.periodDays ? ` / ${billingPackage.periodDays.toLocaleString("fa-IR")} روز` : ""}
+                    </span>
+                    <span className="font-semibold text-foreground">
+                      {formatPrice(billingPackage.priceAmount, billingPackage.currency)}
+                    </span>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={pending}
+                    className={buttonClasses({
+                      size: "full",
+                      variant: pending ? "secondary" : "primary",
+                      className: "mt-3 h-10 rounded-[0.9rem] text-xs",
+                    })}
+                  >
+                    <CreditCard aria-hidden={true} className="h-4 w-4" />
+                    {pending ? "در انتظار تایید ادمین" : "ثبت درخواست خرید"}
+                  </button>
+                </form>
+              );
+            })}
+          </section>
+        ) : null}
 
         <div className="grid grid-cols-2 gap-3">
           <button

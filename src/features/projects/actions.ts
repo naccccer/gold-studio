@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { db } from "@/lib/db";
 import { requireUserSession } from "@/lib/auth/session";
+import { consumeGenerationCredit } from "@/lib/billing";
 import { processImageProject, processTextProject } from "@/lib/generation/jobs";
 import { getStyleForGeneration, type StyleForGeneration } from "@/lib/styles";
 import { saveTextPromptSourceImage, saveUploadedFile } from "@/lib/uploads";
@@ -116,6 +117,11 @@ export async function createProjectAction(
       return { error: "برای اجرای تست داخلی، یک ورودی کوتاه ثبت کنید." };
     }
 
+    const credit = await consumeGenerationCredit(session.userId);
+    if (!credit.ok) {
+      return { error: credit.error };
+    }
+
     const sourceImageUrl = await saveTextPromptSourceImage(textPrompt);
     const project = await db.project.create({
       data: {
@@ -141,6 +147,11 @@ export async function createProjectAction(
       return { error: "تصویر گالری یافت نشد." };
     }
 
+    const credit = await consumeGenerationCredit(session.userId);
+    if (!credit.ok) {
+      return { error: credit.error };
+    }
+
     const project = await db.project.create({
       data: {
         userId: session.userId,
@@ -160,6 +171,11 @@ export async function createProjectAction(
   const image = formData.getAll("image").find((value): value is File => value instanceof File && value.size > 0);
   if (!(image instanceof File) || image.size === 0) {
     return { error: "لطفا تصویر محصول را انتخاب کنید." };
+  }
+
+  const credit = await consumeGenerationCredit(session.userId);
+  if (!credit.ok) {
+    return { error: credit.error };
   }
 
   const uploaded = await saveUploadedFile(image);

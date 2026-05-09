@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { requireUserSession } from "@/lib/auth/session";
+import { consumeGenerationCredit, getAvailableGenerationCredits, NO_CREDITS_ERROR } from "@/lib/billing";
 import { db } from "@/lib/db";
 import { processGenerationBatch } from "@/lib/generation/jobs";
 import { getStyleForGeneration } from "@/lib/styles";
@@ -59,6 +60,18 @@ export async function createBatchFromGalleryAction(formData: FormData) {
 
   if (assets.length === 0) {
     redirect("/gallery");
+  }
+
+  const availableCredits = await getAvailableGenerationCredits(session.userId);
+  if (availableCredits < assets.length) {
+    redirect(`/gallery?error=${encodeURIComponent(NO_CREDITS_ERROR)}`);
+  }
+
+  for (let index = 0; index < assets.length; index += 1) {
+    const credit = await consumeGenerationCredit(session.userId);
+    if (!credit.ok) {
+      redirect(`/gallery?error=${encodeURIComponent(credit.error)}`);
+    }
   }
 
   const batch = await db.generationBatch.create({

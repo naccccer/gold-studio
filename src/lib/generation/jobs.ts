@@ -1,8 +1,13 @@
 import { generateStyledImageWithLiara, generateTextImageWithLiara } from "@/lib/ai/liara";
+import { logProviderEvent } from "@/lib/billing";
 import { db } from "@/lib/db";
 import { readStoredUpload, saveGeneratedImage } from "@/lib/uploads";
 
 function errorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message.includes("temporary network error")) {
+    return "اتصال به سرویس تولید تصویر لحظه‌ای قطع شد. دوباره تلاش کنید.";
+  }
+
   return error instanceof Error ? error.message : fallback;
 }
 
@@ -13,6 +18,10 @@ async function claimQueuedProject(projectId: string) {
   });
 
   return claimed.count > 0;
+}
+
+function liaraModel() {
+  return process.env.LIARA_IMAGE_MODEL?.trim() || process.env.GAPGPT_IMAGE_MODEL?.trim() || "google/gemini-2.5-flash-image";
 }
 
 export async function processImageProject(projectId: string) {
@@ -44,6 +53,12 @@ export async function processImageProject(projectId: string) {
       mimeType: source.mimeType,
       stylePrompt: project.prompt,
     });
+    await logProviderEvent({
+      projectId,
+      operation: "image.edit",
+      status: "SUCCESS",
+      model: liaraModel(),
+    });
     const result = await saveGeneratedImage(generatedImage.imageBuffer);
 
     await db.project.update({
@@ -51,6 +66,13 @@ export async function processImageProject(projectId: string) {
       data: { status: "COMPLETED", resultImageUrl: result.publicUrl, resultStorageKey: result.storageKey, errorMessage: null },
     });
   } catch (error) {
+    await logProviderEvent({
+      projectId,
+      operation: "image.edit",
+      status: "FAILED",
+      model: liaraModel(),
+      errorMessage: errorMessage(error, "خطا در تولید تصویر رخ داد."),
+    });
     await db.project.update({
       where: { id: projectId },
       data: {
@@ -80,6 +102,12 @@ export async function processTextProject({
       prompt: textPrompt,
       stylePrompt,
     });
+    await logProviderEvent({
+      projectId,
+      operation: "image.generate",
+      status: "SUCCESS",
+      model: liaraModel(),
+    });
     const result = await saveGeneratedImage(generatedImage.imageBuffer);
 
     await db.project.update({
@@ -87,6 +115,13 @@ export async function processTextProject({
       data: { status: "COMPLETED", resultImageUrl: result.publicUrl, resultStorageKey: result.storageKey, errorMessage: null },
     });
   } catch (error) {
+    await logProviderEvent({
+      projectId,
+      operation: "image.generate",
+      status: "FAILED",
+      model: liaraModel(),
+      errorMessage: errorMessage(error, "خطا در تست متن به تصویر رخ داد."),
+    });
     await db.project.update({
       where: { id: projectId },
       data: {

@@ -37,41 +37,79 @@ enum StyleControlType {
   RANGE
 }
 
+enum BillingPackageType {
+  CREDIT_PACK
+  SUBSCRIPTION
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  CANCELED
+  EXPIRED
+}
+
+enum PurchaseRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELED
+}
+
+enum CreditEventSource {
+  ADMIN
+  PACKAGE
+  SUBSCRIPTION
+  GENERATION
+}
+
+enum ProviderEventStatus {
+  SUCCESS
+  FAILED
+}
+
 model User {
-  id           String    @id @default(cuid())
-  name         String?
-  email        String?   @unique
-  phone        String?   @unique
-  passwordHash String
-  role         UserRole  @default(USER)
-  credits      Int       @default(5)
-  projects     Project[]
-  assets       ProductAsset[]
-  collections  AssetCollection[]
-  batches      GenerationBatch[]
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id                    String             @id @default(cuid())
+  name                  String?
+  email                 String?            @unique
+  phone                 String?            @unique
+  passwordHash          String
+  role                  UserRole           @default(USER)
+  credits               Int                @default(5)
+  projects              Project[]
+  assets                ProductAsset[]
+  collections           AssetCollection[]
+  batches               GenerationBatch[]
+  subscriptions         UserSubscription[] @relation("UserSubscriptions")
+  assignedSubscriptions UserSubscription[] @relation("AssignedSubscriptions")
+  purchaseRequests      PurchaseRequest[]
+  creditEvents          CreditEvent[]      @relation("UserCreditEvents")
+  authoredCreditEvents  CreditEvent[]      @relation("AdminCreditEvents")
+  auditEvents           AdminAuditEvent[]  @relation("AdminAuditActor")
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
 }
 
 model Project {
-  id             String        @id @default(cuid())
-  userId         String
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sourceAssetId  String?
-  sourceAsset    ProductAsset? @relation(fields: [sourceAssetId], references: [id], onDelete: SetNull)
-  title          String?
-  sourceImageUrl String
-  resultImageUrl String?
+  id               String                @id @default(cuid())
+  userId           String
+  user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceAssetId    String?
+  sourceAsset      ProductAsset?         @relation(fields: [sourceAssetId], references: [id], onDelete: SetNull)
+  title            String?
+  sourceImageUrl   String
+  resultImageUrl   String?
   resultStorageKey String?
-  status         ProjectStatus @default(QUEUED)
-  styleId        String
-  style          CreativeStyle @relation(fields: [styleId], references: [id], onDelete: Restrict)
-  prompt         String        @db.Text
-  errorMessage   String?
-  archivedAt     DateTime?
-  batchItems     GenerationBatchItem[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  status           ProjectStatus         @default(QUEUED)
+  styleId          String
+  style            CreativeStyle         @relation(fields: [styleId], references: [id], onDelete: Restrict)
+  prompt           String                @db.Text
+  errorMessage     String?
+  archivedAt       DateTime?
+  batchItems       GenerationBatchItem[]
+  providerEvents   ProviderEvent[]
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
 
   @@index([userId, createdAt])
   @@index([userId, archivedAt])
@@ -90,23 +128,23 @@ model StyleCategory {
 }
 
 model CreativeStyle {
-  id              String          @id @default(cuid())
+  id              String            @id @default(cuid())
   categoryId      String?
-  category        StyleCategory?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  category        StyleCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   name            String
   description     String
-  prompt          String           @db.Text
+  prompt          String            @db.Text
   previewImageUrl String
-  previewSource   String           @default("placeholder")
-  sortOrder       Int              @default(0)
-  isActive        Boolean          @default(true)
-  isUserVisible   Boolean          @default(true)
+  previewSource   String            @default("placeholder")
+  sortOrder       Int               @default(0)
+  isActive        Boolean           @default(true)
+  isUserVisible   Boolean           @default(true)
   variants        StyleVariant[]
   controls        StyleControl[]
   projects        Project[]
   batches         GenerationBatch[]
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   @@index([categoryId])
   @@index([isActive, isUserVisible, sortOrder])
@@ -160,23 +198,23 @@ model AssetCollection {
 }
 
 model ProductAsset {
-  id              String                @id @default(cuid())
-  userId          String
-  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  collectionId    String?
-  collection      AssetCollection?      @relation(fields: [collectionId], references: [id], onDelete: SetNull)
-  fileUrl         String
-  storageKey      String
-  mimeType        String
-  originalName    String?
-  title           String?
-  notes           String?
-  status          ProductAssetStatus    @default(READY)
-  archivedAt      DateTime?
-  projects        Project[]
-  batchItems      GenerationBatchItem[]
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
+  id           String                @id @default(cuid())
+  userId       String
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collectionId String?
+  collection   AssetCollection?      @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  fileUrl      String
+  storageKey   String
+  mimeType     String
+  originalName String?
+  title        String?
+  notes        String?
+  status       ProductAssetStatus    @default(READY)
+  archivedAt   DateTime?
+  projects     Project[]
+  batchItems   GenerationBatchItem[]
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
 
   @@index([userId, createdAt])
   @@index([userId, archivedAt])
@@ -213,4 +251,126 @@ model GenerationBatchItem {
   @@index([batchId])
   @@index([assetId])
   @@index([projectId])
+}
+
+model BillingPackage {
+  id               String             @id @default(cuid())
+  type             BillingPackageType
+  title            String
+  description      String             @db.Text
+  priceAmount      Int
+  currency         String             @default("IRR")
+  credits          Int                @default(0)
+  periodDays       Int?
+  isActive         Boolean            @default(true)
+  isPublic         Boolean            @default(true)
+  sortOrder        Int                @default(0)
+  archivedAt       DateTime?
+  subscriptions    UserSubscription[]
+  purchaseRequests PurchaseRequest[]
+  creditEvents     CreditEvent[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@index([type, isActive, isPublic, sortOrder])
+  @@index([archivedAt])
+}
+
+model UserSubscription {
+  id                    String             @id @default(cuid())
+  userId                String
+  user                  User               @relation("UserSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
+  packageId             String
+  package               BillingPackage     @relation(fields: [packageId], references: [id], onDelete: Restrict)
+  status                SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart    DateTime
+  currentPeriodEnd      DateTime
+  creditsPerPeriod      Int
+  creditsUsedThisPeriod Int                @default(0)
+  assignedByAdminId     String?
+  assignedByAdmin       User?              @relation("AssignedSubscriptions", fields: [assignedByAdminId], references: [id], onDelete: SetNull)
+  notes                 String?            @db.Text
+  creditEvents          CreditEvent[]
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([userId, status])
+  @@index([packageId])
+  @@index([assignedByAdminId])
+  @@index([currentPeriodEnd])
+}
+
+model PurchaseRequest {
+  id        String                @id @default(cuid())
+  userId    String
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  packageId String
+  package   BillingPackage        @relation(fields: [packageId], references: [id], onDelete: Restrict)
+  status    PurchaseRequestStatus @default(PENDING)
+  amount    Int
+  currency  String                @default("IRR")
+  adminNote String?               @db.Text
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  @@index([userId, status])
+  @@index([packageId])
+  @@index([status, createdAt])
+}
+
+model CreditEvent {
+  id             String            @id @default(cuid())
+  userId         String
+  user           User              @relation("UserCreditEvents", fields: [userId], references: [id], onDelete: Cascade)
+  actorAdminId   String?
+  actorAdmin     User?             @relation("AdminCreditEvents", fields: [actorAdminId], references: [id], onDelete: SetNull)
+  delta          Int
+  balanceBefore  Int
+  balanceAfter   Int
+  reason         String            @db.Text
+  source         CreditEventSource
+  packageId      String?
+  package        BillingPackage?   @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  subscriptionId String?
+  subscription   UserSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  createdAt      DateTime          @default(now())
+
+  @@index([userId, createdAt])
+  @@index([actorAdminId])
+  @@index([packageId])
+  @@index([subscriptionId])
+  @@index([source])
+}
+
+model AdminAuditEvent {
+  id           String   @id @default(cuid())
+  actorAdminId String?
+  actorAdmin   User?    @relation("AdminAuditActor", fields: [actorAdminId], references: [id], onDelete: SetNull)
+  action       String
+  targetType   String
+  targetId     String
+  summary      String
+  metadata     Json?
+  createdAt    DateTime @default(now())
+
+  @@index([actorAdminId, createdAt])
+  @@index([targetType, targetId])
+  @@index([action])
+}
+
+model ProviderEvent {
+  id           String              @id @default(cuid())
+  projectId    String?
+  project      Project?            @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  provider     String              @default("liara")
+  operation    String
+  status       ProviderEventStatus
+  model        String?
+  statusDetail String?             @db.Text
+  errorMessage String?             @db.Text
+  retryCount   Int                 @default(0)
+  createdAt    DateTime            @default(now())
+
+  @@index([projectId, createdAt])
+  @@index([provider, status, createdAt])
 }
