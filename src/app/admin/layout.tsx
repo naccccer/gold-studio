@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Boxes, CreditCard, Gauge, Images, Palette, Users } from "lucide-react";
+import { ArrowRight, Boxes, CreditCard, Gauge, Images, LifeBuoy, Palette, Users } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button";
 import { requireAdminSession } from "@/lib/auth/session";
 
@@ -8,6 +8,7 @@ const adminNav = [
   { href: "/admin/projects", label: "پروژه‌ها", icon: Images },
   { href: "/admin/users", label: "کاربران", icon: Users },
   { href: "/admin/packages", label: "پکیج و اعتبار", icon: CreditCard },
+  { href: "/admin/support", label: "پشتیبانی", icon: LifeBuoy },
   { href: "/admin/styles", label: "سبک‌ها", icon: Palette },
   { href: "/admin/provider", label: "عملیات AI", icon: Boxes },
 ];

@@ -29,6 +29,7 @@ type NewProjectFormProps = {
   galleryAssets: GalleryAssetOption[];
   selectedAssetId?: string;
   styles: StyleOption[];
+  defaultOutputPreset?: OutputPresetId;
 };
 
 type OutputPresetId = "post" | "story" | "banner";
@@ -63,6 +64,7 @@ export function NewProjectForm({
   galleryAssets,
   selectedAssetId,
   styles,
+  defaultOutputPreset = "post",
 }: NewProjectFormProps) {
   const explicitSelectedAsset = selectedAssetId ? galleryAssets.find((asset) => asset.id === selectedAssetId) ?? null : null;
   const initiallySelectedAsset = explicitSelectedAsset ?? galleryAssets[0] ?? null;
@@ -71,7 +73,7 @@ export function NewProjectForm({
   const [step, setStep] = useState<WizardStep>(explicitSelectedAsset ? "size" : "source");
   const [selectedAsset, setSelectedAsset] = useState<GalleryAssetOption | null>(initiallySelectedAsset);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [outputPreset, setOutputPreset] = useState<OutputPresetId>("post");
+  const [outputPreset, setOutputPreset] = useState<OutputPresetId>(defaultOutputPreset);
   const [selectedStyle, setSelectedStyle] = useState(defaultStyle?.id ?? "");
   const [modelGender, setModelGender] = useState("woman");
   const [modesty, setModesty] = useState("65");

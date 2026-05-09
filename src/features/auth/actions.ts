@@ -5,6 +5,7 @@ import { normalizeLoginIdentifier } from "@/lib/auth/identifier";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { clearSession, createSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { referralCodeFromUserId } from "@/lib/referrals";
 
 export type AuthFormState = {
   error?: string;
@@ -41,14 +42,69 @@ export async function signupAction(
   const passwordHash = await hashPassword(password);
   const email = identifier.kind === "email" ? identifier.value : null;
   const phone = identifier.kind === "phone" ? identifier.value : null;
+  const referralCode = String(formData.get("referralCode") ?? "").trim().toUpperCase();
 
-  const user = await db.user.create({
-    data: {
-      email,
-      phone,
-      passwordHash,
-      role: adminEmail && adminEmail === email ? "ADMIN" : "USER",
-    },
+  const user = await db.$transaction(async (tx) => {
+    const created = await tx.user.create({
+      data: {
+        email,
+        phone,
+        passwordHash,
+        role: adminEmail && adminEmail === email ? "ADMIN" : "USER",
+      },
+    });
+
+    await tx.user.update({
+      where: { id: created.id },
+      data: { referralCode: referralCodeFromUserId(created.id) },
+    });
+
+    if (referralCode) {
+      const inviter = await tx.user.findFirst({
+        where: { referralCode, id: { not: created.id } },
+        select: { id: true, credits: true },
+      });
+
+      if (inviter) {
+        const rewardCredits = 2;
+        const referral = await tx.referral.create({
+          data: {
+            inviterId: inviter.id,
+            inviteeId: created.id,
+            codeUsed: referralCode,
+            rewardCredits,
+          },
+        });
+
+        await tx.user.update({ where: { id: inviter.id }, data: { credits: { increment: rewardCredits } } });
+        await tx.creditEvent.create({
+          data: {
+            userId: inviter.id,
+            delta: rewardCredits,
+            balanceBefore: inviter.credits,
+            balanceAfter: inviter.credits + rewardCredits,
+            reason: "پاداش معرفی کاربر جدید",
+            source: "REFERRAL",
+            referralId: referral.id,
+          },
+        });
+
+        await tx.user.update({ where: { id: created.id }, data: { credits: { increment: rewardCredits } } });
+        await tx.creditEvent.create({
+          data: {
+            userId: created.id,
+            delta: rewardCredits,
+            balanceBefore: created.credits,
+            balanceAfter: created.credits + rewardCredits,
+            reason: "هدیه ثبت‌نام با کد معرف",
+            source: "REFERRAL",
+            referralId: referral.id,
+          },
+        });
+      }
+    }
+
+    return created;
   });
 
   await createSession({ userId: user.id, role: user.role });

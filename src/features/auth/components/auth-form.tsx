@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Contact, Eye, Lock, LogIn, UserPlus } from "lucide-react";
+import { ArrowLeft, Contact, Eye, Gift, Lock, LogIn, UserPlus } from "lucide-react";
 import { useActionState } from "react";
 import { AuthImageBackdrop } from "@/components/ui/auth-image-backdrop";
 import { BrandLogo } from "@/components/ui/brand-logo";
@@ -96,6 +96,18 @@ export function AuthForm({
               {!isSignup ? <Eye aria-hidden="true" className="h-4 w-4 shrink-0 text-[#8b8173]" /> : null}
             </div>
           </div>
+
+          {isSignup ? (
+            <AuthField
+              label="کد معرف"
+              name="referralCode"
+              type="text"
+              autoComplete="off"
+              placeholder="GS..."
+              dir="ltr"
+              icon={Gift}
+            />
+          ) : null}
 
           {state.error ? (
             <p className="rounded-[1rem] border border-danger/30 bg-danger-soft/92 px-3 py-2 text-sm text-danger">

@@ -12,6 +12,7 @@ import {
   updateUserRoleAction,
 } from "@/features/admin/actions";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
+import { getUserCreditSummary } from "@/lib/billing";
 import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -35,7 +36,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
       }
     : {};
 
-  const [users, subscriptionPackages, selectedUser, pendingRequestsCount] = await Promise.all([
+  const [users, subscriptionPackages, selectedUser, selectedCreditSummary, pendingRequestsCount] = await Promise.all([
     db.user.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -67,6 +68,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
           },
         })
       : null,
+    selectedUserId ? getUserCreditSummary(selectedUserId) : null,
     db.purchaseRequest.count({ where: { status: "PENDING" } }),
   ]);
 
@@ -112,7 +114,11 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
         <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
           <AdminSection title="پرونده کاربر" eyebrow={getUserIdentifier(selectedUser)}>
             <div className="grid gap-3 sm:grid-cols-3">
-              <AdminMetric label="اعتبار خریداری‌شده" value={selectedUser.credits} />
+              <AdminMetric label="اعتبار کل قابل استفاده" value={selectedCreditSummary?.totalAvailableCredits ?? selectedUser.credits} />
+              <AdminMetric label="کیف پول" value={selectedCreditSummary?.walletCredits ?? selectedUser.credits} />
+              <AdminMetric label="اشتراک" value={selectedCreditSummary?.subscriptionCredits ?? 0} />
+            </div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <AdminMetric label="پروژه" value={selectedUser._count.projects} />
               <AdminMetric label="دارایی" value={selectedUser._count.assets} />
             </div>

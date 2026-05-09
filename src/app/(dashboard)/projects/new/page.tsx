@@ -11,7 +11,7 @@ export default async function NewProjectPage({
 }) {
   const session = await requireUserSession();
   const params = await searchParams;
-  const [galleryAssets, styles] = await Promise.all([
+  const [galleryAssets, styles, outputSettings] = await Promise.all([
     db.productAsset.findMany({
       where: { userId: session.userId, status: "READY", archivedAt: null },
       orderBy: { createdAt: "desc" },
@@ -24,7 +24,20 @@ export default async function NewProjectPage({
       },
     }),
     getUserVisibleStyles(),
+    db.userOutputSettings.findUnique({ where: { userId: session.userId } }),
   ]);
 
-  return <NewProjectScreen action={createProjectAction} galleryAssets={galleryAssets} styles={styles} selectedAssetId={params?.assetId} />;
+  const defaultOutputPreset = ["post", "story", "banner"].includes(outputSettings?.defaultOutputPreset ?? "")
+    ? (outputSettings?.defaultOutputPreset as "post" | "story" | "banner")
+    : "post";
+
+  return (
+    <NewProjectScreen
+      action={createProjectAction}
+      galleryAssets={galleryAssets}
+      styles={styles}
+      selectedAssetId={params?.assetId}
+      defaultOutputPreset={defaultOutputPreset}
+    />
+  );
 }

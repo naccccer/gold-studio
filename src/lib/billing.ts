@@ -1,7 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 
-export const NO_CREDITS_ERROR = "اعتبار کافی برای ساخت خروجی ندارید. از بخش حساب، بسته یا اشتراک جدید ثبت کنید.";
+export const NO_CREDITS_ERROR = "اعتبار کافی برای ساخت خروجی ندارید. از بخش خرید اعتبار یا اشتراک، بسته یا اشتراک جدید ثبت کنید.";
 
 export async function logAdminAudit({
   actorAdminId,
@@ -127,6 +127,11 @@ export async function consumeGenerationCredit(userId: string) {
 }
 
 export async function getAvailableGenerationCredits(userId: string) {
+  const summary = await getUserCreditSummary(userId);
+  return summary.totalAvailableCredits;
+}
+
+export async function getUserCreditSummary(userId: string) {
   const now = new Date();
   const [user, subscriptions] = await Promise.all([
     db.user.findUnique({ where: { id: userId }, select: { credits: true } }),
@@ -137,9 +142,13 @@ export async function getAvailableGenerationCredits(userId: string) {
         currentPeriodStart: { lte: now },
         currentPeriodEnd: { gt: now },
       },
+      orderBy: { currentPeriodEnd: "desc" },
       select: {
+        id: true,
         creditsPerPeriod: true,
         creditsUsedThisPeriod: true,
+        currentPeriodEnd: true,
+        package: { select: { title: true } },
       },
     }),
   ]);
@@ -149,7 +158,19 @@ export async function getAvailableGenerationCredits(userId: string) {
     0,
   );
 
-  return subscriptionCredits + (user?.credits ?? 0);
+  return {
+    walletCredits: user?.credits ?? 0,
+    subscriptionCredits,
+    totalAvailableCredits: subscriptionCredits + (user?.credits ?? 0),
+    activeSubscription: subscriptions[0]
+      ? {
+          title: subscriptions[0].package.title,
+          creditsPerPeriod: subscriptions[0].creditsPerPeriod,
+          creditsUsedThisPeriod: subscriptions[0].creditsUsedThisPeriod,
+          currentPeriodEnd: subscriptions[0].currentPeriodEnd,
+        }
+      : null,
+  };
 }
 
 export function getSubscriptionPeriod(periodDays = 30) {

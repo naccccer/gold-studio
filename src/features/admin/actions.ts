@@ -20,9 +20,11 @@ function revalidateAdmin() {
   revalidatePath("/admin");
   revalidatePath("/admin/users");
   revalidatePath("/admin/packages");
+  revalidatePath("/admin/support");
   revalidatePath("/admin/projects");
   revalidatePath("/admin/styles");
   revalidatePath("/account");
+  revalidatePath("/billing");
 }
 
 export async function updatePaymentSettingsAction(formData: FormData) {
@@ -326,6 +328,12 @@ export async function approvePurchaseRequestAction(formData: FormData) {
     });
 
     if (request.package.type === "CREDIT_PACK") {
+      const existingCreditEvent = await tx.creditEvent.findUnique({
+        where: { purchaseRequestId: request.id },
+        select: { id: true },
+      });
+      if (existingCreditEvent) return request;
+
       const balanceAfter = request.user.credits + request.package.credits;
       await tx.user.update({
         where: { id: request.userId },
@@ -341,9 +349,16 @@ export async function approvePurchaseRequestAction(formData: FormData) {
           reason: `تایید خرید ${request.package.title}`,
           source: "PACKAGE",
           packageId: request.packageId,
+          purchaseRequestId: request.id,
         },
       });
     } else {
+      const existingSubscription = await tx.userSubscription.findUnique({
+        where: { purchaseRequestId: request.id },
+        select: { id: true },
+      });
+      if (existingSubscription) return request;
+
       const period = getSubscriptionPeriod(request.package.periodDays ?? 30);
       await tx.userSubscription.create({
         data: {
@@ -355,6 +370,7 @@ export async function approvePurchaseRequestAction(formData: FormData) {
           creditsPerPeriod: request.package.credits,
           creditsUsedThisPeriod: 0,
           assignedByAdminId: session.userId,
+          purchaseRequestId: request.id,
           notes: `تایید درخواست خرید ${request.package.title}`,
         },
       });
@@ -479,6 +495,200 @@ export async function resetSubscriptionPeriodAction(formData: FormData) {
     targetType: "UserSubscription",
     targetId: subscriptionId,
     summary: "دوره اشتراک تمدید و مصرف اعتبار صفر شد.",
+  });
+  revalidateAdmin();
+}
+
+export async function updateSupportSettingsAction(formData: FormData) {
+  const session = await requireAdminSession();
+  await db.supportSettings.upsert({
+    where: { id: "default" },
+    create: {
+      id: "default",
+      phone: text(formData, "phone") || null,
+      whatsappUrl: text(formData, "whatsappUrl") || null,
+      telegramUrl: text(formData, "telegramUrl") || null,
+      instructions: text(formData, "instructions") || null,
+      isActive: formData.has("isActive"),
+    },
+    update: {
+      phone: text(formData, "phone") || null,
+      whatsappUrl: text(formData, "whatsappUrl") || null,
+      telegramUrl: text(formData, "telegramUrl") || null,
+      instructions: text(formData, "instructions") || null,
+      isActive: formData.has("isActive"),
+    },
+  });
+
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: "support_settings.update",
+    targetType: "SupportSettings",
+    targetId: "default",
+    summary: "تنظیمات پشتیبانی به‌روزرسانی شد.",
+  });
+  revalidateAdmin();
+  revalidatePath("/account/support");
+}
+
+export async function replySupportTicketAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const ticketId = text(formData, "ticketId");
+  const body = text(formData, "body");
+  if (!ticketId || !body) return;
+
+  await db.supportTicket.update({
+    where: { id: ticketId },
+    data: {
+      status: "ANSWERED",
+      messages: {
+        create: {
+          authorType: "ADMIN",
+          adminId: session.userId,
+          body,
+        },
+      },
+    },
+  });
+
+  revalidatePath("/admin/support");
+  revalidatePath("/account/support");
+}
+
+export async function updateSupportTicketStatusAction(formData: FormData) {
+  await requireAdminSession();
+  const ticketId = text(formData, "ticketId");
+  const status = text(formData, "status");
+  if (!ticketId || !["OPEN", "ANSWERED", "CLOSED"].includes(status)) return;
+
+  await db.supportTicket.update({
+    where: { id: ticketId },
+    data: { status: status as "OPEN" | "ANSWERED" | "CLOSED" },
+  });
+
+  revalidatePath("/admin/support");
+  revalidatePath("/account/support");
+}
+
+export async function createFaqItemAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const question = text(formData, "question");
+  const answer = text(formData, "answer");
+  if (!question || !answer) return;
+
+  const item = await db.faqItem.create({
+    data: {
+      question,
+      answer,
+      sortOrder: integer(formData, "sortOrder"),
+      isActive: formData.has("isActive"),
+    },
+  });
+
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: "faq.create",
+    targetType: "FaqItem",
+    targetId: item.id,
+    summary: "سوال پرتکرار ساخته شد.",
+  });
+  revalidatePath("/admin/support");
+  revalidatePath("/account/faq");
+}
+
+export async function updateFaqItemAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const faqId = text(formData, "faqId");
+  const question = text(formData, "question");
+  const answer = text(formData, "answer");
+  if (!faqId || !question || !answer) return;
+
+  await db.faqItem.update({
+    where: { id: faqId },
+    data: {
+      question,
+      answer,
+      sortOrder: integer(formData, "sortOrder"),
+      isActive: formData.has("isActive"),
+    },
+  });
+
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: "faq.update",
+    targetType: "FaqItem",
+    targetId: faqId,
+    summary: "سوال پرتکرار ویرایش شد.",
+  });
+  revalidatePath("/admin/support");
+  revalidatePath("/account/faq");
+}
+
+export async function reconcileApprovedPurchasesAction() {
+  const session = await requireAdminSession();
+  const requests = await db.purchaseRequest.findMany({
+    where: { status: "APPROVED" },
+    include: {
+      package: true,
+      user: { select: { id: true } },
+      creditEvent: true,
+      subscription: true,
+    },
+    take: 100,
+    orderBy: { updatedAt: "desc" },
+  });
+
+  let linked = 0;
+  let ambiguous = 0;
+
+  for (const request of requests) {
+    if (request.package.type === "CREDIT_PACK") {
+      if (request.creditEvent) continue;
+      const matches = await db.creditEvent.findMany({
+        where: {
+          userId: request.userId,
+          packageId: request.packageId,
+          source: "PACKAGE",
+          purchaseRequestId: null,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 2,
+      });
+      if (matches.length === 1) {
+        await db.creditEvent.update({ where: { id: matches[0].id }, data: { purchaseRequestId: request.id } });
+        linked += 1;
+      } else {
+        ambiguous += 1;
+      }
+      continue;
+    }
+
+    if (request.subscription) continue;
+    const matches = await db.userSubscription.findMany({
+      where: {
+        userId: request.userId,
+        packageId: request.packageId,
+        purchaseRequestId: null,
+        notes: { contains: request.package.title },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 2,
+    });
+    if (matches.length === 1) {
+      await db.userSubscription.update({ where: { id: matches[0].id }, data: { purchaseRequestId: request.id } });
+      linked += 1;
+    } else {
+      ambiguous += 1;
+    }
+  }
+
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: "purchase.reconcile",
+    targetType: "PurchaseRequest",
+    targetId: "approved",
+    summary: `آشتی خریدهای تاییدشده انجام شد. لینک‌شده: ${linked}، مبهم: ${ambiguous}`,
+    metadata: { linked, ambiguous },
   });
   revalidateAdmin();
 }

@@ -11,12 +11,13 @@ type NewProjectScreenProps = {
   galleryAssets: GalleryAssetOption[];
   styles: StyleOption[];
   selectedAssetId?: string;
+  defaultOutputPreset?: "post" | "story" | "banner";
 };
 
-export function NewProjectScreen({ action, galleryAssets, styles, selectedAssetId }: NewProjectScreenProps) {
+export function NewProjectScreen({ action, galleryAssets, styles, selectedAssetId, defaultOutputPreset }: NewProjectScreenProps) {
   return (
     <PageShell maxWidth="lg" className="space-y-5">
-      <NewProjectForm action={action} galleryAssets={galleryAssets} styles={styles} selectedAssetId={selectedAssetId} />
+      <NewProjectForm action={action} galleryAssets={galleryAssets} styles={styles} selectedAssetId={selectedAssetId} defaultOutputPreset={defaultOutputPreset} />
     </PageShell>
   );
 }

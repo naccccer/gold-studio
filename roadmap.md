@@ -24,6 +24,7 @@ Workspace ownership:
 - `گالری`: uploaded source product photos.
 - `پروژه‌ها`: generated outputs and generation status.
 - `حساب`: identity, credits/subscription, support, FAQ, referral code, admin entry, logout.
+- `خرید اعتبار یا اشتراک`: user billing, packages, standalone credits, card-to-card info, purchase status, and receipt upload.
 
 ## Phase 1 - Freeze Prototype And Extract UI System
 Goal: turn the current `/design/user-flow` prototype into a practical implementation reference.
@@ -253,8 +254,23 @@ Status: Completed on 2026-05-07. Final pass completed across user and admin rout
 
 2026-05-09 manual payment update:
 - Switched v1 purchases to کارت‌به‌کارت with admin-managed cardholder/card number/payment instructions.
-- Added receipt upload from Account and receipt review before admin approval.
+- Added receipt upload from the user billing flow and receipt review before admin approval.
 - Removed Assets from the admin navigation and split package management into separate پکیج and اعتبار sections with starter, studio, and professional monthly package defaults.
+
+2026-05-09 admin packages visual redesign:
+- Reworked `/admin/packages` into a more serious billing operations surface with a dark operational header, financial card-to-card settings band, pending receipt review entry, package plan records, and secondary standalone credit packs.
+- Kept the existing manual payment, package, receipt approval, duplicate, delete/archive, and active/visible behavior intact while improving scan hierarchy and RTL form organization.
+
+2026-05-09 user billing split:
+- Moved user-facing packages, standalone credits, card-to-card payment details, pending purchase status, and receipt upload from `/account` to `/billing`.
+- Kept `/account` as a clean profile and membership hub with identity, current plan/credits, pending payment summary, admin entry, and a clear `خرید اعتبار یا اشتراک` link.
+- Changed `/billing` to a simple tabbed flow so packages, credits, card-to-card details, and receipts do not appear as one long stacked page.
+
+2026-05-09 account and credit realization:
+- Account credit display now uses total usable credit: standalone wallet credit plus active subscription credit remaining.
+- Purchase approval is linked back to the entitlement it creates through `purchaseRequestId`, with a manual admin reconcile action for older approved purchases.
+- Added database-backed Account pages for profile, referral rewards, output defaults, password changes, FAQ, and two-way support tickets.
+- Added admin support operations for contact settings, support tickets, and FAQ management.
 
 Tasks:
 - Full route pass across auth, home, gallery, project creation, processing, result, projects, account, and admin.
