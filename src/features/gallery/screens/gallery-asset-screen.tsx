@@ -1,9 +1,10 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
+import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
+import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 
 export type GalleryAssetDetail = {
   id: string;
@@ -36,7 +37,16 @@ export function GalleryAssetScreen({ asset }: GalleryAssetScreenProps) {
       </ButtonLink>
 
       <JewelryImageFrame aspect="portrait" className="rounded-[1.25rem] bg-surface-soft shadow-none">
-        <Image src={asset.fileUrl} alt={title} fill priority className="object-cover" sizes="(max-width: 768px) 100vw, 760px" />
+        <SafeJewelryImage
+          src={asset.fileUrl}
+          alt={title}
+          fallbackSrc={uploadPreview.src}
+          fallbackAlt={uploadPreview.alt}
+          fill
+          priority
+          className="object-cover"
+          sizes="(max-width: 768px) 100vw, 760px"
+        />
       </JewelryImageFrame>
 
       <section className="space-y-3 rounded-[1.25rem] border border-border/70 bg-surface px-4 py-4">

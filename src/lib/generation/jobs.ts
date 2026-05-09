@@ -1,4 +1,4 @@
-import { generateStyledImageWithGapGpt, generateTextImageWithGapGpt } from "@/lib/ai/gapgpt";
+import { generateStyledImageWithLiara, generateTextImageWithLiara } from "@/lib/ai/liara";
 import { db } from "@/lib/db";
 import { readStoredUpload, saveGeneratedImage } from "@/lib/uploads";
 
@@ -39,7 +39,7 @@ export async function processImageProject(projectId: string) {
     }
 
     const source = await readStoredUpload(project.sourceAsset.storageKey, project.sourceAsset.mimeType);
-    const generatedImage = await generateStyledImageWithGapGpt({
+    const generatedImage = await generateStyledImageWithLiara({
       sourceBuffer: source.buffer,
       mimeType: source.mimeType,
       stylePrompt: project.prompt,
@@ -76,7 +76,7 @@ export async function processTextProject({
   }
 
   try {
-    const generatedImage = await generateTextImageWithGapGpt({
+    const generatedImage = await generateTextImageWithLiara({
       prompt: textPrompt,
       stylePrompt,
     });

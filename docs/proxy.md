@@ -12,9 +12,9 @@ This repo is often used from Iran, where some external services may be blocked a
 - Try external commands without proxy first when they normally work for you.
 - Use proxy for `npm install` only when npm registry access fails.
 - Use proxy for `npx prisma generate` when Prisma needs to download engines from `binaries.prisma.sh`.
-- Use proxy while running image generation only if GapGPT is unreachable directly.
+- Use proxy while running image generation only if Liara is unreachable directly.
 - Use proxy for S3-compatible storage only if your object storage endpoint is blocked directly.
-- Do not use proxy for local MySQL, local file edits, normal TypeScript checks, or local app pages that do not call GapGPT.
+- Do not use proxy for local MySQL, local file edits, normal TypeScript checks, or local app pages that do not call Liara.
 
 ## v2rayN PowerShell Setup
 If v2rayN listens on `127.0.0.1:10808`, the proxy env var must include a scheme.
@@ -71,7 +71,7 @@ $env:HTTPS_PROXY = "http://127.0.0.1:10808"
 npm run dev
 ```
 
-Only keep proxy enabled for `npm run dev` when testing GapGPT generation and direct access fails.
+Only keep proxy enabled for `npm run dev` when testing Liara generation and direct access fails.
 
 ## Local-First Font Strategy (No External Dependency)
 - Keep UI fonts self-hosted in `public/fonts` and loaded through `next/font/local` in `src/app/layout.tsx`.

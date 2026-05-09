@@ -16,7 +16,7 @@ Current app needs:
 - Node.js
 - MySQL
 - writable local filesystem when `STORAGE_DRIVER="local"`
-- outbound access to npm, GitHub, Prisma downloads, and GapGPT
+- outbound access to npm, GitHub, Prisma downloads, and Liara
 
 ## Server Baseline
 
@@ -85,10 +85,12 @@ Example:
 ```env
 DATABASE_URL="mysql://gold_studio_user:CHANGE_THIS_DB_PASSWORD@127.0.0.1:3306/gold_studio"
 AUTH_SECRET="CHANGE_THIS_TO_A_LONG_RANDOM_SECRET"
-GAPGPT_API_KEY="CHANGE_THIS"
-GAPGPT_BASE_URL="https://api.gapgpt.app/v1"
-GAPGPT_IMAGE_MODEL="gpt-image-1-mini"
-GAPGPT_IMAGE_SIZE="1024x1024"
+LIARA_API_KEY="CHANGE_THIS"
+LIARA_BASE_URL="https://ai.liara.ir/api/69fe30c50bb427e049d327f6/v1"
+LIARA_IMAGE_MODEL="google/gemini-2.5-flash-image"
+LIARA_IMAGE_SIZE="2048x2048"
+LIARA_IMAGE_QUALITY="2K"
+LIARA_FALLBACK_LONG_EDGE="2048"
 ADMIN_EMAIL="admin@example.com"
 STORAGE_DRIVER="local"
 ALLOW_INSECURE_COOKIES="false"

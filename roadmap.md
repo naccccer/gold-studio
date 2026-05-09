@@ -230,6 +230,11 @@ Status: Completed on 2026-05-07. Final pass completed across user and admin rout
 - Gallery intake now separates `دوربین` from `آپلود`, opens a dedicated crop step immediately after selection, and keeps the raw upload running in the background.
 - Gallery crop now opens as a modal on top of `/gallery`, and saving or skipping the crop keeps the user inside Gallery instead of redirecting into project creation.
 
+2026-05-09 provider update:
+- Migrated the OpenAI-compatible image provider boundary from GapGPT naming to Liara defaults while keeping old `GAPGPT_*` env vars as temporary fallbacks.
+- Switched Liara generation to try native `2048x2048` first, then retry once with an OpenAI-compatible size and long-edge upscale only if Liara rejects the native size.
+- Updated Liara quality defaults to `2K` because Liara's Gemini image endpoint accepts `1K`, `2K`, or `4K` instead of OpenAI-style `high`.
+
 Tasks:
 - Full route pass across auth, home, gallery, project creation, processing, result, projects, account, and admin.
 - Check loading, empty, failed, completed, and access-blocked states.

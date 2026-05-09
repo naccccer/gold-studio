@@ -35,7 +35,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fa" dir="rtl" className={`${vazirmatn.variable} ${doran.variable} h-full`}>
+    <html lang="fa" dir="rtl" className={`${vazirmatn.variable} ${doran.variable} h-full`} suppressHydrationWarning>
       <body className="min-h-screen bg-background text-foreground antialiased">{children}</body>
     </html>
   );

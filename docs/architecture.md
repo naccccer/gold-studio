@@ -5,7 +5,7 @@
 - TypeScript.
 - Tailwind CSS.
 - Prisma with MySQL.
-- GapGPT OpenAI-compatible image API.
+- Liara OpenAI-compatible image API.
 - Storage adapter with local filesystem development storage and optional S3-compatible production storage.
 
 ## Product Boundaries
@@ -29,7 +29,7 @@
 - Admin role redirect behavior.
 - Owner-scoped project, asset, and batch reads.
 - Server-side sensitive operations.
-- Existing GapGPT boundary until intentionally migrated.
+- Existing OpenAI-compatible image provider boundary.
 
 ## Planned Architecture
 - Style catalog as Prisma/MySQL records, with admin-managed creation, visibility, active state, and ordering.

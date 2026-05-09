@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Check, Images, Sparkles, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
+import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 import type { ProjectFormState } from "@/features/projects/actions";
 import type { StyleControlOption, StyleOption } from "@/features/projects/presets";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
@@ -164,9 +165,11 @@ export function NewProjectForm({
           <div className="space-y-3">
             {selectedAsset ? (
               <div className="relative h-[218px] overflow-hidden rounded-[1.45rem] border border-white/80 bg-[#e7ded2]">
-                <Image
+                <SafeJewelryImage
                   src={selectedAsset.fileUrl}
                   alt={selectedAsset.title || selectedAsset.originalName || "تصویر محصول"}
+                  fallbackSrc={uploadPreview.src}
+                  fallbackAlt={uploadPreview.alt}
                   fill
                   priority
                   className="object-cover object-[46%_55%]"
@@ -194,7 +197,15 @@ export function NewProjectForm({
                     aria-label={label}
                   >
                     <span className="relative block aspect-square">
-                      <Image src={asset.fileUrl} alt={label} fill className="object-cover" sizes="33vw" />
+                      <SafeJewelryImage
+                        src={asset.fileUrl}
+                        alt={label}
+                        fallbackSrc={uploadPreview.src}
+                        fallbackAlt={uploadPreview.alt}
+                        fill
+                        className="object-cover"
+                        sizes="33vw"
+                      />
                     </span>
                     {selected ? (
                       <span className="absolute left-1.5 top-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-surface">
