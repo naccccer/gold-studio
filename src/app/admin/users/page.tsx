@@ -1,13 +1,17 @@
 import Link from "next/link";
-import { Check, RefreshCcw, Save } from "lucide-react";
+import type { ReactNode } from "react";
+import { BadgeCheck, Check, KeyRound, Plus, RefreshCcw, Save, Search, UserCog, WalletCards } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AdminMetric, AdminRow, AdminSection, AdminStatus, EmptyAdminState, formatAdminDate, formatIrr } from "@/features/admin/components/admin-ui";
 import {
   adjustUserCreditsAction,
   approvePurchaseRequestAction,
   assignSubscriptionAction,
+  createAdminUserAction,
   rejectPurchaseRequestAction,
   resetSubscriptionPeriodAction,
+  updateAdminUserIdentityAction,
+  updateAdminUserPasswordAction,
   updateSubscriptionStatusAction,
   updateUserRoleAction,
 } from "@/features/admin/actions";
@@ -20,6 +24,25 @@ export const dynamic = "force-dynamic";
 type AdminUsersPageProps = {
   searchParams?: Promise<{ q?: string; userId?: string }>;
 };
+
+const inputClass = "h-10 w-full rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-sm outline-none focus:border-border-strong";
+const labelClass = "space-y-1.5 text-xs font-medium text-muted";
+const formPanelClass = "space-y-3 rounded-[var(--radius-md)] border border-border/70 bg-surface-soft/40 p-3";
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <label className={labelClass}>
+      <span>{label}</span>
+      {children}
+    </label>
+  );
+}
 
 export default async function AdminUsersPage({ searchParams }: AdminUsersPageProps) {
   const params = await searchParams;
@@ -73,180 +96,312 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
   ]);
 
   return (
-    <>
+    <div className="space-y-5">
       <section className="grid gap-3 sm:grid-cols-3">
         <AdminMetric label="کاربران نمایش‌داده‌شده" value={users.length} />
         <AdminMetric label="درخواست خرید باز" value={pendingRequestsCount} />
         <AdminMetric label="بسته اشتراک" value={subscriptionPackages.length} />
       </section>
 
-      <AdminSection title="جست‌وجوی کاربران" eyebrow="نقش، اعتبار، اشتراک">
-        <form className="mb-4 flex flex-wrap gap-2">
-          <input
-            name="q"
-            defaultValue={q}
-            placeholder="نام، ایمیل، موبایل یا شناسه"
-            className="h-10 min-w-0 flex-1 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-sm outline-none"
-          />
-          <Button type="submit" size="sm">جست‌وجو</Button>
-        </form>
-        {users.map((user) => {
-          const activeSubscription = user.subscriptions[0];
-          return (
-            <AdminRow key={user.id}>
-              <div className="min-w-0">
-                <Link href={`/admin/users?userId=${user.id}`} className="font-semibold text-foreground hover:underline">
-                  {getUserDisplayName(user)}
-                </Link>
-                <p className="truncate text-xs text-muted" dir="ltr">{getUserIdentifier(user)}</p>
-              </div>
-              <div className="text-xs text-muted">
-                <p>{user.credits.toLocaleString("fa-IR")} اعتبار · {user._count.projects.toLocaleString("fa-IR")} پروژه · {user._count.assets.toLocaleString("fa-IR")} دارایی</p>
-                <p>{activeSubscription ? `${activeSubscription.package.title} تا ${formatAdminDate(activeSubscription.currentPeriodEnd)}` : "بدون اشتراک فعال"}</p>
-              </div>
-              <AdminStatus status={user.role} />
-            </AdminRow>
-          );
-        })}
-      </AdminSection>
-
-      {selectedUser ? (
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-          <AdminSection title="پرونده کاربر" eyebrow={getUserIdentifier(selectedUser)}>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <AdminMetric label="اعتبار کل قابل استفاده" value={selectedCreditSummary?.totalAvailableCredits ?? selectedUser.credits} />
-              <AdminMetric label="کیف پول" value={selectedCreditSummary?.walletCredits ?? selectedUser.credits} />
-              <AdminMetric label="اشتراک" value={selectedCreditSummary?.subscriptionCredits ?? 0} />
-            </div>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <AdminMetric label="پروژه" value={selectedUser._count.projects} />
-              <AdminMetric label="دارایی" value={selectedUser._count.assets} />
-            </div>
-
-            <form action={adjustUserCreditsAction} className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-              <input type="hidden" name="userId" value={selectedUser.id} />
-              <input name="delta" type="number" placeholder="+10 یا -2" className="h-10 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-sm outline-none" />
-              <input name="reason" placeholder="دلیل تغییر اعتبار" className="h-10 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-sm outline-none" />
-              <Button type="submit" size="sm">
-                <Save className="h-4 w-4" />
-                ثبت اعتبار
+      <div className="grid gap-5 xl:grid-cols-[minmax(280px,0.8fr)_minmax(0,1.4fr)] xl:items-start">
+        <div className="space-y-4">
+          <AdminSection
+            title="کاربران"
+            eyebrow="جست‌وجو و انتخاب پرونده"
+            action={
+              <a href="#new-user" className="inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-xs font-medium">
+                <Plus aria-hidden="true" className="h-3.5 w-3.5" />
+                کاربر جدید
+              </a>
+            }
+          >
+            <form className="mb-4 flex flex-col gap-2 sm:flex-row">
+              <input
+                name="q"
+                defaultValue={q}
+                placeholder="نام، ایمیل، موبایل یا شناسه"
+                className={inputClass}
+              />
+              <Button type="submit" size="sm" className="shrink-0">
+                <Search aria-hidden="true" className="h-4 w-4" />
+                جست‌وجو
               </Button>
             </form>
 
-            <form action={updateUserRoleAction} className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]">
-              <input type="hidden" name="userId" value={selectedUser.id} />
-              <select name="role" defaultValue={selectedUser.role} className="h-10 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-sm outline-none">
-                <option value="USER">کاربر</option>
-                <option value="ADMIN">ادمین</option>
-              </select>
-              <input name="confirmRoleChange" placeholder="برای تایید بنویسید: تایید" className="h-10 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-sm outline-none" />
-              <span className="self-center text-xs text-muted">تغییر نقش حساس است.</span>
-              <Button type="submit" size="sm">تغییر نقش</Button>
-            </form>
-
-            <form action={assignSubscriptionAction} className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-              <input type="hidden" name="userId" value={selectedUser.id} />
-              <select name="packageId" className="h-10 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-sm outline-none">
-                {subscriptionPackages.map((billingPackage) => (
-                  <option key={billingPackage.id} value={billingPackage.id}>{billingPackage.title}</option>
-                ))}
-              </select>
-              <input name="notes" placeholder="یادداشت اختصاص اشتراک" className="h-10 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-sm outline-none" />
-              <Button type="submit" size="sm">اختصاص اشتراک</Button>
-            </form>
-          </AdminSection>
-
-          <AdminSection title="درخواست‌های خرید" eyebrow="تایید یا رد">
-            {selectedUser.purchaseRequests.length === 0 ? (
-              <EmptyAdminState>درخواستی برای این کاربر ثبت نشده است.</EmptyAdminState>
-            ) : (
-              selectedUser.purchaseRequests.map((request) => (
-                <AdminRow key={request.id}>
-                  <div>
-                    <p className="font-semibold text-foreground">{request.package.title}</p>
-                    <p className="text-xs text-muted">{formatIrr(request.amount, request.currency)} · {formatAdminDate(request.createdAt)}</p>
-                    {request.receiptImageUrl ? (
-                      <a href={request.receiptImageUrl} target="_blank" rel="noreferrer" className="mt-1 block text-xs text-[#7b5d31]">
-                        مشاهده رسید پرداخت
-                      </a>
-                    ) : (
-                      <p className="mt-1 text-xs text-danger">رسید هنوز ارسال نشده است.</p>
-                    )}
-                    {request.receiptNote ? <p className="mt-1 text-xs text-muted">{request.receiptNote}</p> : null}
-                  </div>
-                  <AdminStatus status={request.status} />
-                  {request.status === "PENDING" ? (
-                    <div className="flex gap-2">
-                      <form action={approvePurchaseRequestAction}>
-                        <input type="hidden" name="requestId" value={request.id} />
-                        <button className="inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-sm)] bg-foreground px-3 text-xs text-surface">
-                          <Check className="h-3.5 w-3.5" />
-                          تایید
-                        </button>
-                      </form>
-                      <form action={rejectPurchaseRequestAction}>
-                        <input type="hidden" name="requestId" value={request.id} />
-                        <button className="h-9 rounded-[var(--radius-sm)] border border-danger/30 bg-danger-soft px-3 text-xs text-danger">رد</button>
-                      </form>
+            <div className="space-y-2">
+              {users.map((user) => {
+                const activeSubscription = user.subscriptions[0];
+                const selected = user.id === selectedUserId;
+                return (
+                  <Link
+                    key={user.id}
+                    href={`/admin/users?userId=${user.id}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+                    className={[
+                      "block rounded-[var(--radius-md)] border px-3 py-3 text-sm transition",
+                      selected ? "border-border-strong bg-surface-soft" : "border-border/60 bg-surface hover:border-border-strong",
+                    ].join(" ")}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-foreground">{getUserDisplayName(user)}</p>
+                        <p className="truncate text-xs text-muted" dir="ltr">{getUserIdentifier(user)}</p>
+                      </div>
+                      <AdminStatus status={user.role} />
                     </div>
-                  ) : null}
-                </AdminRow>
-              ))
-            )}
-          </AdminSection>
-
-          <AdminSection title="اشتراک‌ها" eyebrow="مدیریت دوره">
-            {selectedUser.subscriptions.length === 0 ? (
-              <EmptyAdminState>اشتراکی ثبت نشده است.</EmptyAdminState>
-            ) : (
-              selectedUser.subscriptions.map((subscription) => (
-                <AdminRow key={subscription.id}>
-                  <div>
-                    <p className="font-semibold text-foreground">{subscription.package.title}</p>
-                    <p className="text-xs text-muted">
-                      {subscription.creditsUsedThisPeriod.toLocaleString("fa-IR")} از {subscription.creditsPerPeriod.toLocaleString("fa-IR")} مصرف شده · پایان {formatAdminDate(subscription.currentPeriodEnd)}
+                    <p className="mt-2 text-xs text-muted">
+                      {user.credits.toLocaleString("fa-IR")} اعتبار · {user._count.projects.toLocaleString("fa-IR")} پروژه · {user._count.assets.toLocaleString("fa-IR")} دارایی
                     </p>
-                  </div>
-                  <AdminStatus status={subscription.status} />
-                  <div className="flex flex-wrap gap-2">
-                    <form action={updateSubscriptionStatusAction}>
-                      <input type="hidden" name="subscriptionId" value={subscription.id} />
-                      <select name="status" defaultValue={subscription.status} className="h-9 rounded-[var(--radius-sm)] border border-border bg-surface px-2 text-xs">
-                        <option value="ACTIVE">فعال</option>
-                        <option value="PAUSED">متوقف</option>
-                        <option value="CANCELED">لغوشده</option>
-                        <option value="EXPIRED">منقضی</option>
-                      </select>
-                      <button className="mr-2 h-9 rounded-[var(--radius-sm)] bg-foreground px-3 text-xs text-surface">ثبت</button>
-                    </form>
-                    <form action={resetSubscriptionPeriodAction}>
-                      <input type="hidden" name="subscriptionId" value={subscription.id} />
-                      <button className="inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-xs">
-                        <RefreshCcw className="h-3.5 w-3.5" />
-                        تمدید دوره
-                      </button>
-                    </form>
-                  </div>
-                </AdminRow>
-              ))
-            )}
+                    <p className="mt-1 truncate text-xs text-muted">
+                      {activeSubscription ? `${activeSubscription.package.title} تا ${formatAdminDate(activeSubscription.currentPeriodEnd)}` : "بدون اشتراک فعال"}
+                    </p>
+                  </Link>
+                );
+              })}
+            </div>
           </AdminSection>
 
-          <AdminSection title="دفتر اعتبار" eyebrow="آخرین رویدادها">
-            {selectedUser.creditEvents.length === 0 ? (
-              <EmptyAdminState>هنوز رویداد اعتباری ثبت نشده است.</EmptyAdminState>
-            ) : (
-              selectedUser.creditEvents.map((event) => (
-                <AdminRow key={event.id}>
-                  <p className="font-semibold text-foreground">{event.delta.toLocaleString("fa-IR")}</p>
-                  <p className="text-xs text-muted">{event.reason}</p>
-                  <p className="text-xs text-muted">{formatAdminDate(event.createdAt)}</p>
-                </AdminRow>
-              ))
-            )}
+          <AdminSection title="کاربر جدید" eyebrow="اعتبار اولیه: ۱" >
+            <form id="new-user" action={createAdminUserAction} className="space-y-3">
+              <Field label="نام یا نام فروشگاه">
+                <input name="name" required minLength={2} maxLength={80} className={inputClass} />
+              </Field>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                <Field label="ایمیل">
+                  <input name="email" type="email" dir="ltr" className={`${inputClass} text-left`} />
+                </Field>
+                <Field label="موبایل">
+                  <input name="phone" inputMode="tel" dir="ltr" className={`${inputClass} text-left`} />
+                </Field>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                <Field label="رمز عبور">
+                  <input name="password" required minLength={6} type="password" dir="ltr" className={`${inputClass} text-left`} />
+                </Field>
+                <Field label="نقش">
+                  <select name="role" defaultValue="USER" className={inputClass}>
+                    <option value="USER">کاربر</option>
+                    <option value="ADMIN">ادمین</option>
+                  </select>
+                </Field>
+              </div>
+              <Button type="submit" size="sm">
+                <Plus aria-hidden="true" className="h-4 w-4" />
+                ساخت کاربر
+              </Button>
+            </form>
           </AdminSection>
         </div>
-      ) : null}
-    </>
+
+        {selectedUser ? (
+          <div className="space-y-4">
+            <AdminSection title="پرونده کاربر" eyebrow={getUserIdentifier(selectedUser)}>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                <AdminMetric label="اعتبار کل" value={selectedCreditSummary?.totalAvailableCredits ?? selectedUser.credits} />
+                <AdminMetric label="کیف پول" value={selectedCreditSummary?.walletCredits ?? selectedUser.credits} />
+                <AdminMetric label="اشتراک" value={selectedCreditSummary?.subscriptionCredits ?? 0} />
+                <AdminMetric label="پروژه" value={selectedUser._count.projects} />
+                <AdminMetric label="دارایی" value={selectedUser._count.assets} />
+              </div>
+            </AdminSection>
+
+            <AdminSection title="فرم‌های اصلی" eyebrow="مشخصات، رمز، نقش، اعتبار، اشتراک">
+              <div className="space-y-3">
+                <form action={updateAdminUserIdentityAction} className={formPanelClass}>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <UserCog aria-hidden="true" className="h-4 w-4" />
+                    مشخصات
+                  </div>
+                  <input type="hidden" name="userId" value={selectedUser.id} />
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <Field label="نام یا نام فروشگاه">
+                      <input name="name" required minLength={2} maxLength={80} defaultValue={selectedUser.name ?? ""} className={inputClass} />
+                    </Field>
+                    <Field label="ایمیل">
+                      <input name="email" type="email" dir="ltr" defaultValue={selectedUser.email ?? ""} className={`${inputClass} text-left`} />
+                    </Field>
+                    <Field label="موبایل">
+                      <input name="phone" inputMode="tel" dir="ltr" defaultValue={selectedUser.phone ?? ""} className={`${inputClass} text-left`} />
+                    </Field>
+                  </div>
+                  <Button type="submit" size="sm">
+                    <Save aria-hidden="true" className="h-4 w-4" />
+                    ذخیره مشخصات
+                  </Button>
+                </form>
+
+                <form action={updateAdminUserPasswordAction} className={formPanelClass}>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <KeyRound aria-hidden="true" className="h-4 w-4" />
+                    تغییر رمز
+                  </div>
+                  <input type="hidden" name="userId" value={selectedUser.id} />
+                  <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+                    <Field label="رمز جدید">
+                      <input name="password" minLength={6} type="password" dir="ltr" className={`${inputClass} text-left`} />
+                    </Field>
+                    <Button type="submit" size="sm">تغییر رمز</Button>
+                  </div>
+                </form>
+
+                <form action={updateUserRoleAction} className={formPanelClass}>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <BadgeCheck aria-hidden="true" className="h-4 w-4" />
+                    نقش
+                  </div>
+                  <input type="hidden" name="userId" value={selectedUser.id} />
+                  <div className="grid gap-3 md:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)_auto] md:items-end">
+                    <Field label="نقش">
+                      <select name="role" defaultValue={selectedUser.role} className={inputClass}>
+                        <option value="USER">کاربر</option>
+                        <option value="ADMIN">ادمین</option>
+                      </select>
+                    </Field>
+                    <Field label="تایید">
+                      <input name="confirmRoleChange" placeholder="برای تایید بنویسید: تایید" className={inputClass} />
+                    </Field>
+                    <Button type="submit" size="sm">تغییر نقش</Button>
+                  </div>
+                </form>
+
+                <form action={adjustUserCreditsAction} className={formPanelClass}>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <WalletCards aria-hidden="true" className="h-4 w-4" />
+                    اعتبار
+                  </div>
+                  <input type="hidden" name="userId" value={selectedUser.id} />
+                  <div className="grid gap-3 md:grid-cols-[minmax(0,0.45fr)_minmax(0,1fr)_auto] md:items-end">
+                    <Field label="تغییر">
+                      <input name="delta" type="number" placeholder="+10 یا -2" className={`${inputClass} text-left`} dir="ltr" />
+                    </Field>
+                    <Field label="دلیل">
+                      <input name="reason" placeholder="دلیل تغییر اعتبار" className={inputClass} />
+                    </Field>
+                    <Button type="submit" size="sm">
+                      <Save aria-hidden="true" className="h-4 w-4" />
+                      ثبت اعتبار
+                    </Button>
+                  </div>
+                </form>
+
+                <form action={assignSubscriptionAction} className={formPanelClass}>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <BadgeCheck aria-hidden="true" className="h-4 w-4" />
+                    اشتراک
+                  </div>
+                  <input type="hidden" name="userId" value={selectedUser.id} />
+                  <div className="grid gap-3 md:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)_auto] md:items-end">
+                    <Field label="بسته">
+                      <select name="packageId" className={inputClass}>
+                        {subscriptionPackages.map((billingPackage) => (
+                          <option key={billingPackage.id} value={billingPackage.id}>{billingPackage.title}</option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field label="یادداشت">
+                      <input name="notes" placeholder="یادداشت اختصاص اشتراک" className={inputClass} />
+                    </Field>
+                    <Button type="submit" size="sm">اختصاص اشتراک</Button>
+                  </div>
+                </form>
+              </div>
+            </AdminSection>
+
+            <AdminSection title="درخواست‌های خرید" eyebrow="تایید یا رد">
+              {selectedUser.purchaseRequests.length === 0 ? (
+                <EmptyAdminState>درخواستی برای این کاربر ثبت نشده است.</EmptyAdminState>
+              ) : (
+                selectedUser.purchaseRequests.map((request) => (
+                  <AdminRow key={request.id}>
+                    <div>
+                      <p className="font-semibold text-foreground">{request.package.title}</p>
+                      <p className="text-xs text-muted">{formatIrr(request.amount, request.currency)} · {formatAdminDate(request.createdAt)}</p>
+                      {request.receiptImageUrl ? (
+                        <a href={request.receiptImageUrl} target="_blank" rel="noreferrer" className="mt-1 block text-xs text-[#7b5d31]">
+                          مشاهده رسید پرداخت
+                        </a>
+                      ) : (
+                        <p className="mt-1 text-xs text-danger">رسید هنوز ارسال نشده است.</p>
+                      )}
+                      {request.receiptNote ? <p className="mt-1 text-xs text-muted">{request.receiptNote}</p> : null}
+                    </div>
+                    <AdminStatus status={request.status} />
+                    {request.status === "PENDING" ? (
+                      <div className="flex gap-2">
+                        <form action={approvePurchaseRequestAction}>
+                          <input type="hidden" name="requestId" value={request.id} />
+                          <button className="inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-sm)] bg-foreground px-3 text-xs text-surface">
+                            <Check aria-hidden="true" className="h-3.5 w-3.5" />
+                            تایید
+                          </button>
+                        </form>
+                        <form action={rejectPurchaseRequestAction}>
+                          <input type="hidden" name="requestId" value={request.id} />
+                          <button className="h-9 rounded-[var(--radius-sm)] border border-danger/30 bg-danger-soft px-3 text-xs text-danger">رد</button>
+                        </form>
+                      </div>
+                    ) : null}
+                  </AdminRow>
+                ))
+              )}
+            </AdminSection>
+
+            <AdminSection title="اشتراک‌ها" eyebrow="مدیریت دوره">
+              {selectedUser.subscriptions.length === 0 ? (
+                <EmptyAdminState>اشتراکی ثبت نشده است.</EmptyAdminState>
+              ) : (
+                selectedUser.subscriptions.map((subscription) => (
+                  <AdminRow key={subscription.id}>
+                    <div>
+                      <p className="font-semibold text-foreground">{subscription.package.title}</p>
+                      <p className="text-xs text-muted">
+                        {subscription.creditsUsedThisPeriod.toLocaleString("fa-IR")} از {subscription.creditsPerPeriod.toLocaleString("fa-IR")} مصرف شده · پایان {formatAdminDate(subscription.currentPeriodEnd)}
+                      </p>
+                    </div>
+                    <AdminStatus status={subscription.status} />
+                    <div className="flex flex-wrap gap-2">
+                      <form action={updateSubscriptionStatusAction}>
+                        <input type="hidden" name="subscriptionId" value={subscription.id} />
+                        <select name="status" defaultValue={subscription.status} className="h-9 rounded-[var(--radius-sm)] border border-border bg-surface px-2 text-xs">
+                          <option value="ACTIVE">فعال</option>
+                          <option value="PAUSED">متوقف</option>
+                          <option value="CANCELED">لغوشده</option>
+                          <option value="EXPIRED">منقضی</option>
+                        </select>
+                        <button className="mr-2 h-9 rounded-[var(--radius-sm)] bg-foreground px-3 text-xs text-surface">ثبت</button>
+                      </form>
+                      <form action={resetSubscriptionPeriodAction}>
+                        <input type="hidden" name="subscriptionId" value={subscription.id} />
+                        <button className="inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-xs">
+                          <RefreshCcw aria-hidden="true" className="h-3.5 w-3.5" />
+                          تمدید دوره
+                        </button>
+                      </form>
+                    </div>
+                  </AdminRow>
+                ))
+              )}
+            </AdminSection>
+
+            <AdminSection title="دفتر اعتبار" eyebrow="آخرین رویدادها">
+              {selectedUser.creditEvents.length === 0 ? (
+                <EmptyAdminState>هنوز رویداد اعتباری ثبت نشده است.</EmptyAdminState>
+              ) : (
+                selectedUser.creditEvents.map((event) => (
+                  <AdminRow key={event.id}>
+                    <p className="font-semibold text-foreground">{event.delta.toLocaleString("fa-IR")}</p>
+                    <p className="text-xs text-muted">{event.reason}</p>
+                    <p className="text-xs text-muted">{formatAdminDate(event.createdAt)}</p>
+                  </AdminRow>
+                ))
+              )}
+            </AdminSection>
+          </div>
+        ) : (
+          <AdminSection title="پرونده کاربر" eyebrow="ابتدا یک کاربر را انتخاب کنید">
+            <EmptyAdminState>از فهرست سمت راست یک کاربر را انتخاب کنید یا کاربر جدید بسازید.</EmptyAdminState>
+          </AdminSection>
+        )}
+      </div>
+    </div>
   );
 }

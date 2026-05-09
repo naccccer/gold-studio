@@ -9,7 +9,9 @@ type AppTopBarProps = {
   logoHref?: string;
   logoVariant?: "mark" | "mark-light" | "wordmark" | "primary" | "primary-dark";
   centeredLogo?: boolean;
+  hideLogo?: boolean;
   tone?: "light" | "dark";
+  action?: ReactNode;
   className?: string;
 };
 
@@ -19,7 +21,9 @@ export function AppTopBar({
   logoHref = "/dashboard",
   logoVariant = "wordmark",
   centeredLogo = false,
+  hideLogo = false,
   tone = "light",
+  action,
   className = "",
 }: AppTopBarProps) {
   const dark = tone === "dark";
@@ -30,7 +34,8 @@ export function AppTopBar({
 
   if (centeredLogo) {
     return (
-      <header className={["mb-4 flex h-16 items-center justify-center overflow-hidden", className].filter(Boolean).join(" ")}>
+      <header className={["relative mb-4 flex h-16 items-center justify-center overflow-hidden", className].filter(Boolean).join(" ")}>
+        {action ? <div className="absolute right-0 top-1/2 -translate-y-1/2">{action}</div> : null}
         <Link href={logoHref} aria-label="OVALA Studio" className="inline-flex">
           <BrandLogo variant={logoVariant} priority />
         </Link>
@@ -62,9 +67,14 @@ export function AppTopBar({
         ) : null}
       </div>
 
-      <Link href={logoHref} aria-label="OVALA Studio" className={logoLinkClassName}>
-        <BrandLogo variant={logoVariant} />
-      </Link>
+      <div className="flex shrink-0 items-center gap-2">
+        {action}
+        {!hideLogo ? (
+          <Link href={logoHref} aria-label="OVALA Studio" className={logoLinkClassName}>
+            <BrandLogo variant={logoVariant} />
+          </Link>
+        ) : null}
+      </div>
     </header>
   );
 }

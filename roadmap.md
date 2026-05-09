@@ -14,6 +14,8 @@ Core product direction:
 - No user-facing prompt-heavy or text-to-image experience.
 - Admin remains separate and should be redesigned as its own operational product area.
 
+Update 2026-05-09: New users now start with ۱ tracked signup credit, name/store onboarding is mandatory until completed, and `/admin/users` supports creating users plus cleaner identity, password, role, credit, and subscription management.
+
 Primary user navigation:
 
 ```text

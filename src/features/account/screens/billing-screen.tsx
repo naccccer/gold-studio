@@ -57,6 +57,28 @@ function compactCardNumber(value: string) {
   return value.replaceAll("-", " ").replace(/(\d{4})(?=\d)/g, "$1 ");
 }
 
+const subscriptionCardSkins = [
+  {
+    card: "border-[#f4d69b]/42 bg-[radial-gradient(circle_at_16%_12%,rgba(255,235,178,0.42),transparent_31%),linear-gradient(135deg,#20140f_0%,#4b2b1f_48%,#9b7040_100%)] text-surface shadow-[0_24px_56px_-36px_rgba(83,45,23,0.82)]",
+    glow: "bg-[#ffe1a3]/28",
+    accent: "text-[#ffe6ae]",
+  },
+  {
+    card: "border-[#d7c8ff]/38 bg-[radial-gradient(circle_at_18%_10%,rgba(238,220,255,0.42),transparent_30%),linear-gradient(135deg,#15131f_0%,#34264d_48%,#8b6677_100%)] text-surface shadow-[0_24px_56px_-36px_rgba(52,38,77,0.86)]",
+    glow: "bg-[#eadcff]/24",
+    accent: "text-[#efe2ff]",
+  },
+  {
+    card: "border-[#c7f0e0]/34 bg-[radial-gradient(circle_at_18%_10%,rgba(215,255,236,0.34),transparent_31%),linear-gradient(135deg,#101a17_0%,#16392f_48%,#b09358_100%)] text-surface shadow-[0_24px_56px_-36px_rgba(22,57,47,0.86)]",
+    glow: "bg-[#d3ffe9]/22",
+    accent: "text-[#dfffee]",
+  },
+];
+
+function subscriptionSkin(index = 0) {
+  return subscriptionCardSkins[index % subscriptionCardSkins.length];
+}
+
 function SectionHeader({
   icon: Icon,
   title,
@@ -83,35 +105,72 @@ function PackageCard({
   billingPackage,
   pending,
   kind,
+  index = 0,
 }: {
   billingPackage: BillingPackage;
   pending: boolean;
   kind: "subscription" | "credit";
+  index?: number;
 }) {
+  const isSubscription = kind === "subscription";
+  const skin = isSubscription ? subscriptionSkin(index) : null;
+
   return (
-    <form action={createPurchaseRequestAction} className="rounded-[1.05rem] border border-white/72 bg-surface/64 p-3 text-right">
+    <form
+      action={createPurchaseRequestAction}
+      className={[
+        "relative overflow-hidden rounded-[1.05rem] border p-3 text-right",
+        isSubscription ? skin?.card : "border-white/72 bg-surface/64",
+      ].join(" ")}
+    >
       <input type="hidden" name="packageId" value={billingPackage.id} />
-      <div className="flex items-start justify-between gap-3">
+      {isSubscription ? (
+        <>
+          <span className={`pointer-events-none absolute -left-10 -top-12 h-32 w-32 rounded-full blur-2xl ${skin?.glow}`} />
+          <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/42" />
+        </>
+      ) : null}
+      <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground">{billingPackage.title}</p>
-          <p className="mt-1 text-[11px] leading-5 text-muted">{billingPackage.description}</p>
+          <p className={["text-sm font-semibold", isSubscription ? "text-white" : "text-foreground"].join(" ")}>
+            {billingPackage.title}
+          </p>
+          <p className={["mt-1 text-[11px] leading-5", isSubscription ? "text-white/72" : "text-muted"].join(" ")}>
+            {billingPackage.description}
+          </p>
         </div>
-        <span className="shrink-0 rounded-full bg-[#efe2cd] px-2.5 py-1 text-[10px] font-semibold text-[#806033]">
+        <span
+          className={[
+            "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold",
+            isSubscription ? "border border-white/20 bg-white/14 text-white backdrop-blur" : "bg-[#efe2cd] text-[#806033]",
+          ].join(" ")}
+        >
           {billingPackage.credits.toLocaleString("fa-IR")} {kind === "subscription" ? "خروجی" : "اعتبار"}
         </span>
       </div>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
+      <div className={["relative mt-3 flex flex-wrap items-center justify-between gap-2 text-xs", isSubscription ? "text-white/68" : "text-muted"].join(" ")}>
         <span>{kind === "subscription" ? `${(billingPackage.periodDays ?? 30).toLocaleString("fa-IR")} روزه` : "افزایش موجودی"}</span>
-        <span className="font-semibold text-foreground">{formatPrice(billingPackage.priceAmount, billingPackage.currency)}</span>
+        <span className={["font-semibold", isSubscription ? skin?.accent : "text-foreground"].join(" ")}>
+          {formatPrice(billingPackage.priceAmount, billingPackage.currency)}
+        </span>
       </div>
       <button
         type="submit"
         disabled={pending}
-        className={buttonClasses({
-          size: "full",
-          variant: pending ? "secondary" : "primary",
-          className: "mt-3 h-10 rounded-[0.9rem] text-xs",
-        })}
+        className={
+          isSubscription
+            ? [
+                "relative mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[0.9rem] text-xs font-semibold transition focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)] disabled:opacity-60",
+                pending
+                  ? "border border-white/22 bg-white/10 text-white/78"
+                  : "bg-white text-[#1b1713] shadow-[0_18px_30px_-24px_rgba(255,255,255,0.82)] hover:bg-[#fff8ef]",
+              ].join(" ")
+            : buttonClasses({
+                size: "full",
+                variant: pending ? "secondary" : "primary",
+                className: "mt-3 h-10 rounded-[0.9rem] text-xs",
+              })
+        }
       >
         <CreditCard aria-hidden={true} className="h-4 w-4" />
         {pending ? "در انتظار ارسال یا تایید رسید" : "ثبت درخواست خرید"}
@@ -174,11 +233,12 @@ export function BillingScreen({ packages, pendingRequests, paymentSettings, acti
         <section className="space-y-2.5">
           <SectionHeader icon={Layers3} title="پکیج‌های ماهانه" caption="برای فروشگاه‌هایی که هر ماه خروجی منظم می‌خواهند." />
           {subscriptionPackages.length > 0 ? (
-            subscriptionPackages.map((billingPackage) => (
+            subscriptionPackages.map((billingPackage, index) => (
               <PackageCard
                 key={billingPackage.id}
                 billingPackage={billingPackage}
                 kind="subscription"
+                index={index}
                 pending={pendingPackageIds.includes(billingPackage.id)}
               />
             ))

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { ChevronLeft, CircleHelp, CreditCard, Gift, LifeBuoy, Lock, ReceiptText, Settings2, Shield, UserRoundCog } from "lucide-react";
 import type { ComponentType } from "react";
 import { ButtonLink } from "@/components/ui/button";
@@ -50,22 +51,20 @@ function AccountRow({ item }: { item: AccountRowItem }) {
   const Icon = item.icon;
 
   return (
-    <ButtonLink
+    <Link
       href={item.href}
-      variant="secondary"
-      className="flex w-full items-center justify-between gap-3 rounded-[1.05rem] border border-white/72 bg-surface/64 px-3.5 py-2.5 text-right"
+      className="grid min-h-[4.15rem] w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-[1.05rem] border border-white/72 bg-surface/64 px-3.5 py-2.5 text-right font-medium transition hover:border-border-strong hover:bg-surface/90 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+      dir="rtl"
     >
-      <div className="flex items-center gap-3">
-        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#efe2cd] text-[#8b6835]">
-          <Icon aria-hidden={true} className="h-4.5 w-4.5" />
-        </span>
-        <div>
-          <p className="text-sm font-semibold leading-5 text-foreground">{item.title}</p>
-          <p className="text-[11px] leading-5 text-muted">{item.caption}</p>
-        </div>
+      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#efe2cd] text-[#8b6835]">
+        <Icon aria-hidden={true} className="h-4.5 w-4.5" />
+      </span>
+      <div className="min-w-0 text-right">
+        <p className="truncate text-sm font-semibold leading-5 text-foreground">{item.title}</p>
+        <p className="truncate text-[11px] leading-5 text-muted">{item.caption}</p>
       </div>
-      <ChevronLeft aria-hidden={true} className="h-4 w-4 text-[#9a8f82]" />
-    </ButtonLink>
+      <ChevronLeft aria-hidden={true} className="h-4 w-4 shrink-0 text-[#9a8f82]" />
+    </Link>
   );
 }
 
@@ -193,13 +192,13 @@ export function AccountScreen({
         </ButtonLink>
 
         <div className="grid grid-cols-2 gap-3">
-          <ButtonLink href="/account/support" variant="secondary" className="inline-flex h-11 items-center justify-center gap-2 rounded-[1rem] border border-white/72 bg-surface/64 text-xs font-semibold text-[#554d43]">
+          <ButtonLink href="/account/support" variant="secondary" className="inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-[1rem] border border-white/72 bg-surface/64 px-2 text-xs font-semibold text-[#554d43]">
             <LifeBuoy aria-hidden={true} className="h-4 w-4" />
-            پشتیبانی
+            <span className="truncate">پشتیبانی</span>
           </ButtonLink>
-          <ButtonLink href="/account/faq" variant="secondary" className="inline-flex h-11 items-center justify-center gap-2 rounded-[1rem] border border-white/72 bg-surface/64 text-xs font-semibold text-[#554d43]">
+          <ButtonLink href="/account/faq" variant="secondary" className="inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-[1rem] border border-white/72 bg-surface/64 px-2 text-xs font-semibold text-[#554d43]">
             <CircleHelp aria-hidden={true} className="h-4 w-4" />
-            سوالات پرتکرار
+            <span className="truncate">سوالات پرتکرار</span>
           </ButtonLink>
         </div>
 

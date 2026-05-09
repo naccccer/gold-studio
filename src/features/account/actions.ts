@@ -135,6 +135,38 @@ export async function updateProfileAction(formData: FormData) {
   revalidatePath("/account/profile");
 }
 
+export type OnboardingNameState = {
+  error?: string;
+  success?: boolean;
+};
+
+export async function completeOnboardingNameAction(
+  _prevState: OnboardingNameState,
+  formData: FormData,
+): Promise<OnboardingNameState> {
+  const session = await requireUserSession();
+  const name = text(formData, "name");
+
+  if (name.length < 2) {
+    return { error: "نام باید حداقل ۲ کاراکتر باشد." };
+  }
+
+  if (name.length > 80) {
+    return { error: "نام باید حداکثر ۸۰ کاراکتر باشد." };
+  }
+
+  await db.user.update({
+    where: { id: session.userId },
+    data: { name },
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/account");
+  revalidatePath("/account/profile");
+
+  return { success: true };
+}
+
 export async function updateOutputSettingsAction(formData: FormData) {
   const session = await requireUserSession();
   const defaultOutputPreset = ["post", "story", "banner"].includes(text(formData, "defaultOutputPreset"))
@@ -170,8 +202,10 @@ export async function changePasswordAction(formData: FormData) {
   const session = await requireUserSession();
   const currentPassword = String(formData.get("currentPassword") ?? "");
   const newPassword = String(formData.get("newPassword") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
 
   if (newPassword.length < 6) return;
+  if (newPassword !== confirmPassword) return;
 
   const user = await db.user.findUnique({ where: { id: session.userId }, select: { passwordHash: true } });
   if (!user) return;

@@ -78,6 +78,8 @@ export function AdminStatus({ status }: { status: string }) {
     PENDING: { label: "در انتظار", variant: "pending" },
     APPROVED: { label: "تاییدشده", variant: "completed" },
     REJECTED: { label: "ردشده", variant: "failed" },
+    USER: { label: "کاربر", variant: "neutral" },
+    ADMIN: { label: "ادمین", variant: "completed" },
   };
   const item = map[status] ?? { label: status, variant: "neutral" as const };
   return <StatusPill variant={item.variant}>{item.label}</StatusPill>;

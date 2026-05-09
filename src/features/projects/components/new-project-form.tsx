@@ -46,6 +46,9 @@ const outputPresets: Array<{
   { id: "banner", label: "بنر", ratio: "۱۶:۹", className: "aspect-video" },
 ];
 
+const darkPrimaryButtonClass = "h-12 w-full rounded-[1rem] bg-surface text-[#15110d] shadow-[0_18px_36px_-26px_rgba(255,255,255,0.72)] hover:bg-[#f8f1e8]";
+const darkSecondaryButtonClass = "h-12 w-full rounded-[1rem] border border-white/22 bg-white/[0.07] text-surface hover:border-white/36 hover:bg-white/[0.11]";
+
 function parseChoiceOptions(optionsJson?: string | null): StyleControlOption[] {
   if (!optionsJson) {
     return [];
@@ -209,6 +212,17 @@ export function NewProjectForm({
               گالری
             </Link>
           </div>
+          <ActionDock sticky fade={false} columns={hasSource ? 2 : 1}>
+            {hasSource ? (
+            <Button type="button" variant="secondary" className={darkSecondaryButtonClass} onClick={() => setSelectedAsset(null)}>
+              تغییر عکس
+            </Button>
+          ) : null}
+            <Button type="button" className={darkPrimaryButtonClass} onClick={() => setStep("size")} disabled={!hasSource}>
+              ادامه
+              <ArrowLeft aria-hidden={true} className="h-4 w-4" />
+            </Button>
+          </ActionDock>
         </section>
       ) : null}
 
@@ -259,10 +273,10 @@ export function NewProjectForm({
           </fieldset>
 
           <ActionDock className="mt-auto" columns={2}>
-            <Button type="button" variant="secondary" className="h-12 w-full rounded-[1rem]" onClick={() => setStep("source")}>
+            <Button type="button" variant="secondary" className={darkSecondaryButtonClass} onClick={() => setStep("source")}>
               برگشت
             </Button>
-            <Button type="button" className="h-12 w-full rounded-[1rem]" onClick={() => setStep("style")} disabled={!hasSource}>
+            <Button type="button" className={darkPrimaryButtonClass} onClick={() => setStep("style")} disabled={!hasSource}>
               ادامه
               <ArrowLeft aria-hidden={true} className="h-4 w-4" />
             </Button>
@@ -353,10 +367,10 @@ export function NewProjectForm({
           ) : null}
 
           <ActionDock className="mt-auto" columns={2}>
-            <Button type="button" variant="secondary" className="h-12 w-full rounded-[1rem]" onClick={() => setStep("size")}>
+            <Button type="button" variant="secondary" className={darkSecondaryButtonClass} onClick={() => setStep("size")}>
               {selectedPreset.label}
             </Button>
-            <Button type="submit" disabled={pending || !canSubmit} className="h-12 w-full rounded-[1rem]">
+            <Button type="submit" disabled={pending || !canSubmit} className={darkPrimaryButtonClass}>
               {pending ? "در حال ساخت..." : "ساخت تصویر"}
               <Sparkles aria-hidden={true} className="h-4 w-4" />
             </Button>

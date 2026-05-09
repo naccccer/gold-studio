@@ -54,6 +54,17 @@ export async function signupAction(
       },
     });
 
+    await tx.creditEvent.create({
+      data: {
+        userId: created.id,
+        delta: 1,
+        balanceBefore: 0,
+        balanceAfter: 1,
+        reason: "اعتبار رایگان ثبت‌نام",
+        source: "SIGNUP",
+      },
+    });
+
     await tx.user.update({
       where: { id: created.id },
       data: { referralCode: referralCodeFromUserId(created.id) },

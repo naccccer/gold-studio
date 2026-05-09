@@ -4,8 +4,11 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdminSession } from "@/lib/auth/session";
+import { normalizeLoginIdentifier } from "@/lib/auth/identifier";
+import { hashPassword } from "@/lib/auth/password";
 import { getSubscriptionPeriod, logAdminAudit } from "@/lib/billing";
 import { processImageProject } from "@/lib/generation/jobs";
+import { referralCodeFromUserId } from "@/lib/referrals";
 
 function text(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -14,6 +17,49 @@ function text(formData: FormData, key: string) {
 function integer(formData: FormData, key: string, fallback = 0) {
   const value = Number.parseInt(String(formData.get(key) ?? ""), 10);
   return Number.isFinite(value) ? value : fallback;
+}
+
+function parseRole(value: string) {
+  return value === "ADMIN" ? "ADMIN" : "USER";
+}
+
+function normalizedOptionalIdentifier(formData: FormData, key: string, expected: "email" | "phone") {
+  const raw = text(formData, key);
+  if (!raw) return { raw, value: null };
+
+  const normalized = normalizeLoginIdentifier(raw);
+  if (normalized?.kind !== expected) {
+    return { raw, value: undefined };
+  }
+
+  return { raw, value: normalized.value };
+}
+
+async function hasDuplicateIdentifier({
+  email,
+  phone,
+  exceptUserId,
+}: {
+  email?: string | null;
+  phone?: string | null;
+  exceptUserId?: string;
+}) {
+  const checks = [
+    ...(email ? [{ email }] : []),
+    ...(phone ? [{ phone }] : []),
+  ];
+
+  if (checks.length === 0) return false;
+
+  const duplicate = await db.user.findFirst({
+    where: {
+      ...(exceptUserId ? { id: { not: exceptUserId } } : {}),
+      OR: checks,
+    },
+    select: { id: true },
+  });
+
+  return Boolean(duplicate);
 }
 
 function revalidateAdmin() {
@@ -306,6 +352,134 @@ export async function updateUserRoleAction(formData: FormData) {
     targetId: userId,
     summary: `نقش کاربر به ${role} تغییر کرد.`,
   });
+  revalidateAdmin();
+}
+
+export async function createAdminUserAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const name = text(formData, "name");
+  const password = String(formData.get("password") ?? "");
+  const role = parseRole(text(formData, "role"));
+  const email = normalizedOptionalIdentifier(formData, "email", "email");
+  const phone = normalizedOptionalIdentifier(formData, "phone", "phone");
+
+  if (name.length < 2 || name.length > 80 || password.length < 6 || email.value === undefined || phone.value === undefined) {
+    return;
+  }
+
+  if (!email.value && !phone.value) {
+    return;
+  }
+
+  if (await hasDuplicateIdentifier({ email: email.value, phone: phone.value })) {
+    return;
+  }
+
+  const user = await db.$transaction(async (tx) => {
+    const created = await tx.user.create({
+      data: {
+        name,
+        email: email.value,
+        phone: phone.value,
+        passwordHash: await hashPassword(password),
+        role,
+        credits: 1,
+      },
+    });
+
+    await tx.user.update({
+      where: { id: created.id },
+      data: { referralCode: referralCodeFromUserId(created.id) },
+    });
+
+    await tx.creditEvent.create({
+      data: {
+        userId: created.id,
+        actorAdminId: session.userId,
+        delta: 1,
+        balanceBefore: 0,
+        balanceAfter: 1,
+        reason: "اعتبار اولیه ساخت حساب",
+        source: "SIGNUP",
+      },
+    });
+
+    return created;
+  });
+
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: "user.create",
+    targetType: "User",
+    targetId: user.id,
+    summary: `کاربر ${name} ساخته شد.`,
+    metadata: { role },
+  });
+
+  revalidateAdmin();
+}
+
+export async function updateAdminUserIdentityAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const userId = text(formData, "userId");
+  const name = text(formData, "name");
+  const email = normalizedOptionalIdentifier(formData, "email", "email");
+  const phone = normalizedOptionalIdentifier(formData, "phone", "phone");
+
+  if (!userId || name.length < 2 || name.length > 80 || email.value === undefined || phone.value === undefined) {
+    return;
+  }
+
+  if (!email.value && !phone.value) {
+    return;
+  }
+
+  if (await hasDuplicateIdentifier({ email: email.value, phone: phone.value, exceptUserId: userId })) {
+    return;
+  }
+
+  await db.user.update({
+    where: { id: userId },
+    data: {
+      name,
+      email: email.value,
+      phone: phone.value,
+    },
+  });
+
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: "user.identity",
+    targetType: "User",
+    targetId: userId,
+    summary: "مشخصات کاربر ویرایش شد.",
+  });
+
+  revalidateAdmin();
+}
+
+export async function updateAdminUserPasswordAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const userId = text(formData, "userId");
+  const password = String(formData.get("password") ?? "");
+
+  if (!userId || password.length < 6) {
+    return;
+  }
+
+  await db.user.update({
+    where: { id: userId },
+    data: { passwordHash: await hashPassword(password) },
+  });
+
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: "user.password",
+    targetType: "User",
+    targetId: userId,
+    summary: "رمز عبور کاربر تغییر کرد.",
+  });
+
   revalidateAdmin();
 }
 
