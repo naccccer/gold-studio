@@ -31,7 +31,7 @@ function CreditBadge({ credits }: { credits: number }) {
     <Link
       href="/billing"
       aria-label={`اعتبار باقی‌مانده: ${credits.toLocaleString("fa-IR")}`}
-      className="inline-flex h-9 shrink-0 items-center rounded-full border border-[#dfd1bd] bg-surface/74 px-3 text-xs font-semibold text-foreground shadow-[var(--shadow-soft)]"
+      className="inline-flex h-10 shrink-0 items-center rounded-full border border-border bg-surface/70 px-3 text-xs font-semibold text-foreground shadow-[var(--shadow-soft)] transition hover:bg-surface focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
     >
       <span className="leading-none">{credits.toLocaleString("fa-IR")}</span>
       <span className="mr-1.5 text-[10px] font-medium leading-none text-muted">اعتبار</span>
@@ -54,8 +54,8 @@ export function DashboardMasthead({ userLabel, remainingCredits }: DashboardMast
         centeredLogo={isHome}
         logoVariant={isHome ? "primary" : isProjectDarkSurface ? "mark-light" : "mark"}
         tone={isProjectDarkSurface ? "dark" : "light"}
-        action={isProjectDarkSurface ? undefined : <CreditBadge credits={remainingCredits} />}
-        className={isHome ? "mb-4 px-1" : isProjectDarkSurface ? "mb-3 px-1" : "mb-4 px-1"}
+        action={!isHome && !isProjectDarkSurface ? <CreditBadge credits={remainingCredits} /> : undefined}
+        className={isHome ? "mb-4 px-3" : isProjectDarkSurface ? "mb-3 px-3" : "mb-4 px-3"}
       />
 
       <span className="sr-only">{userLabel}</span>

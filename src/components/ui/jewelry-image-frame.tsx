@@ -4,6 +4,8 @@ type JewelryImageFrameProps = HTMLAttributes<HTMLDivElement> & {
   children: ReactNode;
   aspect?: "square" | "portrait" | "landscape" | "story" | "banner";
   treatment?: "standard" | "hero" | "quiet" | "dark";
+  selected?: boolean;
+  disabled?: boolean;
 };
 
 const aspectClasses = {
@@ -15,18 +17,20 @@ const aspectClasses = {
 };
 
 const treatmentClasses = {
-  standard: "border border-white/80 bg-surface shadow-[var(--shadow-soft)]",
-  hero: "border border-white/80 bg-surface-muted shadow-[0_30px_80px_-58px_rgba(23,20,17,0.65)]",
+  standard: "border border-white/80 bg-surface-photo shadow-[var(--shadow-image)]",
+  hero: "border border-white/80 bg-surface-photo shadow-[var(--shadow-image-strong)]",
   quiet: "border border-border/60 bg-surface-soft shadow-none",
-  dark: "border border-white/12 bg-[#11100e] shadow-[0_38px_100px_-64px_rgba(0,0,0,1)]",
+  dark: "border border-white/12 bg-studio-surface shadow-[var(--shadow-studio-frame)]",
 };
 
-export function JewelryImageFrame({ children, className = "", aspect = "square", treatment = "standard", ...props }: JewelryImageFrameProps) {
+export function JewelryImageFrame({ children, className = "", aspect = "square", treatment = "standard", selected = false, disabled = false, ...props }: JewelryImageFrameProps) {
   return (
     <div
       className={[
-        "relative overflow-hidden rounded-[var(--radius-xl)]",
+        "relative overflow-hidden rounded-[var(--radius-2xl)] transition",
         treatmentClasses[treatment],
+        selected ? "border-accent-bright shadow-[0_18px_36px_-28px_rgba(17,16,14,0.58)] ring-1 ring-accent-bright/45" : "",
+        disabled ? "grayscale-[35%] opacity-75" : "",
         aspectClasses[aspect],
         className,
       ].join(" ")}
@@ -34,5 +38,29 @@ export function JewelryImageFrame({ children, className = "", aspect = "square",
     >
       {children}
     </div>
+  );
+}
+
+type ImageOverlayPillProps = HTMLAttributes<HTMLSpanElement> & {
+  tone?: "light" | "dark" | "accent" | "danger";
+};
+
+const overlayToneClasses = {
+  light: "border-white/50 bg-surface/86 text-muted backdrop-blur",
+  dark: "border-white/18 bg-black/34 text-white/86 backdrop-blur",
+  accent: "border-accent-soft bg-accent-wash/92 text-accent-deep backdrop-blur",
+  danger: "border-danger/30 bg-danger-soft/92 text-danger backdrop-blur",
+};
+
+export function ImageOverlayPill({ tone = "light", className = "", ...props }: ImageOverlayPillProps) {
+  return (
+    <span
+      className={[
+        "inline-flex min-h-6 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-semibold leading-none",
+        overlayToneClasses[tone],
+        className,
+      ].filter(Boolean).join(" ")}
+      {...props}
+    />
   );
 }

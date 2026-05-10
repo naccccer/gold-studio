@@ -30,6 +30,7 @@ Mobile user navigation:
 - New users start with tracked signup credit and can consume active subscription credit before standalone wallet credit.
 - Manual card-to-card purchase requests, receipt upload, admin approval, package/subscription groundwork, credit events, support tickets, FAQ, and provider event logging are present.
 - Soft archive behavior exists for assets/projects, with `npm run cleanup:archives` for retention cleanup.
+- UI Phase 2 is complete: shared tokens and primitives now cover action hierarchy, media cards, fields, menus, segmented controls, status pills, and the touched gallery/projects/new-project/account/billing surfaces.
 
 ## Next Priorities
 - Production hardening: verify real Liara generation, retry behavior, storage display URLs, and failed-state recovery on the deployment target.

@@ -16,7 +16,7 @@ export function PageShell({ children, maxWidth = "md", className = "" }: PageShe
   return (
     <section
       className={[
-        "mx-auto flex min-h-[calc(100svh-8.5rem)] w-full flex-col",
+        "mx-auto flex min-h-[calc(100svh-8.5rem)] w-full flex-col px-px",
         maxWidthClasses[maxWidth],
         className,
       ].filter(Boolean).join(" ")}

@@ -207,7 +207,24 @@ Screenshots: login, signup, home, new project, processing, result, one desktop c
 
 ## Phase 2: UI Primitives And Token Consolidation
 
+Status: Done on 2026-05-10.
+
 Goal: replace one-off styling with shared primitives, tokens, and consistent action hierarchy.
+
+Completion notes:
+
+- Promoted missing action, image, overlay, danger, accent, radius, shadow, and studio values from `DESIGN.md` into shared CSS variables.
+- Expanded shared primitives for consistent primary, secondary, danger, ghost, studio-primary, and studio-secondary buttons, including icon buttons with 44px tap targets.
+- Standardized fields, menu items, status pills, image frames, media overlays, selectable media states, segmented controls, and empty states.
+- Applied the primitives to gallery cards and menus, project cards, new-project controls, account rows/actions, billing tabs, receipt controls, and safe shared navigation icons.
+- Migrated touched user-facing icon usage in these shared/user surfaces from lucide to `vuesax-icons-react`.
+- Kept admin changes out of scope for this phase except for shared primitives remaining compatible.
+- Screenshots captured in `output/playwright/phase-2`: `login-fields-buttons.png`, `gallery-cards-menu.png`, `new-project-segmented-controls.png`, `projects-cards-or-empty-status.png`, `account-rows-status.png`, and `billing-fields-status.png`.
+- Follow-up fixes: increased shared page and masthead breathing room, reduced media-card context menu button size, kept gallery/project action docks and account/billing utility actions clear of the bottom nav, and removed the credit badge from the home masthead.
+- Project-list follow-up: matched project thumbnail rhythm to gallery spacing, removed date overlays from project thumbnails, reduced action-dock distance from the bottom nav, and softened the desktop phone-frame corner radius so margins read more clearly.
+- Follow-up screenshots captured in `output/playwright/phase-2-followup`: `home-no-credit.png`, `gallery-spacing-menu-dock.png`, `account-logout-spacing.png`, and `projects-gallery-spacing-no-dates.png`.
+- Verification: `npm run check:mojibake` passed and `npm run lint` passed.
+- Build caveat: `npm run build` still fails during `prisma generate` with Windows `EPERM rename query_engine-windows.dll.node`, before Next compilation; this matches the known Prisma engine/client issue and is unrelated to Phase 2 UI changes.
 
 Scope: shared UI components, gallery/projects cards, new project controls, account rows, billing controls, safe admin reuse.
 
@@ -220,6 +237,27 @@ Must pass:
 - Hardcoded visual values are materially reduced in feature screens.
 
 Screenshots: real screens showing buttons, cards, fields, segmented controls, menus, empty states, and status pills.
+
+## Phase 2.5: Responsive Layout Rhythm And Shell QA
+
+Status: Planned.
+
+Goal: make spacing, responsive card sizing, masthead balance, bottom docks, and desktop phone-frame behavior feel intentional across common mobile and desktop viewports.
+
+Scope: user shell spacing, desktop phone stage, page gutters, masthead alignment, gallery/projects responsive media grids, bottom nav and sticky action dock collision rules, account/billing long-page bottom spacing, context menu placement, and tap target balance.
+
+Must pass:
+
+- Page gutters feel consistent: not cramped, not overly narrow, and aligned with masthead content.
+- Media cards scale by container and aspect ratio instead of brittle fixed heights.
+- Gallery and projects feel like sibling systems, with differences only where ownership requires them.
+- Bottom actions never hide under bottom nav and do not float too far above it.
+- Masthead title, logo, back affordance, and action placement feel balanced in RTL.
+- Desktop shell preserves phone rhythm without rounded corners visually eating content margins.
+- Context menus stay inside media frames visually while retaining accessible tap targets.
+- No individual screen redesign or copy rewrite beyond layout fixes.
+
+Screenshots: home, gallery populated, projects populated, projects empty if easy, new project source, new project size, account, billing, and one desktop centered-shell view at `393x852`, `360x800`, `430x932`, and desktop where relevant.
 
 ## Phase 3: First Impression Screens
 

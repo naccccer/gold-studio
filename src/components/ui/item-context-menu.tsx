@@ -1,6 +1,6 @@
 "use client";
 
-import { Ellipsis } from "lucide-react";
+import { More } from "vuesax-icons-react";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -86,9 +86,9 @@ export function ItemContextMenu({ label, children, align = "left", tone = "dark"
         aria-label={label}
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition ${buttonTone}`}
+        className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)] ${buttonTone}`}
       >
-        <Ellipsis aria-hidden={true} className="h-4 w-4" />
+        <More aria-hidden={true} className="h-4 w-4" />
       </button>
       {open && menuPosition ? createPortal(
         <div
@@ -98,7 +98,7 @@ export function ItemContextMenu({ label, children, align = "left", tone = "dark"
           onPointerDown={(event) => event.stopPropagation()}
           style={{ top: menuPosition.top, left: menuPosition.left }}
           className={[
-            "fixed z-50 w-52 overflow-hidden rounded-[1rem] border border-border/70 bg-surface p-1.5 text-right text-xs text-foreground shadow-[0_24px_60px_-34px_rgba(17,16,14,0.82)]",
+            "fixed z-50 w-52 overflow-hidden rounded-[var(--radius-lg)] border border-border/70 bg-surface p-1.5 text-right text-xs text-foreground shadow-[var(--shadow-menu)]",
           ].join(" ")}
         >
           {children}
@@ -110,7 +110,7 @@ export function ItemContextMenu({ label, children, align = "left", tone = "dark"
 }
 
 export const contextMenuItemClasses =
-  "flex min-h-9 w-full items-center justify-start gap-2 rounded-[0.75rem] px-2.5 py-2 text-right text-xs font-medium text-foreground transition hover:bg-surface-soft";
+  "flex min-h-11 w-full items-center justify-start gap-2 rounded-[var(--radius-md)] px-2.5 py-2 text-right text-xs font-semibold text-foreground transition hover:bg-surface-soft focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
 
 export const contextMenuDangerItemClasses =
-  "flex min-h-9 w-full items-center justify-start gap-2 rounded-[0.75rem] px-2.5 py-2 text-right text-xs font-medium text-danger transition hover:bg-danger-soft";
+  "flex min-h-11 w-full items-center justify-start gap-2 rounded-[var(--radius-md)] px-2.5 py-2 text-right text-xs font-semibold text-danger transition hover:bg-danger-soft focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";

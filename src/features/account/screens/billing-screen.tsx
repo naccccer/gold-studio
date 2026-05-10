@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { ArrowRight, CreditCard, Landmark, Layers3, ReceiptText, Upload, WalletCards } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { ArrowRight, Bank, Card, DocumentUpload, Layer, ReceiptText, Wallet, type Icon } from "vuesax-icons-react";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
+import { fieldControlClassName } from "@/components/ui/field";
 import { PageShell } from "@/components/ui/page-shell";
+import { StatusPill } from "@/components/ui/status-pill";
 import { createPurchaseRequestAction, submitPurchaseReceiptAction } from "@/features/account/actions";
 
 type BillingPackage = {
@@ -42,10 +43,10 @@ type BillingScreenProps = {
 
 type BillingTab = "packages" | "credits" | "payment" | "receipts";
 
-const tabs: { id: BillingTab; label: string; icon: LucideIcon }[] = [
-  { id: "packages", label: "پکیج‌ها", icon: Layers3 },
-  { id: "credits", label: "اعتبار", icon: WalletCards },
-  { id: "payment", label: "کارت", icon: Landmark },
+const tabs: { id: BillingTab; label: string; icon: Icon }[] = [
+  { id: "packages", label: "پکیج‌ها", icon: Layer },
+  { id: "credits", label: "اعتبار", icon: Wallet },
+  { id: "payment", label: "کارت", icon: Bank },
   { id: "receipts", label: "رسید", icon: ReceiptText },
 ];
 
@@ -84,13 +85,13 @@ function SectionHeader({
   title,
   caption,
 }: {
-  icon: LucideIcon;
+  icon: Icon;
   title: string;
   caption: string;
 }) {
   return (
     <div className="flex items-center gap-2 px-1">
-      <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#efe2cd] text-[#8b6835]">
+      <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-accent-wash text-accent-deep">
         <Icon aria-hidden={true} className="h-4 w-4" />
       </span>
       <div>
@@ -142,7 +143,7 @@ function PackageCard({
         <span
           className={[
             "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold",
-            isSubscription ? "border border-white/20 bg-white/14 text-white backdrop-blur" : "bg-[#efe2cd] text-[#806033]",
+            isSubscription ? "border border-white/20 bg-white/14 text-white backdrop-blur" : "border border-accent-soft bg-accent-wash text-accent-deep",
           ].join(" ")}
         >
           {billingPackage.credits.toLocaleString("fa-IR")} {kind === "subscription" ? "خروجی" : "اعتبار"}
@@ -172,7 +173,7 @@ function PackageCard({
               })
         }
       >
-        <CreditCard aria-hidden={true} className="h-4 w-4" />
+        <Card aria-hidden={true} className="h-4 w-4" />
         {pending ? "در انتظار ارسال یا تایید رسید" : "ثبت درخواست خرید"}
       </button>
     </form>
@@ -185,7 +186,7 @@ export function BillingScreen({ packages, pendingRequests, paymentSettings, acti
   const creditPacks = packages.filter((item) => item.type === "CREDIT_PACK");
 
   return (
-    <PageShell maxWidth="md" className="space-y-3 pb-3">
+    <PageShell maxWidth="md" className="space-y-3 pb-28">
       <header className="rounded-[1.45rem] border border-white/80 bg-surface/62 p-3.5 shadow-[0_22px_50px_-44px_rgba(17,16,14,0.72)]">
         <ButtonLink href="/account" variant="ghost" size="sm" className="h-9 w-fit rounded-full px-2.5">
           <ArrowRight aria-hidden={true} className="h-4 w-4" />
@@ -193,11 +194,11 @@ export function BillingScreen({ packages, pendingRequests, paymentSettings, acti
         </ButtonLink>
         <div className="mt-3 flex items-end justify-between gap-3">
           <div>
-            <p className="text-[11px] font-semibold text-[#8b6835]">پرداخت و اعتبار</p>
+            <p className="text-[11px] font-semibold text-accent-deep">پرداخت و اعتبار</p>
             <h1 className="mt-1 text-xl font-semibold leading-8 text-foreground">خرید اعتبار یا اشتراک</h1>
           </div>
-          <span className="inline-flex h-11 w-11 items-center justify-center rounded-[1rem] bg-[#1f1b16] text-surface">
-            <WalletCards aria-hidden={true} className="h-5 w-5" />
+          <span className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--radius-lg)] bg-foreground text-surface">
+            <Wallet aria-hidden={true} className="h-5 w-5" />
           </span>
         </div>
         <p className="mt-2 text-xs leading-6 text-muted">
@@ -217,13 +218,13 @@ export function BillingScreen({ packages, pendingRequests, paymentSettings, acti
               href={`/billing?tab=${tab.id}`}
               className={[
                 "relative inline-flex h-11 items-center justify-center gap-1.5 rounded-[0.85rem] text-[11px] font-semibold transition",
-                active ? "bg-[#1f1b16] text-surface shadow-[0_14px_24px_-22px_rgba(17,16,14,0.9)]" : "text-muted hover:bg-white/58 hover:text-foreground",
+                active ? "bg-foreground text-surface shadow-[0_14px_24px_-22px_rgba(17,16,14,0.9)]" : "text-muted hover:bg-white/58 hover:text-foreground",
               ].join(" ")}
               aria-current={active ? "page" : undefined}
             >
               <Icon aria-hidden={true} className="h-3.5 w-3.5" />
               {tab.label}
-              {receiptBadge ? <span className="absolute left-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[#c19045]" /> : null}
+              {receiptBadge ? <span className="absolute left-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-accent-bright" /> : null}
             </Link>
           );
         })}
@@ -231,7 +232,7 @@ export function BillingScreen({ packages, pendingRequests, paymentSettings, acti
 
       {activeTab === "packages" ? (
         <section className="space-y-2.5">
-          <SectionHeader icon={Layers3} title="پکیج‌های ماهانه" caption="برای فروشگاه‌هایی که هر ماه خروجی منظم می‌خواهند." />
+          <SectionHeader icon={Layer} title="پکیج‌های ماهانه" caption="برای فروشگاه‌هایی که هر ماه خروجی منظم می‌خواهند." />
           {subscriptionPackages.length > 0 ? (
             subscriptionPackages.map((billingPackage, index) => (
               <PackageCard
@@ -250,7 +251,7 @@ export function BillingScreen({ packages, pendingRequests, paymentSettings, acti
 
       {activeTab === "credits" ? (
         <section className="space-y-2.5">
-          <SectionHeader icon={WalletCards} title="اعتبارهای جداگانه" caption="برای افزایش موجودی بدون تغییر اشتراک ماهانه." />
+          <SectionHeader icon={Wallet} title="اعتبارهای جداگانه" caption="برای افزایش موجودی بدون تغییر اشتراک ماهانه." />
           {creditPacks.length > 0 ? (
             creditPacks.map((billingPackage) => (
               <PackageCard
@@ -269,7 +270,7 @@ export function BillingScreen({ packages, pendingRequests, paymentSettings, acti
       {activeTab === "payment" ? (
         <section className="rounded-[1.05rem] border border-white/72 bg-surface/64 p-3 text-right">
           <div className="flex items-center gap-2">
-            <Landmark aria-hidden={true} className="h-4 w-4 text-[#8b6835]" />
+            <Bank aria-hidden={true} className="h-4 w-4 text-accent-deep" />
             <h2 className="text-sm font-semibold text-foreground">اطلاعات کارت‌به‌کارت</h2>
           </div>
           {paymentSettings?.isActive ? (
@@ -304,10 +305,10 @@ export function BillingScreen({ packages, pendingRequests, paymentSettings, acti
                     <p className="text-sm font-semibold text-foreground">{request.package.title}</p>
                     <p className="text-[11px] text-muted">{formatPrice(request.amount, request.currency)}</p>
                   </div>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#efe2cd] px-2.5 py-1 text-[10px] text-[#806033]">
+                  <StatusPill variant="accent" className="text-[10px]">
                     <ReceiptText aria-hidden={true} className="h-3 w-3" />
                     {request.receiptSubmittedAt ? "رسید ارسال شد" : "رسید لازم است"}
-                  </span>
+                  </StatusPill>
                 </div>
                 {request.receiptImageUrl ? (
                   <a href={request.receiptImageUrl} className="mt-2 block text-xs text-[#7b5d31]" target="_blank" rel="noreferrer">
@@ -318,15 +319,15 @@ export function BillingScreen({ packages, pendingRequests, paymentSettings, acti
                   name="receipt"
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
-                  className="mt-3 block w-full rounded-[0.9rem] border border-border bg-white px-3 py-2 text-xs text-muted"
+                  className={`${fieldControlClassName} mt-3 block py-2 text-xs text-muted`}
                 />
                 <input
                   name="receiptNote"
                   placeholder="توضیح اختیاری؛ مثلا ساعت پرداخت یا چهار رقم آخر کارت"
-                  className="mt-2 h-10 w-full rounded-[0.9rem] border border-border bg-white px-3 text-xs outline-none"
+                  className={`${fieldControlClassName} mt-2 text-xs`}
                 />
                 <button type="submit" className={buttonClasses({ size: "full", variant: "secondary", className: "mt-2 h-10 rounded-[0.9rem] text-xs" })}>
-                  <Upload aria-hidden={true} className="h-4 w-4" />
+                  <DocumentUpload aria-hidden={true} className="h-4 w-4" />
                   ارسال رسید
                 </button>
               </form>

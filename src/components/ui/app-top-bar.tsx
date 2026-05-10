@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ArrowRight2 } from "vuesax-icons-react";
 import type { ReactNode } from "react";
 import { BrandLogo } from "@/components/ui/brand-logo";
 
@@ -28,8 +28,10 @@ export function AppTopBar({
 }: AppTopBarProps) {
   const dark = tone === "dark";
   const logoLinkClassName = [
-    "shrink-0 transition",
-    dark ? "inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/12 bg-white/[0.04] shadow-[0_18px_30px_-24px_rgba(0,0,0,0.92)]" : "",
+    "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+    dark
+      ? "border-white/12 bg-white/[0.04] shadow-[0_18px_30px_-24px_rgba(0,0,0,0.92)] hover:bg-white/[0.08]"
+      : "border-border bg-surface/64 shadow-[var(--shadow-soft)] hover:bg-surface",
   ].filter(Boolean).join(" ");
 
   if (centeredLogo) {
@@ -44,35 +46,35 @@ export function AppTopBar({
   }
 
   return (
-    <header className={["mb-5 flex min-h-10 items-center justify-between gap-4", className].filter(Boolean).join(" ")}>
-      <div className="flex min-w-0 items-center justify-end gap-2">
-        {backHref ? (
-          <Link
-            href={backHref}
-            aria-label="بازگشت"
-            className={[
-              "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition",
-              dark
-                ? "border-white/12 bg-white/[0.04] text-white/72 hover:bg-white/[0.08] hover:text-white"
-                : "border-border bg-surface/54 text-muted hover:bg-surface-soft hover:text-foreground",
-            ].join(" ")}
-          >
-            <ChevronRight aria-hidden="true" className="h-4 w-4" strokeWidth={1.7} />
-          </Link>
-        ) : null}
-        {title ? (
-          <h1 className={["truncate text-[15px] font-semibold leading-none", dark ? "!text-[#fffdf9]" : "!text-foreground"].join(" ")}>
-            {title}
-          </h1>
-        ) : null}
-      </div>
-
-      <div className="flex shrink-0 items-center gap-2">
+    <header dir="ltr" className={["mb-4 flex min-h-14 items-center justify-between gap-3", className].filter(Boolean).join(" ")}>
+      <div dir="rtl" className="flex shrink-0 items-center gap-2">
         {action}
         {!hideLogo ? (
           <Link href={logoHref} aria-label="OVALA Studio" className={logoLinkClassName}>
             <BrandLogo variant={logoVariant} />
           </Link>
+        ) : null}
+      </div>
+
+      <div dir="rtl" className="flex min-w-0 flex-1 items-center justify-start gap-2">
+        {backHref ? (
+          <Link
+            href={backHref}
+            aria-label="بازگشت"
+            className={[
+              "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+              dark
+                ? "border-white/12 bg-white/[0.04] text-white/72 hover:bg-white/[0.08] hover:text-white"
+                : "border-border bg-surface/70 text-muted shadow-[var(--shadow-soft)] hover:bg-surface-soft hover:text-foreground",
+            ].join(" ")}
+          >
+            <ArrowRight2 aria-hidden="true" className="h-4 w-4" />
+          </Link>
+        ) : null}
+        {title ? (
+          <h1 className={["truncate text-[17px] font-semibold leading-none", dark ? "!text-[#fffdf9]" : "!text-foreground"].join(" ")}>
+            {title}
+          </h1>
         ) : null}
       </div>
     </header>

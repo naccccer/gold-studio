@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Home, Images, Plus, User, Wallpaper } from "lucide-react";
+import { Add, Gallery, Home2, ProfileCircle, GalleryFavorite } from "vuesax-icons-react";
 import { usePathname } from "next/navigation";
 
 type TabItem = {
@@ -17,10 +17,10 @@ type MobileTabBarProps = {
 };
 
 const icons = {
-  home: Home,
-  gallery: Wallpaper,
-  projects: Images,
-  account: User,
+  home: Home2,
+  gallery: Gallery,
+  projects: GalleryFavorite,
+  account: ProfileCircle,
 };
 
 function isActivePath(pathname: string, tab: TabItem) {
@@ -52,7 +52,7 @@ export function MobileTabBar({ tabs, centerAction }: MobileTabBarProps) {
                   active ? "bg-surface-soft text-foreground" : "text-muted/58 hover:text-foreground"
                 }`}
               >
-                <Icon aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={1.65} />
+                <Icon aria-hidden="true" className="h-[18px] w-[18px]" />
                 <span>{tab.label}</span>
               </Link>
             );
@@ -67,7 +67,7 @@ export function MobileTabBar({ tabs, centerAction }: MobileTabBarProps) {
               centerActive ? "border-foreground bg-foreground" : "border-[#d8bd8d] bg-[#c89f61] hover:bg-[#bb9256]",
             ].join(" ")}
           >
-            <Plus aria-hidden="true" className="h-5 w-5" strokeWidth={1.8} />
+            <Add aria-hidden="true" className="h-5 w-5" />
           </Link>
 
           {tabs.slice(2).map((tab) => {
@@ -83,7 +83,7 @@ export function MobileTabBar({ tabs, centerAction }: MobileTabBarProps) {
                   active ? "bg-surface-soft text-foreground" : "text-muted/58 hover:text-foreground"
                 }`}
               >
-                <Icon aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={1.65} />
+                <Icon aria-hidden="true" className="h-[18px] w-[18px]" />
                 <span>{tab.label}</span>
               </Link>
             );

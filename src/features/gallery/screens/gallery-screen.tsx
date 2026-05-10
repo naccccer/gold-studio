@@ -3,15 +3,18 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Camera, Check, Download, Edit3, Eye, Sparkles, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, Camera, DocumentDownload, DocumentUpload, Edit2, Eye, Magicpen, TickCircle, Trash } from "vuesax-icons-react";
 import { useState } from "react";
 import { ActionDock } from "@/components/ui/action-dock";
-import { Button, ButtonLink } from "@/components/ui/button";
+import { Button, ButtonLink, IconButton, buttonClasses } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { fieldControlClassName } from "@/components/ui/field";
 import {
   contextMenuDangerItemClasses,
   contextMenuItemClasses,
   ItemContextMenu,
 } from "@/components/ui/item-context-menu";
+import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
 import { archiveAssetAction, renameAssetAction } from "@/features/gallery/actions";
 import {
@@ -93,7 +96,7 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
   }
 
   return (
-    <PageShell maxWidth="lg" className="space-y-5 pb-3">
+    <PageShell maxWidth="lg" className="space-y-5 pb-28">
       <div className="flex min-h-[calc(100svh-12rem)] flex-col gap-5">
         <section className="rounded-[1.15rem] border border-dashed border-accent/62 bg-surface/52 px-3 py-3">
           <div className="flex items-center justify-between gap-3">
@@ -103,17 +106,17 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
             <div className="flex shrink-0 items-center gap-2">
               <label
                 htmlFor="gallery-camera-input"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#efe2cd] text-[#8b6835]"
+                className={buttonClasses({ variant: "secondary", size: "icon", className: "rounded-full bg-accent-wash text-accent-deep" })}
                 aria-label="باز کردن دوربین"
               >
-                <Camera aria-hidden={true} className="h-4.5 w-4.5" />
+                <Camera aria-hidden={true} className="h-5 w-5" />
               </label>
               <label
                 htmlFor="gallery-file-input"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#efe2cd] text-[#8b6835]"
+                className={buttonClasses({ variant: "secondary", size: "icon", className: "rounded-full bg-accent-wash text-accent-deep" })}
                 aria-label="باز کردن فایل‌ها"
               >
-                <Upload aria-hidden={true} className="h-4.5 w-4.5" />
+                <DocumentUpload aria-hidden={true} className="h-5 w-5" />
               </label>
             </div>
           </div>
@@ -148,8 +151,9 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
         ) : null}
 
         {assets.length === 0 ? (
-          <section className="space-y-3">
-            <div className="relative h-[218px] overflow-hidden rounded-[1.45rem] border border-white/80 bg-[#e7ded2]">
+          <EmptyState
+            title="هنوز عکسی در گالری نیست."
+            media={
               <Image
                 src={uploadPreview.src}
                 alt={uploadPreview.alt}
@@ -158,9 +162,8 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                 className="object-cover object-[46%_55%]"
                 sizes="(max-width: 768px) 100vw, 680px"
               />
-            </div>
-            <p className="text-center text-sm text-muted">هنوز عکسی در گالری نیست.</p>
-          </section>
+            }
+          />
         ) : (
           <section className="grid grid-cols-2 gap-3">
             {assets.map((asset) => {
@@ -175,13 +178,7 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                     aria-label={`انتخاب ${title}`}
                     className="block w-full text-right"
                   >
-                    <div
-                      className={`relative h-[136px] overflow-hidden rounded-[1.08rem] border bg-[#ebe2d6] transition ${
-                        selected
-                          ? "border-[#c7a96b] shadow-[0_18px_36px_-28px_rgba(17,16,14,0.58)]"
-                          : "border-white/72"
-                      }`}
-                    >
+                    <JewelryImageFrame aspect="landscape" selected={selected} className="min-h-[126px] rounded-[var(--radius-lg)]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={asset.fileUrl}
@@ -190,10 +187,10 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                       />
                       {selected ? (
                         <span className="absolute left-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full bg-foreground text-surface">
-                          <Check aria-hidden={true} className="h-4 w-4" />
+                          <TickCircle aria-hidden={true} className="h-4 w-4" />
                         </span>
                       ) : null}
-                    </div>
+                    </JewelryImageFrame>
                   </button>
                   <div className="absolute bottom-2 left-2">
                     <ItemContextMenu label={`منوی ${title}`} align="right">
@@ -202,17 +199,17 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                         مشاهده جزئیات
                       </Link>
                       <Link href={`/projects/new?assetId=${asset.id}`} className={contextMenuItemClasses}>
-                        <Sparkles aria-hidden={true} className="h-3.5 w-3.5" />
+                        <Magicpen aria-hidden={true} className="h-3.5 w-3.5" />
                         ساخت پروژه
                       </Link>
                       <a href={asset.fileUrl} download className={contextMenuItemClasses}>
-                        <Download aria-hidden={true} className="h-3.5 w-3.5" />
+                        <DocumentDownload aria-hidden={true} className="h-3.5 w-3.5" />
                         دانلود عکس
                       </a>
                       <form action={renameAssetAction} className="space-y-1.5 px-1 py-1.5">
                         <input type="hidden" name="assetId" value={asset.id} />
                         <label className="flex items-center gap-1.5 text-[11px] font-medium text-muted">
-                          <Edit3 aria-hidden={true} className="h-3.5 w-3.5" />
+                          <Edit2 aria-hidden={true} className="h-3.5 w-3.5" />
                           تغییر نام
                         </label>
                         <div className="flex gap-1.5">
@@ -220,9 +217,9 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                             name="title"
                             defaultValue={title}
                             maxLength={80}
-                            className="min-w-0 flex-1 rounded-[0.65rem] border border-border bg-white px-2 py-1.5 text-xs outline-none focus:border-border-strong"
+                            className={`${fieldControlClassName} min-h-9 flex-1 px-2 text-xs`}
                           />
-                          <button type="submit" className="rounded-[0.65rem] bg-foreground px-2.5 text-xs text-surface">
+                          <button type="submit" className={buttonClasses({ size: "sm", className: "min-h-9 rounded-[var(--radius-sm)] px-2.5 text-xs" })}>
                             ثبت
                           </button>
                         </div>
@@ -237,7 +234,7 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                       >
                         <input type="hidden" name="assetId" value={asset.id} />
                         <button type="submit" className={contextMenuDangerItemClasses}>
-                          <Trash2 aria-hidden={true} className="h-3.5 w-3.5" />
+                          <Trash aria-hidden={true} className="h-3.5 w-3.5" />
                           حذف
                         </button>
                       </form>
@@ -261,13 +258,9 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                 }}
               >
                 <input type="hidden" name="assetId" value={selectedIds[0]} />
-                <button
-                  type="submit"
-                  aria-label="حذف"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#d92d20] text-white shadow-[0_12px_22px_-16px_rgba(217,45,32,0.9)] transition hover:bg-[#b42318] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
-                >
-                  <Trash2 aria-hidden={true} className="h-3.5 w-3.5" />
-                </button>
+                <IconButton type="submit" label="حذف" variant="danger" className="h-11 w-11">
+                  <Trash aria-hidden={true} className="h-4 w-4" />
+                </IconButton>
               </form>
               <ButtonLink href={`/projects/new?assetId=${selectedIds[0]}`} className="col-span-1 h-12 w-full rounded-[1rem]">
                 ادامه
@@ -287,13 +280,9 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                 {selectedIds.map((id) => (
                   <input key={id} type="hidden" name="assetId" value={id} />
                 ))}
-                <button
-                  type="submit"
-                  aria-label="حذف"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#d92d20] text-white shadow-[0_12px_22px_-16px_rgba(217,45,32,0.9)] transition hover:bg-[#b42318] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
-                >
-                  <Trash2 aria-hidden={true} className="h-3.5 w-3.5" />
-                </button>
+                <IconButton type="submit" label="حذف" variant="danger" className="h-11 w-11">
+                  <Trash aria-hidden={true} className="h-4 w-4" />
+                </IconButton>
               </form>
               <form action={batchAction}>
                 {selectedIds.map((id) => (
@@ -302,7 +291,7 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                 <input type="hidden" name="styleId" value={styles[0]?.id ?? ""} />
                 <input type="hidden" name="outputPreset" value="post" />
                 <Button type="submit" className="h-12 w-full rounded-[1rem]">
-                  <Sparkles aria-hidden={true} className="h-4 w-4" />
+                  <Magicpen aria-hidden={true} className="h-4 w-4" />
                   ادامه
                 </Button>
               </form>
