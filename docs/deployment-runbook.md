@@ -118,7 +118,7 @@ Run:
 cd /var/www/gold-studio
 npm install
 export DATABASE_URL="mysql://gold_studio_user:CHANGE_THIS_DB_PASSWORD@127.0.0.1:3306/gold_studio"
-npx prisma generate
+npm run db:generate
 npx prisma migrate deploy
 npm run build
 ```
@@ -211,7 +211,7 @@ cd /var/www/gold-studio
 git pull origin main
 npm install
 export DATABASE_URL="mysql://gold_studio_user:CHANGE_THIS_DB_PASSWORD@127.0.0.1:3306/gold_studio"
-npx prisma generate
+npm run db:generate
 npx prisma migrate deploy
 npm run build
 pm2 restart gold-studio
@@ -245,7 +245,7 @@ cd /var/www/gold-studio
 git pull origin main
 npm install
 export DATABASE_URL="mysql://gold_studio_user:CHANGE_THIS_DB_PASSWORD@127.0.0.1:3306/gold_studio"
-npx prisma generate
+npm run db:generate
 npx prisma migrate deploy
 npm run build
 pm2 restart gold-studio
@@ -256,7 +256,7 @@ If Git access is blocked on the server, upload a fresh deploy zip and replace th
 ```bash
 npm install
 export DATABASE_URL="mysql://gold_studio_user:CHANGE_THIS_DB_PASSWORD@127.0.0.1:3306/gold_studio"
-npx prisma generate
+npm run db:generate
 npx prisma migrate deploy
 npm run build
 pm2 restart gold-studio
@@ -290,7 +290,7 @@ Run:
 
 ```bash
 export DATABASE_URL="mysql://gold_studio_user:CHANGE_THIS_DB_PASSWORD@127.0.0.1:3306/gold_studio"
-npx prisma generate
+npm run db:generate
 ```
 
 Then rebuild:
@@ -298,6 +298,25 @@ Then rebuild:
 ```bash
 npm run build
 ```
+
+### Prisma delegate is `undefined` after a schema change
+
+Example:
+
+```text
+Cannot read properties of undefined (reading 'findMany')
+```
+
+If the missing property is a Prisma model delegate such as `db.userSubscription`, the generated client is stale.
+
+Run:
+
+```bash
+export DATABASE_URL="mysql://gold_studio_user:CHANGE_THIS_DB_PASSWORD@127.0.0.1:3306/gold_studio"
+npm run db:generate
+```
+
+This repo now generates Prisma into `src/generated/prisma` so local dev no longer depends on a writable `node_modules/.prisma` client output.
 
 ### `Missing required environment variable: DATABASE_URL`
 

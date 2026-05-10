@@ -1,7 +1,7 @@
 import { unlink } from "node:fs/promises";
 import path from "node:path";
 import { DeleteObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../src/generated/prisma/index.js";
 
 const prisma = new PrismaClient();
 const retentionDays = Number(process.env.ARCHIVE_RETENTION_DAYS ?? 14);
