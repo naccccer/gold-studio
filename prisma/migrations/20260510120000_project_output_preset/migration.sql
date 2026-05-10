@@ -1,0 +1,1 @@
+ALTER TABLE `Project` ADD COLUMN `outputPreset` VARCHAR(191) NOT NULL DEFAULT 'post';

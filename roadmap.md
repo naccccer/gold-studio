@@ -1,304 +1,45 @@
 # Gold Studio Roadmap
 
-## Direction
-Gold Studio / Studio OVALA is now moving from the approved `/design/user-flow` prototype into the production app.
+## Product Direction
+Gold Studio is a mobile-first Farsi RTL app for turning low-quality jewelry, gold, watch, and luxury accessory photos into premium studio-style product images.
 
-The next work is not to keep expanding the prototype. The prototype is the user-flow source of truth for visual direction, interaction rhythm, spacing, typography, image treatment, and mobile navigation.
+The product should stay professional, minimal, premium, image-led, and easy for non-technical users. The normal user flow is a guided assistant, not a SaaS dashboard, prompt-heavy AI tool, admin panel, or text-to-image playground.
 
-Core product direction:
-- Farsi-first and RTL-first.
-- Mobile-first.
-- Premium, minimal, calm, image-led, and trustworthy.
-- Guided assistant experience, not a SaaS dashboard.
-- Jewelry, gold, watches, and luxury accessories only.
-- No user-facing prompt-heavy or text-to-image experience.
-- Admin remains separate and should be redesigned as its own operational product area.
+Keep text-to-image and provider/debug controls admin/internal only. The default output path is clean catalog/product imagery.
 
-Update 2026-05-09: New users now start with ۱ tracked signup credit, name/store onboarding is mandatory until completed, and `/admin/users` supports creating users plus cleaner identity, password, role, credit, and subscription management.
-
-Primary user navigation:
+## Navigation And Workspace Ownership
+Mobile user navigation:
 
 ```text
 خانه | گالری | پروژه جدید | پروژه‌ها | حساب
 ```
 
-Workspace ownership:
-- `گالری`: uploaded source product photos.
-- `پروژه‌ها`: generated outputs and generation status.
-- `حساب`: identity, credits/subscription, support, FAQ, referral code, admin entry, logout.
-- `خرید اعتبار یا اشتراک`: user billing, packages, standalone credits, card-to-card info, purchase status, and receipt upload.
+- `گالری`: uploaded source product photos, upload/camera intake, crop, source asset review, and source organization.
+- `پروژه جدید`: fastest guided generation path from selected source image to size and visual style.
+- `پروژه‌ها`: generated outputs, generation status, retry, result review, fullscreen preview, download, and archive.
+- `حساب`: identity, onboarding/profile, usable credit, subscription summary, support, FAQ, referral, output defaults, security, logout, and admin entry for admins.
+- `/billing`: packages, standalone credits, card-to-card payment instructions, purchase status, and receipt upload.
+- `/admin`: separate operational area for users, projects, packages, styles, provider events, support, access/credits, and audit-style operations.
 
-## Phase 1 - Freeze Prototype And Extract UI System
-Goal: turn the current `/design/user-flow` prototype into a practical implementation reference.
+## Current Feature Status
+- Auth, onboarding, account, billing, gallery, project creation, project status, result review, and admin routes are implemented in the single Next.js app.
+- Prisma uses MySQL and generates the client into `src/generated/prisma`.
+- Storage supports local filesystem uploads by default and optional S3-compatible storage when intentionally enabled.
+- Image generation uses the Liara-compatible provider boundary in `src/lib/ai`.
+- Output preset is persisted per project so ratio-specific generation settings do not collapse into one global square default.
+- New users start with tracked signup credit and can consume active subscription credit before standalone wallet credit.
+- Manual card-to-card purchase requests, receipt upload, admin approval, package/subscription groundwork, credit events, support tickets, FAQ, and provider event logging are present.
+- Soft archive behavior exists for assets/projects, with `npm run cleanup:archives` for retention cleanup.
 
-Status: Completed on 2026-05-06. The approved prototype remains available at `/design/user-flow`; production now has shared UI primitives for brand logo usage, RTL top bars, mobile navigation active states, button treatments, image frames, auth image backdrops, bottom action docks, and processing canvases.
+## Next Priorities
+- Production hardening: verify real Liara generation, retry behavior, storage display URLs, and failed-state recovery on the deployment target.
+- Release readiness: finish route QA across auth, home, gallery, new project, project detail, projects, account, billing, and admin.
+- Mobile polish: check `393x852` screenshots for Farsi wrapping, RTL controls, bottom navigation, and action placement.
+- Admin operations polish: keep admin dense and practical without leaking prompt/provider complexity into user flows.
+- Documentation hygiene: keep docs short and current; update this file when scope or active priorities change.
 
-Tasks:
-- Treat `src/app/design/user-flow/page.tsx` as the approved user-flow design reference.
-- Extract shared UI decisions into reusable app patterns:
-  - mobile phone-shell proportions translated into real responsive screens
-  - bottom navigation behavior and active states
-  - primary/secondary button styles
-  - RTL top bars and back-button placement
-  - image-led card/frame treatment
-  - auth full-bleed image style
-  - processing and result action alignment
-- Keep existing Studio OVALA logo assets from `public/brand`.
-- Keep Vazirmatn as the app UI font.
-- Keep champagne gold sparse.
-- Do not carry prototype-only wrapper UI into production routes.
-
-Acceptance criteria:
-- Implementation has a small shared UI foundation instead of copy-pasted prototype markup.
-- Production pages can match the prototype without duplicating the prototype route structure.
-- `/design/user-flow` remains available as a review reference.
-
-Verification:
-
-```powershell
-npm run check:mojibake
-npm run lint
-npm run build
-```
-
-## Phase 2 - Apply Prototype To Auth And App Shell
-Goal: make the first real app surfaces match the approved direction.
-
-Status: Completed on 2026-05-06. Login/signup now use full-bleed product imagery with solid bottom action panels, the identity label is `موبایل / ایمیل`, phone examples render LTR, and the signed-in shell uses the shared RTL top bar plus the approved five-part navigation.
-
-Routes:
-- `src/app/(auth)/login`
-- `src/app/(auth)/signup`
-- signed-in shell/navigation used by dashboard routes
-
-Tasks:
-- Rebuild login and signup with full-bleed product imagery, no text over images, and clear bottom actions.
-- Use `موبایل / ایمیل` as the primary identity field label.
-- Ensure phone-number examples render LTR.
-- Remove generic dashboard feel from the signed-in shell.
-- Implement mobile nav exactly as:
-
-```text
-خانه | گالری | پروژه جدید | پروژه‌ها | حساب
-```
-
-Acceptance criteria:
-- Auth screens feel premium and image-led.
-- Mobile nav labels, active states, and center project action match the prototype.
-- Back buttons sit correctly for RTL screens.
-- No mojibake in touched files.
-
-Verification:
-
-```powershell
-npm run check:mojibake
-npm run lint
-npm run build
-```
-
-Screenshot QA:
-- Capture `393x852` screenshots for login, signup, and one signed-in route.
-
-## Phase 3 - Apply Prototype To User Creation Flow
-Goal: rebuild the core user journey around the approved guided flow.
-
-Status: Completed on 2026-05-07. Home, Gallery, New Project, processing/result states, and Projects now follow the guided RTL flow with bottom-aligned primary actions, style-card-only selection, dedicated processing canvas behavior, hold-to-preview for source image comparison, and clearer separation between source assets and generated outputs.
-
-Routes:
-- home/dashboard route
-- `/gallery`
-- `/projects/new`
-- project processing state
-- project result/review route
-- `/projects`
-
-Tasks:
-- Home: image-led Studio OVALA entry with a clear `پروژه جدید` action.
-- Gallery: source-photo workspace with upload actions, image grid, left-side thumbnail controls, and bottom-aligned `ادامه` CTA.
-- New Project: selected image preview, clear aspect ratio options:
-
-```text
-پست ۱:۱ | استوری ۹:۱۶ | بنر ۱۶:۹
-```
-
-- Style selection: visual style cards only; no prompt text in user-facing UI.
-- Processing: calm loading canvas, one animated status line at a time, visible loading motion, stable bottom actions.
-- Result: no watermark label, no `نگه‌دار: قبل` badge, fullscreen affordance, hold/hover before-image behavior, bottom-aligned `ذخیره` and `نسخه دیگر`.
-- Projects: keep generated outputs/status separate from Gallery source assets.
-
-Acceptance criteria:
-- Core journey matches the prototype behaviorally and visually.
-- Gallery and Projects remain clearly separated.
-- All primary actions align consistently near the bottom of mobile screens.
-- No user-facing text-to-image or prompt controls.
-
-Verification:
-
-```powershell
-npm run check:mojibake
-npm run lint
-npm run build
-```
-
-Screenshot QA:
-- Capture `393x852` screenshots for home, gallery, new project, processing, result, and projects.
-
-## Phase 4 - Apply Prototype To Account And Billing Groundwork
-Goal: turn Account into the production membership/profile hub.
-
-Status: Completed on 2026-05-07. Account now presents identity, phone/email identifier, current plan and remaining credits, includes the required action list with admin-only admin entry, keeps billing details abstract, and uses a muted destructive logout treatment.
-
-Route:
-- `/account`
-
-Tasks:
-- Show identity, phone/email, current plan, remaining credits.
-- Include actions:
-  - خرید اعتبار یا اشتراک
-  - ورود به بخش ادمین for admins only
-  - پشتیبانی
-  - سوالات پرتکرار
-  - مشخصات
-  - دریافت کد معرف
-  - تنظیمات خروجی
-  - امنیت حساب
-  - خروج از حساب with a muted red warning style
-- Do not duplicate Gallery navigation inside Account.
-- Keep billing/provider details abstract until payment provider selection.
-
-Acceptance criteria:
-- Account feels like a calm profile/membership hub.
-- Admin entry is visible only for admin users.
-- Logout is visually distinct and mildly destructive.
-- Credit/subscription UI can later connect to billing without redesign.
-
-Verification:
-
-```powershell
-npm run check:mojibake
-npm run lint
-npm run build
-```
-
-Screenshot QA:
-- Capture `393x852` screenshot for account.
-
-## Phase 5 - Admin Redesign As Separate Product Area
-Goal: redesign admin intentionally after the user flow lands.
-
-Status: Completed on 2026-05-07. Admin routes now use a separate operational layout with denser project/status visibility, clearer access-credit management, and internal style catalog controls while keeping admin-only responsibilities isolated from user-facing creation flows.
-
-Routes:
-- `/admin`
-- `/admin/access`
-- `/admin/projects`
-- `/admin/styles`
-
-Tasks:
-- Do not force the user-app image-led design onto admin.
-- Use a calm operational layout with denser information, clearer tables/lists, filters, and status handling.
-- Preserve admin responsibilities:
-  - style catalog management
-  - project/job inspection
-  - access/subscription/credit management
-  - internal controls and debugging
-- Keep text-to-image or prompt-heavy controls admin/internal only.
-- Ensure `/account` remains the admin entry point for admin users.
-
-Acceptance criteria:
-- Admin is usable for repeated operational work.
-- Admin does not feel like a marketing page or decorative prototype.
-- Admin remains visually related to Studio OVALA but more functional and dense.
-
-Verification:
-
-```powershell
-npm run check:mojibake
-npm run lint
-npm run build
-```
-
-Screenshot QA:
-- Capture `393x852` and desktop screenshots for key admin routes.
-
-## Phase 6 - Final QA And Hardening
-Goal: catch visual, RTL, route, and state issues before calling the rebuild complete.
-
-Status: Completed on 2026-05-07. Final pass completed across user and admin routes with no mojibake, lint-clean and build-clean output, consistent mobile-first action alignment, and additional hardening to keep text-to-image generation restricted to admin/internal usage.
-
-2026-05-08 follow-up polish:
-- Fixed dark project-detail top-bar contrast on mobile so the title stays readable over dark processing/result backgrounds.
-- Removed the `محصول | زمینه | نور` processing chip row from both production and the `/design/user-flow` reference.
-- Gallery uploads now auto-submit immediately after file selection and show explicit upload feedback in the picker area.
-- Gallery intake now separates `دوربین` from `آپلود`, opens a dedicated crop step immediately after selection, and keeps the raw upload running in the background.
-- Gallery crop now opens as a modal on top of `/gallery`, and saving or skipping the crop keeps the user inside Gallery instead of redirecting into project creation.
-
-2026-05-09 provider update:
-- Migrated the OpenAI-compatible image provider boundary from GapGPT naming to Liara defaults while keeping old `GAPGPT_*` env vars as temporary fallbacks.
-- Switched Liara generation to try native `2048x2048` first, then retry once with an OpenAI-compatible size and long-edge upscale only if Liara rejects the native size.
-- Updated Liara quality defaults to `2K` because Liara's Gemini image endpoint accepts `1K`, `2K`, or `4K` instead of OpenAI-style `high`.
-- Added retry with backoff for temporary Liara network/provider failures without requiring proxy, plus a clearer user-facing retry message after exhausted attempts.
-- Switched default Liara image model to `google/gemini-3-pro-image-preview` for native 2K requests and disabled upscale fallback unless explicitly enabled.
-
-2026-05-09 UI/UX refinement batch:
-- Gallery upload entry is quieter, uses icon-only camera/upload controls, and asset cards now have full context menus.
-- Projects grid hides title/style captions, adds full context menus, and uses the light logomark on dark project-detail backgrounds.
-- New Project is now a simple wizard: source, size, then style, without showing the Gallery grid inside the route.
-- Completed project results are image-first and support an internal fullscreen viewer.
-- Added soft archive behavior for assets/projects plus a `cleanup:archives` retention script for 14-day hard deletion.
-- Recent Home thumbnails now prefer generated outputs, New Project image frames open file upload, failed project cards are visually muted with retry entry, and admin entry is more prominent in Account.
-- Style prompts now prioritize exact product preservation, natural studio realism, non-AI-looking output, and realistic human skin texture for model-based generations.
-
-2026-05-09 admin operations rebuild:
-- Rebuilt admin information architecture around overview, projects, users, packages, styles, provider operations, and assets.
-- Added package/subscription groundwork with public Account purchase requests, manual admin approval, credit ledger events, and active subscription credit consumption before purchased credits.
-- Added minimal admin audit and provider event logging for retries, archives, style edits, package changes, purchases, and generation provider outcomes.
-
-2026-05-09 manual payment update:
-- Switched v1 purchases to کارت‌به‌کارت with admin-managed cardholder/card number/payment instructions.
-- Added receipt upload from the user billing flow and receipt review before admin approval.
-- Removed Assets from the admin navigation and split package management into separate پکیج and اعتبار sections with starter, studio, and professional monthly package defaults.
-
-2026-05-09 admin packages visual redesign:
-- Reworked `/admin/packages` into a more serious billing operations surface with a dark operational header, financial card-to-card settings band, pending receipt review entry, package plan records, and secondary standalone credit packs.
-- Kept the existing manual payment, package, receipt approval, duplicate, delete/archive, and active/visible behavior intact while improving scan hierarchy and RTL form organization.
-
-2026-05-09 user billing split:
-- Moved user-facing packages, standalone credits, card-to-card payment details, pending purchase status, and receipt upload from `/account` to `/billing`.
-- Kept `/account` as a clean profile and membership hub with identity, current plan/credits, pending payment summary, admin entry, and a clear `خرید اعتبار یا اشتراک` link.
-- Changed `/billing` to a simple tabbed flow so packages, credits, card-to-card details, and receipts do not appear as one long stacked page.
-
-2026-05-09 account and credit realization:
-- Account credit display now uses total usable credit: standalone wallet credit plus active subscription credit remaining.
-- Purchase approval is linked back to the entitlement it creates through `purchaseRequestId`, with a manual admin reconcile action for older approved purchases.
-- Added database-backed Account pages for profile, referral rewards, output defaults, password changes, FAQ, and two-way support tickets.
-- Added admin support operations for contact settings, support tickets, and FAQ management.
-
-2026-05-09 live storage display fix:
-- Confirmed the current live setup should stay on `STORAGE_DRIVER="local"` with writable `public/uploads`.
-- Gallery, New Project, Project Detail, Projects, Gallery Asset, and Home recent project views now prefer storage-key-derived display URLs when available, which also recovers generated outputs that were saved but showed placeholders.
-- Kept the internal `/api/storage/[...key]` route available only for a future intentional S3/private-bucket migration.
-
-2026-05-09 Prisma client hardening:
-- Moved Prisma client generation to repo-owned `src/generated/prisma` instead of the default `node_modules/.prisma` output.
-- Added `npm run db:generate` to `dev`, `build`, and `postinstall` so schema changes do not leave runtime delegates like `db.userSubscription` stale.
-
-Tasks:
-- Full route pass across auth, home, gallery, project creation, processing, result, projects, account, and admin.
-- Check loading, empty, failed, completed, and access-blocked states.
-- Check mobile overflow at `393x852`.
-- Check desktop does not look broken, even though mobile is primary.
-- Remove prototype-only labels, unused UI fragments, and duplicated helpers.
-- Keep docs short and current.
-
-Acceptance criteria:
-- No obvious visual drift from the approved prototype on user routes.
-- No mojibake.
-- No mobile overflow.
-- No prompt text in user-facing creation flow.
-- Admin remains separate and operational.
-
-Verification:
+## Verification
+Run after meaningful implementation or docs cleanup:
 
 ```powershell
 npm run check:mojibake
@@ -308,13 +49,7 @@ npm run build
 
 If build fails only because of the known PrismaClient issue in `src/lib/db.ts`, report it as unrelated and unchanged.
 
-## Current Priority
-Prototype application is complete. Current priority is production hardening, UI/UX refinement, provider QA, and release readiness.
-
-Do not expand `/design/user-flow` into every app page. Use it as the approved reference and move the real product forward.
-
-## Local Dev Notes
-- Added isolated local MariaDB helper scripts for this project to avoid dependency on broken global XAMPP data:
-  - `npm run db:start`
-  - `npm run db:stop`
-- The isolated DB uses `.local-mariadb` and `127.0.0.1:3307` as configured in `.env`.
+## Local Database Notes
+- `npm run db:start` starts the isolated local MariaDB helper for this project.
+- `npm run db:stop` stops it.
+- Local helper data lives in `.local-mariadb` and usually uses `127.0.0.1:3307` as configured in `.env`.

@@ -4,19 +4,23 @@
 - Build mobile-first.
 - Build Farsi-first.
 - Treat RTL as the default.
-- Keep the app image-led and low-friction.
+- Keep the app image-led, low-friction, premium, and calm.
 - Gallery owns source photos.
-- Projects own generated outputs.
-- Avoid SaaS dashboards, admin-heavy user screens, and prompt-heavy workflows.
+- Projects own generated outputs and generation status.
+- Billing owns packages, credits, manual payment details, and receipt upload.
+- Admin is a separate operational area, not the normal user experience.
+- Avoid SaaS dashboards, prompt-heavy workflows, generic admin screens in user flows, and user-facing text-to-image controls.
 
 ## Design
 - Use Vazirmatn for UI/body text.
 - Use Doran only for very short display titles.
 - Use lucide icons consistently.
-- Bottom nav is `خانه`, `گالری`, center `+`, `پروژه‌ها`, `حساب`.
-- Prefer icon-led controls, but keep text plus icon for primary or risky actions.
-- Use tiny info triggers only for complex moments.
+- Mobile nav is `خانه`, `گالری`, center `پروژه جدید`, `پروژه‌ها`, `حساب`.
+- Primary actions use text plus icon.
+- Secondary familiar actions may be icon-only with accessible labels.
 - Keep champagne-gold sparse.
+- Avoid nested cards, noisy filters, random borders, heavy gradients, and one-off visual hacks.
+- Do not use perfume/fragrance visual metaphors.
 
 ## Code
 - Prefer small components.
@@ -30,11 +34,21 @@
 
 ## Documentation
 - Keep docs short and current.
-- Update `roadmap.md` whenever scope, phase status, or product direction changes.
+- Do not keep implementation diaries, phase histories, temporary QA notes, or stale warnings.
+- Update `roadmap.md` whenever scope, progress, active priorities, or product direction changes.
 
 ## Encoding And Persian Copy
-- All source and docs files must be saved as UTF-8.
+- Save source and docs as UTF-8.
 - Never paste already-corrupted mojibake text.
-- If Persian appears as Ã, Â, Ø, Ù, Û, Ú, â, or �, stop and fix encoding before editing.
+- If Persian appears corrupted or unreadable, stop and fix encoding before editing.
 - Prefer direct UTF-8 Persian strings in TSX, TS, and MD files.
-- Do not convert Persian text to escaped unicode unless technically required.
+- Do not convert Persian text to escaped Unicode unless technically required.
+
+## Verification
+Run after meaningful changes:
+
+```powershell
+npm run check:mojibake
+npm run lint
+npm run build
+```

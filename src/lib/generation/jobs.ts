@@ -1,4 +1,4 @@
-import { generateStyledImageWithLiara, generateTextImageWithLiara } from "@/lib/ai/liara";
+import { generateStyledImageWithLiara, generateTextImageWithLiara, liaraModel } from "@/lib/ai/liara";
 import { logProviderEvent } from "@/lib/billing";
 import { db } from "@/lib/db";
 import { readStoredUpload, saveGeneratedImage } from "@/lib/uploads";
@@ -18,10 +18,6 @@ async function claimQueuedProject(projectId: string) {
   });
 
   return claimed.count > 0;
-}
-
-function liaraModel() {
-  return process.env.LIARA_IMAGE_MODEL?.trim() || process.env.GAPGPT_IMAGE_MODEL?.trim() || "google/gemini-2.5-flash-image";
 }
 
 export async function processImageProject(projectId: string) {
@@ -52,12 +48,14 @@ export async function processImageProject(projectId: string) {
       sourceBuffer: source.buffer,
       mimeType: source.mimeType,
       stylePrompt: project.prompt,
+      outputPreset: project.outputPreset,
     });
     await logProviderEvent({
       projectId,
       operation: "image.edit",
       status: "SUCCESS",
       model: liaraModel(),
+      statusDetail: `outputPreset=${project.outputPreset}`,
     });
     const result = await saveGeneratedImage(generatedImage.imageBuffer);
 
@@ -101,6 +99,7 @@ export async function processTextProject({
     const generatedImage = await generateTextImageWithLiara({
       prompt: textPrompt,
       stylePrompt,
+      outputPreset: "post",
     });
     await logProviderEvent({
       projectId,

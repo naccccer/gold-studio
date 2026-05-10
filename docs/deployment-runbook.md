@@ -1,29 +1,18 @@
 # Deployment Runbook
 
-This file is the practical server checklist for Gold Studio.
+Practical VPS checklist for deploying, updating, restarting, and debugging Gold Studio.
 
-Use it when you want to:
-- deploy the app on a VPS/cloud server
-- update the server after a new Git commit
-- restart the app safely
-- debug common production issues
+## Hosting Baseline
+Use a normal VPS/cloud server, not shared hosting or serverless hosting.
 
-## Recommended Hosting
-
-Use a normal VPS/cloud server, not shared hosting and not serverless hosting.
-
-Current app needs:
-- Node.js
-- MySQL
-- writable local filesystem when `STORAGE_DRIVER="local"`
-- outbound access to npm, GitHub, Prisma downloads, and Liara
-
-## Server Baseline
-
-Recommended minimum:
+Recommended:
 - Ubuntu 24.04
-- 2 vCPU
-- 4 GB RAM
+- Node.js 20+
+- MySQL
+- Nginx
+- PM2
+- writable local filesystem when `STORAGE_DRIVER="local"`
+- outbound access to npm, GitHub or deploy uploads, Prisma downloads, and Liara
 
 Install base packages:
 
@@ -35,20 +24,8 @@ apt install -y nodejs
 npm install -g pm2
 ```
 
-Check versions:
-
-```bash
-node -v
-npm -v
-git --version
-nginx -v
-mysql --version
-pm2 -v
-```
-
 ## App Setup
-
-Clone the repo:
+Clone or upload the project:
 
 ```bash
 cd /var/www
@@ -56,17 +33,16 @@ git clone https://github.com/naccccer/gold-studio.git
 cd /var/www/gold-studio
 ```
 
-If direct Git access is blocked, upload a clean project zip instead and extract it into `/var/www/gold-studio`.
+If direct Git access is blocked, upload a clean project zip and extract it to `/var/www/gold-studio`.
 
 ## Database Setup
-
 Open MySQL:
 
 ```bash
 mysql
 ```
 
-Create DB and user:
+Create database and user:
 
 ```sql
 CREATE DATABASE gold_studio CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -76,24 +52,25 @@ FLUSH PRIVILEGES;
 EXIT;
 ```
 
-## Required .env
-
+## Required Env
 Create `/var/www/gold-studio/.env`.
-
-Example:
 
 ```env
 DATABASE_URL="mysql://gold_studio_user:CHANGE_THIS_DB_PASSWORD@127.0.0.1:3306/gold_studio"
 AUTH_SECRET="CHANGE_THIS_TO_A_LONG_RANDOM_SECRET"
+ADMIN_EMAIL="admin@example.com"
+ALLOW_INSECURE_COOKIES="false"
+
 LIARA_API_KEY="CHANGE_THIS"
 LIARA_BASE_URL="https://ai.liara.ir/api/69fe30c50bb427e049d327f6/v1"
-LIARA_IMAGE_MODEL="google/gemini-2.5-flash-image"
+LIARA_IMAGE_MODEL="google/gemini-3-pro-image-preview"
 LIARA_IMAGE_SIZE="2048x2048"
 LIARA_IMAGE_QUALITY="2K"
 LIARA_FALLBACK_LONG_EDGE="2048"
-ADMIN_EMAIL="admin@example.com"
+LIARA_ALLOW_UPSCALE_FALLBACK="false"
+
 STORAGE_DRIVER="local"
-ALLOW_INSECURE_COOKIES="false"
+
 S3_ENDPOINT="https://hot.ir-central1.arvanstorage.ir"
 S3_REGION="ir-central1"
 S3_BUCKET="gold-studio"
@@ -104,16 +81,13 @@ S3_FORCE_PATH_STYLE="true"
 ```
 
 Notes:
-- `ALLOW_INSECURE_COOKIES="true"` is a temporary local/live-IP workaround only before HTTPS is ready.
-- After SSL is active, switch it back to `false` or remove it.
-- Current live setup should use `STORAGE_DRIVER="local"` and a writable `public/uploads` directory.
-- S3-compatible storage is optional for a later move away from local disk; only switch to `STORAGE_DRIVER="s3"` when that migration is intentional.
 - Rotate secrets immediately if they were pasted into chat, screenshots, or logs.
+- `ALLOW_INSECURE_COOKIES="true"` is only a temporary HTTP/live-IP workaround before HTTPS is ready.
+- After SSL is active, set `ALLOW_INSECURE_COOKIES="false"` or remove it.
+- Current VPS live tests should use `STORAGE_DRIVER="local"` with writable `public/uploads`.
+- Switch to `STORAGE_DRIVER="s3"` only when persistent object storage is intentionally configured.
 
 ## First Deploy
-
-Run:
-
 ```bash
 cd /var/www/gold-studio
 npm install
@@ -121,14 +95,6 @@ export DATABASE_URL="mysql://gold_studio_user:CHANGE_THIS_DB_PASSWORD@127.0.0.1:
 npm run db:generate
 npx prisma migrate deploy
 npm run build
-```
-
-Prisma packages must stay on matching major versions.
-If `@prisma/client` and `prisma` are on `6.x`, keep `@prisma/adapter-mariadb` on `6.x` too.
-
-Start the app:
-
-```bash
 pm2 start npm --name gold-studio -- start
 pm2 save
 pm2 startup
@@ -140,8 +106,9 @@ Run the command printed by `pm2 startup`, then:
 pm2 save
 ```
 
-## Nginx
+Prisma packages must stay on matching major versions. If `@prisma/client` and `prisma` are on `6.x`, keep `@prisma/adapter-mariadb` on `6.x` too.
 
+## Nginx
 Create `/etc/nginx/sites-available/gold-studio`:
 
 ```nginx
@@ -174,38 +141,25 @@ systemctl restart nginx
 ```
 
 ## Domain And SSL
-
 Point DNS A records to the server IP:
-- `@` -> server IP
-- `www` -> server IP
+- `@`
+- `www`
 
-When DNS is ready, replace:
-
-```nginx
-server_name _;
-```
-
-with:
+Replace `server_name _;` with the real domain:
 
 ```nginx
 server_name example.com www.example.com;
 ```
 
-Then reload Nginx and issue SSL:
+Issue SSL:
 
 ```bash
 apt install -y certbot python3-certbot-nginx
 certbot --nginx -d example.com -d www.example.com
+pm2 restart gold-studio
 ```
 
-After HTTPS works:
-- remove `ALLOW_INSECURE_COOKIES="true"` if you used it
-- restart the app
-
-## Updating The Server After A New Commit
-
-Standard Git-based update flow:
-
+## Update After A New Commit
 ```bash
 cd /var/www/gold-studio
 git pull origin main
@@ -218,167 +172,9 @@ pm2 restart gold-studio
 pm2 save
 ```
 
-If you use another branch, replace `main`.
-
-If dependencies did not change, `npm install` is still safe and simpler than guessing.
-
-## Deploying Local Changes To The Server
-
-If the server uses Git:
-1. commit locally
-2. push to GitHub
-3. SSH into the server
-4. run the update flow above
-
-Basic local flow:
-
-```bash
-git add .
-git commit -m "Describe the change"
-git push origin main
-```
-
-Then on the server:
-
-```bash
-cd /var/www/gold-studio
-git pull origin main
-npm install
-export DATABASE_URL="mysql://gold_studio_user:CHANGE_THIS_DB_PASSWORD@127.0.0.1:3306/gold_studio"
-npm run db:generate
-npx prisma migrate deploy
-npm run build
-pm2 restart gold-studio
-```
-
-If Git access is blocked on the server, upload a fresh deploy zip and replace the project files, then run:
-
-```bash
-npm install
-export DATABASE_URL="mysql://gold_studio_user:CHANGE_THIS_DB_PASSWORD@127.0.0.1:3306/gold_studio"
-npm run db:generate
-npx prisma migrate deploy
-npm run build
-pm2 restart gold-studio
-```
-
-## Common Problems
-
-### Login works, then every click returns to `/login`
-
-Cause:
-- cookie rejected on plain HTTP because secure cookies are enabled in production
-
-Temporary fix before SSL:
-
-```env
-ALLOW_INSECURE_COOKIES="true"
-```
-
-Then rebuild and restart:
-
-```bash
-npm run build
-pm2 restart gold-studio
-```
-
-Remove this after HTTPS is live.
-
-### `@prisma/client did not initialize yet`
-
-Run:
-
-```bash
-export DATABASE_URL="mysql://gold_studio_user:CHANGE_THIS_DB_PASSWORD@127.0.0.1:3306/gold_studio"
-npm run db:generate
-```
-
-Then rebuild:
-
-```bash
-npm run build
-```
-
-### Prisma delegate is `undefined` after a schema change
-
-Example:
-
-```text
-Cannot read properties of undefined (reading 'findMany')
-```
-
-If the missing property is a Prisma model delegate such as `db.userSubscription`, the generated client is stale.
-
-Run:
-
-```bash
-export DATABASE_URL="mysql://gold_studio_user:CHANGE_THIS_DB_PASSWORD@127.0.0.1:3306/gold_studio"
-npm run db:generate
-```
-
-This repo now generates Prisma into `src/generated/prisma` so local dev no longer depends on a writable `node_modules/.prisma` client output.
-
-### `Missing required environment variable: DATABASE_URL`
-
-For this repo, Prisma may need a shell env var in addition to `.env`.
-
-Run:
-
-```bash
-export DATABASE_URL="mysql://gold_studio_user:CHANGE_THIS_DB_PASSWORD@127.0.0.1:3306/gold_studio"
-```
-
-To persist it for the current user:
-
-```bash
-echo 'export DATABASE_URL="mysql://gold_studio_user:CHANGE_THIS_DB_PASSWORD@127.0.0.1:3306/gold_studio"' >> ~/.bashrc
-source ~/.bashrc
-```
-
-### npm/GitHub access is unstable on the server
-
-Read:
-- `docs/proxy.md`
-
-Try in this order:
-1. direct access
-2. fix DNS
-3. use proxy only for blocked external commands
-
-### Nginx shows `Welcome to nginx!`
-
-Cause:
-- default site is still active
-- app site is not enabled
-
-Fix:
-
-```bash
-rm -f /etc/nginx/sites-enabled/default
-ln -sf /etc/nginx/sites-available/gold-studio /etc/nginx/sites-enabled/gold-studio
-nginx -t
-systemctl restart nginx
-```
-
-### PM2 shows duplicate app entries
-
-Check:
-
-```bash
-pm2 list
-```
-
-Delete the extra process by id:
-
-```bash
-pm2 delete ID
-pm2 save
-```
+If the server cannot pull from Git, upload a fresh deploy zip, replace project files, then run the same install/generate/migrate/build/restart sequence.
 
 ## Health Checks
-
-Useful commands:
-
 ```bash
 pm2 status
 pm2 logs gold-studio --lines 100
@@ -387,8 +183,60 @@ curl -I http://127.0.0.1:3000
 curl -I http://127.0.0.1
 ```
 
-## Verification
+## Common Problems
 
+### Login works, then every click returns to `/login`
+Cause: production secure cookies are rejected on plain HTTP.
+
+Temporary pre-SSL fix:
+
+```env
+ALLOW_INSECURE_COOKIES="true"
+```
+
+Then rebuild and restart. Remove this after HTTPS works.
+
+### Prisma client did not initialize
+Run:
+
+```bash
+export DATABASE_URL="mysql://gold_studio_user:CHANGE_THIS_DB_PASSWORD@127.0.0.1:3306/gold_studio"
+npm run db:generate
+npm run build
+pm2 restart gold-studio
+```
+
+### Prisma delegate is `undefined` after schema changes
+If a missing property is a Prisma model delegate such as `db.userSubscription`, the generated client is stale.
+
+Run `npm run db:generate`, then rebuild. This repo generates Prisma into `src/generated/prisma`.
+
+### `Missing required environment variable: DATABASE_URL`
+For this repo, Prisma may need a shell env var in addition to `.env`:
+
+```bash
+export DATABASE_URL="mysql://gold_studio_user:CHANGE_THIS_DB_PASSWORD@127.0.0.1:3306/gold_studio"
+```
+
+### npm, GitHub, Prisma, or Liara access is blocked
+Read `docs/proxy.md`. Try direct access first, then use proxy only for blocked external commands.
+
+### Nginx shows the default welcome page
+```bash
+rm -f /etc/nginx/sites-enabled/default
+ln -sf /etc/nginx/sites-available/gold-studio /etc/nginx/sites-enabled/gold-studio
+nginx -t
+systemctl restart nginx
+```
+
+### PM2 shows duplicate app entries
+```bash
+pm2 list
+pm2 delete ID
+pm2 save
+```
+
+## Verification
 Run after meaningful app changes:
 
 ```bash

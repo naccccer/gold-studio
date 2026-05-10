@@ -2,19 +2,22 @@
 
 ## Current Shape
 - Single Next.js App Router repo.
-- TypeScript.
-- Tailwind CSS.
+- TypeScript and Tailwind.
 - Prisma with MySQL.
-- Liara OpenAI-compatible image API.
-- Storage adapter with local filesystem development storage and optional S3-compatible production storage.
+- Prisma client generated to `src/generated/prisma`.
+- Signed cookie auth with role-based admin access.
+- Liara OpenAI-compatible image generation boundary.
+- Local filesystem storage by default, optional S3-compatible storage.
 
 ## Product Boundaries
-- Gallery source assets are represented by `ProductAsset`.
-- Optional source organization is represented by `AssetCollection`.
-- Generated outputs are represented by `Project`.
-- Batch generation is represented by `GenerationBatch` and `GenerationBatchItem`.
-- Projects reference their selected `CreativeStyle` through `styleId`.
-- Generation starts as `QUEUED`, moves to `PROCESSING`, and then ends as `COMPLETED` or `FAILED`.
+- `ProductAsset`: uploaded source product photos owned by Gallery.
+- `AssetCollection`: optional organization for source assets.
+- `Project`: generated outputs, status, result image, retry/review/archive lifecycle.
+- `GenerationBatch` and `GenerationBatchItem`: multi-source generation grouping.
+- `CreativeStyle`, categories, variants, and controls: admin-managed style catalog.
+- Billing models: packages, purchase requests, subscriptions, and credit events.
+- Support models: FAQ, support settings, tickets, and ticket messages.
+- Operational logs: admin audit events and provider events.
 
 ## Folder Boundaries
 - Routes live in `src/app`.
@@ -23,22 +26,19 @@
 - Shared logic lives in `src/lib`.
 - AI logic stays in `src/lib/ai`.
 - Database schema and migrations live in `prisma`.
+- Docs live in `docs`.
 
-## Preserved Contracts
-- Signed cookie auth.
-- Admin role redirect behavior.
-- Owner-scoped project, asset, and batch reads.
-- Server-side sensitive operations.
-- Existing OpenAI-compatible image provider boundary.
+## Runtime Boundaries
+- Sensitive operations stay server-side.
+- Owner-scoped reads/writes are required for user assets, batches, projects, purchases, and support.
+- Admin routes are separate from user routes and must not leak admin-only controls into normal user flows.
+- Prompt-heavy and text-to-image controls stay admin/internal.
+- Storage display should prefer storage-key-derived URLs when available.
+- S3-compatible storage is optional and should be enabled only as an intentional deployment change.
 
-## Planned Architecture
-- Style catalog as Prisma/MySQL records, with admin-managed creation, visibility, active state, and ordering.
-- DB-backed generation jobs run inside the Next.js app for MVP.
-- Provider-agnostic billing/access boundary for an Iran-friendly gateway.
-
-## UI Architecture Rules
+## UI Architecture
 - Route files stay thin.
 - Screen components own composition.
 - Business logic does not move into UI components.
-- Prompt text does not appear in user-facing UI.
 - Navigation definitions should stay centralized and inspectable.
+- Gallery source asset UI should stay separate from generated Project review UI where practical.

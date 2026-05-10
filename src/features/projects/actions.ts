@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { requireUserSession } from "@/lib/auth/session";
 import { consumeGenerationCredit } from "@/lib/billing";
 import { processImageProject, processTextProject } from "@/lib/generation/jobs";
+import { getOutputPresetSpec, normalizeOutputPreset } from "@/lib/output-presets";
 import { getStyleForGeneration, type StyleForGeneration } from "@/lib/styles";
 import { saveTextPromptSourceImage, saveUploadedFile } from "@/lib/uploads";
 
@@ -22,12 +23,6 @@ async function getReadyUser(userId: string) {
 
   return { user };
 }
-
-const outputPresetInstructions: Record<string, string> = {
-  post: "Output format: square product image for catalog and social post use. Keep generous clean space around the product.",
-  story: "Output format: vertical story image. Keep the product fully visible and avoid cropping important details.",
-  banner: "Output format: horizontal banner image. Keep the product prominent with refined negative space.",
-};
 
 const modelGenderInstructions: Record<string, string> = {
   woman: "Use an elegant adult woman model when a human model is needed.",
@@ -63,10 +58,10 @@ function normalizeModesty(value: number) {
 }
 
 function buildPrompt(style: StyleForGeneration, formData: FormData) {
-  const outputPreset = String(formData.get("outputPreset") ?? "post");
+  const outputPreset = normalizeOutputPreset(formData.get("outputPreset"));
   const modelGender = String(formData.get("modelGender") ?? "");
   const modestyValue = Number.parseInt(String(formData.get("modesty") ?? "65"), 10);
-  const promptParts = [style.prompt, outputPresetInstructions[outputPreset] ?? outputPresetInstructions.post];
+  const promptParts = [style.prompt, getOutputPresetSpec(outputPreset).instruction];
   const includesHumanModel = hasHumanModelControls(style);
 
   if (includesHumanModel) {
@@ -93,6 +88,7 @@ export async function createProjectAction(
   const title = String(formData.get("title") ?? "").trim();
   const mode = String(formData.get("generationMode") ?? "image");
   const sourceAssetId = String(formData.get("sourceAssetId") ?? "").trim();
+  const outputPreset = normalizeOutputPreset(formData.get("outputPreset"));
   const styleId = String(formData.get("styleId") ?? "");
   const style = await getStyleForGeneration(styleId);
 
@@ -128,6 +124,7 @@ export async function createProjectAction(
         userId: session.userId,
         title: title || "تست داخلی متن به تصویر",
         sourceImageUrl,
+        outputPreset,
         styleId: style.id,
         prompt: `${textPrompt}\n\n${stylePrompt}`,
         status: "QUEUED",
@@ -158,6 +155,7 @@ export async function createProjectAction(
         sourceAssetId: asset.id,
         title: title || asset.title || asset.originalName || null,
         sourceImageUrl: asset.fileUrl,
+        outputPreset,
         styleId: style.id,
         prompt: stylePrompt,
         status: "QUEUED",
@@ -196,6 +194,7 @@ export async function createProjectAction(
       sourceAssetId: asset.id,
       title: title || null,
       sourceImageUrl: uploaded.publicUrl,
+      outputPreset,
       styleId: style.id,
       prompt: stylePrompt,
       status: "QUEUED",

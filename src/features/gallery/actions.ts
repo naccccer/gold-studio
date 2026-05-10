@@ -7,6 +7,7 @@ import { requireUserSession } from "@/lib/auth/session";
 import { consumeGenerationCredit, getAvailableGenerationCredits, NO_CREDITS_ERROR } from "@/lib/billing";
 import { db } from "@/lib/db";
 import { processGenerationBatch } from "@/lib/generation/jobs";
+import { getOutputPresetSpec, normalizeOutputPreset } from "@/lib/output-presets";
 import { getStyleForGeneration } from "@/lib/styles";
 import { saveUploadedFile } from "@/lib/uploads";
 
@@ -41,7 +42,7 @@ export async function createBatchFromGalleryAction(formData: FormData) {
   const session = await requireUserSession();
   const assetIds = formData.getAll("assetIds").map(String).filter(Boolean);
   const styleId = String(formData.get("styleId") ?? "");
-  const outputPreset = String(formData.get("outputPreset") ?? "post");
+  const outputPreset = normalizeOutputPreset(formData.get("outputPreset"));
   const style = await getStyleForGeneration(styleId);
 
   if (assetIds.length === 0 || !style) {
@@ -91,8 +92,9 @@ export async function createBatchFromGalleryAction(formData: FormData) {
         sourceAssetId: asset.id,
         title: asset.title || asset.originalName || null,
         sourceImageUrl: asset.fileUrl,
+        outputPreset,
         styleId: style.id,
-        prompt: `${style.prompt}\nOutput preset: ${outputPreset}.`,
+        prompt: `${style.prompt}\n${getOutputPresetSpec(outputPreset).instruction}`,
         status: "QUEUED",
       },
     });

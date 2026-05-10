@@ -1,12 +1,10 @@
-import OpenAI, { toFile } from "openai";
-import type { ImageEditParams, ImageGenerateParams, ImagesResponse } from "openai/resources/images";
-import sharp from "sharp";
+import type { ImagesResponse } from "openai/resources/images";
+import { getOutputPresetSpec } from "@/lib/output-presets";
 
 const DEFAULT_LIARA_BASE_URL = "https://ai.liara.ir/api/69fe30c50bb427e049d327f6/v1";
-const DEFAULT_LIARA_IMAGE_MODEL = "google/gemini-2.5-flash-image";
-const DEFAULT_IMAGE_SIZE = "2048x2048";
+const DEFAULT_LIARA_IMAGE_MODEL = "google/gemini-3-pro-image-preview";
+const DEFAULT_IMAGE_SIZE = "1024x1024";
 const DEFAULT_IMAGE_QUALITY = "2K";
-const DEFAULT_FALLBACK_LONG_EDGE = 2048;
 const SUPPORTED_IMAGE_QUALITIES = new Set(["1K", "2K", "4K"]);
 const TRANSIENT_RETRY_DELAYS_MS = [1500, 4000, 9000];
 const RETRYABLE_HTTP_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
@@ -34,11 +32,13 @@ type GenerateImageInput = {
   sourceBuffer: Buffer;
   mimeType: string;
   stylePrompt: string;
+  outputPreset?: string | null;
 };
 
 type GenerateTextImageInput = {
   prompt: string;
   stylePrompt: string;
+  outputPreset?: string | null;
 };
 
 export type LiaraImageResult = {
@@ -55,8 +55,6 @@ class LiaraGenerationError extends Error {
     }
   }
 }
-
-let cachedClient: OpenAI | null = null;
 
 function readEnv(primaryName: string, fallbackNames: string[] = []) {
   const names = [primaryName, ...fallbackNames];
@@ -87,27 +85,11 @@ function getLiaraConfig() {
       DEFAULT_LIARA_IMAGE_MODEL,
     size: (liaraApiKey ? readEnv("LIARA_IMAGE_SIZE") : readEnv("LIARA_IMAGE_SIZE", ["GAPGPT_IMAGE_SIZE"])) || DEFAULT_IMAGE_SIZE,
     quality: readEnv("LIARA_IMAGE_QUALITY", ["GAPGPT_IMAGE_QUALITY"]) || DEFAULT_IMAGE_QUALITY,
-    fallbackLongEdge: Number.parseInt(readEnv("LIARA_FALLBACK_LONG_EDGE", ["GAPGPT_OUTPUT_MIN_SIZE"]) || "", 10),
-    allowUpscaleFallback: readEnv("LIARA_ALLOW_UPSCALE_FALLBACK") === "true",
   };
 }
 
-function getLiaraClient(apiKey: string, baseURL: string) {
-  if (!cachedClient) {
-    cachedClient = new OpenAI({ apiKey, baseURL, maxRetries: 0 });
-  }
-
-  return cachedClient;
-}
-
-function extensionFromMimeType(mimeType: string) {
-  if (mimeType === "image/png") return "png";
-  if (mimeType === "image/webp") return "webp";
-  return "jpg";
-}
-
-function getImageSize(size: string): NonNullable<ImageEditParams["size"] & ImageGenerateParams["size"]> {
-  return size as NonNullable<ImageEditParams["size"] & ImageGenerateParams["size"]>;
+export function liaraModel() {
+  return process.env.LIARA_IMAGE_MODEL?.trim() || process.env.GAPGPT_IMAGE_MODEL?.trim() || DEFAULT_LIARA_IMAGE_MODEL;
 }
 
 function getImageQuality(quality: string) {
@@ -118,8 +100,10 @@ function getImageQuality(quality: string) {
   return DEFAULT_IMAGE_QUALITY;
 }
 
-function getProviderImageQuality(quality: string): NonNullable<ImageEditParams["quality"] & ImageGenerateParams["quality"]> {
-  return getImageQuality(quality) as NonNullable<ImageEditParams["quality"] & ImageGenerateParams["quality"]>;
+function extensionFromMimeType(mimeType: string) {
+  if (mimeType === "image/png") return "png";
+  if (mimeType === "image/webp") return "webp";
+  return "jpg";
 }
 
 function retryDelay(attemptIndex: number) {
@@ -239,85 +223,71 @@ async function extractGeneratedImage(response: ImagesResponse) {
   throw new LiaraGenerationError("Liara did not return an image.");
 }
 
-function parseImageSize(size: string) {
-  const match = size.match(/^(\d+)x(\d+)$/);
-  if (!match) {
-    return null;
+async function postLiaraJson<T>({
+  baseURL,
+  apiKey,
+  path,
+  body,
+}: {
+  baseURL: string;
+  apiKey: string;
+  path: string;
+  body: unknown;
+}) {
+  const response = await fetch(`${baseURL.replace(/\/$/, "")}${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    let detail = "";
+    try {
+      detail = await response.text();
+    } catch {
+      detail = "";
+    }
+
+    throw new LiaraGenerationError(`Liara request failed with status ${response.status}${detail ? `: ${detail}` : ""}.`);
   }
 
-  return {
-    width: Number.parseInt(match[1], 10),
-    height: Number.parseInt(match[2], 10),
-  };
+  return (await response.json()) as T;
 }
 
-function getCompatibleFallbackSize(size: string) {
-  const parsedSize = parseImageSize(size);
-  if (!parsedSize || parsedSize.width === parsedSize.height) {
-    return "1024x1024";
+async function postLiaraForm<T>({
+  baseURL,
+  apiKey,
+  path,
+  body,
+}: {
+  baseURL: string;
+  apiKey: string;
+  path: string;
+  body: FormData;
+}) {
+  const response = await fetch(`${baseURL.replace(/\/$/, "")}${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body,
+  });
+
+  if (!response.ok) {
+    let detail = "";
+    try {
+      detail = await response.text();
+    } catch {
+      detail = "";
+    }
+
+    throw new LiaraGenerationError(`Liara request failed with status ${response.status}${detail ? `: ${detail}` : ""}.`);
   }
 
-  return parsedSize.width > parsedSize.height ? "1536x1024" : "1024x1536";
-}
-
-function isUnsupportedSizeError(error: unknown) {
-  if (typeof error !== "object" || error === null) {
-    return false;
-  }
-
-  const maybeError = error as {
-    status?: unknown;
-    message?: unknown;
-    error?: { message?: unknown; param?: unknown; code?: unknown };
-    param?: unknown;
-    code?: unknown;
-  };
-  const status = typeof maybeError.status === "number" ? maybeError.status : null;
-  const message = `${typeof maybeError.message === "string" ? maybeError.message : ""} ${
-    typeof maybeError.error?.message === "string" ? maybeError.error.message : ""
-  } ${typeof maybeError.param === "string" ? maybeError.param : ""} ${
-    typeof maybeError.error?.param === "string" ? maybeError.error.param : ""
-  } ${typeof maybeError.code === "string" ? maybeError.code : ""} ${
-    typeof maybeError.error?.code === "string" ? maybeError.error.code : ""
-  }`.toLowerCase();
-
-  return (
-    (status === 400 || status === 422) &&
-    (message.includes("size") ||
-      message.includes("dimension") ||
-      message.includes("resolution") ||
-      message.includes("unsupported") ||
-      message.includes("invalid"))
-  );
-}
-
-function isUnsupportedEditOptionError(error: unknown) {
-  if (typeof error !== "object" || error === null) {
-    return false;
-  }
-
-  const maybeError = error as {
-    status?: unknown;
-    message?: unknown;
-    error?: { message?: unknown; param?: unknown };
-    param?: unknown;
-  };
-  const status = typeof maybeError.status === "number" ? maybeError.status : null;
-  const message = `${typeof maybeError.message === "string" ? maybeError.message : ""} ${
-    typeof maybeError.error?.message === "string" ? maybeError.error.message : ""
-  } ${typeof maybeError.param === "string" ? maybeError.param : ""} ${
-    typeof maybeError.error?.param === "string" ? maybeError.error.param : ""
-  }`.toLowerCase();
-
-  return (
-    (status === 400 || status === 422) &&
-    (message.includes("size") ||
-      message.includes("quality") ||
-      message.includes("unsupported") ||
-      message.includes("invalid") ||
-      message.includes("unknown") ||
-      message.includes("unrecognized"))
-  );
+  return (await response.json()) as T;
 }
 
 function getProviderErrorDetail(error: unknown) {
@@ -345,143 +315,33 @@ function getProviderErrorDetail(error: unknown) {
   return details.length > 0 ? Array.from(new Set(details)).join("; ") : null;
 }
 
-async function upscaleToLongEdge(imageBuffer: Buffer, longEdge: number): Promise<Buffer> {
-  const targetSize = Number.isFinite(longEdge) && longEdge > 0 ? longEdge : DEFAULT_FALLBACK_LONG_EDGE;
-  const image = sharp(imageBuffer);
-  const metadata = await image.metadata();
-
-  if (!metadata.width || !metadata.height || Math.max(metadata.width, metadata.height) >= targetSize) {
-    return image.png().toBuffer();
-  }
-
-  const scale = targetSize / Math.max(metadata.width, metadata.height);
-
-  return image
-    .resize({
-      width: Math.ceil(metadata.width * scale),
-      height: Math.ceil(metadata.height * scale),
-      fit: "fill",
-      kernel: "lanczos3",
-    })
-    .png()
-    .toBuffer();
-}
-
-async function generateWithFallback(
-  size: string,
-  fallbackLongEdge: number,
-  allowUpscaleFallback: boolean,
-  generate: (requestSize: string) => Promise<ImagesResponse>,
-) {
-  try {
-    return await extractGeneratedImage(await generate(size));
-  } catch (error) {
-    if (!allowUpscaleFallback || !isUnsupportedSizeError(error)) {
-      throw error;
-    }
-
-    const fallbackSize = getCompatibleFallbackSize(size);
-    const generatedImage = await extractGeneratedImage(await generate(fallbackSize));
-    return {
-      imageBuffer: await upscaleToLongEdge(generatedImage.imageBuffer, fallbackLongEdge),
-      mimeType: "image/png",
-    };
-  }
-}
-
-async function editWithLiaraFallback({
-  client,
-  model,
-  image,
-  prompt,
-  size,
-  quality,
-  fallbackLongEdge,
-  allowUpscaleFallback,
-}: {
-  client: OpenAI;
-  model: string;
-  image: Awaited<ReturnType<typeof toFile>>;
-  prompt: string;
-  size: string;
-  quality: string;
-  fallbackLongEdge: number;
-  allowUpscaleFallback: boolean;
-}) {
-  try {
-    return await extractGeneratedImage(
-      await client.images.edit({
-        model,
-        image: [image],
-        prompt,
-        size: getImageSize(size),
-        quality: getProviderImageQuality(quality),
-      }),
-    );
-  } catch (nativeError) {
-    if (!allowUpscaleFallback || !isUnsupportedEditOptionError(nativeError)) {
-      throw nativeError;
-    }
-
-    try {
-      const fallbackSize = getCompatibleFallbackSize(size);
-      const generatedImage = await extractGeneratedImage(
-        await client.images.edit({
-          model,
-          image: [image],
-          prompt,
-          size: getImageSize(fallbackSize),
-          quality: getProviderImageQuality(quality),
-        }),
-      );
-
-      return {
-        imageBuffer: await upscaleToLongEdge(generatedImage.imageBuffer, fallbackLongEdge),
-        mimeType: "image/png",
-      };
-    } catch (fallbackError) {
-      if (!isUnsupportedEditOptionError(fallbackError)) {
-        throw fallbackError;
-      }
-
-      const generatedImage = await extractGeneratedImage(
-        await client.images.edit({
-          model,
-          image: [image],
-          prompt,
-        }),
-      );
-
-      return {
-        imageBuffer: await upscaleToLongEdge(generatedImage.imageBuffer, fallbackLongEdge),
-        mimeType: "image/png",
-      };
-    }
-  }
-}
-
 export async function generateStyledImageWithLiara({
   sourceBuffer,
   mimeType,
   stylePrompt,
+  outputPreset,
 }: GenerateImageInput): Promise<LiaraImageResult> {
-  const { apiKey, baseURL, model, size, quality, fallbackLongEdge, allowUpscaleFallback } = getLiaraConfig();
-  const client = getLiaraClient(apiKey, baseURL);
-  const image = await toFile(sourceBuffer, `source.${extensionFromMimeType(mimeType)}`, { type: mimeType });
+  const { apiKey, baseURL, model, quality, size } = getLiaraConfig();
+  const preset = getOutputPresetSpec(outputPreset);
 
   try {
-    return await withTransientRetry(() =>
-      editWithLiaraFallback({
-        client,
-        model,
-        image,
-        prompt: `${stylePrompt}\n\n${GENERATION_PROMPT_SUFFIX}`,
-        size,
-        quality,
-        fallbackLongEdge,
-        allowUpscaleFallback,
-      }),
-    );
+    return await withTransientRetry(async () => {
+      const form = new FormData();
+      form.append("model", model);
+      form.append("prompt", `${stylePrompt}\n\n${GENERATION_PROMPT_SUFFIX}`);
+      form.append("size", preset.providerSize || size);
+      form.append("quality", getImageQuality(quality));
+      form.append("image", new Blob([new Uint8Array(sourceBuffer)], { type: mimeType }), `source.${extensionFromMimeType(mimeType)}`);
+
+      return extractGeneratedImage(
+        await postLiaraForm<ImagesResponse>({
+          baseURL,
+          apiKey,
+          path: "/images/edits",
+          body: form,
+        }),
+      );
+    });
   } catch (error) {
     if (isRetryableProviderError(error)) {
       throw new LiaraGenerationError("Liara temporary network error after retries.", error);
@@ -504,22 +364,28 @@ export async function generateStyledImageWithLiara({
 export async function generateTextImageWithLiara({
   prompt,
   stylePrompt,
+  outputPreset,
 }: GenerateTextImageInput): Promise<LiaraImageResult> {
-  const { apiKey, baseURL, model, size, quality, fallbackLongEdge, allowUpscaleFallback } = getLiaraConfig();
-  const client = getLiaraClient(apiKey, baseURL);
+  const { apiKey, baseURL, model, quality, size } = getLiaraConfig();
+  const preset = getOutputPresetSpec(outputPreset);
 
   try {
-    return await withTransientRetry(() =>
-      generateWithFallback(size, fallbackLongEdge, allowUpscaleFallback, (requestSize) =>
-        client.images.generate({
-          model,
-          prompt: `${prompt}\n\n${stylePrompt}\n\nReturn one final premium studio product image suitable for e-commerce.`,
-          size: getImageSize(requestSize),
-          quality: getProviderImageQuality(quality),
-          n: 1,
+    return await withTransientRetry(async () => {
+      return extractGeneratedImage(
+        await postLiaraJson<ImagesResponse>({
+          baseURL,
+          apiKey,
+          path: "/images/generations",
+          body: {
+            model,
+            prompt: `${prompt}\n\n${stylePrompt}\n\nReturn one final premium studio product image suitable for e-commerce.`,
+            size: preset.providerSize || size,
+            quality: getImageQuality(quality),
+            n: 1,
+          },
         }),
-      ),
-    );
+      );
+    });
   } catch (error) {
     if (isRetryableProviderError(error)) {
       throw new LiaraGenerationError("Liara temporary network error after retries.", error);

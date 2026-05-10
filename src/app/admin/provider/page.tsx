@@ -30,6 +30,7 @@ export default async function AdminProviderPage() {
   ]);
 
   const model = process.env.LIARA_IMAGE_MODEL?.trim() || process.env.GAPGPT_IMAGE_MODEL?.trim() || "پیش‌فرض برنامه";
+  const quality = process.env.LIARA_IMAGE_QUALITY?.trim() || process.env.GAPGPT_IMAGE_QUALITY?.trim() || "پیش‌فرض برنامه";
 
   return (
     <>
@@ -37,19 +38,21 @@ export default async function AdminProviderPage() {
         <AdminMetric label="موفق امروز" value={successToday} />
         <AdminMetric label="ناموفق امروز" value={failedToday} />
         <AdminMetric label="مدل" value={model} />
-        <AdminMetric label="کیفیت" value={process.env.LIARA_IMAGE_QUALITY?.trim() || "2K"} />
+        <AdminMetric label="کیفیت" value={quality} />
       </section>
 
-      <AdminSection title="سلامت پیکربندی Liara" eyebrow="بدون تماس زنده با سرویس">
+      <AdminSection title="سلامت پیکربندی Provider" eyebrow="بدون تماس زنده با سرویس">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {[
             ["LIARA_API_KEY", envStatus("LIARA_API_KEY")],
             ["LIARA_BASE_URL", envStatus("LIARA_BASE_URL")],
-            ["LIARA_IMAGE_SIZE", process.env.LIARA_IMAGE_SIZE?.trim() || "2048x2048"],
-            ["LIARA_ALLOW_UPSCALE_FALLBACK", process.env.LIARA_ALLOW_UPSCALE_FALLBACK === "true" ? "فعال" : "غیرفعال"],
+            ["LIARA_IMAGE_SIZE", envStatus("LIARA_IMAGE_SIZE")],
+            ["Preset sizes", "1:1 / 9:16 / 16:9"],
           ].map(([label, value]) => (
             <div key={label} className="rounded-[var(--radius-md)] border border-border/70 bg-surface-soft/45 p-3">
-              <p className="text-[11px] text-muted" dir="ltr">{label}</p>
+              <p className="text-[11px] text-muted" dir="ltr">
+                {label}
+              </p>
               <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-foreground">
                 {value === "تنظیم نشده" ? <AlertTriangle className="h-4 w-4 text-danger" /> : <CheckCircle2 className="h-4 w-4 text-accent" />}
                 {value}
@@ -83,7 +86,9 @@ export default async function AdminProviderPage() {
             events.map((event) => (
               <AdminRow key={event.id}>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-foreground">{event.operation} · {event.project?.title || event.projectId || "بدون پروژه"}</p>
+                  <p className="truncate text-sm font-semibold text-foreground">
+                    {event.operation} · {event.project?.title || event.projectId || "بدون پروژه"}
+                  </p>
                   <p className="truncate text-xs text-muted">{event.errorMessage || event.statusDetail || event.model || "بدون جزئیات"}</p>
                 </div>
                 <p className="text-xs text-muted">{formatAdminDate(event.createdAt)}</p>

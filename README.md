@@ -1,13 +1,14 @@
-# OVALA MVP
+# Gold Studio
 
-OVALA is a mobile-first Farsi/RTL web app for turning low-quality jewelry/product photos into premium studio-style images.
+Gold Studio is a mobile-first Farsi RTL web app for turning low-quality jewelry, gold, watch, and luxury accessory photos into premium studio-style product images.
 
-## Tech
+## Tech Stack
 - Next.js App Router
 - TypeScript
 - Tailwind CSS
-- Prisma + MySQL
+- Prisma with MySQL
 - Liara OpenAI-compatible image API
+- Local filesystem storage by default, optional S3-compatible storage
 - lucide-react icons
 
 ## Setup
@@ -15,57 +16,86 @@ OVALA is a mobile-first Farsi/RTL web app for turning low-quality jewelry/produc
    ```bash
    npm install
    ```
-2. Create your env file:
+2. Create an env file:
    ```bash
    cp .env.example .env
    ```
-3. Fill the required env vars:
+3. Fill required env vars:
    - `DATABASE_URL`
    - `AUTH_SECRET`
    - `LIARA_API_KEY`
-   - `ADMIN_EMAIL` is optional
-   - `LIARA_IMAGE_MODEL` is optional
+   - `ADMIN_EMAIL` optional initial admin marker
 4. Generate Prisma client:
    ```bash
-   npx prisma generate
+   npm run db:generate
    ```
-5. Run the first migration:
+5. Apply migrations:
    ```bash
-   npx prisma migrate dev --name init
+   npx prisma migrate dev
    ```
 6. Start the app:
    ```bash
    npm run dev
    ```
 
-## Liara setup
-- Create `LIARA_API_KEY` from Liara.
-- Keep `LIARA_BASE_URL` on the Liara OpenAI-compatible `/v1` endpoint for this app.
-- Keep `LIARA_IMAGE_MODEL` unset to use `google/gemini-2.5-flash-image`, or override it with another Liara-supported image model.
-- Keep `LIARA_IMAGE_SIZE` unset to try native `2048x2048` catalog generation first.
-- Keep `LIARA_IMAGE_QUALITY` unset to use `2K`; Liara accepts `1K`, `2K`, or `4K`.
-- Keep `LIARA_FALLBACK_LONG_EDGE` unset to upscale fallback results to a `2048px` long edge only when Liara rejects the native size.
-- The current product flow requires image-to-image support through an OpenAI-compatible image edit endpoint.
+## Useful Scripts
+- `npm run dev`: generate Prisma client and start Next dev server.
+- `npm run build`: generate Prisma client and build production app.
+- `npm run start`: start the built app.
+- `npm run lint`: run ESLint.
+- `npm run check:mojibake`: detect common Persian mojibake.
+- `npm run db:generate`: generate Prisma client into `src/generated/prisma`.
+- `npm run db:start` / `npm run db:stop`: manage the isolated local MariaDB helper.
+- `npm run cleanup:archives`: hard-delete archived assets/projects after the retention window.
 
-## Proxy notes
-- If you are in Iran or using v2rayN, read `docs/proxy.md` before running external commands.
-- Try direct access first. Enable proxy only for commands that fail because of blocked external access, commonly Prisma engine download or Gemini/Liara calls.
+## Environment
+Use `.env.example` as the source of current env names.
 
-## Live test notes
-- Read `docs/live-test.md` before deploying. VPS-style hosting works with the current filesystem upload flow; serverless hosting needs persistent object storage first.
-- Read `docs/deployment-runbook.md` for the actual VPS deployment/update checklist, PM2/Nginx setup, and post-commit server update flow.
+Image generation defaults in docs should match `.env.example`:
+- `LIARA_BASE_URL` points to Liara's OpenAI-compatible `/v1` endpoint.
+- `LIARA_IMAGE_MODEL` is currently `google/gemini-3-pro-image-preview`.
+- `LIARA_IMAGE_SIZE` is the default provider size when no output preset overrides it.
+- `LIARA_IMAGE_QUALITY` is `2K`.
+
+For local/live VPS tests, keep `STORAGE_DRIVER="local"` and make sure `public/uploads` is writable. Switch to `STORAGE_DRIVER="s3"` only when persistent object storage is intentionally configured.
 
 ## Routes
-- `/` landing
-- `/signup` and `/login`
+User routes:
+- `/`
+- `/signup`
+- `/login`
 - `/dashboard`
 - `/gallery`
 - `/gallery/[assetId]`
 - `/gallery/batches/[batchId]`
-- `/account`
 - `/projects/new`
-- `/projects` and `/projects/[projectId]`
+- `/projects`
+- `/projects/[projectId]`
+- `/account`
+- `/account/profile`
+- `/account/referral`
+- `/account/output-settings`
+- `/account/security`
+- `/account/support`
+- `/account/faq`
+- `/billing`
+
+Admin routes:
 - `/admin`
-- `/admin/projects`
 - `/admin/access`
+- `/admin/assets`
+- `/admin/packages`
+- `/admin/projects`
+- `/admin/provider`
 - `/admin/styles`
+- `/admin/support`
+- `/admin/users`
+
+## Operational Docs
+- `roadmap.md`: current product status and priorities.
+- `AGENTS.md`: active agent rules for this repo.
+- `docs/architecture.md`: architecture and boundaries.
+- `docs/conventions.md`: coding, UI, Farsi/RTL, and verification rules.
+- `docs/brand-identity.md`: brand, logo, typography, and image constraints.
+- `docs/proxy.md`: Iran/proxy and network guidance.
+- `docs/deployment-runbook.md`: VPS deployment and update checklist.

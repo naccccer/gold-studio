@@ -122,6 +122,7 @@ model Project {
   resultImageUrl   String?
   resultStorageKey String?
   status           ProjectStatus         @default(QUEUED)
+  outputPreset     String                @default("post")
   styleId          String
   style            CreativeStyle         @relation(fields: [styleId], references: [id], onDelete: Restrict)
   prompt           String                @db.Text

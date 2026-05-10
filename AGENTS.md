@@ -3,9 +3,9 @@
 ## Product
 Gold Studio is a mobile-first Farsi RTL web app for turning low-quality jewelry, gold, watch, and luxury accessory photos into premium studio-style product images.
 
-## Current Rebuild Direction
+## Current Direction
 - Professional, minimal, premium, image-led, and easy for non-technical users.
-- Farsi-first and RTL-first.
+- Farsi-first, RTL-first, and mobile-first.
 - Guided assistant, not a SaaS dashboard, form app, admin panel, or prompt-heavy AI tool.
 - Default output path is clean catalog/product imagery.
 - User-facing text-to-image is out of scope; keep it admin/internal only.
@@ -13,6 +13,7 @@ Gold Studio is a mobile-first Farsi RTL web app for turning low-quality jewelry,
 - Mobile user nav is `خانه`, `گالری`, center `پروژه جدید`, `پروژه‌ها`, `حساب`.
 - `گالری` owns uploaded source product photos.
 - `پروژه‌ها` owns generated outputs and generation status.
+- `/billing` owns packages, standalone credits, card-to-card details, purchase status, and receipt upload.
 
 ## Architecture Rules
 - Keep the app in a single Next.js repo for MVP.
@@ -23,6 +24,7 @@ Gold Studio is a mobile-first Farsi RTL web app for turning low-quality jewelry,
 - Keep business logic out of UI components.
 - Keep AI logic inside dedicated `src/lib/ai` files.
 - Keep admin and user flows in the same app, separated by routes and features.
+- Use local filesystem storage by default; use S3-compatible storage only when intentionally configured.
 
 ## Folder Rules
 - App routes in `src/app`.
@@ -44,6 +46,7 @@ Gold Studio is a mobile-first Farsi RTL web app for turning low-quality jewelry,
 - Use existing jewelry placeholder assets when useful.
 - Do not use perfume/fragrance visual metaphors.
 - Keep Gallery asset logic separate from generated Project review UI where possible.
+- Admin may be denser and more operational, but should remain visually related to Gold Studio.
 
 ## Coding Rules
 - Prefer server-side logic for sensitive operations.
@@ -53,6 +56,12 @@ Gold Studio is a mobile-first Farsi RTL web app for turning low-quality jewelry,
 - Edit existing files before creating new ones when practical.
 - Keep markdown docs short and current.
 - Update `roadmap.md` when progress or scope changes.
+
+## Persian And Encoding
+- Save source and docs as UTF-8.
+- Keep Persian text as direct UTF-8, not escaped Unicode, unless technically required.
+- Never paste already-corrupted mojibake text.
+- If Persian appears corrupted or unreadable, stop and repair deliberately.
 
 ## Verification
 Every implementation phase should run:
