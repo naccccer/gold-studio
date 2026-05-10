@@ -25,7 +25,7 @@ const doran = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "OVALA",
+  title: "Ovala",
   description: "استودیوی هوشمند ساخت تصاویر حرفه‌ای محصول و جواهرات",
 };
 

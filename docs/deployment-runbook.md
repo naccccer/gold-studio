@@ -1,6 +1,6 @@
 # Deployment Runbook
 
-Practical VPS checklist for deploying, updating, restarting, and debugging Gold Studio.
+Practical VPS checklist for deploying, updating, restarting, and debugging Ovala.
 
 ## Hosting Baseline
 Use a normal VPS/cloud server, not shared hosting or serverless hosting.

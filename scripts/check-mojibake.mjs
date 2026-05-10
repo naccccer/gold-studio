@@ -2,7 +2,13 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 const root = process.cwd();
-const markerPattern = /[ÃÂØÙÛÚâ�]/;
+const mojibakePatterns = [
+  /[\u00c3\u00c2][\u0080-\u00ff\u20ac\u0152\u0153\u0160\u0161\u0178\u017d\u017e]/u,
+  /[\u00d8\u00d9\u00da\u00db][\u0080-\u00ff\u20ac\u0152\u0153\u0160\u0161\u0178\u017d\u017e]/u,
+  /\u00e2[\u0080-\u00ff\u20ac\u0152\u0153\u0160\u0161\u0178\u017d\u017e]/u,
+  /\u00ef\u00bf\u00bd/u,
+  /\ufffd/u,
+];
 const ignoredDirs = new Set(["node_modules", ".next", "dist", "build"]);
 const ignoredPathParts = new Set(["public/uploads"]);
 const textExtensions = new Set([
@@ -29,6 +35,10 @@ function shouldIgnorePath(filePath) {
 
 function isAllowedMarkerLine(relativePath, line) {
   return relativePath === "docs/conventions.md" && line.includes("If Persian appears as");
+}
+
+function hasMojibake(line) {
+  return mojibakePatterns.some((pattern) => pattern.test(line));
 }
 
 async function collectFiles(dir) {
@@ -68,7 +78,7 @@ async function main() {
     const lines = content.split(/\r?\n/);
 
     lines.forEach((line, index) => {
-      if (!markerPattern.test(line) || isAllowedMarkerLine(relativePath, line)) {
+      if (!hasMojibake(line) || isAllowedMarkerLine(relativePath, line)) {
         return;
       }
 

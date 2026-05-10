@@ -1,6 +1,6 @@
-# Gold Studio
+# Ovala
 
-Gold Studio is a mobile-first Farsi RTL web app for turning low-quality jewelry, gold, watch, and luxury accessory photos into premium studio-style product images.
+Ovala is a mobile-first Farsi RTL web app for turning low-quality jewelry, gold, watch, and luxury accessory photos into premium studio-style product images.
 
 ## Tech Stack
 - Next.js App Router

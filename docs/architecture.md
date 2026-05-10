@@ -1,4 +1,4 @@
-# Gold Studio Architecture
+# Ovala Architecture
 
 ## Current Shape
 - Single Next.js App Router repo.

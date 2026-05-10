@@ -1,7 +1,7 @@
-# Gold Studio Agent Rules
+# Ovala Agent Rules
 
 ## Product
-Gold Studio is a mobile-first Farsi RTL web app for turning low-quality jewelry, gold, watch, and luxury accessory photos into premium studio-style product images.
+Ovala is a mobile-first Farsi RTL web app for turning low-quality jewelry, gold, watch, and luxury accessory photos into premium studio-style product images.
 
 ## Current Direction
 - Professional, minimal, premium, image-led, and easy for non-technical users.
@@ -46,7 +46,7 @@ Gold Studio is a mobile-first Farsi RTL web app for turning low-quality jewelry,
 - Use existing jewelry placeholder assets when useful.
 - Do not use perfume/fragrance visual metaphors.
 - Keep Gallery asset logic separate from generated Project review UI where possible.
-- Admin may be denser and more operational, but should remain visually related to Gold Studio.
+- Admin may be denser and more operational, but should remain visually related to Ovala.
 
 ## Coding Rules
 - Prefer server-side logic for sensitive operations.

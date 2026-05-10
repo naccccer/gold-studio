@@ -379,7 +379,7 @@ export default async function AdminPackagesPage() {
       <section className="overflow-hidden rounded-[0.9rem] border border-[#bba785] bg-[#171411] text-[#fffefa] shadow-[0_24px_70px_-48px_rgba(23,20,17,0.95)]">
         <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)] lg:items-end">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#d3b776]">Gold Studio Billing Ops</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#d3b776]">Ovala Billing Ops</p>
             <h1 className="mt-2 text-2xl font-semibold text-[#fffefa]">مدیریت پکیج و پرداخت</h1>
             <p className="mt-2 max-w-3xl text-sm leading-7 text-[#d9d0c2]">
               پکیج‌های ماهانه، اعتبارهای جداگانه و تنظیمات کارت‌به‌کارت در یک مسیر عملیاتی مدیریت می‌شوند. فعال بودن یعنی نمایش به کاربر.

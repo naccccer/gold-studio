@@ -26,7 +26,7 @@ Risks:
 ## Product Identity Rules
 
 - Product name: Ovala.
-- Remove user-facing "Gold Studio" naming.
+- Remove legacy user-facing product naming.
 - Keep Persian text direct UTF-8. Never paste corrupted Persian.
 - Avoid generic SaaS panels, magic-wand AI language, robot metaphors, perfume/fragrance cues, neon gradients, heavy black/gold cliches, noisy nested cards, and decorative filler.
 - Use jewelry, gold, watch, and luxury accessory imagery as the visual anchor.
@@ -40,7 +40,7 @@ Risks:
 - Use `393x852` screenshots as the main user-side visual QA artifact.
 - Keep natural scrolling on content-heavy screens; remove accidental scrolling only on focused task screens.
 - If mojibake appears, stop and repair it deliberately before visual polish.
-- Update this roadmap only when scope, order, acceptance criteria, or completion state changes materially.
+- Update this roadmap after each completed phase with status, key changes, verification, and known caveats.
 
 ## Global Verification
 
@@ -144,7 +144,17 @@ For each phase:
 
 ## Phase 0: Foundation, Naming, And Encoding
 
+Status: Done on 2026-05-10.
+
 Goal: make the project consistently Ovala and remove corrupted Persian before visual polish.
+
+Completion notes:
+
+- Replaced legacy product naming with Ovala in app metadata, visible admin labels, tests, Remotion launch copy, and foundation docs.
+- Repaired corrupted Persian mojibake in source and docs while keeping Persian as direct UTF-8.
+- Strengthened `npm run check:mojibake` to catch representative Latin-1/Windows-1252 mojibake sequences.
+- Verification: `npm run check:mojibake` passed, `npm run lint` passed, and `npm run build` reached the known Prisma engine file-lock failure during `prisma generate`.
+- Screenshots were not captured because Phase 0 did not include visual redesign work.
 
 Scope:
 
@@ -157,7 +167,7 @@ Scope:
 Must pass:
 
 - No visible mojibake in user-facing `393x852` screenshots.
-- Product name appears as Ovala, not Gold Studio, in user-facing UI.
+- Product name appears as Ovala in user-facing UI.
 - Admin remains operational but does not feel like a separate brand.
 - `npm run check:mojibake` catches representative Latin-1 mojibake markers in source/docs where Persian is expected.
 

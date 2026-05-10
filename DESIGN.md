@@ -268,11 +268,11 @@ components:
     padding: "{spacing.card-padding-md}"
 ---
 
-# Gold Studio Design System
+# Ovala Design System
 
 ## Overview
 
-Gold Studio is a calm luxury product-photo studio, not a conventional SaaS dashboard. The interface should feel like a guided assistant for non-technical Farsi-speaking users: image-led, precise, mobile-first, and quietly premium. The default emotional tone is trust and control: the user brings an imperfect product photo, and the UI makes the path to a polished catalog image feel simple and inspectable.
+Ovala is a calm luxury product-photo studio, not a conventional SaaS dashboard. The interface should feel like a guided assistant for non-technical Farsi-speaking users: image-led, precise, mobile-first, and quietly premium. The default emotional tone is trust and control: the user brings an imperfect product photo, and the UI makes the path to a polished catalog image feel simple and inspectable.
 
 The design avoids loud luxury clichés. It uses warm ivory space, soft black actions, large rounded photography, restrained champagne-gold details, and generous breathing room. Screens should feel curated rather than busy. Every view should answer one practical question: what image am I working with, what step am I on, and what is the next safe action?
 
@@ -291,7 +291,7 @@ The palette is built from soft black, warm ivory, stone taupe, misted borders, a
 
 ## Typography
 
-Gold Studio is Farsi-first and RTL-first. Vazirmatn is the workhorse typeface for almost everything because it is readable at small mobile sizes and supports a calm instructional tone. Doran is reserved for very short display moments where a premium brand voice is useful.
+Ovala is Farsi-first and RTL-first. Vazirmatn is the workhorse typeface for almost everything because it is readable at small mobile sizes and supports a calm instructional tone. Doran is reserved for very short display moments where a premium brand voice is useful.
 
 Typography should be compact but not dense. Body copy uses generous line height because Persian UI text needs room to remain legible. Labels and captions stay small, but must be paired with clear spacing and icons rather than crowded into data-heavy blocks.
 

@@ -1,7 +1,7 @@
-# Gold Studio Roadmap
+# Ovala Roadmap
 
 ## Product Direction
-Gold Studio is a mobile-first Farsi RTL app for turning low-quality jewelry, gold, watch, and luxury accessory photos into premium studio-style product images.
+Ovala is a mobile-first Farsi RTL app for turning low-quality jewelry, gold, watch, and luxury accessory photos into premium studio-style product images.
 
 The product should stay professional, minimal, premium, image-led, and easy for non-technical users. The normal user flow is a guided assistant, not a SaaS dashboard, prompt-heavy AI tool, admin panel, or text-to-image playground.
 

@@ -26,7 +26,7 @@ export default async function AdminLayout({
         <aside className="rounded-[var(--radius-lg)] border border-border/80 bg-surface p-3 lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)]">
           <div className="flex items-start justify-between gap-3 lg:block">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Gold Studio Ops</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Ovala Ops</p>
               <h1 className="mt-1 text-xl font-semibold text-foreground">پنل ادمین</h1>
               <p className="mt-1 text-xs leading-6 text-muted">عملیات، پرداخت، دسترسی و کیفیت تولید</p>
             </div>

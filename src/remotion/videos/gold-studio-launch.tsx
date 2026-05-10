@@ -208,7 +208,7 @@ const IntroScene = () => {
           imageStyle={{ transform: "scale(1.04)" }}
         />
         <TextBlock
-          eyebrow="Gold Studio"
+          eyebrow="Ovala"
           title={
             <>
               عکس معمولی

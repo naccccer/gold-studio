@@ -1,7 +1,7 @@
-# Gold Studio Brand Identity
+# Ovala Brand Identity
 
 ## Direction
-Gold Studio should feel like a calm luxury product-photo studio: premium, minimal, image-led, precise, and trustworthy. The identity supports jewelry, gold, watches, and luxury accessories without becoming flashy or generic.
+Ovala should feel like a calm luxury product-photo studio: premium, minimal, image-led, precise, and trustworthy. The identity supports jewelry, gold, watches, and luxury accessories without becoming flashy or generic.
 
 ## Logo System
 Source vectors are kept in `public/brand`.

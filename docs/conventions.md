@@ -1,4 +1,4 @@
-# Gold Studio Conventions
+# Ovala Conventions
 
 ## Product
 - Build mobile-first.
