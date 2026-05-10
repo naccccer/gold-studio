@@ -321,6 +321,8 @@ Use rounded forms consistently. Do not mix sharp rectangular controls with pill 
 
 Primary actions are text plus icon, usually soft black on light surfaces. In dark studio flows, the main continue/create action may use a restrained gold gradient with dark text to feel active and tactile.
 
+Use Vuesax icons as the user-facing icon source. Icons should feel soft, precise, and aligned to text baselines; avoid mixing icon families inside the same surface.
+
 Secondary actions use pale surfaces, thin warm borders, and soft black or taupe text. Ghost actions are acceptable for low-risk navigation, but important choices should remain visibly tappable.
 
 The mobile tab bar has five positions: home, gallery, centered new project, projects, and account. The centered new-project action is the most visually prominent navigation item. Active tabs use a warm soft surface rather than a loud color fill.

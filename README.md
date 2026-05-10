@@ -9,7 +9,7 @@ Ovala is a mobile-first Farsi RTL web app for turning low-quality jewelry, gold,
 - Prisma with MySQL
 - Liara OpenAI-compatible image API
 - Local filesystem storage by default, optional S3-compatible storage
-- lucide-react icons
+- Vuesax icons for user-facing UI, with remaining lucide usage awaiting deliberate migration
 
 ## Setup
 1. Install dependencies:

@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-type BrandLogoVariant = "mark" | "mark-light" | "wordmark" | "primary" | "primary-dark";
+type BrandLogoVariant = "mark" | "mark-light" | "wordmark" | "horizontal" | "primary" | "primary-light" | "primary-dark";
 
 type BrandLogoProps = {
   variant?: BrandLogoVariant;
@@ -30,8 +30,22 @@ const logoConfig: Record<BrandLogoVariant, { src: string; width: number; height:
     alt: "OVALA",
     className: "h-8 w-[138px]",
   },
+  horizontal: {
+    src: "/brand/ovala-horizontal.svg",
+    width: 168,
+    height: 40,
+    alt: "OVALA",
+    className: "h-10 w-[168px]",
+  },
   primary: {
     src: "/brand/ovala-primary.svg",
+    width: 174,
+    height: 58,
+    alt: "OVALA Studio",
+    className: "h-[58px] w-[174px] translate-x-[10px] translate-y-[4px]",
+  },
+  "primary-light": {
+    src: "/brand/ovala-primary-light.svg",
     width: 174,
     height: 58,
     alt: "OVALA Studio",

@@ -27,7 +27,8 @@
     "next": "16.2.4",
     "openai": "^6.34.0",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "vuesax-icons-react": "^1.0.2"
   },
   "devDependencies": {
     "@remotion/cli": "^4.0.456",

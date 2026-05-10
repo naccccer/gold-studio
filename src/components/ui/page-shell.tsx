@@ -8,8 +8,8 @@ type PageShellProps = {
 
 const maxWidthClasses: Record<NonNullable<PageShellProps["maxWidth"]>, string> = {
   phone: "max-w-[393px]",
-  md: "max-w-[393px] md:max-w-3xl",
-  lg: "max-w-[393px] md:max-w-5xl",
+  md: "max-w-[393px]",
+  lg: "max-w-[393px]",
 };
 
 export function PageShell({ children, maxWidth = "md", className = "" }: PageShellProps) {

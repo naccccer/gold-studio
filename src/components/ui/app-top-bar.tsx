@@ -7,7 +7,7 @@ type AppTopBarProps = {
   title?: ReactNode;
   backHref?: string;
   logoHref?: string;
-  logoVariant?: "mark" | "mark-light" | "wordmark" | "primary" | "primary-dark";
+  logoVariant?: "mark" | "mark-light" | "wordmark" | "horizontal" | "primary" | "primary-light" | "primary-dark";
   centeredLogo?: boolean;
   hideLogo?: boolean;
   tone?: "light" | "dark";

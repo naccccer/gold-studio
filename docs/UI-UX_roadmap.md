@@ -175,7 +175,22 @@ Screenshots: login, signup, home, gallery, new project, processing, result, acco
 
 ## Phase 1: Mobile Shell, Masthead, Navigation, And Logo System
 
+Status: Done on 2026-05-10.
+
 Goal: make the phone-width MVP feel intentional on desktop and standardize route mode, masthead, nav, and logo behavior.
+
+Completion notes:
+
+- Kept user routes phone-width on desktop and wrapped them in a deliberate centered Ovala stage.
+- Unified the dashboard masthead path across mobile and desktop instead of widening into a desktop dashboard header.
+- Kept the normal bottom navigation available for primary user routes and removed the bright bottom nav from studio routes.
+- Standardized predictable logo variants for brand, context, and studio masthead moments.
+- Login and signup use the same light jewelry hero image.
+- Login secondary actions use light text on the dark lower scrim.
+- Password recovery is intentionally deferred until SMS provider setup; track it as auth debt instead of shipping an incomplete flow.
+- Auth form icons now use `vuesax-icons-react`; remaining user-facing lucide icons should be migrated deliberately in the UI primitives/token phase.
+- Screenshots captured in `output/playwright/phase-1`: login, signup, home/dashboard, new project, processing, result, and desktop centered shell.
+- Verification: `npm run check:mojibake` passed, `npm run lint` passed, and `npm run build` reached the known Prisma engine file-lock failure during `prisma generate`.
 
 Scope: user shell, dashboard frame, masthead/top bar, bottom nav, brand logo component, auth/home shell behavior, studio shell behavior.
 

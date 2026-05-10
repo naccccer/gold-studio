@@ -38,7 +38,7 @@ Ovala is a mobile-first Farsi RTL web app for turning low-quality jewelry, gold,
 - Prefer small components and thin route files.
 - Use Vazirmatn for UI/body text.
 - Use Doran only for very short display titles.
-- Use lucide icons consistently.
+- Use Vuesax icons consistently for user-facing UI; keep existing lucide usage only until it is migrated deliberately.
 - Primary actions use text plus icon.
 - Secondary familiar actions may be icon-only with accessible labels.
 - Keep champagne-gold sparse.

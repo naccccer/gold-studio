@@ -36,8 +36,8 @@ export function MobileTabBar({ tabs, centerAction }: MobileTabBarProps) {
   const centerActive = pathname === centerAction.href || pathname.startsWith(`${centerAction.href}/`);
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 md:hidden" aria-label="ناوبری اصلی">
-      <div className="mx-auto max-w-md px-3 pb-3">
+    <nav className="fixed inset-x-0 bottom-0 z-40" aria-label="ناوبری اصلی">
+      <div className="mx-auto max-w-[393px] px-3 pb-3">
         <div className="grid grid-cols-5 items-center rounded-[1.45rem] border border-white/80 bg-surface/96 px-1.5 py-1.5 text-center shadow-[0_22px_55px_-42px_rgba(23,20,17,0.9)] backdrop-blur">
           {tabs.slice(0, 2).map((tab) => {
             const Icon = icons[tab.icon];

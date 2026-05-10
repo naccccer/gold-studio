@@ -1,6 +1,6 @@
 "use client";
 
-import { Store, UserRoundCheck } from "lucide-react";
+import { Gift, Store, UserRoundCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,20 @@ export function OnboardingNameModal() {
             maxLength={80}
             autoComplete="organization"
             className="h-12 w-full rounded-[var(--radius-md)] border border-border bg-surface-soft px-3 text-sm font-medium text-foreground outline-none focus:border-border-strong"
+          />
+        </label>
+
+        <label className="mt-3 block">
+          <span className="mb-1.5 flex items-center justify-between text-xs font-medium text-muted">
+            <span>کد معرف</span>
+            <Gift aria-hidden="true" className="h-4 w-4" strokeWidth={1.6} />
+          </span>
+          <input
+            name="referralCode"
+            autoComplete="off"
+            placeholder="GS..."
+            dir="ltr"
+            className="h-12 w-full rounded-[var(--radius-md)] border border-border bg-surface-soft px-3 text-left text-sm font-medium text-foreground outline-none focus:border-border-strong"
           />
         </label>
 
