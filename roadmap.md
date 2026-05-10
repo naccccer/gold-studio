@@ -32,6 +32,7 @@ Mobile user navigation:
 - Soft archive behavior exists for assets/projects, with `npm run cleanup:archives` for retention cleanup.
 - UI Phase 2 is complete: shared tokens and primitives now cover action hierarchy, media cards, fields, menus, segmented controls, status pills, and the touched gallery/projects/new-project/account/billing surfaces.
 - UI Phase 2.5 is implemented: user-shell gutters, desktop phone-frame rhythm, responsive media-card sizing, sticky bottom dock spacing, context-menu clamping, and long-page bottom spacing have been tuned. Screenshot QA was skipped after the latest request to conserve token budget.
+- UI Phase 3 is complete: auth first-impression screens were reviewed without redesign, home thumbnail date tags were removed, and the home shell/hero rhythm was tuned to avoid accidental scrolling while preserving the existing direction for later redesign.
 
 ## Next Priorities
 - Production hardening: verify real Liara generation, retry behavior, storage display URLs, and failed-state recovery on the deployment target.

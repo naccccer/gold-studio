@@ -14,6 +14,7 @@ type DashboardFrameProps = {
 
 export function DashboardFrame({ children, userLabel, remainingCredits, needsNameOnboarding }: DashboardFrameProps) {
   const pathname = usePathname();
+  const isHome = pathname === "/dashboard";
   const isProjectDarkSurface = pathname === "/projects/new" || /^\/projects\/[^/]+$/.test(pathname);
   const frameTone = isProjectDarkSurface ? "studio" : "normal";
 
@@ -22,7 +23,10 @@ export function DashboardFrame({ children, userLabel, remainingCredits, needsNam
       className={
         frameTone === "studio"
           ? "min-h-screen bg-[#0d0c0a] px-0 pb-5 pt-4 text-right text-foreground md:bg-[radial-gradient(circle_at_top,#201a12_0%,#0d0c0a_44%,#070604_100%)] md:px-6 md:py-6"
-          : "min-h-screen bg-background px-0 pb-24 pt-4 text-right text-foreground md:bg-[radial-gradient(circle_at_top,#fffaf0_0%,#f6f1e8_42%,#e8dece_100%)] md:px-6 md:py-6"
+          : [
+              "min-h-screen bg-background px-0 pt-4 text-right text-foreground md:bg-[radial-gradient(circle_at_top,#fffaf0_0%,#f6f1e8_42%,#e8dece_100%)] md:px-6 md:py-6",
+              isHome ? "pb-0" : "pb-24",
+            ].join(" ")
       }
     >
       <div

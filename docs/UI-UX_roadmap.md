@@ -275,9 +275,23 @@ Completion notes:
 
 ## Phase 3: First Impression Screens
 
+Status: Done on 2026-05-10.
+
 Goal: make login, signup, and home immediately feel like Ovala.
 
 Scope: login, signup, home.
+
+Completion notes:
+
+- Reviewed login and signup as regression-only surfaces; no redesign was needed.
+- Made the signup consent sentence slightly more formal while keeping the existing auth layout, imagery, spacing, RTL behavior, and Vuesax icons intact.
+- Kept the home screen close to the existing direction for later redesign, but removed the home-only accidental scroll source by disabling the general bottom padding/min-height behavior on the focused home surface.
+- Increased the home hero height again after review feedback so the blank lower area is reduced while the screen still fits the intended phone viewport.
+- Removed date tags from the home thumbnail previews.
+- Restored the previous hero overlay text after review feedback and did not introduce new home copy.
+- Screenshots were skipped per Phase 3 request because the change was intentionally small.
+- Verification: `npm run check:mojibake` passed and `npm run lint` passed.
+- Build caveat: `npm run build` still fails during `prisma generate` with Windows `EPERM rename query_engine-windows.dll.node`, before Next compilation; this matches the known Prisma engine/client issue and is unrelated to Phase 3.
 
 Must pass:
 

@@ -23,15 +23,13 @@ type DashboardHomeScreenProps = {
   recentProjects: DashboardRecentProject[];
 };
 
-const dateFormatter = new Intl.DateTimeFormat("fa-IR", { day: "numeric", month: "long" });
-
 export function DashboardHomeScreen({ recentProjects }: DashboardHomeScreenProps) {
   const previewItems = recentProjects.length > 0 ? recentProjects.slice(0, 2) : archiveItems.slice(0, 2);
 
   return (
-    <PageShell maxWidth="lg" className="space-y-5 pb-3">
-      <section className="space-y-5">
-        <div className="group relative h-[min(410px,52svh)] min-h-[350px] overflow-hidden rounded-[1.45rem] border border-white/80 bg-[#e9dfcf] shadow-[0_28px_58px_-46px_rgba(17,16,14,0.7)]">
+    <PageShell maxWidth="lg" minHeight={false} className="space-y-4 pb-3">
+      <section className="space-y-4">
+        <div className="group relative h-[min(430px,50svh)] min-h-[350px] overflow-hidden rounded-[1.45rem] border border-white/80 bg-[#e9dfcf] shadow-[0_28px_58px_-46px_rgba(17,16,14,0.7)]">
           <Image
             src={homeHero.src}
             alt={homeHero.alt}
@@ -81,7 +79,6 @@ export function DashboardHomeScreen({ recentProjects }: DashboardHomeScreenProps
             const imageSrc = isProject ? item.resultImageUrl || item.sourceImageUrl : item.src;
             const imageAlt = isProject ? item.title || fallback.alt : fallback.alt;
             const href = isProject ? `/projects/${item.id}` : "/projects";
-            const createdAt = isProject ? item.createdAt : new Date();
 
             return (
               <Link key={href + index} href={href} className="relative block aspect-[5/4] overflow-hidden rounded-[1rem] bg-[#e8dfd2]">
@@ -94,9 +91,6 @@ export function DashboardHomeScreen({ recentProjects }: DashboardHomeScreenProps
                   className="object-cover"
                   sizes="(max-width: 768px) 50vw, 220px"
                 />
-                <span className="absolute bottom-2 right-2 rounded-full bg-surface/84 px-2 py-0.5 text-[10px] font-medium text-muted backdrop-blur">
-                  {dateFormatter.format(createdAt)}
-                </span>
               </Link>
             );
           })}
