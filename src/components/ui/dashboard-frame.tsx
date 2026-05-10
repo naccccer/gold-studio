@@ -21,15 +21,16 @@ export function DashboardFrame({ children, userLabel, remainingCredits, needsNam
     <div
       className={
         frameTone === "studio"
-          ? "min-h-screen bg-[#0d0c0a] px-4 pb-5 pt-4 text-right text-foreground md:bg-[radial-gradient(circle_at_top,#201a12_0%,#0d0c0a_44%,#070604_100%)] md:py-6"
-          : "min-h-screen bg-background px-4 pb-24 pt-4 text-right text-foreground md:bg-[radial-gradient(circle_at_top,#fffaf0_0%,#f6f1e8_42%,#e8dece_100%)] md:py-6"
+          ? "min-h-screen bg-[#0d0c0a] px-0 pb-5 pt-4 text-right text-foreground md:bg-[radial-gradient(circle_at_top,#201a12_0%,#0d0c0a_44%,#070604_100%)] md:px-6 md:py-6"
+          : "min-h-screen bg-background px-0 pb-24 pt-4 text-right text-foreground md:bg-[radial-gradient(circle_at_top,#fffaf0_0%,#f6f1e8_42%,#e8dece_100%)] md:px-6 md:py-6"
       }
     >
       <div
+        data-ovala-phone-frame
         className={
           frameTone === "studio"
-            ? "mx-auto min-h-[calc(100svh-2rem)] w-full max-w-[393px] bg-[#0d0c0a] md:min-h-[calc(100svh-3rem)] md:overflow-hidden md:rounded-[1.45rem] md:border md:border-white/10 md:shadow-[0_38px_100px_-64px_rgba(0,0,0,1)]"
-            : "mx-auto min-h-[calc(100svh-2rem)] w-full max-w-[393px] bg-background md:min-h-[calc(100svh-3rem)] md:overflow-hidden md:rounded-[1.45rem] md:border md:border-white/80 md:shadow-[0_30px_80px_-52px_rgba(23,20,17,0.65)]"
+            ? "mx-auto min-h-[calc(100svh-1rem)] w-full max-w-[393px] bg-[#0d0c0a] md:min-h-[calc(100svh-3rem)] md:max-w-[425px] md:overflow-hidden md:rounded-[1.35rem] md:border md:border-white/10 md:shadow-[0_38px_100px_-64px_rgba(0,0,0,1)]"
+            : "mx-auto min-h-[calc(100svh-1rem)] w-full max-w-[393px] bg-background md:min-h-[calc(100svh-3rem)] md:max-w-[425px] md:overflow-hidden md:rounded-[1.35rem] md:border md:border-white/80 md:shadow-[0_30px_80px_-52px_rgba(23,20,17,0.65)]"
         }
       >
         <DashboardMasthead userLabel={userLabel} remainingCredits={remainingCredits} />

@@ -37,7 +37,7 @@ export function MobileTabBar({ tabs, centerAction }: MobileTabBarProps) {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40" aria-label="ناوبری اصلی">
-      <div className="mx-auto max-w-[393px] px-3 pb-3">
+      <div className="mx-auto max-w-[393px] px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:max-w-[425px]">
         <div className="grid grid-cols-5 items-center rounded-[1.45rem] border border-white/80 bg-surface/96 px-1.5 py-1.5 text-center shadow-[0_22px_55px_-42px_rgba(23,20,17,0.9)] backdrop-blur">
           {tabs.slice(0, 2).map((tab) => {
             const Icon = icons[tab.icon];

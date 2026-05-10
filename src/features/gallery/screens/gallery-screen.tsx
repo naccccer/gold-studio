@@ -96,7 +96,7 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
   }
 
   return (
-    <PageShell maxWidth="lg" className="space-y-5 pb-28">
+    <PageShell maxWidth="lg" className="space-y-5 pb-32">
       <div className="flex min-h-[calc(100svh-12rem)] flex-col gap-5">
         <section className="rounded-[1.15rem] border border-dashed border-accent/62 bg-surface/52 px-3 py-3">
           <div className="flex items-center justify-between gap-3">
@@ -178,7 +178,7 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                     aria-label={`انتخاب ${title}`}
                     className="block w-full text-right"
                   >
-                    <JewelryImageFrame aspect="landscape" selected={selected} className="min-h-[126px] rounded-[var(--radius-lg)]">
+                    <JewelryImageFrame aspect="landscape" selected={selected} className="rounded-[var(--radius-lg)]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={asset.fileUrl}
@@ -192,7 +192,7 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                       ) : null}
                     </JewelryImageFrame>
                   </button>
-                  <div className="absolute bottom-2 left-2">
+                  <div className="absolute bottom-1.5 left-1.5">
                     <ItemContextMenu label={`منوی ${title}`} align="right">
                       <Link href={`/gallery/${asset.id}`} className={contextMenuItemClasses}>
                         <Eye aria-hidden={true} className="h-3.5 w-3.5" />

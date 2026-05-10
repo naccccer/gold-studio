@@ -90,7 +90,7 @@ export function AccountScreen({
   const submittedReceiptCount = pendingRequests.length - pendingReceiptCount;
 
   return (
-    <PageShell maxWidth="md" className="space-y-3 pb-28">
+    <PageShell maxWidth="md" className="space-y-3 pb-32">
       <div className="flex min-h-[calc(100svh-12rem)] flex-col gap-3">
         <section className="rounded-[1.45rem] border border-white/80 bg-surface/62 p-3.5 shadow-[0_22px_50px_-44px_rgba(17,16,14,0.72)]">
           <div className="flex items-center gap-3">

@@ -12,9 +12,9 @@ export function ActionDock({ children, columns = 1, sticky = false, fade = true,
     <div
       className={[
         sticky && fade
-          ? "sticky bottom-[4.95rem] z-20 mt-auto bg-gradient-to-t from-background via-background/95 to-transparent pb-2 pt-5 md:bottom-3"
+          ? "sticky bottom-[4.45rem] z-20 mx-1 mt-auto bg-gradient-to-t from-background via-background/95 to-transparent pb-2 pt-5"
           : sticky
-            ? "sticky bottom-[4.95rem] z-20 mt-auto pb-2 pt-5 md:bottom-3"
+            ? "sticky bottom-[4.45rem] z-20 mx-1 mt-auto pb-2 pt-5"
             : "mt-auto pb-3",
         columns === 2 ? "grid grid-cols-2 gap-3" : "grid gap-3",
         className,

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Plus, Sparkles } from "lucide-react";
+import { Add, MagicStar } from "vuesax-icons-react";
 import { ButtonLink } from "@/components/ui/button";
 import { PageShell } from "@/components/ui/page-shell";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
@@ -31,7 +31,7 @@ export function DashboardHomeScreen({ recentProjects }: DashboardHomeScreenProps
   return (
     <PageShell maxWidth="lg" className="space-y-5 pb-3">
       <section className="space-y-5">
-        <div className="group relative h-[410px] overflow-hidden rounded-[1.45rem] border border-white/80 bg-[#e9dfcf] shadow-[0_28px_58px_-46px_rgba(17,16,14,0.7)]">
+        <div className="group relative h-[min(410px,52svh)] min-h-[350px] overflow-hidden rounded-[1.45rem] border border-white/80 bg-[#e9dfcf] shadow-[0_28px_58px_-46px_rgba(17,16,14,0.7)]">
           <Image
             src={homeHero.src}
             alt={homeHero.alt}
@@ -57,7 +57,7 @@ export function DashboardHomeScreen({ recentProjects }: DashboardHomeScreenProps
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/66 via-black/12 to-transparent p-4 text-surface">
             <div className="flex items-end justify-between gap-3">
               <p className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/25 px-2.5 py-1 text-[10px] text-[#fff7e7]">
-                <Sparkles aria-hidden="true" className="h-3 w-3" />
+                <MagicStar aria-hidden="true" className="h-3 w-3" />
                 پیشنهاد هفته
               </p>
               <div className="flex items-center gap-1.5">
@@ -70,7 +70,7 @@ export function DashboardHomeScreen({ recentProjects }: DashboardHomeScreenProps
         </div>
 
         <ButtonLink href="/projects/new" size="full" className="h-12 rounded-[1rem] text-sm">
-          <Plus aria-hidden="true" className="h-4 w-4" />
+          <Add aria-hidden="true" className="h-4 w-4" />
           پروژه جدید
         </ButtonLink>
 
@@ -84,7 +84,7 @@ export function DashboardHomeScreen({ recentProjects }: DashboardHomeScreenProps
             const createdAt = isProject ? item.createdAt : new Date();
 
             return (
-              <Link key={href + index} href={href} className="relative block h-[112px] overflow-hidden rounded-[1rem] bg-[#e8dfd2]">
+              <Link key={href + index} href={href} className="relative block aspect-[5/4] overflow-hidden rounded-[1rem] bg-[#e8dfd2]">
                 <SafeJewelryImage
                   src={imageSrc}
                   fallbackSrc={fallback.src}

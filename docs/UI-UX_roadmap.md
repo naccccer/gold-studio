@@ -240,7 +240,7 @@ Screenshots: real screens showing buttons, cards, fields, segmented controls, me
 
 ## Phase 2.5: Responsive Layout Rhythm And Shell QA
 
-Status: Planned.
+Status: Implemented on 2026-05-10.
 
 Goal: make spacing, responsive card sizing, masthead balance, bottom docks, and desktop phone-frame behavior feel intentional across common mobile and desktop viewports.
 
@@ -258,6 +258,20 @@ Must pass:
 - No individual screen redesign or copy rewrite beyond layout fixes.
 
 Screenshots: home, gallery populated, projects populated, projects empty if easy, new project source, new project size, account, billing, and one desktop centered-shell view at `393x852`, `360x800`, `430x932`, and desktop where relevant.
+
+Completion notes:
+
+- Aligned the mobile page gutter, masthead gutter, bottom nav gutter, and desktop phone-stage content rhythm around the same shell spacing.
+- Adjusted the desktop user frame to keep phone rhythm while giving rounded frame corners enough breathing room around content.
+- Tuned sticky action docks so bottom actions sit just above the tab bar, with slightly narrower width and a small extra lift for the `ادامه` action.
+- Converted gallery/project thumbnail cards and home preview cards away from brittle fixed heights toward shared aspect-ratio sizing.
+- Kept gallery and projects as sibling media-grid systems while preserving their ownership differences.
+- Improved context-menu horizontal clamping against the phone frame and restored a full 44px tap target.
+- Added long-page bottom breathing room for account, billing, gallery, and projects.
+- Migrated touched home user-facing icons from lucide to `vuesax-icons-react`.
+- Screenshot QA was started, then intentionally stopped and discarded after the follow-up request to skip screenshots for token budget.
+- Verification: `npm run check:mojibake` passed and `npm run lint` passed.
+- Build caveat: `npm run build` still fails during `prisma generate` with Windows `EPERM rename query_engine-windows.dll.node`, before Next compilation; this matches the known Prisma engine/client issue and is unrelated to Phase 2.5 layout changes.
 
 ## Phase 3: First Impression Screens
 

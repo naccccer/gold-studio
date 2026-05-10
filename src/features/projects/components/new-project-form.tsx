@@ -181,7 +181,7 @@ export function NewProjectForm({
             htmlFor="project-file-input"
             className="block cursor-pointer"
           >
-            <JewelryImageFrame aspect="portrait" treatment="hero" className="h-[330px]">
+            <JewelryImageFrame aspect="portrait" treatment="hero" className="h-[min(330px,44svh)] min-h-[260px] w-full">
               <Image
                 src={currentImageSrc || uploadPreview.src}
                 alt="تصویر انتخاب‌شده"
@@ -231,7 +231,7 @@ export function NewProjectForm({
 
       {step === "size" ? (
         <section className="flex flex-1 flex-col gap-4">
-          <JewelryImageFrame aspect="landscape" treatment="hero" className="h-[214px] rounded-[var(--radius-xl)]">
+          <JewelryImageFrame aspect="landscape" treatment="hero" className="h-[min(214px,28svh)] min-h-[178px] w-full rounded-[var(--radius-xl)]">
             {selectedAsset ? (
               <SafeJewelryImage
                 src={selectedAsset.fileUrl}

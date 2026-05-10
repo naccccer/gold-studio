@@ -186,7 +186,7 @@ export function BillingScreen({ packages, pendingRequests, paymentSettings, acti
   const creditPacks = packages.filter((item) => item.type === "CREDIT_PACK");
 
   return (
-    <PageShell maxWidth="md" className="space-y-3 pb-28">
+    <PageShell maxWidth="md" className="space-y-3 pb-32">
       <header className="rounded-[1.45rem] border border-white/80 bg-surface/62 p-3.5 shadow-[0_22px_50px_-44px_rgba(17,16,14,0.72)]">
         <ButtonLink href="/account" variant="ghost" size="sm" className="h-9 w-fit rounded-full px-2.5">
           <ArrowRight aria-hidden={true} className="h-4 w-4" />

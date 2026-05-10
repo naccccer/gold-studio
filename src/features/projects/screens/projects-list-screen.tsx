@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Add, CloseCircle, DocumentDownload, Edit2, Eye, Refresh, TickCircle, Trash } from "vuesax-icons-react";
+import { CloseCircle, DocumentDownload, Edit2, Eye, Refresh, TickCircle, Trash } from "vuesax-icons-react";
 import { useRef, useState } from "react";
 import { ActionDock } from "@/components/ui/action-dock";
-import { Button, ButtonLink, IconButton, buttonClasses } from "@/components/ui/button";
+import { Button, IconButton, buttonClasses } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { fieldControlClassName } from "@/components/ui/field";
 import {
@@ -61,7 +61,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
   }
 
   return (
-    <PageShell maxWidth="lg" className="space-y-5 pb-28">
+    <PageShell maxWidth="lg" className="space-y-5 pb-32">
       <div className="flex min-h-[calc(100svh-12rem)] flex-col gap-5">
         {projects.length === 0 ? (
           <EmptyState
@@ -110,7 +110,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                     }}
                     className="group block w-full text-right"
                   >
-                    <JewelryImageFrame aspect="landscape" selected={selected} disabled={failed} className="min-h-[126px] rounded-[var(--radius-lg)] group-hover:border-border-strong">
+                    <JewelryImageFrame aspect="landscape" selected={selected} disabled={failed} className="rounded-[var(--radius-lg)] group-hover:border-border-strong">
                     <SafeJewelryImage
                       src={imageSrc}
                       fallbackSrc={fallbackImage.src}
@@ -137,7 +137,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                       <Refresh aria-hidden={true} className="h-4 w-4" />
                     </Link>
                   ) : null}
-                  <div className="absolute bottom-2 left-2">
+                  <div className="absolute bottom-1.5 left-1.5">
                     <ItemContextMenu label={`منوی ${projectTitle}`} align="right">
                       <Link href={`/projects/${project.id}`} className={contextMenuItemClasses}>
                         <Eye aria-hidden={true} className="h-3.5 w-3.5" />
@@ -196,8 +196,8 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
           </section>
         )}
 
-        <ActionDock sticky className={selectedIds.length > 0 ? "!grid-cols-[2.25rem_minmax(0,1fr)] items-center" : ""}>
-          {selectedIds.length > 0 ? (
+        {selectedIds.length > 0 ? (
+          <ActionDock sticky className="!grid-cols-[2.25rem_minmax(0,1fr)] items-center">
             <>
               <form
                 action={archiveProjectAction}
@@ -219,13 +219,8 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                 لغو
               </Button>
             </>
-          ) : (
-            <ButtonLink href="/projects/new" size="full" className="h-12 rounded-[1rem]">
-              <Add aria-hidden={true} className="h-4 w-4" />
-              پروژه جدید
-            </ButtonLink>
-          )}
-        </ActionDock>
+          </ActionDock>
+        ) : null}
       </div>
     </PageShell>
   );

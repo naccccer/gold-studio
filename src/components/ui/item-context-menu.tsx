@@ -28,9 +28,17 @@ export function ItemContextMenu({ label, children, align = "left", tone = "dark"
     const menuWidth = 208;
     const gap = 8;
     const viewportPadding = 12;
+    const frame = buttonRef.current?.closest("[data-ovala-phone-frame]")?.getBoundingClientRect();
+    const horizontalMin = frame ? frame.left + viewportPadding : viewportPadding;
+    const horizontalMax = frame ? frame.right - viewportPadding : window.innerWidth - viewportPadding;
+    const menuHeight = menuRef.current?.offsetHeight ?? 260;
     const preferredLeft = align === "left" ? rect.left : rect.right - menuWidth;
-    const left = Math.min(Math.max(preferredLeft, viewportPadding), window.innerWidth - menuWidth - viewportPadding);
-    const top = Math.min(rect.bottom + gap, window.innerHeight - viewportPadding);
+    const left = Math.min(Math.max(preferredLeft, horizontalMin), horizontalMax - menuWidth);
+    const preferredTop = rect.bottom + gap;
+    const top =
+      preferredTop + menuHeight > window.innerHeight - viewportPadding
+        ? Math.max(viewportPadding, rect.top - menuHeight - gap)
+        : preferredTop;
 
     setMenuPosition({ top, left });
   }, [align]);
@@ -86,9 +94,11 @@ export function ItemContextMenu({ label, children, align = "left", tone = "dark"
         aria-label={label}
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)] ${buttonTone}`}
+        className="inline-flex h-11 w-11 items-center justify-center rounded-full transition focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
       >
-        <More aria-hidden={true} className="h-4 w-4" />
+        <span className={`inline-flex h-7 w-7 items-center justify-center rounded-full border transition ${buttonTone}`}>
+          <More aria-hidden={true} className="h-3 w-3" />
+        </span>
       </button>
       {open && menuPosition ? createPortal(
         <div
