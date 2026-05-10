@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Camera, Check, Images, Sparkles, Upload } from "lucide-react";
 import { ActionDock } from "@/components/ui/action-dock";
-import { Button } from "@/components/ui/button";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 import type { ProjectFormState } from "@/features/projects/actions";
@@ -46,8 +45,10 @@ const outputPresets: Array<{
   { id: "banner", label: "بنر", ratio: "۱۶:۹", className: "aspect-video" },
 ];
 
-const darkPrimaryButtonClass = "h-12 w-full rounded-[1rem] bg-surface text-[#15110d] shadow-[0_18px_36px_-26px_rgba(255,255,255,0.72)] hover:bg-[#f8f1e8]";
-const darkSecondaryButtonClass = "h-12 w-full rounded-[1rem] border border-white/22 bg-white/[0.07] text-surface hover:border-white/36 hover:bg-white/[0.11]";
+const darkPrimaryActionClass =
+  "inline-flex h-12 w-full items-center justify-center gap-2 rounded-[1rem] border border-[#ffd98f]/45 bg-[linear-gradient(135deg,#f8df9f_0%,#d8a552_48%,#9a672a_100%)] text-sm font-semibold !text-[#140f0a] shadow-[0_18px_38px_-24px_rgba(216,165,82,0.9)] transition hover:brightness-105 disabled:opacity-60";
+const darkSecondaryActionClass =
+  "inline-flex h-12 w-full items-center justify-center gap-2 rounded-[1rem] border border-white/28 bg-white/[0.08] text-sm font-semibold !text-white/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:border-white/42 hover:bg-white/[0.12] disabled:opacity-60";
 
 function parseChoiceOptions(optionsJson?: string | null): StyleControlOption[] {
   if (!optionsJson) {
@@ -214,14 +215,14 @@ export function NewProjectForm({
           </div>
           <ActionDock sticky fade={false} columns={hasSource ? 2 : 1}>
             {hasSource ? (
-            <Button type="button" variant="secondary" className={darkSecondaryButtonClass} onClick={() => setSelectedAsset(null)}>
+            <button type="button" className={darkSecondaryActionClass} onClick={() => setSelectedAsset(null)}>
               تغییر عکس
-            </Button>
+            </button>
           ) : null}
-            <Button type="button" className={darkPrimaryButtonClass} onClick={() => setStep("size")} disabled={!hasSource}>
+            <button type="button" className={darkPrimaryActionClass} onClick={() => setStep("size")} disabled={!hasSource}>
               ادامه
               <ArrowLeft aria-hidden={true} className="h-4 w-4" />
-            </Button>
+            </button>
           </ActionDock>
         </section>
       ) : null}
@@ -273,13 +274,13 @@ export function NewProjectForm({
           </fieldset>
 
           <ActionDock className="mt-auto" columns={2}>
-            <Button type="button" variant="secondary" className={darkSecondaryButtonClass} onClick={() => setStep("source")}>
+            <button type="button" className={darkSecondaryActionClass} onClick={() => setStep("source")}>
               برگشت
-            </Button>
-            <Button type="button" className={darkPrimaryButtonClass} onClick={() => setStep("style")} disabled={!hasSource}>
+            </button>
+            <button type="button" className={darkPrimaryActionClass} onClick={() => setStep("style")} disabled={!hasSource}>
               ادامه
               <ArrowLeft aria-hidden={true} className="h-4 w-4" />
-            </Button>
+            </button>
           </ActionDock>
         </section>
       ) : null}
@@ -367,13 +368,13 @@ export function NewProjectForm({
           ) : null}
 
           <ActionDock className="mt-auto" columns={2}>
-            <Button type="button" variant="secondary" className={darkSecondaryButtonClass} onClick={() => setStep("size")}>
+            <button type="button" className={darkSecondaryActionClass} onClick={() => setStep("size")}>
               {selectedPreset.label}
-            </Button>
-            <Button type="submit" disabled={pending || !canSubmit} className={darkPrimaryButtonClass}>
+            </button>
+            <button type="submit" disabled={pending || !canSubmit} className={darkPrimaryActionClass}>
               {pending ? "در حال ساخت..." : "ساخت تصویر"}
               <Sparkles aria-hidden={true} className="h-4 w-4" />
-            </Button>
+            </button>
           </ActionDock>
         </section>
       ) : null}
