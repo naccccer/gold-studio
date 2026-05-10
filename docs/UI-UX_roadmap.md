@@ -33,14 +33,15 @@ Risks:
 
 ## Global Execution Rules
 
-- Read this roadmap, `AGENTS.md`, `DESIGN.md`, `docs/brand-identity.md`, and current screenshots/artifacts before each phase.
+- Read this roadmap, `AGENTS.md`, `DESIGN.md`, `docs/brand-identity.md`, and current artifacts before each phase.
 - Execute one phase at a time. If a phase exposes a blocker from an earlier phase, fix only the blocker and explain why.
 - Prefer shared primitives and tokens over screen-local restyling.
 - Keep user-side routes phone-width on desktop unless a phase explicitly says otherwise.
-- Use `393x852` screenshots as the main user-side visual QA artifact.
+- Treat `393x852` as the main user-side layout target, but do not capture screenshots unless explicitly requested.
 - Keep natural scrolling on content-heavy screens; remove accidental scrolling only on focused task screens.
 - If mojibake appears, stop and repair it deliberately before visual polish.
 - Update this roadmap after each completed phase with status, key changes, verification, and known caveats.
+- Screenshots are intentionally skipped for Phase 4 and all later UI phases unless the user explicitly asks for them.
 
 ## Global Verification
 
@@ -138,9 +139,9 @@ For each phase:
 
 - Inspect affected screens before editing.
 - Implement only the phase scope.
-- Capture listed screenshots at `393x852` when UI changes.
+- Do not capture screenshots unless explicitly requested; use code/layout inspection and verification commands instead.
 - Manually review visible Persian text. Automated mojibake checks are not enough.
-- Report screenshots captured, checks run, known failures, and remaining visual risks.
+- Report screenshots skipped, checks run, known failures, and remaining visual risks.
 
 ## Phase 0: Foundation, Naming, And Encoding
 
@@ -306,9 +307,25 @@ Screenshots: login, signup, home, empty and populated home states if available.
 
 ## Phase 4: Core Creation Flow
 
+Status: Done on 2026-05-10.
+
 Goal: make gallery to new project to processing feel like one coherent guided studio flow.
 
 Scope: gallery, gallery crop overlay, new project source/size/style steps, processing.
+
+Completion notes:
+
+- Tightened the gallery intake block so upload, camera, and selection status read as one guided starting point instead of separate utilities.
+- Improved gallery empty and populated states with clearer selection feedback, stronger source-image ownership cues, and more explicit continuation into project creation.
+- Reworked the new-project source step around one dominant image object, added quick gallery selection inside the wizard, and removed the implicit auto-pick of the first gallery asset when users enter without a preselected source.
+- Reworked the size step so output ratio selection is previewed inside one dominant framed studio object instead of a disconnected control set.
+- Reworked the style step so the selected style gets a large visual preview with curated image-led style choices and the same clear bottom action pattern.
+- Refined the active processing state into a calmer studio pipeline with visible step states and clearer navigation back to `پروژه‌ها`, while leaving completed and failed review behavior otherwise intact.
+- Touched user-facing icons in the edited Phase 4 project-detail/processing surfaces were migrated to `vuesax-icons-react`.
+- Gallery crop overlay was left functionally unchanged because no Phase 4 blocker required crop redesign.
+- Screenshots were intentionally skipped for this phase per request.
+- Verification: `npm run check:mojibake` passed and `npm run lint` passed.
+- Build caveat: `npm run build` still fails during `prisma generate` with Windows `EPERM rename query_engine-windows.dll.node`, before Next compilation; this matches the known Prisma engine/client issue and is unrelated to Phase 4 UI changes.
 
 Must pass:
 
@@ -371,7 +388,7 @@ Screenshots: admin home, users, packages, projects, styles at `393x852`; desktop
 
 ## Final UI Release Gate
 
-- Required screenshots are captured and reviewed.
+- Screenshot capture is not required unless explicitly requested.
 - No visible mojibake remains in user/admin UI.
 - User routes feel phone-native and intentionally centered on desktop.
 - Focused task screens do not accidentally scroll.

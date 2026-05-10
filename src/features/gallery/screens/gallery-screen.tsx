@@ -3,8 +3,20 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Camera, DocumentDownload, DocumentUpload, Edit2, Eye, Magicpen, TickCircle, Trash } from "vuesax-icons-react";
-import { useState } from "react";
+import {
+  ArrowLeft,
+  Camera,
+  CloseCircle,
+  DocumentDownload,
+  DocumentUpload,
+  Edit2,
+  Eye,
+  GalleryAdd,
+  Magicpen,
+  TickCircle,
+  Trash,
+} from "vuesax-icons-react";
+import { useMemo, useState } from "react";
 import { ActionDock } from "@/components/ui/action-dock";
 import { Button, ButtonLink, IconButton, buttonClasses } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -14,7 +26,7 @@ import {
   contextMenuItemClasses,
   ItemContextMenu,
 } from "@/components/ui/item-context-menu";
-import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
+import { ImageOverlayPill, JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
 import { archiveAssetAction, renameAssetAction } from "@/features/gallery/actions";
 import {
@@ -47,6 +59,19 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [pickerError, setPickerError] = useState<string | null>(null);
   const cropUploadId = searchParams.get("cropUploadId");
+  const selectedCount = selectedIds.length;
+
+  const selectedSummary = useMemo(() => {
+    if (selectedCount === 0) {
+      return "برای شروع ساخت، یک عکس را انتخاب کنید.";
+    }
+
+    if (selectedCount === 1) {
+      return "یک عکس برای ساخت پروژه جدید آماده است.";
+    }
+
+    return `${selectedCount.toLocaleString("fa-IR")} عکس برای ساخت گروهی انتخاب شده است.`;
+  }, [selectedCount]);
 
   function toggleAsset(assetId: string) {
     setSelectedIds((current) =>
@@ -97,28 +122,54 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
 
   return (
     <PageShell maxWidth="lg" className="space-y-5 pb-32">
-      <div className="flex min-h-[calc(100svh-12rem)] flex-col gap-5">
-        <section className="rounded-[1.15rem] border border-dashed border-accent/62 bg-surface/52 px-3 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-medium text-[#7b7164]">عکس محصول را اضافه کن</h2>
+      <div className="flex flex-col gap-5">
+        <section className="rounded-[1.35rem] border border-dashed border-accent/58 bg-surface/62 p-4 shadow-[0_16px_36px_-34px_rgba(17,16,14,0.3)]">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2">
+              <ImageOverlayPill tone="accent" className="w-fit">
+                <GalleryAdd aria-hidden={true} className="h-3.5 w-3.5" />
+                ورودی گالری
+              </ImageOverlayPill>
+              <div className="space-y-1">
+                <h2 className="text-base font-semibold text-foreground">عکس محصول را اضافه کنید</h2>
+                <p className="max-w-[17rem] text-xs leading-6 text-muted">
+                  از آپلود یا دوربین شروع کنید. بعد از انتخاب، همان عکس را مستقیم وارد مسیر ساخت پروژه می‌کنیم.
+                </p>
+              </div>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <label
-                htmlFor="gallery-camera-input"
-                className={buttonClasses({ variant: "secondary", size: "icon", className: "rounded-full bg-accent-wash text-accent-deep" })}
-                aria-label="باز کردن دوربین"
+            {selectedCount > 0 ? (
+              <button
+                type="button"
+                onClick={() => setSelectedIds([])}
+                className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-border bg-surface px-3 text-xs font-medium text-muted transition hover:text-foreground"
               >
-                <Camera aria-hidden={true} className="h-5 w-5" />
-              </label>
-              <label
-                htmlFor="gallery-file-input"
-                className={buttonClasses({ variant: "secondary", size: "icon", className: "rounded-full bg-accent-wash text-accent-deep" })}
-                aria-label="باز کردن فایل‌ها"
-              >
-                <DocumentUpload aria-hidden={true} className="h-5 w-5" />
-              </label>
-            </div>
+                <CloseCircle aria-hidden={true} className="h-4 w-4" />
+                پاک کردن
+              </button>
+            ) : null}
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <label htmlFor="gallery-file-input" className={buttonClasses({ className: "h-12 w-full" })}>
+              <DocumentUpload aria-hidden={true} className="h-4 w-4" />
+              آپلود عکس
+            </label>
+            <label
+              htmlFor="gallery-camera-input"
+              className={buttonClasses({ variant: "secondary", className: "h-12 w-full" })}
+            >
+              <Camera aria-hidden={true} className="h-4 w-4" />
+              عکاسی
+            </label>
+          </div>
+
+          <div className="mt-4 flex items-center justify-between gap-3 rounded-[1rem] border border-white/70 bg-white/58 px-3 py-2.5">
+            <p className="text-xs leading-6 text-muted">{selectedSummary}</p>
+            {selectedCount > 0 ? (
+              <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-foreground px-2 text-xs font-semibold text-surface">
+                {selectedCount.toLocaleString("fa-IR")}
+              </span>
+            ) : null}
           </div>
 
           <input
@@ -152,7 +203,8 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
 
         {assets.length === 0 ? (
           <EmptyState
-            title="هنوز عکسی در گالری نیست."
+            title="هنوز عکسی در گالری ندارید."
+            className="pt-2"
             media={
               <Image
                 src={uploadPreview.src}
@@ -163,7 +215,24 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                 sizes="(max-width: 768px) 100vw, 680px"
               />
             }
-          />
+            action={
+              <div className="grid grid-cols-2 gap-3">
+                <label htmlFor="gallery-file-input" className={buttonClasses({ className: "h-12 w-full" })}>
+                  <DocumentUpload aria-hidden={true} className="h-4 w-4" />
+                  آپلود
+                </label>
+                <label
+                  htmlFor="gallery-camera-input"
+                  className={buttonClasses({ variant: "secondary", className: "h-12 w-full" })}
+                >
+                  <Camera aria-hidden={true} className="h-4 w-4" />
+                  دوربین
+                </label>
+              </div>
+            }
+          >
+            اولین عکس منبع را اضافه کنید تا مسیر ساخت پروژه از همین‌جا شروع شود.
+          </EmptyState>
         ) : (
           <section className="grid grid-cols-2 gap-3">
             {assets.map((asset) => {
@@ -180,11 +249,15 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                   >
                     <JewelryImageFrame aspect="landscape" selected={selected} className="rounded-[var(--radius-lg)]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={asset.fileUrl}
-                        alt={title}
-                        className="h-full w-full object-cover"
-                      />
+                      <img src={asset.fileUrl} alt={title} className="h-full w-full object-cover" />
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/58 via-black/8 to-transparent p-2.5">
+                        <p className="truncate text-xs font-semibold text-surface">{title}</p>
+                        <p className="mt-1 text-[10px] text-surface/72">
+                          {asset.projects.length > 0
+                            ? `${asset.projects.length.toLocaleString("fa-IR")} پروژه`
+                            : "آماده برای ساخت"}
+                        </p>
+                      </div>
                       {selected ? (
                         <span className="absolute left-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full bg-foreground text-surface">
                           <TickCircle aria-hidden={true} className="h-4 w-4" />
@@ -219,7 +292,10 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                             maxLength={80}
                             className={`${fieldControlClassName} min-h-9 flex-1 px-2 text-xs`}
                           />
-                          <button type="submit" className={buttonClasses({ size: "sm", className: "min-h-9 rounded-[var(--radius-sm)] px-2.5 text-xs" })}>
+                          <button
+                            type="submit"
+                            className={buttonClasses({ size: "sm", className: "min-h-9 rounded-[var(--radius-sm)] px-2.5 text-xs" })}
+                          >
                             ثبت
                           </button>
                         </div>
@@ -246,8 +322,8 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
           </section>
         )}
 
-        <ActionDock sticky className={selectedIds.length > 0 ? "!grid-cols-[2.25rem_minmax(0,1fr)] items-center" : ""}>
-          {selectedIds.length === 1 ? (
+        <ActionDock sticky className={selectedCount > 0 ? "!grid-cols-[2.75rem_minmax(0,1fr)] items-center" : ""}>
+          {selectedCount === 1 ? (
             <>
               <form
                 action={archiveAssetAction}
@@ -262,12 +338,12 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                   <Trash aria-hidden={true} className="h-4 w-4" />
                 </IconButton>
               </form>
-              <ButtonLink href={`/projects/new?assetId=${selectedIds[0]}`} className="col-span-1 h-12 w-full rounded-[1rem]">
-                ادامه
+              <ButtonLink href={`/projects/new?assetId=${selectedIds[0]}`} className="h-12 w-full rounded-[1rem]">
+                ادامه به پروژه
                 <ArrowLeft aria-hidden={true} className="h-4 w-4" />
               </ButtonLink>
             </>
-          ) : selectedIds.length > 1 ? (
+          ) : selectedCount > 1 ? (
             <>
               <form
                 action={archiveAssetAction}
@@ -292,13 +368,13 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                 <input type="hidden" name="outputPreset" value="post" />
                 <Button type="submit" className="h-12 w-full rounded-[1rem]">
                   <Magicpen aria-hidden={true} className="h-4 w-4" />
-                  ادامه
+                  ساخت گروهی
                 </Button>
               </form>
             </>
           ) : (
             <Button type="button" size="full" className="h-12 rounded-[1rem]" disabled>
-              ادامه
+              ادامه به پروژه
             </Button>
           )}
         </ActionDock>

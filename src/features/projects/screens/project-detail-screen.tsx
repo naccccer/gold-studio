@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertTriangle, Download, Images, Maximize2, Plus, RefreshCcw, X } from "lucide-react";
+import {
+  Add,
+  CloseCircle,
+  Danger,
+  DocumentDownload,
+  Gallery,
+  Maximize4,
+  Refresh,
+} from "vuesax-icons-react";
 import { ActionDock } from "@/components/ui/action-dock";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { PageShell } from "@/components/ui/page-shell";
@@ -14,7 +22,7 @@ import { resultHeroDark, uploadPreview } from "@/lib/placeholders/jewelry-images
 const statusConfig: Record<string, { label: string; supportCopy: string }> = {
   QUEUED: {
     label: "در صف",
-    supportCopy: "پروژه ثبت شد و به زودی وارد پردازش می‌شود.",
+    supportCopy: "پروژه ثبت شده و به زودی وارد پردازش می‌شود.",
   },
   PROCESSING: {
     label: "در حال تولید",
@@ -85,25 +93,21 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
           <ProcessingCanvas
             imageSrc={sourceImageSrc}
             imageAlt="در حال پردازش تصویر"
+            title={status.label}
+            caption={`${project.style.name} در حال اجراست. می‌توانید از این صفحه خارج شوید و وضعیت پروژه را بعداً در پروژه‌ها ببینید.`}
             steps={["تشخیص محصول", "پاک‌سازی زمینه", "ساخت خروجی نهایی"]}
             className="min-h-0 flex-1"
-            frameClassName="h-[calc(100%-4.6rem)] min-h-0"
+            frameClassName="h-[calc(100%-8.9rem)] min-h-0"
           />
 
-          <div className="flex w-full shrink-0 items-center justify-center gap-2 py-1">
-            <span className="h-1.5 w-8 rounded-full bg-accent" />
-            <span className="h-1.5 w-8 rounded-full bg-accent/46" />
-            <span className="h-1.5 w-8 rounded-full bg-accent/24" />
-          </div>
-
           <ActionDock columns={2} className="shrink-0 pb-1">
-            <ButtonLink href={newVersionHref} className="h-12 w-full rounded-[1rem] text-sm">
-              <Plus aria-hidden={true} className="h-4 w-4" />
-              پروژه جدید
+            <ButtonLink href="/projects" className="h-12 w-full rounded-[1rem] text-sm">
+              <Gallery aria-hidden={true} className="h-4 w-4" />
+              پروژه‌ها
             </ButtonLink>
-            <ButtonLink href="/gallery" variant="secondary" className="h-12 w-full rounded-[1rem] text-sm">
-              <Images aria-hidden={true} className="h-4 w-4" />
-              بازگشت به گالری
+            <ButtonLink href={newVersionHref} variant="secondary" className="h-12 w-full rounded-[1rem] text-sm">
+              <Add aria-hidden={true} className="h-4 w-4" />
+              پروژه جدید
             </ButtonLink>
           </ActionDock>
         </section>
@@ -145,7 +149,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               sizes="(max-width: 768px) 100vw, 760px"
             />
             <div className="absolute left-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-black/28 text-surface backdrop-blur">
-              <Maximize2 aria-hidden={true} className="h-4.5 w-4.5" />
+              <Maximize4 aria-hidden={true} className="h-4.5 w-4.5" />
             </div>
           </button>
 
@@ -157,11 +161,11 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
                 className: "h-12 w-full rounded-[1rem]",
               })}
             >
-              <Download aria-hidden={true} className="h-4 w-4" />
+              <DocumentDownload aria-hidden={true} className="h-4 w-4" />
               ذخیره
             </a>
             <ButtonLink href={newVersionHref} variant="secondary" className="h-12 w-full rounded-[1rem] text-sm">
-              <RefreshCcw aria-hidden={true} className="h-4 w-4" />
+              <Refresh aria-hidden={true} className="h-4 w-4" />
               نسخه دیگر
             </ButtonLink>
           </ActionDock>
@@ -175,7 +179,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               aria-label="بستن نمایش تمام صفحه"
               className="absolute left-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/16 bg-white/10 text-white backdrop-blur"
             >
-              <X aria-hidden={true} className="h-5 w-5" />
+              <CloseCircle aria-hidden={true} className="h-5 w-5" />
             </button>
             <div
               className="relative h-full w-full"
@@ -226,7 +230,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
           />
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/18 to-transparent p-4">
             <p className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-black/30 px-2.5 py-1 text-[10px] text-surface/82">
-              <AlertTriangle aria-hidden={true} className="h-3.5 w-3.5" />
+              <Danger aria-hidden={true} className="h-3.5 w-3.5" />
               {status.label}
             </p>
             <p className="mt-2 text-sm leading-7 text-surface/78">
@@ -241,12 +245,12 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               type="submit"
               className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[1rem] bg-foreground text-sm font-medium text-surface shadow-[0_20px_34px_-28px_rgba(17,16,14,0.85)] transition hover:bg-[#27231f]"
             >
-              <RefreshCcw aria-hidden={true} className="h-4 w-4" />
+              <Refresh aria-hidden={true} className="h-4 w-4" />
               تلاش دوباره
             </button>
           </form>
           <ButtonLink href="/projects" variant="secondary" className="h-11 w-full rounded-[1rem] text-sm">
-            <Images aria-hidden={true} className="h-4 w-4" />
+            <Gallery aria-hidden={true} className="h-4 w-4" />
             پروژه‌ها
           </ButtonLink>
         </ActionDock>

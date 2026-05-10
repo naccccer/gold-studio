@@ -33,11 +33,12 @@ Mobile user navigation:
 - UI Phase 2 is complete: shared tokens and primitives now cover action hierarchy, media cards, fields, menus, segmented controls, status pills, and the touched gallery/projects/new-project/account/billing surfaces.
 - UI Phase 2.5 is implemented: user-shell gutters, desktop phone-frame rhythm, responsive media-card sizing, sticky bottom dock spacing, context-menu clamping, and long-page bottom spacing have been tuned. Screenshot QA was skipped after the latest request to conserve token budget.
 - UI Phase 3 is complete: auth first-impression screens were reviewed without redesign, home thumbnail date tags were removed, and the home shell/hero rhythm was tuned to avoid accidental scrolling while preserving the existing direction for later redesign.
+- UI Phase 4 is complete: gallery intake and selection, the new-project source/size/style wizard, and the active processing screen now read as one guided studio flow while keeping user-facing text-to-image out of scope.
 
 ## Next Priorities
 - Production hardening: verify real Liara generation, retry behavior, storage display URLs, and failed-state recovery on the deployment target.
-- Release readiness: finish route QA across auth, home, gallery, new project, project detail, projects, account, billing, and admin.
-- Mobile polish: check `393x852` screenshots for Farsi wrapping, RTL controls, bottom navigation, and action placement.
+- Release readiness: finish route QA across auth, home, gallery, new project, project detail, projects, account, billing, and admin, with special attention to the Phase 4 guided flow and upcoming Phase 5 result ownership work.
+- Mobile polish: check `393x852` screenshots for Farsi wrapping, RTL controls, bottom navigation, action placement, and the no-accidental-scroll behavior on focused creation screens when screenshot capture is requested.
 - Admin operations polish: keep admin dense and practical without leaking prompt/provider complexity into user flows.
 - Documentation hygiene: keep docs short and current; update this file when scope or active priorities change.
 
