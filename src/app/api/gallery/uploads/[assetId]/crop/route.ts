@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
+import { db } from "@/lib/db";
+import { generateNumericSupportCode, logSupportError } from "@/lib/support-code";
 import { saveUploadedFile } from "@/lib/uploads";
 
 export async function POST(
@@ -35,7 +36,7 @@ export async function POST(
   const image = formData.get("image");
 
   if (!(image instanceof File) || image.size === 0) {
-    return NextResponse.json({ error: "فایل کراپ شده معتبر نیست." }, { status: 400 });
+    return NextResponse.json({ error: "فایل کراپ‌شده معتبر نیست." }, { status: 400 });
   }
 
   try {
@@ -60,7 +61,20 @@ export async function POST(
       fileUrl: updatedAsset.fileUrl,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "ذخیره کراپ کامل نشد.";
-    return NextResponse.json({ error: message }, { status: 400 });
+    const supportCode = generateNumericSupportCode(asset.id);
+    logSupportError("gallery.crop", supportCode, error, {
+      userId: session.userId,
+      assetId: asset.id,
+      fileName: image.name,
+      fileSize: image.size,
+    });
+
+    return NextResponse.json(
+      {
+        error: "ذخیره نسخه ویرایش‌شده کامل نشد. دوباره تلاش کنید و اگر تکرار شد، کد پیگیری را برای پشتیبانی بفرستید.",
+        supportCode,
+      },
+      { status: 400 },
+    );
   }
 }

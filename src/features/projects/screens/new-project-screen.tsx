@@ -16,7 +16,7 @@ type NewProjectScreenProps = {
 
 export function NewProjectScreen({ action, galleryAssets, styles, selectedAssetId, defaultOutputPreset }: NewProjectScreenProps) {
   return (
-    <PageShell maxWidth="lg" className="space-y-5 overflow-hidden pb-2">
+    <PageShell maxWidth="lg" minHeight={false} className="flex-1 space-y-5 overflow-hidden pb-0">
       <NewProjectForm action={action} galleryAssets={galleryAssets} styles={styles} selectedAssetId={selectedAssetId} defaultOutputPreset={defaultOutputPreset} />
     </PageShell>
   );

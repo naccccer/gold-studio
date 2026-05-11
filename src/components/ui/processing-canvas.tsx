@@ -3,12 +3,16 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import type { StaticImageData } from "next/image";
-import { I3DCubeScan, MagicStar, TickCircle } from "vuesax-icons-react";
+import { I3DCubeScan, MagicStar } from "vuesax-icons-react";
 
 type ProcessingCanvasProps = {
   imageSrc: string | StaticImageData;
   imageAlt?: string;
   steps: string[];
+  moments?: Array<{
+    step: string;
+    phase: number;
+  }>;
   title?: string;
   caption?: string;
   className?: string;
@@ -19,14 +23,22 @@ export function ProcessingCanvas({
   imageSrc,
   imageAlt = "",
   steps,
+  moments,
   title = "در حال آماده‌سازی",
   caption = "استودیو اوالا روی تمیزسازی، نور، و خروجی نهایی کار می‌کند.",
   className = "",
   frameClassName = "",
 }: ProcessingCanvasProps) {
+  const timeline = moments && moments.length > 0
+    ? moments
+    : steps.map((step, index) => ({
+        step,
+        phase: index,
+      }));
   const [activeIndex, setActiveIndex] = useState(0);
   const [reduceMotion, setReduceMotion] = useState(false);
   const visibleIndex = reduceMotion ? 0 : activeIndex;
+  const currentMoment = timeline[visibleIndex] ?? timeline[0];
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -38,22 +50,22 @@ export function ProcessingCanvas({
   }, []);
 
   useEffect(() => {
-    if (reduceMotion || steps.length <= 1) {
+    if (reduceMotion || timeline.length <= 1) {
       return;
     }
 
     const interval = window.setInterval(() => {
-      setActiveIndex((current) => (current + 1) % steps.length);
-    }, 2200);
+      setActiveIndex((current) => (current + 1) % timeline.length);
+    }, 2100);
 
     return () => window.clearInterval(interval);
-  }, [reduceMotion, steps.length]);
+  }, [reduceMotion, timeline.length]);
 
   return (
     <div className={["space-y-3", className].filter(Boolean).join(" ")}>
       <div
         className={[
-          "relative h-[430px] w-full overflow-hidden rounded-[1.6rem] border border-white/12 bg-studio-surface shadow-[var(--shadow-studio-frame)]",
+          "relative h-[392px] w-full overflow-hidden rounded-[1.6rem] border border-white/12 bg-studio-surface shadow-[var(--shadow-studio-frame)]",
           frameClassName,
         ].filter(Boolean).join(" ")}
       >
@@ -76,11 +88,16 @@ export function ProcessingCanvas({
             </span>
             <div className="space-y-1">
               <p className="text-base font-semibold text-surface">{title}</p>
-              <p className="max-w-[15rem] text-xs leading-6 text-surface/72">{caption}</p>
+              <p
+                className="max-w-[15rem] text-right text-xs leading-6 text-surface/72"
+                style={{ textAlign: "justify", textAlignLast: "right" }}
+              >
+                {caption}
+              </p>
             </div>
           </div>
           <span className="rounded-full border border-white/14 bg-black/24 px-3 py-1 text-[10px] font-medium text-surface/72">
-            {`${(visibleIndex + 1).toLocaleString("fa-IR")} / ${steps.length.toLocaleString("fa-IR")}`}
+            {`${((currentMoment?.phase ?? 0) + 1).toLocaleString("fa-IR")} / ${steps.length.toLocaleString("fa-IR")}`}
           </span>
         </div>
 
@@ -94,45 +111,45 @@ export function ProcessingCanvas({
         </div>
       </div>
 
-      <div className="rounded-[1.15rem] border border-white/12 bg-white/[0.06] p-3">
-        <div className="space-y-2.5">
-          {steps.map((step, index) => {
-            const completed = index < visibleIndex;
-            const active = index === visibleIndex;
-
-            return (
-              <div
-                key={step}
-                className={`flex items-center justify-between gap-3 rounded-[0.95rem] border px-3 py-2.5 transition ${
-                  active
-                    ? "border-accent-bright/44 bg-accent-wash/14"
-                    : completed
-                      ? "border-white/12 bg-white/[0.08]"
-                      : "border-white/8 bg-black/12"
-                }`}
-              >
-                <div className="flex min-w-0 items-center gap-2.5">
-                  <span
-                    className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
-                      active
-                        ? "bg-accent-bright text-studio-control"
-                        : completed
-                          ? "bg-white/12 text-surface"
-                          : "bg-white/8 text-surface/58"
-                    }`}
-                  >
-                    {completed ? <TickCircle aria-hidden={true} className="h-4 w-4" /> : (index + 1).toLocaleString("fa-IR")}
-                  </span>
-                  <p className={`truncate text-sm font-medium ${active ? "text-surface" : completed ? "text-surface/84" : "text-surface/62"}`}>
-                    {step}
-                  </p>
-                </div>
-                <span className={`shrink-0 text-[10px] font-medium ${active ? "text-accent-soft" : completed ? "text-surface/58" : "text-surface/44"}`}>
-                  {active ? "در حال انجام" : completed ? "انجام شد" : "در انتظار"}
+      <div className="rounded-[1.15rem] border border-white/12 bg-white/[0.06] p-2.5">
+        <div
+          key={`${currentMoment?.phase ?? 0}-${visibleIndex}`}
+          className="rounded-[0.95rem] border border-accent-bright/40 bg-accent-wash/12 px-3 py-3 animate-[ovalaProcessingCardIn_560ms_ease-out]"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-bright text-[11px] font-semibold text-studio-control">
+                  {((currentMoment?.phase ?? 0) + 1).toLocaleString("fa-IR")}
                 </span>
+                <p className="truncate text-[14px] font-semibold text-surface">
+                  {currentMoment?.step}
+                </p>
               </div>
-            );
-          })}
+            </div>
+            <span className="shrink-0 text-[10px] font-medium text-accent-soft">
+              در حال انجام
+            </span>
+          </div>
+          <div className="mt-3 flex items-center justify-center gap-2">
+            {steps.map((step, index) => {
+              const active = index === (currentMoment?.phase ?? 0);
+              const completed = index < (currentMoment?.phase ?? 0);
+
+              return (
+                <span
+                  key={step}
+                  className={`h-1.5 rounded-full transition ${
+                    active
+                      ? "w-8 animate-[ovalaProcessingProgress_1.8s_ease-in-out_infinite] bg-accent-bright"
+                      : completed
+                        ? "w-5 bg-accent/60"
+                        : "w-5 bg-white/16"
+                  }`}
+                />
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

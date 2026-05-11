@@ -90,6 +90,33 @@ const stepMeta: Record<WizardStep, { stepNumber: string; title: string; descript
   },
 };
 
+function SourceActionButton({
+  children,
+  htmlFor,
+  href,
+}: {
+  children: React.ReactNode;
+  htmlFor?: string;
+  href?: string;
+}) {
+  const className =
+    "h-12 w-full rounded-[1rem] border border-white/14 bg-white/[0.06] text-xs font-semibold !text-surface shadow-none hover:border-white/24 hover:bg-white/[0.1]";
+
+  if (href) {
+    return (
+      <ButtonLink href={href} variant="studio-secondary" className={className}>
+        {children}
+      </ButtonLink>
+    );
+  }
+
+  return (
+    <label htmlFor={htmlFor} className={buttonClasses({ variant: "studio-secondary", className })}>
+      {children}
+    </label>
+  );
+}
+
 function parseChoiceOptions(optionsJson?: string | null): StyleControlOption[] {
   if (!optionsJson) {
     return [];
@@ -203,7 +230,7 @@ export function NewProjectForm({
   }
 
   return (
-    <form action={formAction} className="flex h-[calc(100svh-12rem)] flex-col gap-4 overflow-hidden">
+    <form action={formAction} className="flex h-full min-h-0 flex-col gap-4 overflow-hidden">
       <input type="hidden" name="generationMode" value="image" />
       <input type="hidden" name="outputPreset" value={outputPreset} />
       <input type="hidden" name="modelGender" value={modelGender} />
@@ -233,17 +260,17 @@ export function NewProjectForm({
       />
 
       <header className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="space-y-1">
-            <p className="text-[11px] font-medium text-accent-deep">{currentMeta.stepNumber}</p>
-            <h2 className="text-lg font-semibold text-surface">{currentMeta.title}</h2>
+        <div className="rounded-[1.15rem] border border-white/10 bg-white/[0.04] px-3.5 py-3 shadow-[0_16px_36px_-34px_rgba(0,0,0,0.62)]">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="text-[1.12rem] font-semibold leading-7 !text-surface">{currentMeta.title}</h2>
+            </div>
+            <ImageOverlayPill tone="accent" className="w-fit">
+              {currentMeta.stepNumber}
+            </ImageOverlayPill>
           </div>
-          <ImageOverlayPill tone="dark" className="shrink-0">
-            {selectedPreset.label}
-          </ImageOverlayPill>
         </div>
-        <p className="text-xs leading-6 text-surface/72">{currentMeta.description}</p>
-        <div className="flex items-center gap-2" aria-label="مراحل پروژه">
+        <div className="flex items-center justify-center gap-2" aria-label="مراحل پروژه">
           {(["source", "size", "style"] as WizardStep[]).map((item, index) => {
             const isActive = step === item;
             const isDone = ["source", "size", "style"].indexOf(step) > index;
@@ -265,7 +292,7 @@ export function NewProjectForm({
           <JewelryImageFrame
             aspect="portrait"
             treatment="dark"
-            className="h-[min(312px,38svh)] min-h-[248px] w-full rounded-[1.45rem]"
+            className="h-[min(284px,33svh)] min-h-[216px] w-full rounded-[1.45rem]"
           >
             <Image
               src={currentImageSrc || uploadPreview.src}
@@ -275,16 +302,19 @@ export function NewProjectForm({
               className={`object-cover object-[46%_55%] ${currentImageSrc ? "" : "opacity-72"}`}
               sizes="(max-width: 768px) 100vw, 760px"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/76 via-black/18 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/74 via-black/10 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 space-y-2 p-4">
-              <ImageOverlayPill tone="dark" className="w-fit">
+              <ImageOverlayPill tone="accent" className="w-fit">
                 {selectedAsset ? "از گالری" : previewUrl ? "آپلود جدید" : "شروع پروژه"}
               </ImageOverlayPill>
               <div className="space-y-1">
-                <p className="text-sm font-semibold text-surface">
+                <p className="text-base font-semibold leading-7 text-surface">
                   {selectedAsset?.title || selectedAsset?.originalName || (previewUrl ? "عکس آماده بررسی" : "یک عکس تمیز از محصول انتخاب کنید")}
                 </p>
-                <p className="text-xs leading-6 text-surface/72">
+                <p
+                  className="text-[11px] leading-5 text-surface/72"
+                  style={{ textAlign: "justify", textAlignLast: "right" }}
+                >
                   {hasSource
                     ? "این عکس منبع اصلی ساخت خواهد بود."
                     : "محصول را تا حد ممکن نزدیک و واضح بگیرید تا نتیجه نهایی دقیق‌تر شود."}
@@ -293,23 +323,23 @@ export function NewProjectForm({
             </div>
           </JewelryImageFrame>
 
-          <div className="grid grid-cols-3 gap-2">
-            <label htmlFor="project-camera-input" className={buttonClasses({ variant: "studio-secondary", className: "h-12 px-2 text-xs" })}>
+          <div className="grid grid-cols-3 gap-3">
+            <SourceActionButton htmlFor="project-camera-input">
               <Camera aria-hidden={true} className="h-4 w-4" />
-              دوربین
-            </label>
-            <label htmlFor="project-file-input" className={buttonClasses({ className: "h-12 px-2 text-xs" })}>
+              <span>دوربین</span>
+            </SourceActionButton>
+            <SourceActionButton htmlFor="project-file-input">
               <DocumentUpload aria-hidden={true} className="h-4 w-4" />
-              آپلود
-            </label>
-            <ButtonLink href="/gallery" variant="studio-secondary" className="h-12 px-2 text-xs">
+              <span>آپلود</span>
+            </SourceActionButton>
+            <SourceActionButton href="/gallery">
               <Gallery aria-hidden={true} className="h-4 w-4" />
-              گالری
-            </ButtonLink>
+              <span>گالری</span>
+            </SourceActionButton>
           </div>
 
           {visibleGalleryAssets.length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs font-medium text-surface/72">انتخاب سریع از گالری</p>
                 {galleryAssets.length > visibleGalleryAssets.length ? (
@@ -318,7 +348,7 @@ export function NewProjectForm({
                   </ButtonLink>
                 ) : null}
               </div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 gap-3">
                 {visibleGalleryAssets.map((asset) => {
                   const isSelected = selectedAsset?.id === asset.id && !previewUrl;
                   const title = asset.title || asset.originalName || "تصویر محصول";
@@ -354,7 +384,7 @@ export function NewProjectForm({
             </div>
           ) : null}
 
-          <ActionDock columns={hasSource ? 2 : 1} className="mt-auto">
+          <ActionDock columns={hasSource ? 2 : 1} className="mt-auto pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
             {hasSource ? (
               <Button type="button" variant="studio-secondary" className="h-12 w-full" onClick={clearSource}>
                 تغییر عکس
@@ -373,7 +403,7 @@ export function NewProjectForm({
           <JewelryImageFrame
             aspect="portrait"
             treatment="dark"
-            className="flex h-[min(312px,38svh)] min-h-[248px] items-center justify-center rounded-[1.45rem]"
+            className="flex h-[min(288px,34svh)] min-h-[224px] items-center justify-center rounded-[1.45rem]"
           >
             {selectedAsset ? (
               <SafeJewelryImage
@@ -397,17 +427,22 @@ export function NewProjectForm({
               />
             )}
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(255,253,249,0.10)_0%,rgba(17,16,14,0.20)_54%,rgba(17,16,14,0.58)_100%)]" />
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center justify-center p-5">
               <div className={`rounded-[1.25rem] border border-white/55 bg-white/10 shadow-[0_18px_36px_-28px_rgba(0,0,0,0.72)] backdrop-blur-sm ${selectedPreset.previewFrameClassName}`} />
             </div>
             <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
               <div className="space-y-1">
-                <ImageOverlayPill tone="dark" className="w-fit">
+                <ImageOverlayPill tone="accent" className="w-fit">
                   قاب {selectedPreset.label}
                 </ImageOverlayPill>
-                <p className="text-xs leading-6 text-surface/72">خروجی نهایی با همین نسبت ساخته می‌شود.</p>
+                <p
+                  className="text-[11px] leading-5 text-surface/72"
+                  style={{ textAlign: "justify", textAlignLast: "right" }}
+                >
+                  خروجی نهایی با همین نسبت ساخته می‌شود.
+                </p>
               </div>
-              <div className="rounded-full border border-white/18 bg-black/28 px-3 py-1 text-xs font-medium text-surface/82" dir="ltr">
+              <div className="rounded-full border border-white/18 bg-black/18 px-3 py-1 text-xs font-medium text-surface/82" dir="ltr">
                 {selectedPreset.ratio}
               </div>
             </div>
@@ -416,19 +451,9 @@ export function NewProjectForm({
           <fieldset className="space-y-3">
             <legend className="sr-only">انتخاب سایز خروجی</legend>
             <SegmentedControl items={outputPresetItems} value={outputPreset} onChange={setOutputPreset} label="انتخاب سایز خروجی" />
-            <div className="grid grid-cols-3 gap-2">
-              {outputPresets.map((preset) => {
-                const active = selectedPreset.id === preset.id;
-                return (
-                  <div key={preset.id} className={`rounded-[1rem] border px-3 py-3 ${active ? "border-accent-bright bg-accent-wash/52" : "border-white/12 bg-white/[0.06]"}`}>
-                    <span className={`mx-auto block rounded-[0.7rem] border ${active ? "border-accent-bright/70 bg-white/18" : "border-white/24 bg-white/[0.04]"} ${preset.className}`} />
-                  </div>
-                );
-              })}
-            </div>
           </fieldset>
 
-          <ActionDock className="mt-auto" columns={2}>
+          <ActionDock className="mt-auto pb-[calc(env(safe-area-inset-bottom)+0.75rem)]" columns={2}>
             <Button type="button" variant="studio-secondary" className="h-12 w-full" onClick={() => setStep("source")}>
               بازگشت
             </Button>
@@ -445,7 +470,7 @@ export function NewProjectForm({
           <JewelryImageFrame
             aspect="landscape"
             treatment="dark"
-            className="h-[min(240px,28svh)] min-h-[196px] rounded-[1.45rem]"
+            className="h-[min(176px,20svh)] min-h-[144px] rounded-[1.45rem]"
           >
             <Image
               src={selectedStyleData?.previewImageUrl || uploadPreview.src}
@@ -455,59 +480,67 @@ export function NewProjectForm({
               className="object-cover"
               sizes="(max-width: 768px) 100vw, 760px"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/72 via-black/20 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/72 via-black/14 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
               <div className="space-y-1">
-                <ImageOverlayPill tone="dark" className="w-fit">
-                  سبک انتخابی
+                <ImageOverlayPill tone="accent" className="w-fit">
+                  {selectedStyleData?.label || "سبک آماده"}
                 </ImageOverlayPill>
-                <p className="text-sm font-semibold text-surface">{selectedStyleData?.label || "سبک آماده"}</p>
                 {selectedStyleData?.description ? (
-                  <p className="max-w-[16rem] text-xs leading-6 text-surface/72">{selectedStyleData.description}</p>
+                  <p
+                    className="max-w-[16rem] text-[11px] leading-5 text-surface/72"
+                    style={{ textAlign: "justify", textAlignLast: "right" }}
+                  >
+                    {selectedStyleData.description}
+                  </p>
                 ) : null}
               </div>
-              <div className="rounded-full border border-white/18 bg-black/28 px-3 py-1 text-xs font-medium text-surface/82">
-                {selectedPreset.label}
+              <div className="space-y-1 text-left">
+                <div className="rounded-full border border-white/18 bg-black/18 px-3 py-1 text-xs font-medium text-surface/82">
+                  {selectedPreset.label}
+                </div>
               </div>
             </div>
           </JewelryImageFrame>
 
           <div className="grid grid-cols-3 gap-2">
-            {styles.map((preset) => {
-              const checked = selectedStyle === preset.id;
-              return (
-                <label
-                  key={preset.id}
-                  className={`relative overflow-hidden rounded-[1rem] border transition ${
-                    checked ? "border-accent-bright bg-surface ring-1 ring-accent-bright/45" : "border-white/12 bg-white/[0.06]"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="styleId"
-                    value={preset.id}
-                    checked={checked}
-                    onChange={() => selectStyle(preset)}
-                    className="sr-only"
-                  />
-                  <JewelryImageFrame aspect="square" treatment="quiet" className="rounded-none border-0 bg-transparent shadow-none">
-                    <Image
-                      src={preset.previewImageUrl}
-                      alt={preset.label}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 30vw, 180px"
+              {styles.map((preset) => {
+                const checked = selectedStyle === preset.id;
+                return (
+                  <label
+                    key={preset.id}
+                    className={`relative overflow-hidden rounded-[1rem] border transition ${
+                      checked ? "border-accent-bright bg-surface/12 ring-1 ring-accent-bright/45" : "border-white/12 bg-white/[0.04]"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="styleId"
+                      value={preset.id}
+                      checked={checked}
+                      onChange={() => selectStyle(preset)}
+                      className="sr-only"
                     />
-                  </JewelryImageFrame>
-                  <p className="truncate px-2 py-2 text-[10px] font-medium leading-5 text-surface">{preset.label}</p>
-                  {checked ? (
-                    <span className="absolute left-1.5 top-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-surface">
-                      <TickCircle aria-hidden={true} className="h-3.5 w-3.5" />
-                    </span>
-                  ) : null}
-                </label>
-              );
-            })}
+                    <JewelryImageFrame aspect="square" treatment="quiet" className="rounded-none border-0 bg-transparent shadow-none">
+                      <Image
+                        src={preset.previewImageUrl}
+                        alt={preset.label}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 24vw, 140px"
+                      />
+                    </JewelryImageFrame>
+                    <div className="px-2 py-1.5">
+                      <p className="truncate text-[10px] font-semibold leading-4 text-surface">{preset.label}</p>
+                    </div>
+                    {checked ? (
+                      <span className="absolute left-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-surface">
+                        <TickCircle aria-hidden={true} className="h-3 w-3" />
+                      </span>
+                    ) : null}
+                  </label>
+                );
+              })}
           </div>
 
           {genderOptions.length > 0 || modestyControl ? (
@@ -521,7 +554,9 @@ export function NewProjectForm({
                       onClick={() => setModelGender(item.value)}
                       className={buttonClasses({
                         variant: modelGender === item.value ? "secondary" : "ghost",
-                        className: "min-h-11 border border-white/14 text-sm !text-surface",
+                        className: modelGender === item.value
+                          ? "min-h-11 border border-accent-bright bg-accent-wash/90 !text-accent-deep shadow-[0_14px_26px_-24px_rgba(17,16,14,0.62)]"
+                          : "min-h-11 border border-white/14 bg-white/[0.04] text-sm !text-surface/84 hover:border-white/22 hover:bg-white/[0.08]",
                       })}
                     >
                       {item.label}
@@ -531,7 +566,7 @@ export function NewProjectForm({
               ) : null}
               {modestyControl ? (
                 <label className="block space-y-2">
-                  <span className="text-xs text-surface/72">{modestyControl.label}</span>
+                  <span className="block text-xs text-surface/72" style={{ textAlign: "justify", textAlignLast: "right" }}>{modestyControl.label}</span>
                   <input
                     type="range"
                     min={modestyControl.minValue ?? 35}
@@ -546,12 +581,18 @@ export function NewProjectForm({
           ) : null}
 
           {state.error ? (
-            <p className="rounded-[var(--radius-md)] border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
-              {state.error}
-            </p>
+            <div className="rounded-[1rem] border border-danger/24 bg-danger-soft/92 px-3 py-3 text-danger shadow-[0_18px_32px_-26px_rgba(152,59,52,0.42)]">
+              <p className="text-sm font-semibold">این مرحله کامل نشد</p>
+              <p
+                className="mt-1 text-[12px] leading-6 text-danger/88"
+                style={{ textAlign: "justify", textAlignLast: "right" }}
+              >
+                {state.error}
+              </p>
+            </div>
           ) : null}
 
-          <ActionDock className="mt-auto" columns={2}>
+          <ActionDock className="mt-auto pb-[calc(env(safe-area-inset-bottom)+0.75rem)]" columns={2}>
             <Button type="button" variant="studio-secondary" className="h-12 w-full" onClick={() => setStep("size")}>
               بازگشت
             </Button>

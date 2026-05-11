@@ -19,6 +19,7 @@ export type PendingGalleryUpload = {
   assetId?: string;
   fileUrl?: string;
   error?: string;
+  supportCode?: string;
 };
 
 type UploadRouteSuccess = {
@@ -30,6 +31,11 @@ type UploadRouteSuccess = {
 type CropRouteSuccess = {
   assetId: string;
   fileUrl: string;
+};
+
+type UploadRouteError = {
+  error?: string;
+  supportCode?: string;
 };
 
 const uploads = new Map<string, PendingGalleryUpload>();
@@ -60,11 +66,18 @@ function updateUpload(uploadId: string, patch: Partial<PendingGalleryUpload>) {
 }
 
 function parseErrorPayload(payload: unknown, fallback: string) {
-  if (payload && typeof payload === "object" && "error" in payload && typeof payload.error === "string") {
-    return payload.error;
+  if (payload && typeof payload === "object") {
+    const parsed = payload as UploadRouteError;
+    return {
+      message: typeof parsed.error === "string" ? parsed.error : fallback,
+      supportCode: typeof parsed.supportCode === "string" ? parsed.supportCode : undefined,
+    };
   }
 
-  return fallback;
+  return {
+    message: fallback,
+    supportCode: undefined,
+  };
 }
 
 export function createPendingGalleryUpload(file: File, source: PendingUploadSource) {
@@ -118,7 +131,7 @@ export function startPendingGalleryUpload(uploadId: string) {
 
   const current = uploads.get(uploadId);
   if (!current) {
-    return Promise.reject(new Error("آپلود انتخاب شده پیدا نشد."));
+    return Promise.reject(new Error("آپلود انتخاب‌شده پیدا نشد."));
   }
 
   const task = (async () => {
@@ -130,15 +143,16 @@ export function startPendingGalleryUpload(uploadId: string) {
       body: formData,
     });
 
-    const payload = (await response.json().catch(() => null)) as UploadRouteSuccess | { error?: string } | null;
+    const payload = (await response.json().catch(() => null)) as UploadRouteSuccess | UploadRouteError | null;
 
     if (!response.ok || !payload || !("assetId" in payload) || !("fileUrl" in payload)) {
       const message = parseErrorPayload(payload, "آپلود تصویر کامل نشد.");
       updateUpload(uploadId, {
         status: "failed",
-        error: message,
+        error: message.message,
+        supportCode: message.supportCode,
       });
-      throw new Error(message);
+      throw new Error(message.message);
     }
 
     const uploaded = {
@@ -147,6 +161,7 @@ export function startPendingGalleryUpload(uploadId: string) {
       assetId: payload.assetId,
       fileUrl: payload.fileUrl,
       error: undefined,
+      supportCode: undefined,
     };
 
     setUpload(uploadId, uploaded);
@@ -160,7 +175,7 @@ export function startPendingGalleryUpload(uploadId: string) {
 export async function waitForPendingGalleryUpload(uploadId: string) {
   const current = uploads.get(uploadId);
   if (!current) {
-    throw new Error("آپلود انتخاب شده پیدا نشد.");
+    throw new Error("آپلود انتخاب‌شده پیدا نشد.");
   }
 
   if ((current.status === "uploaded" || current.status === "cropped") && current.assetId) {
@@ -178,12 +193,13 @@ export async function waitForPendingGalleryUpload(uploadId: string) {
 export async function applyCropToPendingUpload(uploadId: string, croppedFile: File) {
   const readyUpload = await waitForPendingGalleryUpload(uploadId);
   if (!readyUpload.assetId) {
-    throw new Error("فایل آپلود شده برای کراپ آماده نیست.");
+    throw new Error("فایل آپلودشده برای کراپ آماده نیست.");
   }
 
   updateUpload(uploadId, {
     status: "saving_crop",
     error: undefined,
+    supportCode: undefined,
   });
 
   const formData = new FormData();
@@ -194,15 +210,16 @@ export async function applyCropToPendingUpload(uploadId: string, croppedFile: Fi
     body: formData,
   });
 
-  const payload = (await response.json().catch(() => null)) as CropRouteSuccess | { error?: string } | null;
+  const payload = (await response.json().catch(() => null)) as CropRouteSuccess | UploadRouteError | null;
 
   if (!response.ok || !payload || !("assetId" in payload) || !("fileUrl" in payload)) {
     const message = parseErrorPayload(payload, "ذخیره کراپ کامل نشد.");
     updateUpload(uploadId, {
       status: "failed",
-      error: message,
+      error: message.message,
+      supportCode: message.supportCode,
     });
-    throw new Error(message);
+    throw new Error(message.message);
   }
 
   const nextUpload = {
@@ -211,6 +228,7 @@ export async function applyCropToPendingUpload(uploadId: string, croppedFile: Fi
     assetId: payload.assetId,
     fileUrl: payload.fileUrl,
     error: undefined,
+    supportCode: undefined,
   };
 
   setUpload(uploadId, nextUpload);

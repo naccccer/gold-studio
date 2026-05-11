@@ -16,6 +16,31 @@ type GalleryCropScreenProps = {
   onClose: (options?: { refresh?: boolean }) => void;
 };
 
+function ErrorNotice({
+  title,
+  message,
+  supportCode,
+}: {
+  title: string;
+  message: string;
+  supportCode?: string;
+}) {
+  return (
+    <div className="rounded-[1.1rem] border border-danger/18 bg-[#fff6f1] px-3.5 py-3 text-right shadow-[0_16px_30px_-26px_rgba(125,40,24,0.28)]">
+      <p className="text-sm font-semibold text-[#8f3c2f]">{title}</p>
+      <p className="mt-1 text-xs leading-6 text-[#9a5c4e]" style={{ textAlign: "justify", textAlignLast: "right" }}>
+        {message}
+      </p>
+      {supportCode ? (
+        <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-white/88 px-2.5 py-1 text-[11px] text-[#8f3c2f]">
+          <span>کد پیگیری</span>
+          <span dir="ltr" className="font-semibold">{supportCode}</span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
@@ -383,10 +408,15 @@ export function GalleryCropScreen({ uploadId, onClose }: GalleryCropScreenProps)
                 </p>
               </section>
 
-              {(localError || upload.error) ? (
-                <p className="rounded-[1rem] border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
-                  {localError || upload.error}
-                </p>
+              {localError && localError !== upload.error ? (
+                <ErrorNotice title="این مرحله کامل نشد" message={localError} />
+              ) : null}
+              {upload.error ? (
+                <ErrorNotice
+                  title="این مرحله کامل نشد"
+                  message={upload.error}
+                  supportCode={upload.supportCode}
+                />
               ) : null}
             </div>
           )}
