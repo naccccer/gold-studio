@@ -1,4 +1,4 @@
-import { CircleHelp } from "lucide-react";
+import { MessageQuestion } from "vuesax-icons-react";
 import { AccountSubpage, accountCardClass } from "@/features/account/components/account-subpage";
 import { db } from "@/lib/db";
 
@@ -11,20 +11,21 @@ export default async function AccountFaqPage() {
   });
 
   return (
-    <AccountSubpage title="سوالات پرتکرار" caption="پاسخ‌های کوتاه درباره پرداخت، اعتبار و ساخت خروجی.">
+    <AccountSubpage title="سوالات پرتکرار">
       <section className="space-y-2.5">
+        <div className="flex items-center gap-3 px-1">
+          <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-wash text-accent-deep">
+            <MessageQuestion aria-hidden={true} className="h-4.5 w-4.5" />
+          </span>
+          <h2 className="text-sm font-semibold text-foreground">راهنما</h2>
+        </div>
         {items.length === 0 ? (
-          <p className={`${accountCardClass} text-xs leading-6 text-muted`}>هنوز سوالی ثبت نشده است.</p>
+          <p className={`${accountCardClass} text-xs leading-6 text-muted`}>موردی نیست.</p>
         ) : (
           items.map((item) => (
             <article key={item.id} className={accountCardClass}>
-              <div className="flex items-start gap-2">
-                <CircleHelp aria-hidden={true} className="mt-0.5 h-4 w-4 shrink-0 text-[#8b6835]" />
-                <div>
-                  <h2 className="text-sm font-semibold leading-6 text-foreground">{item.question}</h2>
-                  <p className="mt-1 text-xs leading-6 text-muted">{item.answer}</p>
-                </div>
-              </div>
+              <h2 className="text-sm font-semibold leading-6 text-foreground">{item.question}</h2>
+              <p className="mt-1 text-xs leading-6 text-muted">{item.answer}</p>
             </article>
           ))
         )}

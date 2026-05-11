@@ -5,6 +5,7 @@ import { fieldControlClassName } from "@/components/ui/field";
 import { PageShell } from "@/components/ui/page-shell";
 import { StatusPill } from "@/components/ui/status-pill";
 import { createPurchaseRequestAction, submitPurchaseReceiptAction } from "@/features/account/actions";
+import { AccountInfoRow, AccountSectionHeader, accountCardClass } from "@/features/account/components/account-subpage";
 
 type BillingPackage = {
   id: string;
@@ -80,28 +81,6 @@ function subscriptionSkin(index = 0) {
   return subscriptionCardSkins[index % subscriptionCardSkins.length];
 }
 
-function SectionHeader({
-  icon: Icon,
-  title,
-  caption,
-}: {
-  icon: Icon;
-  title: string;
-  caption: string;
-}) {
-  return (
-    <div className="flex items-center gap-2 px-1">
-      <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-accent-wash text-accent-deep">
-        <Icon aria-hidden={true} className="h-4 w-4" />
-      </span>
-      <div>
-        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-        <p className="mt-0.5 text-[11px] leading-5 text-muted">{caption}</p>
-      </div>
-    </div>
-  );
-}
-
 function PackageCard({
   billingPackage,
   pending,
@@ -120,8 +99,8 @@ function PackageCard({
     <form
       action={createPurchaseRequestAction}
       className={[
-        "relative overflow-hidden rounded-[1.05rem] border p-3 text-right",
-        isSubscription ? skin?.card : "border-white/72 bg-surface/64",
+        "relative overflow-hidden rounded-[1.05rem] border p-3.5 text-right",
+        isSubscription ? skin?.card : "border-white/72 bg-surface/64 shadow-[0_18px_42px_-42px_rgba(17,16,14,0.7)]",
       ].join(" ")}
     >
       <input type="hidden" name="packageId" value={billingPackage.id} />
@@ -133,12 +112,8 @@ function PackageCard({
       ) : null}
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className={["text-sm font-semibold", isSubscription ? "text-white" : "text-foreground"].join(" ")}>
-            {billingPackage.title}
-          </p>
-          <p className={["mt-1 text-[11px] leading-5", isSubscription ? "text-white/72" : "text-muted"].join(" ")}>
-            {billingPackage.description}
-          </p>
+          <p className={["text-sm font-semibold", isSubscription ? "text-white" : "text-foreground"].join(" ")}>{billingPackage.title}</p>
+          <p className={["mt-1 text-[11px] leading-5", isSubscription ? "text-white/72" : "text-muted"].join(" ")}>{billingPackage.description}</p>
         </div>
         <span
           className={[
@@ -150,7 +125,7 @@ function PackageCard({
         </span>
       </div>
       <div className={["relative mt-3 flex flex-wrap items-center justify-between gap-2 text-xs", isSubscription ? "text-white/68" : "text-muted"].join(" ")}>
-        <span>{kind === "subscription" ? `${(billingPackage.periodDays ?? 30).toLocaleString("fa-IR")} روزه` : "افزایش موجودی"}</span>
+        <span>{kind === "subscription" ? `${(billingPackage.periodDays ?? 30).toLocaleString("fa-IR")} روزه` : "افزایش موجودی حساب"}</span>
         <span className={["font-semibold", isSubscription ? skin?.accent : "text-foreground"].join(" ")}>
           {formatPrice(billingPackage.priceAmount, billingPackage.currency)}
         </span>
@@ -192,18 +167,25 @@ export function BillingScreen({ packages, pendingRequests, paymentSettings, acti
           <ArrowRight aria-hidden={true} className="h-4 w-4" />
           حساب
         </ButtonLink>
-        <div className="mt-3 flex items-end justify-between gap-3">
+        <div className="mt-4 flex items-end justify-between gap-3">
           <div>
             <p className="text-[11px] font-semibold text-accent-deep">پرداخت و اعتبار</p>
-            <h1 className="mt-1 text-xl font-semibold leading-8 text-foreground">خرید اعتبار یا اشتراک</h1>
+            <h1 className="mt-1 text-xl font-semibold leading-8 text-foreground">مدیریت خرید و رسیدها</h1>
           </div>
           <span className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--radius-lg)] bg-foreground text-surface">
             <Wallet aria-hidden={true} className="h-5 w-5" />
           </span>
         </div>
-        <p className="mt-2 text-xs leading-6 text-muted">
-          درخواست خرید را ثبت کنید، مبلغ را کارت‌به‌کارت کنید و رسید را همین‌جا بفرستید.
-        </p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="rounded-[0.95rem] bg-white/62 px-3 py-2.5">
+            <p className="text-[10px] text-muted">درخواست‌های باز</p>
+            <p className="mt-1 text-sm font-semibold text-foreground">{pendingRequests.length.toLocaleString("fa-IR")}</p>
+          </div>
+          <div className="rounded-[0.95rem] bg-white/62 px-3 py-2.5">
+            <p className="text-[10px] text-muted">وضعیت پرداخت</p>
+            <p className="mt-1 text-sm font-semibold text-foreground">{paymentSettings?.isActive ? "کارت فعال" : "نیاز به هماهنگی"}</p>
+          </div>
+        </div>
       </header>
 
       <nav className="grid grid-cols-4 gap-1 rounded-[1.1rem] border border-white/72 bg-surface/64 p-1" aria-label="بخش‌های پرداخت">
@@ -232,7 +214,7 @@ export function BillingScreen({ packages, pendingRequests, paymentSettings, acti
 
       {activeTab === "packages" ? (
         <section className="space-y-2.5">
-          <SectionHeader icon={Layer} title="پکیج‌های ماهانه" caption="برای فروشگاه‌هایی که هر ماه خروجی منظم می‌خواهند." />
+          <AccountSectionHeader icon={Layer} title="پکیج‌های ماهانه" />
           {subscriptionPackages.length > 0 ? (
             subscriptionPackages.map((billingPackage, index) => (
               <PackageCard
@@ -244,14 +226,14 @@ export function BillingScreen({ packages, pendingRequests, paymentSettings, acti
               />
             ))
           ) : (
-            <p className="rounded-[1.05rem] border border-white/72 bg-surface/64 p-3 text-xs text-muted">پکیج ماهانه‌ای برای نمایش وجود ندارد.</p>
+            <p className={`${accountCardClass} text-xs leading-6 text-muted`}>موردی نیست.</p>
           )}
         </section>
       ) : null}
 
       {activeTab === "credits" ? (
         <section className="space-y-2.5">
-          <SectionHeader icon={Wallet} title="اعتبارهای جداگانه" caption="برای افزایش موجودی بدون تغییر اشتراک ماهانه." />
+          <AccountSectionHeader icon={Wallet} title="اعتبارهای جداگانه" />
           {creditPacks.length > 0 ? (
             creditPacks.map((billingPackage) => (
               <PackageCard
@@ -262,80 +244,81 @@ export function BillingScreen({ packages, pendingRequests, paymentSettings, acti
               />
             ))
           ) : (
-            <p className="rounded-[1.05rem] border border-white/72 bg-surface/64 p-3 text-xs text-muted">اعتبار جداگانه‌ای برای نمایش وجود ندارد.</p>
+            <p className={`${accountCardClass} text-xs leading-6 text-muted`}>موردی نیست.</p>
           )}
         </section>
       ) : null}
 
       {activeTab === "payment" ? (
-        <section className="rounded-[1.05rem] border border-white/72 bg-surface/64 p-3 text-right">
-          <div className="flex items-center gap-2">
-            <Bank aria-hidden={true} className="h-4 w-4 text-accent-deep" />
-            <h2 className="text-sm font-semibold text-foreground">اطلاعات کارت‌به‌کارت</h2>
-          </div>
+        <section className={`${accountCardClass} space-y-3`}>
+          <AccountSectionHeader icon={Bank} title="اطلاعات کارت‌به‌کارت" />
           {paymentSettings?.isActive ? (
             <>
-              <div className="mt-3 rounded-[0.95rem] bg-white/62 p-3">
-                <p className="text-[11px] text-muted">نام صاحب کارت</p>
-                <p className="text-sm font-semibold text-foreground">{paymentSettings.cardholderName}</p>
-                <p className="mt-2 text-[11px] text-muted">شماره کارت</p>
-                <p className="text-left text-lg font-semibold tracking-[0.16em] text-foreground" dir="ltr">
-                  {compactCardNumber(paymentSettings.cardNumber)}
-                </p>
+              <div className="rounded-[1rem] bg-white/62 p-3">
+                <AccountInfoRow label="نام صاحب کارت" value={paymentSettings.cardholderName} />
+                <div className="mt-2 rounded-[0.95rem] bg-white/78 px-3 py-2.5">
+                  <p className="text-[11px] text-muted">شماره کارت</p>
+                  <p className="mt-1 text-left text-lg font-semibold tracking-[0.16em] text-foreground" dir="ltr">
+                    {compactCardNumber(paymentSettings.cardNumber)}
+                  </p>
+                </div>
               </div>
-              {paymentSettings.instructions ? <p className="mt-2 text-[11px] leading-5 text-muted">{paymentSettings.instructions}</p> : null}
+              {paymentSettings.instructions ? (
+                <p className="rounded-[1rem] bg-white/56 px-3 py-3 text-xs leading-6 text-muted">{paymentSettings.instructions}</p>
+              ) : null}
             </>
           ) : (
-            <p className="mt-3 rounded-[0.95rem] bg-white/62 p-3 text-xs leading-6 text-muted">
-              اطلاعات پرداخت هنوز فعال نیست. برای خرید، با پشتیبانی هماهنگ کنید.
-            </p>
+            <p className="rounded-[1rem] bg-white/62 p-3 text-xs leading-6 text-muted">غیرفعال</p>
           )}
         </section>
       ) : null}
 
       {activeTab === "receipts" ? (
         <section className="space-y-2.5">
-          <SectionHeader icon={ReceiptText} title="ارسال رسید / وضعیت خرید" caption="درخواست‌های باز و رسیدهای ارسال‌شده اینجا پیگیری می‌شوند." />
+          <AccountSectionHeader icon={ReceiptText} title="رسیدها" />
           {pendingRequests.length > 0 ? (
             pendingRequests.map((request) => (
-              <form key={request.id} action={submitPurchaseReceiptAction} className="rounded-[1.05rem] border border-white/72 bg-surface/64 p-3">
+              <form key={request.id} action={submitPurchaseReceiptAction} className={`${accountCardClass} space-y-3`}>
                 <input type="hidden" name="requestId" value={request.id} />
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold text-foreground">{request.package.title}</p>
-                    <p className="text-[11px] text-muted">{formatPrice(request.amount, request.currency)}</p>
+                    <p className="mt-1 text-[11px] text-muted">{formatPrice(request.amount, request.currency)}</p>
                   </div>
                   <StatusPill variant="accent" className="text-[10px]">
                     <ReceiptText aria-hidden={true} className="h-3 w-3" />
-                    {request.receiptSubmittedAt ? "رسید ارسال شد" : "رسید لازم است"}
+                    {request.receiptSubmittedAt ? "رسید ارسال شده" : "منتظر رسید"}
                   </StatusPill>
                 </div>
+
                 {request.receiptImageUrl ? (
-                  <a href={request.receiptImageUrl} className="mt-2 block text-xs text-[#7b5d31]" target="_blank" rel="noreferrer">
+                  <a href={request.receiptImageUrl} className="block text-xs font-medium text-[#7b5d31]" target="_blank" rel="noreferrer">
                     مشاهده رسید ارسال‌شده
                   </a>
                 ) : null}
-                <input
-                  name="receipt"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  className={`${fieldControlClassName} mt-3 block py-2 text-xs text-muted`}
-                />
-                <input
-                  name="receiptNote"
-                  placeholder="توضیح اختیاری؛ مثلا ساعت پرداخت یا چهار رقم آخر کارت"
-                  className={`${fieldControlClassName} mt-2 text-xs`}
-                />
-                <button type="submit" className={buttonClasses({ size: "full", variant: "secondary", className: "mt-2 h-10 rounded-[0.9rem] text-xs" })}>
+
+                <div className="space-y-2">
+                  <input
+                    name="receipt"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className={`${fieldControlClassName} block py-2 text-xs text-muted file:ml-3 file:rounded-full file:border-0 file:bg-accent-wash file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-accent-deep`}
+                  />
+                  <input
+                    name="receiptNote"
+                    placeholder="یادداشت"
+                    className={`${fieldControlClassName} text-xs`}
+                  />
+                </div>
+
+                <button type="submit" className={buttonClasses({ size: "full", variant: "secondary", className: "h-10 rounded-[0.9rem] text-xs" })}>
                   <DocumentUpload aria-hidden={true} className="h-4 w-4" />
                   ارسال رسید
                 </button>
               </form>
             ))
           ) : (
-            <p className="rounded-[1.05rem] border border-white/72 bg-surface/64 p-3 text-xs leading-6 text-muted">
-              هنوز درخواست خرید باز ندارید. بعد از ثبت یک پکیج یا اعتبار، فرم ارسال رسید اینجا نمایش داده می‌شود.
-            </p>
+            <p className={`${accountCardClass} text-xs leading-6 text-muted`}>موردی نیست.</p>
           )}
         </section>
       ) : null}

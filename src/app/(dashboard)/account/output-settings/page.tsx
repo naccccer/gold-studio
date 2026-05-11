@@ -1,6 +1,7 @@
+import { Setting2 } from "vuesax-icons-react";
 import { Button } from "@/components/ui/button";
-import { updateOutputSettingsAction } from "@/features/account/actions";
 import { AccountSubpage, accountCardClass, accountInputClass } from "@/features/account/components/account-subpage";
+import { updateOutputSettingsAction } from "@/features/account/actions";
 import { requireUserSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 
@@ -11,8 +12,14 @@ export default async function OutputSettingsPage() {
   const settings = await db.userOutputSettings.findUnique({ where: { userId: session.userId } });
 
   return (
-    <AccountSubpage title="تنظیمات خروجی" caption="پیش‌فرض‌های ساخت تصویر را برای پروژه‌های بعدی تنظیم کنید.">
+    <AccountSubpage title="تنظیمات خروجی">
       <form action={updateOutputSettingsAction} className={`${accountCardClass} space-y-3`}>
+        <div className="flex items-center gap-3">
+          <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-wash text-accent-deep">
+            <Setting2 aria-hidden={true} className="h-4.5 w-4.5" />
+          </span>
+          <h2 className="text-sm font-semibold text-foreground">پیش‌فرض‌های ساخت</h2>
+        </div>
         <label className="block space-y-1.5">
           <span className="text-xs font-medium text-muted">سایز پیش‌فرض</span>
           <select name="defaultOutputPreset" defaultValue={settings?.defaultOutputPreset ?? "post"} className={accountInputClass}>
@@ -37,7 +44,7 @@ export default async function OutputSettingsPage() {
             <option value="style-date">سبک + تاریخ</option>
           </select>
         </label>
-        <label className="flex min-h-11 items-center gap-2 rounded-[0.95rem] border border-border bg-white px-3 text-xs font-medium text-foreground">
+        <label className="flex min-h-11 items-center gap-2 rounded-[0.95rem] border border-border bg-white/88 px-3 text-xs font-medium text-foreground">
           <input name="autoSaveToProjects" type="checkbox" defaultChecked={settings?.autoSaveToProjects ?? true} className="h-4 w-4 accent-[#9b773f]" />
           ذخیره خودکار خروجی در پروژه‌ها
         </label>

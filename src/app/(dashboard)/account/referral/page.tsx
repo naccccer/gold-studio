@@ -1,5 +1,9 @@
-import { Gift } from "lucide-react";
-import { AccountSubpage, accountCardClass } from "@/features/account/components/account-subpage";
+import { Gift } from "vuesax-icons-react";
+import {
+  AccountSubpage,
+  accountCardClass,
+  accountMutedCardClass,
+} from "@/features/account/components/account-subpage";
 import { requireUserSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { ensureUserReferralCode } from "@/lib/referrals";
@@ -24,36 +28,40 @@ export default async function AccountReferralPage() {
   ]);
 
   return (
-    <AccountSubpage title="دریافت کد معرفی" caption="با ثبت‌نام هر همکار از کد شما، برای هر دو حساب ۲ اعتبار هدیه ثبت می‌شود.">
-      <section className={`${accountCardClass} text-center`}>
-        <Gift aria-hidden={true} className="mx-auto h-5 w-5 text-[#8b6835]" />
-        <p className="mt-2 text-xs text-muted">کد معرفی شما</p>
-        <p className="mt-1 rounded-[0.95rem] bg-white px-3 py-3 text-xl font-semibold tracking-[0.18em] text-foreground" dir="ltr">
+    <AccountSubpage title="کد معرفی">
+      <section className={`${accountCardClass} space-y-3 text-center`}>
+        <div className="flex flex-col items-center gap-3 text-center">
+          <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-wash text-accent-deep">
+            <Gift aria-hidden={true} className="h-4.5 w-4.5" />
+          </span>
+          <h2 className="text-sm font-semibold text-foreground">کد شما</h2>
+        </div>
+        <p className="rounded-[0.95rem] bg-white px-3 py-3 text-xl font-semibold tracking-[0.18em] text-foreground" dir="ltr">
           {referralCode}
         </p>
       </section>
 
-      <section className={`${accountCardClass} space-y-2`}>
+      <section className={`${accountCardClass} space-y-2.5`}>
         <h2 className="text-sm font-semibold text-foreground">دعوت‌های ثبت‌شده</h2>
         {referrals.length === 0 ? (
-          <p className="text-xs leading-6 text-muted">هنوز ثبت‌نامی با کد شما انجام نشده است.</p>
+          <p className="text-xs leading-6 text-muted">موردی نیست.</p>
         ) : (
           referrals.map((referral) => (
-            <div key={referral.id} className="rounded-[0.9rem] bg-white/62 px-3 py-2">
+            <div key={referral.id} className={accountMutedCardClass}>
               <p className="text-sm font-semibold text-foreground">{referral.invitee.name || referral.invitee.email || referral.invitee.phone || "کاربر جدید"}</p>
-              <p className="text-[11px] text-muted">{referral.rewardCredits.toLocaleString("fa-IR")} اعتبار هدیه</p>
+              <p className="mt-1 text-[11px] text-muted">{referral.rewardCredits.toLocaleString("fa-IR")} اعتبار هدیه</p>
             </div>
           ))
         )}
       </section>
 
-      <section className={`${accountCardClass} space-y-2`}>
+      <section className={`${accountCardClass} space-y-2.5`}>
         <h2 className="text-sm font-semibold text-foreground">آخرین پاداش‌ها</h2>
         {rewardEvents.length === 0 ? (
-          <p className="text-xs leading-6 text-muted">پاداشی برای این حساب ثبت نشده است.</p>
+          <p className="text-xs leading-6 text-muted">موردی نیست.</p>
         ) : (
           rewardEvents.map((event) => (
-            <div key={event.id} className="flex items-center justify-between rounded-[0.9rem] bg-white/62 px-3 py-2 text-xs">
+            <div key={event.id} className="flex items-center justify-between rounded-[0.95rem] bg-white/62 px-3 py-2.5 text-xs">
               <span className="text-muted">{event.reason}</span>
               <span className="font-semibold text-foreground">{event.delta.toLocaleString("fa-IR")}</span>
             </div>

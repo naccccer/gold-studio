@@ -369,9 +369,22 @@ Screenshots: completed result, fullscreen result, failed result, processing, pro
 
 ## Phase 6: Account, Billing, Support, And Settings
 
+Status: Done on 2026-05-11.
+
 Goal: make utility screens organized, premium, and trustworthy without pretending they are studio moments.
 
 Scope: account, billing, profile, output settings, security, referral, FAQ, support.
+
+Completion notes:
+
+- Reworked the shared account subpage shell so Phase 6 pages use clearer header hierarchy, shared section headers, and calmer utility-card rhythm.
+- Rebuilt the main account screen around clearer groupings for identity, credit/subscription, billing follow-up, support, settings, and the admin entry.
+- Reworked billing into a clearer payment workflow with repaired Persian copy, stronger package/credit separation, calmer card-to-card presentation, and more explicit receipt status handling.
+- Polished profile, security, output settings, referral, FAQ, and support with better section rhythm and migrated the touched user-facing icons to `vuesax-icons-react`.
+- Repaired mojibake that was still present in the Phase 6 account and billing surfaces.
+- Screenshots were intentionally skipped for this phase per request.
+- Verification: `npm run check:mojibake` passed and `npm run lint` passed.
+- Build caveat: `npm run build` still fails during `prisma generate` with Windows `EPERM rename query_engine-windows.dll.node`, before Next compilation; this matches the known Prisma engine/client issue and is unrelated to Phase 6 UI changes.
 
 Must pass:
 
