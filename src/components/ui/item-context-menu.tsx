@@ -10,9 +10,10 @@ type ItemContextMenuProps = {
   children: ReactNode;
   align?: "left" | "right";
   tone?: "light" | "dark";
+  size?: "md" | "sm";
 };
 
-export function ItemContextMenu({ label, children, align = "left", tone = "dark" }: ItemContextMenuProps) {
+export function ItemContextMenu({ label, children, align = "left", tone = "dark", size = "md" }: ItemContextMenuProps) {
   const [open, setOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -94,9 +95,12 @@ export function ItemContextMenu({ label, children, align = "left", tone = "dark"
         aria-label={label}
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className="inline-flex h-11 w-11 items-center justify-center rounded-full transition focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+        className={[
+          "inline-flex items-center justify-center rounded-full transition focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+          size === "sm" ? "h-8 w-8" : "h-11 w-11",
+        ].join(" ")}
       >
-        <span className={`inline-flex h-7 w-7 items-center justify-center rounded-full border transition ${buttonTone}`}>
+        <span className={`inline-flex ${size === "sm" ? "h-7 w-7" : "h-7 w-7"} items-center justify-center rounded-full border transition ${buttonTone}`}>
           <More aria-hidden={true} className="h-3 w-3" />
         </span>
       </button>

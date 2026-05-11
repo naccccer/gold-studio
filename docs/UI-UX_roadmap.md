@@ -323,7 +323,7 @@ Completion notes:
 - Refined the active processing state into a calmer studio pipeline with visible step states and clearer navigation back to `پروژه‌ها`, while leaving completed and failed review behavior otherwise intact.
 - Touched user-facing icons in the edited Phase 4 project-detail/processing surfaces were migrated to `vuesax-icons-react`.
 - Gallery crop overlay was left functionally unchanged because no Phase 4 blocker required crop redesign.
-- Screenshots were intentionally skipped for this phase per request.
+- Screenshots were initially skipped per request; follow-up result-review debug screenshots were later captured in `output/playwright/phase-5-debug` to verify the mobile bottom overlay.
 - Verification: `npm run check:mojibake` passed and `npm run lint` passed.
 - Build caveat: `npm run build` still fails during `prisma generate` with Windows `EPERM rename query_engine-windows.dll.node`, before Next compilation; this matches the known Prisma engine/client issue and is unrelated to Phase 4 UI changes.
 
@@ -340,9 +340,22 @@ Screenshots: gallery empty, gallery populated, source step, size step, style ste
 
 ## Phase 5: Result Review And Project Ownership
 
+Status: Done on 2026-05-11.
+
 Goal: make the completed result feel like the core value moment and keep project ownership clear.
 
 Scope: project detail completed/processing/failed states, fullscreen result, projects list, project card menus.
+
+Completion notes:
+
+- Added a compact ownership strip to project detail so title, style, status, and created time stay visible in completed, processing, and failed states without crowding the image.
+- Made before/after comparison more discoverable in completed review and fullscreen review with quiet hold-to-compare guidance while preserving the dark studio result focus.
+- Kept save/download as the dominant completed-state action and kept new-version and retry actions visually secondary.
+- Calmed the failed-state presentation by using the same ownership rhythm as completed review while preserving the retry path, support code, and credit reassurance.
+- Improved project cards with clearer ready/processing/failed cues, stronger title/style/date ownership signals, and menu ordering that prioritizes viewing and saving before secondary actions.
+- Screenshots were intentionally skipped for this phase per request.
+- Verification: `npm run check:mojibake` passed and `npm run lint` passed.
+- Build caveat: `npm run build` still fails during `prisma generate` with Windows `EPERM rename query_engine-windows.dll.node`, before Next compilation; this matches the known Prisma engine/client issue and is unrelated to Phase 5 UI changes.
 
 Must pass:
 

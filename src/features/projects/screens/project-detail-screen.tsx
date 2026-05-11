@@ -4,18 +4,23 @@ import { useEffect, useState } from "react";
 import {
   Add,
   CloseCircle,
-  Danger,
   DocumentDownload,
+  Edit2,
   Gallery,
   Maximize4,
   Refresh,
+  Scan,
+  TickCircle,
 } from "vuesax-icons-react";
 import { ActionDock } from "@/components/ui/action-dock";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
+import { fieldControlClassName } from "@/components/ui/field";
+import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
 import { ProcessingCanvas } from "@/components/ui/processing-canvas";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
-import { retryProjectAction } from "@/features/projects/actions";
+import { StatusPill } from "@/components/ui/status-pill";
+import { renameProjectAction, retryProjectAction } from "@/features/projects/actions";
 import { ProjectStatusRefresh } from "@/features/projects/components/project-status-refresh";
 import { resultHeroDark, uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { generateNumericSupportCode } from "@/lib/support-code";
@@ -38,6 +43,20 @@ const statusConfig: Record<string, { label: string; supportCopy: string }> = {
     supportCopy: "تولید کامل نشد. دوباره تلاش کنید.",
   },
 };
+
+function getStatusVariant(status: string) {
+  switch (status) {
+    case "QUEUED":
+    case "PROCESSING":
+      return "pending" as const;
+    case "COMPLETED":
+      return "completed" as const;
+    case "FAILED":
+      return "failed" as const;
+    default:
+      return "neutral" as const;
+  }
+}
 
 function formatProjectError(project: ProjectDetail) {
   const raw = project.errorMessage?.trim() ?? "";
@@ -120,13 +139,100 @@ export type ProjectDetail = {
   status: string;
   style: { name: string };
   errorMessage: string | null;
-  createdAt?: Date;
+  createdAt?: Date | string;
 };
 
 const failedCreditReassurance =
   "اگر پردازش این پروژه کامل نشود، اعتباری از حساب شما کسر نخواهد شد.";
 
 type ProjectDetailScreenProps = { project: ProjectDetail };
+
+function DetailMeta({
+  projectId,
+  title,
+  status,
+  statusVariant,
+  helper,
+}: {
+  projectId: string;
+  title: string;
+  status: string;
+  statusVariant: "neutral" | "pending" | "completed" | "failed" | "accent";
+  helper: string;
+}) {
+  const [editingTitle, setEditingTitle] = useState(false);
+
+  return (
+    <div className="shrink-0 space-y-2 rounded-[1.15rem] border border-white/12 bg-white/[0.05] px-3.5 py-3 text-right">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          {editingTitle ? (
+            <form
+              action={renameProjectAction}
+              className="flex items-center gap-1.5"
+              onSubmit={() => {
+                setEditingTitle(false);
+              }}
+            >
+              <input type="hidden" name="projectId" value={projectId} />
+              <input
+                name="title"
+                defaultValue={title}
+                maxLength={80}
+                autoFocus
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") {
+                    event.preventDefault();
+                    setEditingTitle(false);
+                  }
+                }}
+                className={`${fieldControlClassName} min-h-8 flex-1 border-white/10 bg-white/[0.06] px-2.5 text-xs text-surface shadow-none placeholder:text-surface/40 focus-visible:shadow-none`}
+              />
+              <button
+                type="submit"
+                aria-label="تایید نام پروژه"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-accent-soft bg-accent-wash/92 text-accent-deep transition hover:bg-accent-wash"
+              >
+                <TickCircle aria-hidden={true} className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingTitle(false)}
+                aria-label="انصراف از ویرایش نام پروژه"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.08] text-surface/72 transition hover:bg-white/[0.12]"
+              >
+                <CloseCircle aria-hidden={true} className="h-4 w-4" />
+              </button>
+            </form>
+          ) : (
+            <div className="flex items-center gap-2">
+              <p className="truncate text-sm font-semibold text-surface">{title}</p>
+              <button
+                type="button"
+                onClick={() => setEditingTitle(true)}
+                aria-label="ویرایش نام پروژه"
+                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-surface/72 transition hover:bg-white/[0.12]"
+              >
+                <Edit2 aria-hidden={true} className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+        <StatusPill variant={statusVariant} className="border-white/10 bg-white/8 text-surface">
+          {status}
+        </StatusPill>
+      </div>
+
+      {helper ? (
+        <div className="flex flex-wrap items-center gap-2 text-[11px] text-surface/70">
+          <span className="rounded-full border border-white/10 bg-black/18 px-2.5 py-1">
+            {helper}
+          </span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
   const [fullscreen, setFullscreen] = useState(false);
@@ -142,6 +248,8 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
   const newVersionHref = project.sourceAssetId ? `/projects/new?assetId=${project.sourceAssetId}` : "/projects/new";
   const processingMoments = buildProcessingMoments(project.style.name);
   const errorPresentation = formatProjectError(project);
+  const projectTitle = project.title?.trim() || "پروژه محصول";
+  const statusVariant = getStatusVariant(project.status);
 
   useEffect(() => {
     if (!fullscreen) {
@@ -168,6 +276,14 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
         <ProjectStatusRefresh active={true} />
 
         <section className="flex h-full min-h-0 flex-col gap-3 overflow-hidden pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+          <DetailMeta
+            projectId={project.id}
+            title={projectTitle}
+            status={status.label}
+            statusVariant={statusVariant}
+            helper="بعداً هم از پروژه‌ها می‌توانید همین خروجی را دنبال کنید."
+          />
+
           <ProcessingCanvas
             imageSrc={sourceImageSrc}
             imageAlt="در حال پردازش تصویر"
@@ -198,39 +314,86 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
     return (
       <PageShell maxWidth="lg" className="h-[calc(100svh-9.8rem)] overflow-hidden pb-1 text-surface">
         <section className="flex h-full flex-col gap-3 overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setFullscreen(true)}
-            onPointerDown={() => setShowBefore(true)}
-            onPointerLeave={() => setShowBefore(false)}
-            onPointerCancel={() => setShowBefore(false)}
-            onPointerUp={() => setShowBefore(false)}
-            className="group relative min-h-0 flex-1 cursor-zoom-in overflow-hidden rounded-[1.45rem] border border-white/12 bg-[#11100e] text-right shadow-[0_28px_58px_-46px_rgba(17,16,14,0.82)]"
+          <DetailMeta
+            projectId={project.id}
+            title={projectTitle}
+            status={status.label}
+            statusVariant={statusVariant}
+            helper=""
+          />
+
+          <div
+            className="group relative min-h-0 flex-1 overflow-hidden rounded-[1.45rem] text-right"
+            role="button"
+            tabIndex={0}
             aria-label="نمایش تمام صفحه خروجی"
+            onClick={() => setFullscreen(true)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setFullscreen(true);
+              }
+            }}
           >
-            <SafeJewelryImage
-              src={resultImageSrc}
-              fallbackSrc={resultHeroDark.src}
-              fallbackAlt={resultHeroDark.alt}
-              alt={project.title || "خروجی نهایی محصول"}
-              fill
-              priority
-              className="object-cover object-center"
-              sizes="(max-width: 768px) 100vw, 760px"
-            />
-            <SafeJewelryImage
-              src={sourceImageSrc}
-              fallbackSrc={uploadPreview.src}
-              fallbackAlt={uploadPreview.alt}
-              alt="تصویر اولیه"
-              fill
-              className={`pointer-events-none object-cover object-[46%_55%] transition duration-150 ${showBefore ? "opacity-100" : "opacity-0"}`}
-              sizes="(max-width: 768px) 100vw, 760px"
-            />
-            <div className="absolute left-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-black/28 text-surface backdrop-blur">
-              <Maximize4 aria-hidden={true} className="h-4.5 w-4.5" />
-            </div>
-          </button>
+            <JewelryImageFrame aspect="portrait" treatment="dark" className="h-full rounded-[1.45rem]">
+              <SafeJewelryImage
+                src={resultImageSrc}
+                fallbackSrc={resultHeroDark.src}
+                fallbackAlt={resultHeroDark.alt}
+                alt={project.title || "خروجی نهایی محصول"}
+                fill
+                priority
+                className="object-cover object-center"
+                sizes="(max-width: 768px) 100vw, 760px"
+              />
+              <SafeJewelryImage
+                src={sourceImageSrc}
+                fallbackSrc={uploadPreview.src}
+                fallbackAlt={uploadPreview.alt}
+                alt="تصویر اولیه"
+                fill
+                className={`pointer-events-none object-cover object-[46%_55%] transition duration-150 ${showBefore ? "opacity-100" : "opacity-0"}`}
+                sizes="(max-width: 768px) 100vw, 760px"
+              />
+
+              <div className="absolute inset-x-3 top-3 flex items-start justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setFullscreen(true);
+                  }}
+                  aria-label="نمایش تمام صفحه خروجی"
+                  className="relative z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-black/28 text-surface backdrop-blur"
+                >
+                  <Maximize4 aria-hidden={true} className="h-4.5 w-4.5" />
+                </button>
+              </div>
+
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/72 via-black/18 to-transparent" />
+              <div className="absolute bottom-4 right-4 z-[60]">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setShowBefore((current) => !current);
+                  }}
+                  aria-pressed={showBefore}
+                  className={[
+                    "inline-flex min-h-9 whitespace-nowrap items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold backdrop-blur transition",
+                    showBefore
+                      ? "border-accent-soft bg-accent-wash/92 text-accent-deep"
+                      : "border-white/18 bg-black/34 text-white/86",
+                  ].join(" ")}
+                >
+                  <Scan aria-hidden={true} className="h-4 w-4" />
+                  {showBefore ? "نمایش خروجی" : "دیدن عکس خام"}
+                </button>
+              </div>
+            </JewelryImageFrame>
+          </div>
 
           <ActionDock className="shrink-0 pb-1" columns={2}>
             <a
@@ -251,22 +414,47 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
         </section>
 
         {fullscreen ? (
-          <div className="fixed inset-0 z-50 bg-black text-surface" role="dialog" aria-modal="true">
+          <div
+            className="fixed inset-0 z-50 bg-black text-surface"
+            role="dialog"
+            aria-modal="true"
+            onClick={(event) => {
+              event.stopPropagation();
+            }}
+          >
             <button
               type="button"
-              onClick={() => setFullscreen(false)}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setFullscreen(false);
+              }}
               aria-label="بستن نمایش تمام صفحه"
-              className="absolute left-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/16 bg-white/10 text-white backdrop-blur"
+              className="absolute left-4 top-[calc(env(safe-area-inset-top)+1rem)] z-20 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/16 bg-white/10 text-white backdrop-blur"
             >
               <CloseCircle aria-hidden={true} className="h-5 w-5" />
             </button>
-            <div
-              className="relative h-full w-full"
-              onPointerDown={() => setShowBefore(true)}
-              onPointerLeave={() => setShowBefore(false)}
-              onPointerCancel={() => setShowBefore(false)}
-              onPointerUp={() => setShowBefore(false)}
-            >
+            <div className="pointer-events-none absolute inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+1.5rem)] z-10 flex justify-center px-6">
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setShowBefore((current) => !current);
+                }}
+                aria-pressed={showBefore}
+                className={[
+                  "pointer-events-auto inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold backdrop-blur transition",
+                  showBefore
+                    ? "border-accent-soft bg-accent-wash/92 text-accent-deep"
+                    : "border-white/18 bg-black/34 text-white/86",
+                ].join(" ")}
+              >
+                <Scan aria-hidden={true} className="h-4 w-4" />
+                {showBefore ? "نمایش خروجی" : "دیدن عکس خام"}
+              </button>
+            </div>
+            <div className="relative h-full w-full">
               <SafeJewelryImage
                 src={resultImageSrc}
                 fallbackSrc={resultHeroDark.src}
@@ -296,7 +484,15 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
   return (
     <PageShell maxWidth="lg" className="h-[calc(100svh-9.8rem)] overflow-hidden pb-1 text-surface">
       <section className="flex h-full flex-col gap-3 overflow-hidden">
-        <div className="relative min-h-0 flex-1 overflow-hidden rounded-[1.45rem] border border-white/12 bg-[#1a1713] shadow-[0_28px_58px_-46px_rgba(17,16,14,0.82)]">
+        <DetailMeta
+          projectId={project.id}
+          title={projectTitle}
+          status={status.label}
+          statusVariant={statusVariant}
+          helper="این پروژه قابل تکرار است."
+        />
+
+        <JewelryImageFrame aspect="portrait" treatment="dark" className="min-h-0 flex-1 rounded-[1.45rem]">
           <SafeJewelryImage
             src={sourceImageSrc}
             fallbackSrc={uploadPreview.src}
@@ -307,28 +503,15 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
             className="object-cover object-[46%_55%]"
             sizes="(max-width: 768px) 100vw, 760px"
           />
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/18 to-transparent p-4">
-            <p className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-black/30 px-2.5 py-1 text-[10px] text-surface/82">
-              <Danger aria-hidden={true} className="h-3.5 w-3.5" />
-              {status.label}
-            </p>
-            <div className="mt-2 space-y-2">
-              <p
-                className="text-sm font-semibold leading-7 text-surface"
-                style={{ textAlign: "justify", textAlignLast: "right" }}
-              >
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/72 via-black/28 to-transparent p-4">
+            <div className="space-y-2.5">
+              <p className="text-sm font-semibold leading-7 text-surface" style={{ textAlign: "justify", textAlignLast: "right" }}>
                 {errorPresentation.title}
               </p>
-              <p
-                className="text-[12px] leading-6 text-surface/76"
-                style={{ textAlign: "justify", textAlignLast: "right" }}
-              >
+              <p className="text-[12px] leading-6 text-surface/76" style={{ textAlign: "justify", textAlignLast: "right" }}>
                 {errorPresentation.description}
               </p>
-              <p
-                className="rounded-[0.9rem] border border-white/12 bg-white/8 px-3 py-2 text-[11px] leading-6 text-surface/84"
-                style={{ textAlign: "justify", textAlignLast: "right" }}
-              >
+              <p className="rounded-[0.9rem] border border-white/12 bg-white/8 px-3 py-2 text-[11px] leading-6 text-surface/84" style={{ textAlign: "justify", textAlignLast: "right" }}>
                 {failedCreditReassurance}
               </p>
               <p className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/24 px-2.5 py-1 text-[10px] text-surface/72">
@@ -337,7 +520,8 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               </p>
             </div>
           </div>
-        </div>
+        </JewelryImageFrame>
+
         <ActionDock className="shrink-0 pb-1">
           <form action={retryProjectAction}>
             <input type="hidden" name="projectId" value={project.id} />
