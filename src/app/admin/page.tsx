@@ -1,6 +1,16 @@
 import Link from "next/link";
-import { AlertTriangle, Check, Clock3, CreditCard, UserRound } from "lucide-react";
-import { AdminMetric, AdminRow, AdminSection, AdminStatus, EmptyAdminState, formatAdminDate, formatIrr } from "@/features/admin/components/admin-ui";
+import { Card, Clock, Danger, ProfileCircle, TickCircle } from "vuesax-icons-react";
+import {
+  adminDangerActionClass,
+  adminPrimaryActionClass,
+  AdminMetric,
+  AdminRow,
+  AdminSection,
+  AdminStatus,
+  EmptyAdminState,
+  formatAdminDate,
+  formatIrr,
+} from "@/features/admin/components/admin-ui";
 import { approvePurchaseRequestAction, rejectPurchaseRequestAction, retryAdminProjectAction } from "@/features/admin/actions";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { requireAdminSession } from "@/lib/auth/session";
@@ -61,7 +71,7 @@ export default async function AdminPage() {
 
   return (
     <>
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+      <section className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
         <AdminMetric label="کاربران" value={usersCount} />
         <AdminMetric label="اشتراک فعال" value={activeSubscriptionsCount} />
         <AdminMetric label="درخواست خرید" value={pendingPurchasesCount} />
@@ -70,8 +80,8 @@ export default async function AdminPage() {
         <AdminMetric label="خطای امروز AI" value={providerFailuresCount} />
       </section>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-        <AdminSection title="شکست‌های اخیر" eyebrow="نیازمند رسیدگی" action={<AlertTriangle className="h-4 w-4 text-danger" />}>
+      <div className="grid items-stretch gap-3 xl:grid-cols-2">
+        <AdminSection title="شکست‌های اخیر" eyebrow="نیازمند رسیدگی" action={<Danger className="h-4 w-4 text-danger" />}>
           {recentFailures.length === 0 ? (
             <EmptyAdminState>فعلا پروژه ناموفق فعالی وجود ندارد.</EmptyAdminState>
           ) : (
@@ -89,8 +99,8 @@ export default async function AdminPage() {
                 </div>
                 <form action={retryAdminProjectAction}>
                   <input type="hidden" name="projectId" value={project.id} />
-                  <button className="inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-sm)] bg-foreground px-3 text-xs text-surface">
-                    <Clock3 className="h-3.5 w-3.5" />
+                  <button className={adminPrimaryActionClass}>
+                    <Clock className="h-3.5 w-3.5" />
                     تلاش دوباره
                   </button>
                 </form>
@@ -99,7 +109,7 @@ export default async function AdminPage() {
           )}
         </AdminSection>
 
-        <AdminSection title="درخواست‌های خرید" eyebrow="بسته و اشتراک" action={<CreditCard className="h-4 w-4 text-accent" />}>
+        <AdminSection title="درخواست‌های خرید" eyebrow="بسته و اشتراک" action={<Card className="h-4 w-4 text-accent" />}>
           {pendingPurchases.length === 0 ? (
             <EmptyAdminState>درخواست خرید در انتظار تایید نیست.</EmptyAdminState>
           ) : (
@@ -111,7 +121,7 @@ export default async function AdminPage() {
                     {getUserDisplayName(request.user)} · {formatIrr(request.amount, request.currency)}
                   </p>
                   {request.receiptImageUrl ? (
-                    <a href={request.receiptImageUrl} target="_blank" rel="noreferrer" className="mt-1 block text-xs text-[#7b5d31]">
+                    <a href={request.receiptImageUrl} target="_blank" rel="noreferrer" className="mt-1 block text-xs font-medium text-accent-deep">
                       مشاهده رسید
                     </a>
                   ) : (
@@ -121,14 +131,14 @@ export default async function AdminPage() {
                 <div className="flex flex-wrap gap-2">
                   <form action={approvePurchaseRequestAction}>
                     <input type="hidden" name="requestId" value={request.id} />
-                    <button className="inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-sm)] bg-foreground px-3 text-xs text-surface">
-                      <Check className="h-3.5 w-3.5" />
+                    <button className={adminPrimaryActionClass}>
+                      <TickCircle className="h-3.5 w-3.5" />
                       تایید
                     </button>
                   </form>
                   <form action={rejectPurchaseRequestAction}>
                     <input type="hidden" name="requestId" value={request.id} />
-                    <button className="h-9 rounded-[var(--radius-sm)] border border-danger/30 bg-danger-soft px-3 text-xs text-danger">
+                    <button className={adminDangerActionClass}>
                       رد
                     </button>
                   </form>
@@ -139,7 +149,7 @@ export default async function AdminPage() {
         </AdminSection>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid items-stretch gap-3 xl:grid-cols-2">
         <AdminSection title="تولیدهای اخیر" eyebrow="جریان خروجی‌ها">
           {recentProjects.map((project) => (
             <AdminRow key={project.id}>
@@ -170,7 +180,7 @@ export default async function AdminPage() {
                 <p className="text-xs text-muted">
                   {user.credits.toLocaleString("fa-IR")} اعتبار · {user._count.projects.toLocaleString("fa-IR")} پروژه
                 </p>
-                <UserRound className="h-4 w-4 text-muted" />
+                <ProfileCircle className="h-4 w-4 text-muted" />
               </AdminRow>
             ))
           )}

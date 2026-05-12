@@ -95,6 +95,35 @@ export async function submitPurchaseReceiptAction(formData: FormData) {
   revalidatePath("/billing");
 }
 
+export async function deletePurchaseRequestAction(formData: FormData) {
+  const session = await requireUserSession();
+  const requestId = String(formData.get("requestId") ?? "").trim();
+
+  if (!requestId) {
+    return;
+  }
+
+  const request = await db.purchaseRequest.findFirst({
+    where: {
+      id: requestId,
+      userId: session.userId,
+      status: { not: "APPROVED" },
+    },
+    select: { id: true },
+  });
+
+  if (!request) {
+    return;
+  }
+
+  await db.purchaseRequest.delete({
+    where: { id: request.id },
+  });
+
+  revalidatePath("/account");
+  revalidatePath("/billing");
+}
+
 export async function updateProfileAction(formData: FormData) {
   const session = await requireUserSession();
   const name = text(formData, "name");

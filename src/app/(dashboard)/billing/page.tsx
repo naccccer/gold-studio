@@ -36,18 +36,22 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
         currency: true,
         credits: true,
         periodDays: true,
+        colorPreset: true,
       },
     }),
     db.purchaseRequest.findMany({
-      where: { userId: session.userId, status: "PENDING" },
+      where: { userId: session.userId, status: { not: "CANCELED" } },
       orderBy: { createdAt: "desc" },
+      take: 6,
       select: {
         id: true,
         packageId: true,
+        status: true,
         amount: true,
         currency: true,
         receiptImageUrl: true,
         receiptSubmittedAt: true,
+        updatedAt: true,
         package: { select: { title: true } },
       },
     }),
@@ -58,5 +62,12 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
     notFound();
   }
 
-  return <BillingScreen packages={packages} pendingRequests={purchaseRequests} paymentSettings={paymentSettings} activeTab={activeTab} />;
+  return (
+    <BillingScreen
+      packages={packages}
+      purchaseRequests={purchaseRequests}
+      paymentSettings={paymentSettings}
+      activeTab={activeTab}
+    />
+  );
 }

@@ -1,5 +1,6 @@
-import { Save } from "lucide-react";
+import { Save2 } from "vuesax-icons-react";
 import { updateUserCreditsAction } from "@/features/admin/actions";
+import { adminInputClass, adminPrimaryActionClass } from "@/features/admin/components/admin-ui";
 
 type CreditsFormProps = {
   userId: string;
@@ -16,13 +17,13 @@ export function CreditsForm({ userId, credits }: CreditsFormProps) {
         min={0}
         defaultValue={credits}
         aria-label="اعتبار"
-        className="h-9 w-20 rounded-[var(--radius-sm)] border border-border bg-surface px-2 text-sm text-foreground outline-none focus:border-focus focus:shadow-[var(--shadow-focus)]"
+        className={`${adminInputClass} w-20 px-2`}
       />
       <button
         type="submit"
-        className="inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-foreground px-3 text-xs font-medium text-surface transition hover:bg-[#27231f]"
+        className={adminPrimaryActionClass}
       >
-        <Save aria-hidden="true" className="h-3.5 w-3.5" />
+        <Save2 aria-hidden="true" className="h-3.5 w-3.5" />
         ذخیره
       </button>
     </form>

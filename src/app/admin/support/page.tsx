@@ -5,14 +5,14 @@ import {
   updateSupportSettingsAction,
   updateSupportTicketStatusAction,
 } from "@/features/admin/actions";
-import { AdminMetric, AdminRow, AdminSection, AdminStatus, EmptyAdminState, formatAdminDate } from "@/features/admin/components/admin-ui";
+import { adminInputClass, adminTextareaClass, AdminMetric, AdminRow, AdminSection, AdminStatus, EmptyAdminState, formatAdminDate } from "@/features/admin/components/admin-ui";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-const inputClass = "h-10 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-sm outline-none";
-const textareaClass = "min-h-24 rounded-[var(--radius-sm)] border border-border bg-surface px-3 py-2 text-sm leading-7 outline-none";
+const inputClass = adminInputClass;
+const textareaClass = adminTextareaClass;
 
 export default async function AdminSupportPage() {
   const [settings, tickets, faqs, openCount] = await Promise.all([
@@ -31,7 +31,7 @@ export default async function AdminSupportPage() {
 
   return (
     <div className="space-y-4">
-      <section className="grid gap-3 sm:grid-cols-3">
+      <section className="grid gap-2.5 sm:grid-cols-3">
         <AdminMetric label="تیکت باز" value={openCount} />
         <AdminMetric label="FAQ" value={faqs.length} />
         <AdminMetric label="تیکت اخیر" value={tickets.length} />
@@ -43,7 +43,7 @@ export default async function AdminSupportPage() {
           <input name="whatsappUrl" defaultValue={settings?.whatsappUrl ?? ""} placeholder="لینک واتساپ" dir="ltr" className={`${inputClass} text-left`} />
           <input name="telegramUrl" defaultValue={settings?.telegramUrl ?? ""} placeholder="لینک تلگرام" dir="ltr" className={`${inputClass} text-left`} />
           <label className="inline-flex h-10 items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-xs">
-            <input name="isActive" type="checkbox" defaultChecked={settings?.isActive ?? true} className="h-4 w-4 accent-[#9b773f]" />
+            <input name="isActive" type="checkbox" defaultChecked={settings?.isActive ?? true} className="h-4 w-4 accent-accent" />
             فعال
           </label>
           <textarea name="instructions" defaultValue={settings?.instructions ?? ""} placeholder="توضیح راهنمای پشتیبانی" className={`${textareaClass} md:col-span-2`} />
@@ -100,7 +100,7 @@ export default async function AdminSupportPage() {
           <input name="question" placeholder="سوال" className={inputClass} />
           <input name="sortOrder" type="number" defaultValue={10} className={inputClass} />
           <label className="inline-flex h-10 items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-xs">
-            <input name="isActive" type="checkbox" defaultChecked className="h-4 w-4 accent-[#9b773f]" />
+            <input name="isActive" type="checkbox" defaultChecked className="h-4 w-4 accent-accent" />
             فعال
           </label>
           <textarea name="answer" placeholder="پاسخ" className={`${textareaClass} md:col-span-3`} />
@@ -117,7 +117,7 @@ export default async function AdminSupportPage() {
                 <input name="question" defaultValue={faq.question} className={inputClass} />
                 <input name="sortOrder" type="number" defaultValue={faq.sortOrder} className={inputClass} />
                 <label className="inline-flex h-10 items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-xs">
-                  <input name="isActive" type="checkbox" defaultChecked={faq.isActive} className="h-4 w-4 accent-[#9b773f]" />
+                  <input name="isActive" type="checkbox" defaultChecked={faq.isActive} className="h-4 w-4 accent-accent" />
                   فعال
                 </label>
                 <textarea name="answer" defaultValue={faq.answer} className={`${textareaClass} md:col-span-3`} />

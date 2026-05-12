@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Danger, TickCircle } from "vuesax-icons-react";
 import { AdminMetric, AdminRow, AdminSection, AdminStatus, EmptyAdminState, formatAdminDate } from "@/features/admin/components/admin-ui";
 import { db } from "@/lib/db";
 
@@ -34,7 +34,7 @@ export default async function AdminProviderPage() {
 
   return (
     <>
-      <section className="grid gap-3 sm:grid-cols-4">
+      <section className="grid gap-2.5 sm:grid-cols-4">
         <AdminMetric label="موفق امروز" value={successToday} />
         <AdminMetric label="ناموفق امروز" value={failedToday} />
         <AdminMetric label="مدل" value={model} />
@@ -54,7 +54,7 @@ export default async function AdminProviderPage() {
                 {label}
               </p>
               <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-foreground">
-                {value === "تنظیم نشده" ? <AlertTriangle className="h-4 w-4 text-danger" /> : <CheckCircle2 className="h-4 w-4 text-accent" />}
+                {value === "تنظیم نشده" ? <Danger className="h-4 w-4 text-danger" /> : <TickCircle className="h-4 w-4 text-accent" />}
                 {value}
               </p>
             </div>

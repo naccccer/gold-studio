@@ -55,8 +55,6 @@ const rowItems: AccountRowItem[] = [
   { title: "امنیت حساب", href: "/account/security", icon: Lock },
 ];
 
-const dateFormatter = new Intl.DateTimeFormat("fa-IR", { day: "numeric", month: "short" });
-
 function AccountRow({ item }: { item: AccountRowItem }) {
   const Icon = item.icon;
 
@@ -83,13 +81,17 @@ export function AccountScreen({
   phone,
   role,
   credits,
+  walletCredits,
+  subscriptionCredits,
   pendingRequests,
-  activeSubscription,
 }: AccountScreenProps) {
   const isAdmin = role.toUpperCase() === "ADMIN";
   const displayName = getUserDisplayName({ name, email, phone });
   const identifier = getUserIdentifier({ email, phone });
   const pendingReceiptCount = pendingRequests.filter((request) => !request.receiptSubmittedAt).length;
+  const nextBillingHref = pendingReceiptCount > 0 ? "/billing?tab=receipts" : pendingRequests.length > 0 ? "/billing?tab=receipts" : "/billing";
+  const nextBillingLabel =
+    pendingReceiptCount > 0 ? "ارسال رسید پرداخت" : pendingRequests.length > 0 ? "پیگیری وضعیت خرید" : "انتخاب پلن یا اعتبار";
 
   return (
     <PageShell maxWidth="md" className="space-y-3 pb-32">
@@ -116,13 +118,11 @@ export function AccountScreen({
             </div>
             <div className="rounded-[1rem] bg-white/62 px-3 py-2.5 text-right">
               <p className="text-[11px] font-medium text-muted">اشتراک</p>
-              <p className="mt-1 truncate text-sm font-semibold text-foreground">{activeSubscription?.title ?? "فعال نیست"}</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">{subscriptionCredits.toLocaleString("fa-IR")}</p>
             </div>
             <div className="rounded-[1rem] bg-white/62 px-3 py-2.5 text-right">
-              <p className="text-[11px] font-medium text-muted">پایان دوره</p>
-              <p className="mt-1 text-sm font-semibold text-foreground">
-                {activeSubscription ? dateFormatter.format(activeSubscription.currentPeriodEnd) : "—"}
-              </p>
+              <p className="text-[11px] font-medium text-muted">جداگانه</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">{walletCredits.toLocaleString("fa-IR")}</p>
             </div>
           </div>
         </section>
@@ -142,9 +142,9 @@ export function AccountScreen({
               <p className="mt-2 text-xs leading-6 text-muted">{pendingReceiptCount > 0 ? "منتظر رسید" : "در حال بررسی"}</p>
             </div>
           ) : null}
-          <ButtonLink href="/billing" size="full" className="h-12 rounded-[1rem]">
+          <ButtonLink href={nextBillingHref} size="full" className="h-12 rounded-[1rem]">
             <Card aria-hidden={true} className="h-4 w-4" />
-            مدیریت اعتبار و اشتراک
+            {nextBillingLabel}
           </ButtonLink>
         </section>
 

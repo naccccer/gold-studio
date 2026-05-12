@@ -1,7 +1,17 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Archive, RefreshCcw } from "lucide-react";
-import { AdminMetric, AdminRow, AdminSection, AdminStatus, EmptyAdminState, formatAdminDate } from "@/features/admin/components/admin-ui";
+import { Archive, Refresh } from "vuesax-icons-react";
+import {
+  adminDangerActionClass,
+  adminInputClass,
+  adminPrimaryActionClass,
+  AdminMetric,
+  AdminRow,
+  AdminSection,
+  AdminStatus,
+  EmptyAdminState,
+  formatAdminDate,
+} from "@/features/admin/components/admin-ui";
 import { archiveAdminProjectAction, retryAdminProjectAction } from "@/features/admin/actions";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
@@ -66,7 +76,7 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
 
   return (
     <>
-      <section className="grid gap-3 sm:grid-cols-4">
+      <section className="grid gap-2.5 sm:grid-cols-4">
         <AdminMetric label="در صف" value={counts[0]} />
         <AdminMetric label="پردازش" value={counts[1]} />
         <AdminMetric label="تکمیل" value={counts[2]} />
@@ -75,25 +85,25 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
 
       <AdminSection title="فیلتر پروژه‌ها" eyebrow="وضعیت، کاربر، سبک">
         <form className="grid gap-2 md:grid-cols-[1fr_140px_180px_130px_auto]">
-          <input name="q" defaultValue={q} placeholder="شناسه، عنوان، خطا یا کاربر" className="h-10 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-sm outline-none" />
-          <select name="status" defaultValue={status ?? "ALL"} className="h-10 rounded-[var(--radius-sm)] border border-border bg-surface px-2 text-sm outline-none">
+          <input name="q" defaultValue={q} placeholder="شناسه، عنوان، خطا یا کاربر" className={adminInputClass} />
+          <select name="status" defaultValue={status ?? "ALL"} className={adminInputClass}>
             <option value="ALL">همه وضعیت‌ها</option>
             <option value="QUEUED">در صف</option>
             <option value="PROCESSING">پردازش</option>
             <option value="COMPLETED">تکمیل‌شده</option>
             <option value="FAILED">ناموفق</option>
           </select>
-          <select name="styleId" defaultValue={styleId ?? ""} className="h-10 rounded-[var(--radius-sm)] border border-border bg-surface px-2 text-sm outline-none">
+          <select name="styleId" defaultValue={styleId ?? ""} className={adminInputClass}>
             <option value="">همه سبک‌ها</option>
             {styles.map((style) => (
               <option key={style.id} value={style.id}>{style.name}</option>
             ))}
           </select>
-          <select name="archived" defaultValue={includeArchived ? "all" : "active"} className="h-10 rounded-[var(--radius-sm)] border border-border bg-surface px-2 text-sm outline-none">
+          <select name="archived" defaultValue={includeArchived ? "all" : "active"} className={adminInputClass}>
             <option value="active">فعال</option>
             <option value="all">همراه آرشیو</option>
           </select>
-          <button className="h-10 rounded-[var(--radius-sm)] bg-foreground px-4 text-sm text-surface">اعمال</button>
+          <button className={adminPrimaryActionClass}>اعمال</button>
         </form>
       </AdminSection>
 
@@ -154,14 +164,14 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
               <div className="flex flex-wrap gap-2">
                 <form action={retryAdminProjectAction}>
                   <input type="hidden" name="projectId" value={selectedProject.id} />
-                  <button className="inline-flex h-10 items-center gap-2 rounded-[var(--radius-sm)] bg-foreground px-3 text-xs text-surface">
-                    <RefreshCcw className="h-4 w-4" />
+                  <button className={adminPrimaryActionClass}>
+                    <Refresh className="h-4 w-4" />
                     تلاش دوباره
                   </button>
                 </form>
                 <form action={archiveAdminProjectAction}>
                   <input type="hidden" name="projectId" value={selectedProject.id} />
-                  <button className="inline-flex h-10 items-center gap-2 rounded-[var(--radius-sm)] border border-danger/30 bg-danger-soft px-3 text-xs text-danger">
+                  <button className={adminDangerActionClass}>
                     <Archive className="h-4 w-4" />
                     آرشیو
                   </button>

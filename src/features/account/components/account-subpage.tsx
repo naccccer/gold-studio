@@ -17,7 +17,7 @@ export function AccountSubpage({ children }: AccountSubpageProps) {
   return (
     <PageShell maxWidth="md" className="space-y-3 pb-28">
       <header className="rounded-[1.35rem] border border-white/80 bg-surface/62 p-3.5 shadow-[0_22px_50px_-44px_rgba(17,16,14,0.72)]">
-        <ButtonLink href="/account" variant="ghost" size="sm" className="h-9 w-fit rounded-full px-2.5">
+        <ButtonLink href="/account" variant="secondary" size="sm" className="h-10 w-fit rounded-full px-3">
           <ArrowRight2 aria-hidden={true} className="h-4 w-4" />
           حساب
         </ButtonLink>
@@ -38,8 +38,10 @@ export function AccountSectionHeader({
   caption?: string;
   align?: "right" | "center";
 }) {
+  const rightAlignment = caption ? "items-start text-right" : "items-center text-right";
+
   return (
-    <div className={["flex gap-3", align === "center" ? "flex-col items-center text-center" : "items-start text-right"].join(" ")}>
+    <div className={["flex gap-3", align === "center" ? "flex-col items-center text-center" : rightAlignment].join(" ")}>
       <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-wash text-accent-deep">
         <Icon aria-hidden={true} className="h-4.5 w-4.5" />
       </span>

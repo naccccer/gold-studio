@@ -7,6 +7,7 @@ import { requireAdminSession } from "@/lib/auth/session";
 import { normalizeLoginIdentifier } from "@/lib/auth/identifier";
 import { hashPassword } from "@/lib/auth/password";
 import { getSubscriptionPeriod, logAdminAudit } from "@/lib/billing";
+import { normalizeBillingPlanColorPreset } from "@/lib/billing-plan-colors";
 import { processImageProject } from "@/lib/generation/jobs";
 import { referralCodeFromUserId } from "@/lib/referrals";
 
@@ -133,6 +134,7 @@ export async function createBillingPackageAction(formData: FormData) {
       currency: text(formData, "currency") || "IRR",
       credits,
       periodDays,
+      colorPreset: normalizeBillingPlanColorPreset(text(formData, "colorPreset")),
       sortOrder: integer(formData, "sortOrder"),
       isActive: formData.has("isActive"),
       isPublic: formData.has("isActive"),
@@ -174,6 +176,7 @@ export async function updateBillingPackageAction(formData: FormData) {
       currency: text(formData, "currency") || "IRR",
       credits,
       periodDays,
+      colorPreset: normalizeBillingPlanColorPreset(text(formData, "colorPreset")),
       sortOrder: integer(formData, "sortOrder"),
       isActive: formData.has("isActive"),
       isPublic: formData.has("isActive"),
@@ -244,6 +247,7 @@ export async function duplicateBillingPackageAction(formData: FormData) {
       currency: source.currency,
       credits: source.credits,
       periodDays: source.periodDays,
+      colorPreset: source.colorPreset,
       sortOrder: source.sortOrder + 1,
       isActive: false,
       isPublic: false,

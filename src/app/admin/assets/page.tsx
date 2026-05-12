@@ -1,7 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Archive } from "lucide-react";
-import { AdminMetric, AdminRow, AdminSection, EmptyAdminState, formatAdminDate } from "@/features/admin/components/admin-ui";
+import { Archive } from "vuesax-icons-react";
+import {
+  adminDangerActionClass,
+  adminInputClass,
+  adminPrimaryActionClass,
+  AdminMetric,
+  AdminRow,
+  AdminSection,
+  EmptyAdminState,
+  formatAdminDate,
+} from "@/features/admin/components/admin-ui";
 import { archiveAdminAssetAction } from "@/features/admin/actions";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
@@ -48,7 +57,7 @@ export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageP
 
   return (
     <>
-      <section className="grid gap-3 sm:grid-cols-3">
+      <section className="grid gap-2.5 sm:grid-cols-3">
         <AdminMetric label="آماده" value={readyCount} />
         <AdminMetric label="آرشیوشده" value={archivedCount} />
         <AdminMetric label="نمایش فعلی" value={assets.length} />
@@ -56,13 +65,13 @@ export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageP
 
       <AdminSection title="فیلتر دارایی‌ها" eyebrow="تصاویر منبع گالری">
         <form className="grid gap-2 md:grid-cols-[1fr_160px_auto]">
-          <input name="q" defaultValue={q} placeholder="شناسه، مالک، نام یا storage key" className="h-10 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-sm outline-none" />
-          <select name="status" defaultValue={status} className="h-10 rounded-[var(--radius-sm)] border border-border bg-surface px-2 text-sm outline-none">
+          <input name="q" defaultValue={q} placeholder="شناسه، مالک، نام یا storage key" className={adminInputClass} />
+          <select name="status" defaultValue={status} className={adminInputClass}>
             <option value="READY">آماده</option>
             <option value="ARCHIVED">آرشیوشده</option>
             <option value="ALL">همه</option>
           </select>
-          <button className="h-10 rounded-[var(--radius-sm)] bg-foreground px-4 text-sm text-surface">اعمال</button>
+          <button className={adminPrimaryActionClass}>اعمال</button>
         </form>
       </AdminSection>
 
@@ -91,7 +100,7 @@ export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageP
               {asset.status === "READY" ? (
                 <form action={archiveAdminAssetAction}>
                   <input type="hidden" name="assetId" value={asset.id} />
-                  <button className="inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-sm)] border border-danger/30 bg-danger-soft px-3 text-xs text-danger">
+                  <button className={adminDangerActionClass}>
                     <Archive className="h-3.5 w-3.5" />
                     آرشیو
                   </button>

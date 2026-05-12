@@ -36,12 +36,13 @@ Mobile user navigation:
 - UI Phase 4 is complete: gallery intake and selection, the new-project source/size/style wizard, and the active processing screen now read as one guided studio flow while keeping user-facing text-to-image out of scope.
 - UI Phase 5 is complete: result review and project ownership now use clearer status/metadata cues, more discoverable before/after comparison, stronger download hierarchy, and more trustworthy project-card ownership signals without expanding beyond the project surfaces.
 - UI Phase 6 is complete: account, billing, support, referral, FAQ, profile, security, and output settings now use clearer utility grouping, repaired Persian copy, more trustworthy payment/support presentation, and consistent Vuesax-based user-facing iconography on the touched surfaces.
+- UI Phase 7 is implemented: live admin routes now use a desktop-first operations shell, denser shared admin primitives, Ovala token alignment, direct assets navigation, and Vuesax-based icons on touched admin-facing UI while keeping provider/debug controls admin-only.
 
 ## Next Priorities
 - Production hardening: verify real Liara generation, retry behavior, storage display URLs, and failed-state recovery on the deployment target.
-- Release readiness: finish route QA across auth, home, gallery, new project, project detail, projects, account, billing, support, settings, and admin, with special attention to the completed Phase 4 guided flow, Phase 5 result ownership polish, and Phase 6 utility-surface updates.
+- Release readiness: finish route QA across auth, home, gallery, new project, project detail, projects, account, billing, support, settings, and admin, with special attention to the completed Phase 4 guided flow, Phase 5 result ownership polish, Phase 6 utility-surface updates, and Phase 7 admin desktop operations.
 - Mobile polish: check `393x852` screenshots for Farsi wrapping, RTL controls, bottom navigation, action placement, and the no-accidental-scroll behavior on focused creation screens when screenshot capture is requested.
-- Admin operations polish: keep admin dense and practical without leaking prompt/provider complexity into user flows.
+- Admin operations QA: review the desktop-first admin panel with real data for table density, payment review speed, provider event scanning, and long-form package editing.
 - Documentation hygiene: keep docs short and current; update this file when scope or active priorities change.
 
 ## Verification

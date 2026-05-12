@@ -398,7 +398,21 @@ Screenshots: account, billing states/tabs, support, FAQ.
 
 ## Phase 7: Admin Alignment
 
+Status: Implemented on 2026-05-12.
+
 Goal: make admin operational, compact, and visually related to Ovala.
+
+Completion notes:
+
+- Refined the live admin shell as a desktop-first operations workspace with a wider sticky sidebar on large screens, compact responsive nav on smaller screens, and direct access to admin assets.
+- Tightened shared admin primitives for denser sections, metrics, rows, empty states, inputs, textareas, and action classes.
+- Aligned live admin home, users, projects, assets, provider, styles, support, and packages screens around shared Ovala tokens and compact desktop scanning.
+- Migrated touched live admin-facing icons from lucide to `vuesax-icons-react`; older unused `src/features/admin/screens/*` files were intentionally left untouched.
+- Preserved provider/debug and internal prompt controls as admin-only.
+- Screenshots were intentionally skipped per request.
+- Verification: `npm run check:mojibake` passed and `npm run lint` passed.
+- Build caveat: `npm run build` still fails during `prisma generate` with Windows `EPERM rename query_engine-windows.dll.node`, before Next compilation; this matches the known Prisma engine/client issue and is unrelated to Phase 7.
+- Extra caveat: `npx tsc --noEmit` still fails because `tests/home.spec.ts` references missing `@playwright/test` types; no admin TypeScript errors were reported before that existing test setup issue.
 
 Scope: admin layout, home, users, projects, assets, packages, styles, provider events, support, access/credits.
 

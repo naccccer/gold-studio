@@ -284,6 +284,7 @@ model BillingPackage {
   currency         String             @default("IRR")
   credits          Int                @default(0)
   periodDays       Int?
+  colorPreset      String             @default("amber")
   isActive         Boolean            @default(true)
   isPublic         Boolean            @default(true)
   sortOrder        Int                @default(0)

@@ -5,15 +5,17 @@ type ButtonVariant = "primary" | "secondary" | "danger" | "ghost" | "studio-prim
 type ButtonSize = "sm" | "md" | "full" | "icon";
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: "bg-foreground text-surface shadow-[var(--shadow-button)] hover:bg-[#27231f]",
-  secondary: "border border-border bg-surface/72 text-foreground hover:border-border-strong hover:bg-surface",
-  danger: "bg-danger-bright text-white shadow-[0_12px_22px_-16px_rgba(217,45,32,0.9)] hover:bg-danger-hover",
+  primary:
+    "bg-foreground text-surface shadow-[0_18px_34px_-24px_rgba(17,16,14,0.95)] hover:bg-[#27231f]",
+  secondary:
+    "bg-surface-soft text-foreground shadow-[0_14px_28px_-24px_rgba(17,16,14,0.62),inset_0_1px_0_rgba(255,255,255,0.8)] hover:bg-surface",
+  danger: "bg-danger-bright text-white shadow-[0_14px_26px_-18px_rgba(217,45,32,0.9)] hover:bg-danger-hover",
   ghost: "text-muted hover:bg-surface-soft hover:text-foreground",
   "studio-primary":
     "border border-[#ffd98f]/45 bg-[linear-gradient(135deg,var(--gold-gradient-start)_0%,var(--gold-gradient-mid)_48%,var(--gold-gradient-end)_100%)] !text-studio-control shadow-[var(--shadow-gold-action)] hover:brightness-105",
   "studio-secondary":
-    "border border-white/28 bg-white/[0.08] !text-white/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] hover:border-white/42 hover:bg-white/[0.12]",
-  admin: "border border-border bg-surface text-foreground hover:border-border-strong hover:bg-surface-soft",
+    "bg-white/[0.15] !text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_14px_28px_-22px_rgba(0,0,0,0.75)] hover:bg-white/[0.22]",
+  admin: "bg-surface-soft text-foreground shadow-[0_12px_24px_-22px_rgba(17,16,14,0.55)] hover:bg-surface",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
