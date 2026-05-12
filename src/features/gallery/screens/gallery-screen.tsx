@@ -110,21 +110,8 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
   return (
     <PageShell maxWidth="lg" className="space-y-5 pb-32">
       <div className="flex flex-col gap-5">
-        <section className="rounded-[1.35rem] border border-dashed border-accent/58 bg-surface/62 p-4 shadow-[0_16px_36px_-34px_rgba(17,16,14,0.3)]">
-          {selectedCount > 0 ? (
-            <div className="flex items-start justify-end gap-4">
-              <button
-                type="button"
-                onClick={() => setSelectedIds([])}
-                className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-border bg-surface px-3 text-xs font-medium text-muted transition hover:text-foreground"
-              >
-                <CloseCircle aria-hidden={true} className="h-4 w-4" />
-                پاک کردن
-              </button>
-            </div>
-          ) : null}
-
-          <div className={selectedCount > 0 ? "mt-4 grid grid-cols-2 gap-3" : "grid grid-cols-2 gap-3"}>
+        <section className="motion-reveal-soft rounded-[1.35rem] border border-dashed border-accent/58 bg-surface/62 p-4 shadow-[0_16px_36px_-34px_rgba(17,16,14,0.3)]">
+          <div className="grid grid-cols-2 gap-3">
             <label htmlFor="gallery-file-input" className={buttonClasses({ className: "h-12 w-full" })}>
               <DocumentUpload aria-hidden={true} className="h-4 w-4" />
               آپلود عکس
@@ -162,7 +149,7 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
         </section>
 
         {pickerError ? (
-          <p className="rounded-[1rem] border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
+          <p className="motion-state rounded-[1rem] border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
             {pickerError}
           </p>
         ) : null}
@@ -225,7 +212,7 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                         </p>
                       </div>
                       {selected ? (
-                        <span className="absolute left-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full bg-foreground text-surface">
+                        <span className="motion-reveal-soft absolute left-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full bg-foreground text-surface">
                           <TickCircle aria-hidden={true} className="h-4 w-4" />
                         </span>
                       ) : null}
@@ -291,7 +278,7 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
           </section>
         )}
 
-        <ActionDock sticky className={selectedCount > 0 ? "!grid-cols-[2.75rem_minmax(0,1fr)] items-center" : ""}>
+        <ActionDock sticky className={selectedCount > 0 ? "!grid-cols-[2.75rem_4rem_minmax(0,1fr)] items-center" : ""}>
           {selectedCount === 1 ? (
             <>
               <form
@@ -307,6 +294,15 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                   <Trash aria-hidden={true} className="h-4 w-4" />
                 </IconButton>
               </form>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setSelectedIds([])}
+                className="h-11 w-full rounded-full border border-foreground/18 bg-surface text-xs font-bold text-foreground shadow-[0_12px_24px_-20px_rgba(17,16,14,0.68)] hover:bg-surface-soft"
+              >
+                <CloseCircle aria-hidden={true} className="h-4 w-4" />
+                لغو
+              </Button>
               <ButtonLink href={`/projects/new?assetId=${selectedIds[0]}`} className="h-12 w-full rounded-[1rem]">
                 ادامه به پروژه
                 <ArrowLeft aria-hidden={true} className="h-4 w-4" />
@@ -329,6 +325,15 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                   <Trash aria-hidden={true} className="h-4 w-4" />
                 </IconButton>
               </form>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setSelectedIds([])}
+                className="h-11 w-full rounded-full border border-foreground/18 bg-surface text-xs font-bold text-foreground shadow-[0_12px_24px_-20px_rgba(17,16,14,0.68)] hover:bg-surface-soft"
+              >
+                <CloseCircle aria-hidden={true} className="h-4 w-4" />
+                لغو
+              </Button>
               <form action={batchAction}>
                 {selectedIds.map((id) => (
                   <input key={id} type="hidden" name="assetIds" value={id} />

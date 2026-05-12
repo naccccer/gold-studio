@@ -61,7 +61,7 @@ function AccountRow({ item }: { item: AccountRowItem }) {
   return (
     <Link
       href={item.href}
-      className="grid min-h-[4.4rem] w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-[var(--radius-lg)] border border-white/72 bg-surface/64 px-3.5 py-3 text-right font-medium transition hover:border-border-strong hover:bg-surface focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+      className="motion-surface grid min-h-[4.4rem] w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-[var(--radius-lg)] border border-white/72 bg-surface/64 px-3.5 py-3 text-right font-medium hover:border-border-strong hover:bg-surface focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
       dir="rtl"
     >
       <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-wash text-accent-deep">
@@ -96,7 +96,7 @@ export function AccountScreen({
   return (
     <PageShell maxWidth="md" className="space-y-3 pb-32">
       <div className="flex min-h-[calc(100svh-12rem)] flex-col gap-3">
-        <section className="rounded-[1.45rem] border border-white/80 bg-surface/62 p-3.5 shadow-[0_22px_50px_-44px_rgba(17,16,14,0.72)]">
+        <section className="motion-reveal rounded-[1.45rem] border border-white/80 bg-surface/62 p-3.5 shadow-[0_22px_50px_-44px_rgba(17,16,14,0.72)]">
           <div className="flex items-start gap-3">
             <div className="flex min-w-0 flex-1 items-center gap-3">
               <div className="relative h-14 w-14 overflow-hidden rounded-[1rem] bg-[#e8dfd2]">
@@ -112,15 +112,15 @@ export function AccountScreen({
           </div>
 
           <div className="mt-4 grid grid-cols-3 gap-2">
-            <div className="rounded-[1rem] bg-white/62 px-3 py-2.5 text-right">
+            <div className="motion-state rounded-[1rem] bg-white/62 px-3 py-2.5 text-right">
               <p className="text-[11px] font-medium text-muted">اعتبار</p>
               <p className="mt-1 text-lg font-semibold text-foreground">{credits.toLocaleString("fa-IR")}</p>
             </div>
-            <div className="rounded-[1rem] bg-white/62 px-3 py-2.5 text-right">
+            <div className="motion-state rounded-[1rem] bg-white/62 px-3 py-2.5 text-right">
               <p className="text-[11px] font-medium text-muted">اشتراک</p>
               <p className="mt-1 text-sm font-semibold text-foreground">{subscriptionCredits.toLocaleString("fa-IR")}</p>
             </div>
-            <div className="rounded-[1rem] bg-white/62 px-3 py-2.5 text-right">
+            <div className="motion-state rounded-[1rem] bg-white/62 px-3 py-2.5 text-right">
               <p className="text-[11px] font-medium text-muted">جداگانه</p>
               <p className="mt-1 text-sm font-semibold text-foreground">{walletCredits.toLocaleString("fa-IR")}</p>
             </div>
@@ -129,7 +129,7 @@ export function AccountScreen({
 
         <section className={`${accountCardClass} space-y-3`}>
           {pendingRequests.length > 0 ? (
-            <div className="rounded-[1rem] bg-white/62 px-3 py-3">
+            <div className="motion-state rounded-[1rem] bg-white/62 px-3 py-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <ReceiptText aria-hidden={true} className="h-4 w-4 text-accent-deep" />

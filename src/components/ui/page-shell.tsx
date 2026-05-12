@@ -17,7 +17,7 @@ export function PageShell({ children, maxWidth = "md", minHeight = true, classNa
   return (
     <section
       className={[
-        "mx-auto flex w-full flex-col px-4",
+        "motion-page mx-auto flex w-full flex-col px-4",
         minHeight ? "min-h-[calc(100svh-8.5rem)]" : undefined,
         maxWidthClasses[maxWidth],
         className,

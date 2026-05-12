@@ -53,6 +53,13 @@
   --shadow-gold-action: 0 18px 38px -24px rgba(216, 165, 82, 0.9);
   --shadow-studio-frame: 0 38px 100px -64px rgba(0, 0, 0, 1);
   --shadow-focus: 0 0 0 3px rgba(178, 139, 82, 0.2);
+  --motion-duration-micro: 170ms;
+  --motion-duration-standard: 260ms;
+  --motion-duration-reveal: 460ms;
+  --motion-duration-editorial: 680ms;
+  --motion-ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-interactive: cubic-bezier(0.2, 0, 0, 1);
+  --motion-ease-state: cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 @theme inline {
@@ -128,6 +135,93 @@ h1,h2,h3,h4,h5,h6 {
 }
 
 .text-ui { font-family: var(--font-vazirmatn), Tahoma, sans-serif; }
+
+@keyframes ovalaMotionReveal {
+  0% { opacity: 0; transform: translateY(10px) scale(0.992); filter: blur(4px); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes ovalaMotionRevealSoft {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ovalaPageTransition {
+  0% { opacity: 0; transform: translateY(8px); filter: blur(3px); }
+  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+@keyframes ovalaMenuOpen {
+  0% { opacity: 0; transform: translateY(-4px) scale(0.985); filter: blur(3px); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+.motion-state {
+  transition-duration: var(--motion-duration-standard);
+  transition-property: background-color, border-color, box-shadow, color, opacity, filter;
+  transition-timing-function: var(--motion-ease-state);
+}
+
+.motion-press {
+  transform: translateZ(0);
+  transition-duration: var(--motion-duration-micro);
+  transition-property: background-color, border-color, box-shadow, color, opacity, filter, transform;
+  transition-timing-function: var(--motion-ease-interactive);
+}
+
+.motion-press:hover {
+  transform: translateY(-1px);
+}
+
+.motion-press:active {
+  transform: translateY(0) scale(0.985);
+}
+
+.motion-press:disabled,
+.motion-press[aria-disabled="true"] {
+  transform: none;
+}
+
+.motion-surface {
+  transform: translateZ(0);
+  transition-duration: var(--motion-duration-standard);
+  transition-property: background-color, border-color, box-shadow, opacity, transform;
+  transition-timing-function: var(--motion-ease-standard);
+}
+
+.motion-selected {
+  transition-duration: var(--motion-duration-standard);
+  transition-property: background-color, border-color, box-shadow, color, opacity, transform;
+  transition-timing-function: var(--motion-ease-standard);
+}
+
+.motion-reveal {
+  animation: ovalaMotionReveal var(--motion-duration-editorial) var(--motion-ease-standard) both;
+}
+
+.motion-reveal-soft {
+  animation: ovalaMotionRevealSoft var(--motion-duration-reveal) var(--motion-ease-standard) both;
+}
+
+.motion-page {
+  animation: ovalaPageTransition var(--motion-duration-reveal) var(--motion-ease-standard) both;
+}
+
+.motion-menu {
+  animation: ovalaMenuOpen var(--motion-duration-standard) var(--motion-ease-standard) both;
+  transform-origin: top center;
+}
+
+.motion-nav-item {
+  transform: translateZ(0);
+  transition-duration: var(--motion-duration-standard);
+  transition-property: background-color, box-shadow, color, opacity, transform;
+  transition-timing-function: var(--motion-ease-standard);
+}
+
+.motion-nav-item:active {
+  transform: scale(0.985);
+}
 
 @keyframes before-after-reveal {
   0%, 100% { clip-path: inset(0 54% 0 0); }
@@ -211,6 +305,32 @@ h1,h2,h3,h4,h5,h6 {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+
+  .motion-press,
+  .motion-press:hover,
+  .motion-press:active,
+  .motion-surface,
+  .motion-surface:hover,
+  .motion-nav-item,
+  .motion-nav-item:active {
+    transform: none !important;
+  }
+
+  .motion-reveal,
+  .motion-reveal-soft,
+  .motion-page,
+  .motion-menu {
+    animation: none !important;
+    filter: none !important;
+  }
+
   .auth-before-after-reveal,
   .auth-before-after-divider,
   .animate-\[ovalaHeroSlideA_12s_ease-in-out_infinite\],

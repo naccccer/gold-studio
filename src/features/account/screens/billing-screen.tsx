@@ -156,7 +156,7 @@ function PackageCard({
     <form
       action={createPurchaseRequestAction}
       className={[
-        "relative overflow-hidden rounded-[1.05rem] border p-3.5 text-right",
+        "motion-surface motion-reveal-soft relative overflow-hidden rounded-[1.05rem] border p-3.5 text-right",
         isSubscription ? skin?.card : "border-white/72 bg-surface/64 shadow-[0_18px_42px_-42px_rgba(17,16,14,0.7)]",
       ].join(" ")}
     >
@@ -203,7 +203,7 @@ function PackageCard({
               type="submit"
               formAction={deletePurchaseRequestAction}
               className={[
-                "inline-flex h-10 w-10 items-center justify-center rounded-[0.9rem] text-xs shadow-[0_12px_24px_-20px_rgba(17,16,14,0.68)] transition focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+                "motion-press inline-flex h-10 w-10 items-center justify-center rounded-[0.9rem] text-xs shadow-[0_12px_24px_-20px_rgba(17,16,14,0.68)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
                 isSubscription
                   ? "bg-white/12 text-white/82 hover:bg-white/18"
                   : "bg-danger-soft text-danger hover:bg-[#efd5d0]",
@@ -221,7 +221,7 @@ function PackageCard({
           className={
             isSubscription
               ? [
-                  "relative mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[0.9rem] border border-white bg-white text-xs font-semibold text-[#1b1713] shadow-[0_18px_30px_-22px_rgba(255,255,255,0.9)] transition hover:bg-[#fff8ef] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+                  "motion-press relative mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[0.9rem] border border-white bg-white text-xs font-semibold text-[#1b1713] shadow-[0_18px_30px_-22px_rgba(255,255,255,0.9)] hover:bg-[#fff8ef] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
                 ].join(" ")
               : buttonClasses({
                   size: "full",
@@ -247,14 +247,14 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
 
   return (
     <PageShell maxWidth="md" className="space-y-3 pb-32">
-      <header className="rounded-[1.45rem] border border-white/80 bg-surface/62 p-3.5 shadow-[0_22px_50px_-44px_rgba(17,16,14,0.72)]">
+      <header className="motion-reveal rounded-[1.45rem] border border-white/80 bg-surface/62 p-3.5 shadow-[0_22px_50px_-44px_rgba(17,16,14,0.72)]">
         <ButtonLink href="/account" variant="secondary" size="sm" className="h-10 w-fit rounded-full px-3">
           <ArrowRight aria-hidden={true} className="h-4 w-4" />
           حساب
         </ButtonLink>
       </header>
 
-      <nav className="grid grid-cols-4 gap-1 rounded-[1.1rem] border border-white/72 bg-surface/64 p-1" aria-label="بخش‌های پرداخت">
+      <nav className="motion-reveal-soft grid grid-cols-4 gap-1 rounded-[1.1rem] border border-white/72 bg-surface/64 p-1" aria-label="بخش‌های پرداخت">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const active = tab.id === activeTab;
@@ -265,7 +265,7 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
               key={tab.id}
               href={`/billing?tab=${tab.id}`}
               className={[
-                "relative inline-flex h-11 items-center justify-center gap-1.5 rounded-[0.85rem] text-[11px] font-semibold transition",
+                "motion-nav-item relative inline-flex h-11 items-center justify-center gap-1.5 rounded-[0.85rem] text-[11px] font-semibold",
                 active ? "bg-foreground text-surface shadow-[0_14px_24px_-22px_rgba(17,16,14,0.9)]" : "text-muted hover:bg-white/58 hover:text-foreground",
               ].join(" ")}
               aria-current={active ? "page" : undefined}
@@ -319,12 +319,12 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
           <AccountSectionHeader icon={Bank} title="اطلاعات کارت‌به‌کارت" />
           {paymentSettings?.isActive ? (
             <>
-              <div className="rounded-[1rem] bg-white/62 p-3">
-                <div className="rounded-[0.95rem] bg-white/78 px-3 py-2.5">
+              <div className="motion-state rounded-[1rem] bg-white/62 p-3">
+                <div className="motion-state rounded-[0.95rem] bg-white/78 px-3 py-2.5">
                   <p className="text-[11px] text-muted">نام صاحب کارت</p>
                   <p className="mt-1 text-sm font-semibold text-foreground">{paymentSettings.cardholderName}</p>
                 </div>
-                <div className="mt-2 rounded-[0.95rem] bg-white/78 px-3 py-2.5">
+                <div className="motion-state mt-2 rounded-[0.95rem] bg-white/78 px-3 py-2.5">
                   <p className="text-[11px] text-muted">شماره کارت</p>
                   <div className="mt-1 flex items-center justify-between gap-3">
                     <CopyCardNumberButton cardNumber={paymentSettings.cardNumber} />
@@ -340,7 +340,7 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
               </ButtonLink>
             </>
           ) : (
-            <p className="rounded-[1rem] bg-white/62 p-3 text-xs leading-6 text-muted">
+            <p className="motion-state rounded-[1rem] bg-white/62 p-3 text-xs leading-6 text-muted">
               پرداخت کارت‌به‌کارت فعلا فعال نیست. برای ثبت خرید، از پشتیبانی راهنمایی بگیرید.
             </p>
           )}
@@ -362,7 +362,7 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
                   key={request.id}
                   action={submitPurchaseReceiptAction}
                   className={[
-                    "relative overflow-hidden rounded-[1.05rem] border p-3.5 text-right",
+                    "motion-surface motion-reveal-soft relative overflow-hidden rounded-[1.05rem] border p-3.5 text-right",
                     isPlanRequest
                       ? `${requestSkin?.card} space-y-3`
                       : "space-y-3 border-white/72 bg-surface/64 shadow-[0_18px_42px_-42px_rgba(17,16,14,0.7)]",
@@ -395,7 +395,7 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
                       <button
                         type="submit"
                         formAction={deletePurchaseRequestAction}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-danger-soft text-danger shadow-[0_12px_24px_-20px_rgba(152,59,52,0.65)] transition hover:bg-[#efd5d0] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+                        className="motion-press inline-flex h-9 w-9 items-center justify-center rounded-full bg-danger-soft text-danger shadow-[0_12px_24px_-20px_rgba(152,59,52,0.65)] hover:bg-[#efd5d0] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
                         aria-label="حذف از لیست"
                         title="حذف"
                       >
@@ -442,7 +442,7 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
                       type="submit"
                       className={
                         isPlanRequest
-                          ? "relative inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-[0.9rem] bg-white px-5 text-xs font-semibold leading-none text-[#1b1713] shadow-[0_18px_30px_-24px_rgba(255,255,255,0.82)] transition hover:bg-[#fff8ef] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+                          ? "motion-press relative inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-[0.9rem] bg-white px-5 text-xs font-semibold leading-none text-[#1b1713] shadow-[0_18px_30px_-24px_rgba(255,255,255,0.82)] hover:bg-[#fff8ef] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
                           : buttonClasses({ size: "full", variant: "primary", className: "h-10 rounded-[0.9rem] text-xs" })
                       }
                     >

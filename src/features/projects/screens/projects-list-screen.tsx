@@ -131,7 +131,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                         />
                       </Link>
                       {selected ? (
-                          <span className="absolute right-2.5 top-2.5 z-20 inline-flex h-7 w-7 items-center justify-center rounded-full bg-foreground text-surface">
+                          <span className="motion-reveal-soft absolute right-2.5 top-2.5 z-20 inline-flex h-7 w-7 items-center justify-center rounded-full bg-foreground text-surface">
                           <TickCircle aria-hidden={true} className="h-4 w-4" />
                         </span>
                       ) : null}
@@ -159,7 +159,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                             <button
                               type="submit"
                               aria-label="تایید نام پروژه"
-                              className="inline-flex h-5 w-5 items-center justify-center rounded-full text-accent-bright"
+                              className="motion-press inline-flex h-5 w-5 items-center justify-center rounded-full text-accent-bright"
                             >
                               <TickCircle aria-hidden={true} className="h-4 w-4" />
                             </button>
@@ -167,7 +167,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                               type="button"
                               onClick={() => setEditingProjectId(null)}
                               aria-label="انصراف از ویرایش نام پروژه"
-                              className="inline-flex h-5 w-5 items-center justify-center rounded-full text-surface/72"
+                              className="motion-press inline-flex h-5 w-5 items-center justify-center rounded-full text-surface/72"
                             >
                               <CloseCircle aria-hidden={true} className="h-4 w-4" />
                             </button>

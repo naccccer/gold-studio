@@ -372,7 +372,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               </div>
 
               <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/72 via-black/18 to-transparent" />
-              <div className="absolute bottom-4 right-4 z-[60]">
+              <div className="absolute bottom-4 right-4 z-10">
                 <button
                   type="button"
                   onClick={(event) => {

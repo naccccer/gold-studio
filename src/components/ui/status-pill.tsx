@@ -20,7 +20,7 @@ export function StatusPill({ children, variant = "neutral", className = "" }: St
   return (
     <span
       className={[
-        "inline-flex min-h-7 items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold leading-none",
+        "motion-state inline-flex min-h-7 items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold leading-none",
         variantClasses[variant],
         className,
       ]

@@ -27,7 +27,7 @@ export function JewelryImageFrame({ children, className = "", aspect = "square",
   return (
     <div
       className={[
-        "relative overflow-hidden rounded-[var(--radius-2xl)] transition",
+        "motion-selected relative overflow-hidden rounded-[var(--radius-2xl)]",
         treatmentClasses[treatment],
         selected ? "border-accent-bright shadow-[0_18px_36px_-28px_rgba(17,16,14,0.58)] ring-1 ring-accent-bright/45" : "",
         disabled ? "grayscale-[35%] opacity-75" : "",
@@ -56,7 +56,7 @@ export function ImageOverlayPill({ tone = "light", className = "", ...props }: I
   return (
     <span
       className={[
-        "inline-flex min-h-6 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-semibold leading-none",
+        "motion-state inline-flex min-h-6 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-semibold leading-none",
         overlayToneClasses[tone],
         className,
       ].filter(Boolean).join(" ")}

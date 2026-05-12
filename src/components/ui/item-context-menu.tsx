@@ -96,11 +96,11 @@ export function ItemContextMenu({ label, children, align = "left", tone = "dark"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
         className={[
-          "inline-flex items-center justify-center rounded-full transition focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+          "motion-press inline-flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
           size === "sm" ? "h-8 w-8" : "h-11 w-11",
         ].join(" ")}
       >
-        <span className={`inline-flex ${size === "sm" ? "h-7 w-7" : "h-7 w-7"} items-center justify-center rounded-full border transition ${buttonTone}`}>
+        <span className={`motion-state inline-flex ${size === "sm" ? "h-7 w-7" : "h-7 w-7"} items-center justify-center rounded-full border ${buttonTone}`}>
           <More aria-hidden={true} className="h-3 w-3" />
         </span>
       </button>
@@ -112,7 +112,7 @@ export function ItemContextMenu({ label, children, align = "left", tone = "dark"
           onPointerDown={(event) => event.stopPropagation()}
           style={{ top: menuPosition.top, left: menuPosition.left }}
           className={[
-            "fixed z-50 w-52 overflow-hidden rounded-[var(--radius-lg)] border border-border/70 bg-surface p-1.5 text-right text-xs text-foreground shadow-[var(--shadow-menu)]",
+            "motion-menu fixed z-50 w-52 overflow-hidden rounded-[var(--radius-lg)] border border-border/70 bg-surface p-1.5 text-right text-xs text-foreground shadow-[var(--shadow-menu)]",
           ].join(" ")}
         >
           {children}
@@ -124,7 +124,7 @@ export function ItemContextMenu({ label, children, align = "left", tone = "dark"
 }
 
 export const contextMenuItemClasses =
-  "flex min-h-11 w-full items-center justify-start gap-2 rounded-[var(--radius-md)] px-2.5 py-2 text-right text-xs font-semibold text-foreground transition hover:bg-surface-soft focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
+  "motion-state flex min-h-11 w-full items-center justify-start gap-2 rounded-[var(--radius-md)] px-2.5 py-2 text-right text-xs font-semibold text-foreground hover:bg-surface-soft focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
 
 export const contextMenuDangerItemClasses =
-  "flex min-h-11 w-full items-center justify-start gap-2 rounded-[var(--radius-md)] px-2.5 py-2 text-right text-xs font-semibold text-danger transition hover:bg-danger-soft focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
+  "motion-state flex min-h-11 w-full items-center justify-start gap-2 rounded-[var(--radius-md)] px-2.5 py-2 text-right text-xs font-semibold text-danger hover:bg-danger-soft focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";

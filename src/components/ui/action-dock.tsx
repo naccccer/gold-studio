@@ -11,6 +11,7 @@ export function ActionDock({ children, columns = 1, sticky = false, fade = true,
   return (
     <div
       className={[
+        "motion-reveal-soft",
         sticky && fade
           ? "sticky bottom-[4.45rem] z-20 mx-1 mt-auto bg-gradient-to-t from-background via-background/95 to-transparent pb-2 pt-5"
           : sticky

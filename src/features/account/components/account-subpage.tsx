@@ -16,7 +16,7 @@ type AccountSubpageProps = {
 export function AccountSubpage({ children }: AccountSubpageProps) {
   return (
     <PageShell maxWidth="md" className="space-y-3 pb-28">
-      <header className="rounded-[1.35rem] border border-white/80 bg-surface/62 p-3.5 shadow-[0_22px_50px_-44px_rgba(17,16,14,0.72)]">
+      <header className="motion-reveal-soft rounded-[1.35rem] border border-white/80 bg-surface/62 p-3.5 shadow-[0_22px_50px_-44px_rgba(17,16,14,0.72)]">
         <ButtonLink href="/account" variant="secondary" size="sm" className="h-10 w-fit rounded-full px-3">
           <ArrowRight2 aria-hidden={true} className="h-4 w-4" />
           حساب
@@ -63,7 +63,7 @@ export function AccountInfoRow({
   valueClassName?: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-[0.95rem] bg-white/62 px-3 py-2.5">
+    <div className="motion-state flex items-center justify-between gap-3 rounded-[0.95rem] bg-white/62 px-3 py-2.5">
       <span className="text-[11px] text-muted">{label}</span>
       <span className={["text-sm font-semibold text-foreground", valueClassName].filter(Boolean).join(" ")}>{value}</span>
     </div>
@@ -75,6 +75,6 @@ export const accountInputClass = `${fieldControlClassName} h-11 bg-white/88`;
 export const accountTextareaClass = `${fieldTextAreaClassName} min-h-28 bg-white/88`;
 
 export const accountCardClass =
-  "rounded-[1.05rem] border border-white/72 bg-surface/64 p-3.5 text-right shadow-[0_18px_42px_-42px_rgba(17,16,14,0.7)]";
+  "motion-surface motion-reveal-soft rounded-[1.05rem] border border-white/72 bg-surface/64 p-3.5 text-right shadow-[0_18px_42px_-42px_rgba(17,16,14,0.7)]";
 
-export const accountMutedCardClass = "rounded-[1rem] border border-white/60 bg-white/58 p-3 text-right";
+export const accountMutedCardClass = "motion-state rounded-[1rem] border border-white/60 bg-white/58 p-3 text-right";

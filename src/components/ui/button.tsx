@@ -27,7 +27,7 @@ const sizeClasses: Record<ButtonSize, string> = {
 
 export function buttonClasses({ variant = "primary", size = "md", className = "" }: { variant?: ButtonVariant; size?: ButtonSize; className?: string } = {}) {
   return [
-    "inline-flex shrink-0 items-center justify-center gap-2 rounded-[var(--radius-lg)] font-semibold leading-none transition disabled:pointer-events-none disabled:opacity-60 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+    "motion-press inline-flex shrink-0 items-center justify-center gap-2 rounded-[var(--radius-lg)] font-semibold leading-none disabled:pointer-events-none disabled:opacity-60 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
     variantClasses[variant],
     sizeClasses[size],
     className,

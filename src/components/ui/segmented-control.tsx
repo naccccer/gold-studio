@@ -43,7 +43,7 @@ export function SegmentedControl<T extends string>({
             aria-checked={selected}
             onClick={() => onChange(item.value)}
             className={[
-              "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[var(--radius-lg)] border px-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+              "motion-press inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[var(--radius-lg)] border px-2 text-xs font-semibold focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
               selected
                 ? "border-accent-bright bg-surface text-foreground shadow-[0_14px_26px_-24px_rgba(17,16,14,0.62)]"
                 : "border-white/72 bg-surface/58 text-muted hover:border-border-strong hover:text-foreground",

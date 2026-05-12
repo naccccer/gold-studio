@@ -48,7 +48,7 @@ export function MobileTabBar({ tabs, centerAction }: MobileTabBarProps) {
                 key={tab.href}
                 href={tab.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-[1rem] text-[10px] leading-none transition ${
+                className={`motion-nav-item flex min-h-12 flex-col items-center justify-center gap-1 rounded-[1rem] text-[10px] leading-none ${
                   active ? "bg-surface-soft text-foreground" : "text-muted/58 hover:text-foreground"
                 }`}
               >
@@ -63,7 +63,7 @@ export function MobileTabBar({ tabs, centerAction }: MobileTabBarProps) {
             aria-label={centerAction.label}
             aria-current={centerActive ? "page" : undefined}
             className={[
-              "mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full border text-surface shadow-[0_18px_34px_-22px_rgba(43,33,23,0.9)] transition",
+              "motion-nav-item mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full border text-surface shadow-[0_18px_34px_-22px_rgba(43,33,23,0.9)]",
               centerActive ? "border-foreground bg-foreground" : "border-[#d8bd8d] bg-[#c89f61] hover:bg-[#bb9256]",
             ].join(" ")}
           >
@@ -79,7 +79,7 @@ export function MobileTabBar({ tabs, centerAction }: MobileTabBarProps) {
                 key={tab.href}
                 href={tab.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-[1rem] text-[10px] leading-none transition ${
+                className={`motion-nav-item flex min-h-12 flex-col items-center justify-center gap-1 rounded-[1rem] text-[10px] leading-none ${
                   active ? "bg-surface-soft text-foreground" : "text-muted/58 hover:text-foreground"
                 }`}
               >

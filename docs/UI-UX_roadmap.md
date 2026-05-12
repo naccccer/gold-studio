@@ -426,6 +426,35 @@ Must pass:
 
 Screenshots: admin home, users, packages, projects, styles at `393x852`; desktop admin where density matters.
 
+## Phase 8: Premium Motion Foundation
+
+Status: First slice implemented on 2026-05-12.
+
+Goal: make user-facing motion feel premium, editorial, calm, and purposeful while clarifying hierarchy, selection, progress, and state changes.
+
+Completion notes:
+
+- Added shared motion tokens and reusable CSS utilities for press feedback, surface/state transitions, selected states, soft reveal, nav transitions, and reduced-motion behavior.
+- Applied subtle press and state motion to shared buttons, icon buttons, status pills, image overlay pills, selectable image frames, segmented controls, action docks, and the mobile bottom nav.
+- Added a soft shared page transition through `PageShell` and a restrained open animation for shared item context menus.
+- Added first-slice surface rhythm to account, account subpages, billing tabs, package cards, card-to-card/payment blocks, receipt cards, gallery intake/selection markers, and project selection markers.
+- Kept motion CSS/Tailwind-compatible and did not add an animation library for this slice.
+- Did not touch generation, provider, debug, or admin route logic; admin can inherit shared primitive motion where those primitives are reused.
+- Screenshots were intentionally skipped because they were not requested.
+- Verification: `npm run check:mojibake`, `npm run lint`, and `npm run build` should be run after implementation.
+
+Scope: shared motion primitives, page transitions, context menus, buttons, pills, nav, selectable cards, action docks, account, billing, gallery, and projects.
+
+Must pass:
+
+- Motion uses opacity, transform, border, shadow, and color transitions for clarity rather than decoration.
+- Interactive feedback stays slow/calm enough for a premium product-photo workflow and avoids bounce, neon, magic, or clutter.
+- `prefers-reduced-motion` removes entrance animation, decorative loops, and transform movement.
+- Mobile performance remains safe; no new animation library is introduced without a concrete need.
+- User-facing text-to-image, provider, generation, and debug logic remain untouched.
+
+Screenshots: skipped unless explicitly requested.
+
 ## Final UI Release Gate
 
 - Screenshot capture is not required unless explicitly requested.
