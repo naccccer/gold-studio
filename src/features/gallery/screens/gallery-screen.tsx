@@ -12,7 +12,6 @@ import {
   DocumentUpload,
   Edit2,
   Eye,
-  GalleryAdd,
   Magicpen,
   TickCircle,
   Trash,
@@ -26,7 +25,7 @@ import {
   contextMenuItemClasses,
   ItemContextMenu,
 } from "@/components/ui/item-context-menu";
-import { ImageOverlayPill, JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
+import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
 import { archiveAssetAction, renameAssetAction } from "@/features/gallery/actions";
 import {
@@ -112,15 +111,8 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
     <PageShell maxWidth="lg" className="space-y-5 pb-32">
       <div className="flex flex-col gap-5">
         <section className="rounded-[1.35rem] border border-dashed border-accent/58 bg-surface/62 p-4 shadow-[0_16px_36px_-34px_rgba(17,16,14,0.3)]">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-              <h2 className="text-base font-semibold text-foreground">عکس محصول را اضافه کنید</h2>
-              <ImageOverlayPill tone="accent" className="w-fit shrink-0">
-                <GalleryAdd aria-hidden={true} className="h-3.5 w-3.5" />
-                ورودی گالری
-              </ImageOverlayPill>
-            </div>
-            {selectedCount > 0 ? (
+          {selectedCount > 0 ? (
+            <div className="flex items-start justify-end gap-4">
               <button
                 type="button"
                 onClick={() => setSelectedIds([])}
@@ -129,10 +121,10 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                 <CloseCircle aria-hidden={true} className="h-4 w-4" />
                 پاک کردن
               </button>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
 
-          <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className={selectedCount > 0 ? "mt-4 grid grid-cols-2 gap-3" : "grid grid-cols-2 gap-3"}>
             <label htmlFor="gallery-file-input" className={buttonClasses({ className: "h-12 w-full" })}>
               <DocumentUpload aria-hidden={true} className="h-4 w-4" />
               آپلود عکس

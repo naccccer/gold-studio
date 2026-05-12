@@ -6,17 +6,14 @@ import { PageShell } from "@/components/ui/page-shell";
 
 type SectionIcon = ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
 
-export function AccountSubpage({
-  title,
-  caption,
-  eyebrow = "حساب",
-  children,
-}: {
+type AccountSubpageProps = {
   title: string;
   caption?: string;
   eyebrow?: string;
   children: ReactNode;
-}) {
+};
+
+export function AccountSubpage({ children }: AccountSubpageProps) {
   return (
     <PageShell maxWidth="md" className="space-y-3 pb-28">
       <header className="rounded-[1.35rem] border border-white/80 bg-surface/62 p-3.5 shadow-[0_22px_50px_-44px_rgba(17,16,14,0.72)]">
@@ -24,9 +21,6 @@ export function AccountSubpage({
           <ArrowRight2 aria-hidden={true} className="h-4 w-4" />
           حساب
         </ButtonLink>
-        <p className="mt-4 text-[11px] font-semibold text-accent-deep">{eyebrow}</p>
-        <h1 className="mt-1 text-xl font-semibold leading-8 text-foreground">{title}</h1>
-        {caption ? <p className="mt-1 text-xs leading-6 text-muted">{caption}</p> : null}
       </header>
       {children}
     </PageShell>
