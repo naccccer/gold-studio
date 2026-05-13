@@ -20,9 +20,10 @@ import { PageShell } from "@/components/ui/page-shell";
 import { ProcessingCanvas } from "@/components/ui/processing-canvas";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 import { StatusPill } from "@/components/ui/status-pill";
-import { renameProjectAction, retryProjectAction } from "@/features/projects/actions";
+import { renameProjectAction, retryProjectAction, updateProjectProductTypeAction } from "@/features/projects/actions";
 import { ProjectStatusRefresh } from "@/features/projects/components/project-status-refresh";
 import { resultHeroDark, uploadPreview } from "@/lib/placeholders/jewelry-images";
+import { PRODUCT_TYPES } from "@/lib/product-types";
 import { generateNumericSupportCode } from "@/lib/support-code";
 
 const statusConfig: Record<string, { label: string; supportCopy: string }> = {
@@ -137,6 +138,8 @@ export type ProjectDetail = {
   sourceImageUrl: string;
   resultImageUrl: string | null;
   status: string;
+  outputPreset: string;
+  productType: string | null;
   style: { name: string };
   errorMessage: string | null;
   createdAt?: Date | string;
@@ -152,13 +155,13 @@ function DetailMeta({
   title,
   status,
   statusVariant,
-  helper,
+  productType,
 }: {
   projectId: string;
   title: string;
   status: string;
   statusVariant: "neutral" | "pending" | "completed" | "failed" | "accent";
-  helper: string;
+  productType?: string | null;
 }) {
   const [editingTitle, setEditingTitle] = useState(false);
 
@@ -223,13 +226,25 @@ function DetailMeta({
         </StatusPill>
       </div>
 
-      {helper ? (
-        <div className="flex flex-wrap items-center gap-2 text-[11px] text-surface/70">
-          <span className="rounded-full border border-white/10 bg-black/18 px-2.5 py-1">
-            {helper}
-          </span>
-        </div>
-      ) : null}
+      <form action={updateProjectProductTypeAction} className="flex items-center gap-2">
+        <input type="hidden" name="projectId" value={projectId} />
+        <label className="shrink-0 text-[11px] font-medium text-surface/66" htmlFor={`project-product-type-${projectId}`}>
+          نوع محصول
+        </label>
+        <select
+          id={`project-product-type-${projectId}`}
+          name="productType"
+          defaultValue={productType || "محصول"}
+          onChange={(event) => event.currentTarget.form?.requestSubmit()}
+          className="min-h-8 flex-1 rounded-full border border-white/10 bg-white/[0.06] px-2.5 text-xs text-surface outline-none transition focus:border-white/24"
+        >
+          {PRODUCT_TYPES.map((item) => (
+            <option key={item} value={item} className="bg-[#171411] text-white">
+              {item}
+            </option>
+          ))}
+        </select>
+      </form>
     </div>
   );
 }
@@ -250,7 +265,6 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
   const errorPresentation = formatProjectError(project);
   const projectTitle = project.title?.trim() || "پروژه محصول";
   const statusVariant = getStatusVariant(project.status);
-
   useEffect(() => {
     if (!fullscreen) {
       return;
@@ -281,7 +295,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
             title={projectTitle}
             status={status.label}
             statusVariant={statusVariant}
-            helper="بعداً هم از پروژه‌ها می‌توانید همین خروجی را دنبال کنید."
+            productType={project.productType}
           />
 
           <ProcessingCanvas
@@ -319,7 +333,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
             title={projectTitle}
             status={status.label}
             statusVariant={statusVariant}
-            helper=""
+            productType={project.productType}
           />
 
           <div
@@ -335,16 +349,16 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               }
             }}
           >
-            <JewelryImageFrame aspect="portrait" treatment="dark" className="h-full rounded-[1.45rem]">
-              <SafeJewelryImage
+            <JewelryImageFrame aspect="portrait" treatment="dark" className="h-full w-full aspect-auto rounded-[1.45rem] bg-white">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={resultImageSrc}
-                fallbackSrc={resultHeroDark.src}
-                fallbackAlt={resultHeroDark.alt}
                 alt={project.title || "خروجی نهایی محصول"}
-                fill
-                priority
-                className="object-cover object-center"
-                sizes="(max-width: 768px) 100vw, 760px"
+                className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-150 ${showBefore ? "opacity-0" : "opacity-100"}`}
+                decoding="async"
+                onError={(event) => {
+                  event.currentTarget.src = resultHeroDark.src;
+                }}
               />
               <SafeJewelryImage
                 src={sourceImageSrc}
@@ -455,15 +469,15 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               </button>
             </div>
             <div className="relative h-full w-full">
-              <SafeJewelryImage
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={resultImageSrc}
-                fallbackSrc={resultHeroDark.src}
-                fallbackAlt={resultHeroDark.alt}
                 alt={project.title || "خروجی نهایی محصول"}
-                fill
-                priority
-                className="object-contain"
-                sizes="100vw"
+                className={`absolute inset-0 h-full w-full bg-black object-contain object-center transition-opacity duration-150 ${showBefore ? "opacity-0" : "opacity-100"}`}
+                decoding="async"
+                onError={(event) => {
+                  event.currentTarget.src = resultHeroDark.src;
+                }}
               />
               <SafeJewelryImage
                 src={sourceImageSrc}
@@ -489,7 +503,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
           title={projectTitle}
           status={status.label}
           statusVariant={statusVariant}
-          helper="این پروژه قابل تکرار است."
+          productType={project.productType}
         />
 
         <JewelryImageFrame aspect="portrait" treatment="dark" className="min-h-0 flex-1 rounded-[1.45rem]">

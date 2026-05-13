@@ -94,9 +94,8 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                 <article key={project.id} className="relative">
                   <div className="relative">
                     <JewelryImageFrame
-                      aspect="landscape"
+                      aspect="gallery"
                       selected={selected}
-                      disabled={failed}
                       className="rounded-[var(--radius-lg)]"
                     >
                       <Link
@@ -135,11 +134,15 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                           <TickCircle aria-hidden={true} className="h-4 w-4" />
                         </span>
                       ) : null}
-                      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/76 via-black/20 to-transparent px-3 pb-3 pt-5">
+                      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/58 via-black/18 via-34% to-transparent px-3 pb-2.5 pt-5">
+                        <div
+                          className="absolute inset-x-0 bottom-0 z-0 h-12 bg-black/10 backdrop-blur-[1.5px] [mask-image:linear-gradient(to_top,black_0%,rgba(0,0,0,0.62)_34%,transparent_100%)]"
+                          aria-hidden={true}
+                        />
                         {editing ? (
                           <form
                             action={renameProjectAction}
-                            className="pointer-events-auto grid grid-cols-[minmax(0,1fr)_1.25rem_1.25rem] items-center gap-1.5"
+                            className="pointer-events-auto relative z-20 grid grid-cols-[minmax(0,1fr)_1.25rem_1.25rem] items-center gap-1.5"
                             onSubmit={() => setEditingProjectId(null)}
                           >
                             <input type="hidden" name="projectId" value={project.id} />
@@ -154,7 +157,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                                   setEditingProjectId(null);
                                 }
                               }}
-                              className="min-h-6 min-w-0 border-0 bg-transparent p-0 text-right text-xs font-semibold text-surface caret-accent-bright outline-none placeholder:text-surface/45"
+                              className="min-h-6 min-w-0 border-0 bg-transparent p-0 text-right text-xs font-semibold text-white caret-accent-bright outline-none placeholder:text-white/45 drop-shadow-[0_1px_6px_rgba(0,0,0,0.85)]"
                             />
                             <button
                               type="submit"
@@ -173,11 +176,11 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                             </button>
                           </form>
                         ) : (
-                          <div className="grid grid-cols-[minmax(0,1fr)_2rem] items-center gap-2">
+                          <div className="relative z-20 grid grid-cols-[minmax(0,1fr)_2rem] items-center gap-2">
                             <button
                               type="button"
                               onClick={() => setEditingProjectId(project.id)}
-                              className="pointer-events-auto min-w-0 truncate text-right text-xs font-semibold text-surface"
+                              className="pointer-events-auto flex min-h-8 min-w-0 items-center truncate text-right text-xs font-semibold text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.85)]"
                               aria-label="ویرایش نام پروژه"
                             >
                               {projectTitle}
@@ -238,7 +241,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                           </div>
                         )}
                       </div>
-                      {failed ? <span className="absolute inset-0 z-[1] bg-black/42" aria-hidden={true} /> : null}
+                      {failed ? <span className="pointer-events-none absolute inset-0 z-[1] bg-black/42" aria-hidden={true} /> : null}
                     </JewelryImageFrame>
 
                     {failed ? (

@@ -190,6 +190,40 @@ export async function waitForPendingGalleryUpload(uploadId: string) {
   return task;
 }
 
+export async function confirmPendingGalleryUpload(uploadId: string) {
+  const readyUpload = await waitForPendingGalleryUpload(uploadId);
+  if (!readyUpload.assetId) {
+    throw new Error("فایل آپلودشده آماده نیست.");
+  }
+
+  const response = await fetch(`/api/gallery/uploads/${readyUpload.assetId}`, {
+    method: "PATCH",
+  });
+  const payload = (await response.json().catch(() => null)) as CropRouteSuccess | UploadRouteError | null;
+
+  if (!response.ok || !payload || !("assetId" in payload) || !("fileUrl" in payload)) {
+    const message = parseErrorPayload(payload, "ثبت تصویر بدون کراپ کامل نشد.");
+    updateUpload(uploadId, {
+      status: "failed",
+      error: message.message,
+      supportCode: message.supportCode,
+    });
+    throw new Error(message.message);
+  }
+
+  const nextUpload = {
+    ...(uploads.get(uploadId) ?? readyUpload),
+    status: "uploaded" as const,
+    assetId: payload.assetId,
+    fileUrl: payload.fileUrl,
+    error: undefined,
+    supportCode: undefined,
+  };
+
+  setUpload(uploadId, nextUpload);
+  return nextUpload;
+}
+
 export async function applyCropToPendingUpload(uploadId: string, croppedFile: File) {
   const readyUpload = await waitForPendingGalleryUpload(uploadId);
   if (!readyUpload.assetId) {
@@ -233,4 +267,26 @@ export async function applyCropToPendingUpload(uploadId: string, croppedFile: Fi
 
   setUpload(uploadId, nextUpload);
   return nextUpload;
+}
+
+export async function discardPendingGalleryUpload(uploadId: string) {
+  const current = uploads.get(uploadId);
+  if (!current) {
+    return;
+  }
+
+  try {
+    if (current.status === "failed" && !current.assetId) {
+      return;
+    }
+
+    const uploaded = current.assetId ? current : await waitForPendingGalleryUpload(uploadId);
+    if (uploaded.assetId) {
+      await fetch(`/api/gallery/uploads/${uploaded.assetId}`, { method: "DELETE" });
+    }
+  } catch {
+    // The upload may have failed or been interrupted; clearing the local draft is still correct.
+  } finally {
+    clearPendingGalleryUpload(uploadId);
+  }
 }

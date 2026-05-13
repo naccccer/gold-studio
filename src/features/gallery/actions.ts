@@ -8,6 +8,9 @@ import { consumeGenerationCredit, getAvailableGenerationCredits, NO_CREDITS_ERRO
 import { db } from "@/lib/db";
 import { processGenerationBatch } from "@/lib/generation/jobs";
 import { getOutputPresetSpec, normalizeOutputPreset } from "@/lib/output-presets";
+import { buildVisionPromptContext } from "@/lib/ai/vision";
+import { isProductType } from "@/lib/product-types";
+import { analyzeAndStoreProductAssetVision, ensureProductAssetVision, pickVisionTitle } from "@/lib/product-vision";
 import { getStyleForGeneration } from "@/lib/styles";
 import { saveUploadedFile } from "@/lib/uploads";
 
@@ -23,16 +26,23 @@ export async function uploadGalleryAssetsAction(formData: FormData) {
 
   for (const file of files) {
     const uploaded = await saveUploadedFile(file);
-    await db.productAsset.create({
+    const asset = await db.productAsset.create({
       data: {
         userId: session.userId,
         fileUrl: uploaded.publicUrl,
         storageKey: uploaded.storageKey,
         mimeType: uploaded.mimeType,
         originalName: uploaded.originalName,
-        title: uploaded.originalName,
+        title: null,
       },
     });
+    const analyzed = await analyzeAndStoreProductAssetVision(asset.id);
+    if (analyzed?.visionShortTitle) {
+      await db.productAsset.update({
+        where: { id: asset.id },
+        data: { title: analyzed.visionShortTitle },
+      });
+    }
   }
 
   redirect("/gallery");
@@ -86,15 +96,25 @@ export async function createBatchFromGalleryAction(formData: FormData) {
   });
 
   for (const asset of assets) {
+    const analyzedAsset = await ensureProductAssetVision(asset.id);
+    const visionContext = buildVisionPromptContext({
+      productType: analyzedAsset?.productType,
+      visionDescription: analyzedAsset?.visionDescription,
+      visionConfidence: analyzedAsset?.visionConfidence,
+    });
     const project = await db.project.create({
       data: {
         userId: session.userId,
         sourceAssetId: asset.id,
-        title: asset.title || asset.originalName || null,
+        title: pickVisionTitle({
+          userTitle: asset.title,
+          visionShortTitle: analyzedAsset?.visionShortTitle,
+          fallbackTitle: asset.originalName,
+        }),
         sourceImageUrl: asset.fileUrl,
         outputPreset,
         styleId: style.id,
-        prompt: `${style.prompt}\n${getOutputPresetSpec(outputPreset).instruction}`,
+        prompt: [style.prompt, getOutputPresetSpec(outputPreset).instruction, visionContext].filter(Boolean).join("\n"),
         status: "QUEUED",
       },
     });
@@ -127,6 +147,24 @@ export async function renameAssetAction(formData: FormData) {
   });
 
   revalidatePath("/gallery");
+}
+
+export async function updateAssetProductTypeAction(formData: FormData) {
+  const session = await requireUserSession();
+  const assetId = String(formData.get("assetId") ?? "").trim();
+  const productType = String(formData.get("productType") ?? "").trim();
+
+  if (!assetId || !isProductType(productType)) {
+    return;
+  }
+
+  await db.productAsset.updateMany({
+    where: { id: assetId, userId: session.userId, status: "READY", archivedAt: null },
+    data: { productType },
+  });
+
+  revalidatePath("/gallery");
+  revalidatePath(`/gallery/${assetId}`);
 }
 
 export async function archiveAssetAction(formData: FormData) {

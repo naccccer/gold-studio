@@ -11,9 +11,9 @@ type EmptyStateProps = {
 
 export function EmptyState({ title, children, media, action, className = "" }: EmptyStateProps) {
   return (
-    <section className={["space-y-3 text-center", className].filter(Boolean).join(" ")}>
+    <section className={["w-full space-y-3 text-center", className].filter(Boolean).join(" ")}>
       {media ? (
-        <JewelryImageFrame aspect="landscape" treatment="hero" className="h-[218px]">
+        <JewelryImageFrame aspect="landscape" treatment="hero" className="mx-auto w-full max-w-[21rem]">
           {media}
         </JewelryImageFrame>
       ) : null}

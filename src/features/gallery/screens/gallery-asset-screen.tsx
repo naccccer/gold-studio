@@ -4,6 +4,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
+import { AssetProductTypeForm } from "@/features/gallery/components/asset-product-type-form";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 
 export type GalleryAssetDetail = {
@@ -12,6 +13,7 @@ export type GalleryAssetDetail = {
   title: string | null;
   originalName: string | null;
   notes: string | null;
+  productType: string | null;
   createdAt: Date;
   projects: Array<{
     id: string;
@@ -65,6 +67,7 @@ export function GalleryAssetScreen({ asset }: GalleryAssetScreenProps) {
           </ButtonLink>
         </div>
         {asset.notes ? <p className="text-sm leading-7 text-muted">{asset.notes}</p> : null}
+        <AssetProductTypeForm assetId={asset.id} productType={asset.productType} />
       </section>
 
       <section className="space-y-3">

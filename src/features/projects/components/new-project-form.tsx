@@ -18,6 +18,7 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import type { ProjectFormState } from "@/features/projects/actions";
 import type { StyleControlOption, StyleOption } from "@/features/projects/presets";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
+import { PRODUCT_TYPES } from "@/lib/product-types";
 
 const INITIAL_STATE: ProjectFormState = {};
 
@@ -26,6 +27,7 @@ export type GalleryAssetOption = {
   fileUrl: string;
   title: string | null;
   originalName: string | null;
+  productType: string | null;
 };
 
 type NewProjectFormProps = {
@@ -149,6 +151,7 @@ export function NewProjectForm({
   const [selectedStyle, setSelectedStyle] = useState(defaultStyle?.id ?? "");
   const [modelGender, setModelGender] = useState("woman");
   const [modesty, setModesty] = useState("65");
+  const [productType, setProductType] = useState(explicitSelectedAsset?.productType || "محصول");
 
   useEffect(() => {
     return () => {
@@ -186,6 +189,7 @@ export function NewProjectForm({
   function setPreview(file: File | null) {
     if (file) {
       setSelectedAsset(null);
+      setProductType("محصول");
     }
 
     setPreviewUrl((currentPreview) => {
@@ -202,6 +206,7 @@ export function NewProjectForm({
 
   function selectAsset(asset: GalleryAssetOption) {
     setSelectedAsset(asset);
+    setProductType(asset.productType || "محصول");
     setPreviewUrl((currentPreview) => {
       if (currentPreview) {
         URL.revokeObjectURL(currentPreview);
@@ -236,6 +241,7 @@ export function NewProjectForm({
       <input type="hidden" name="modelGender" value={modelGender} />
       <input type="hidden" name="modesty" value={modesty} />
       {selectedAsset ? <input type="hidden" name="sourceAssetId" value={selectedAsset.id} /> : null}
+      <input type="hidden" name="productType" value={productType} />
 
       <input
         id="project-camera-input"
@@ -288,7 +294,7 @@ export function NewProjectForm({
       </header>
 
       {step === "source" ? (
-        <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
+        <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
           <JewelryImageFrame
             aspect="portrait"
             treatment="dark"
@@ -399,7 +405,7 @@ export function NewProjectForm({
       ) : null}
 
       {step === "size" ? (
-        <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
+        <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
           <JewelryImageFrame
             aspect="portrait"
             treatment="dark"
@@ -453,6 +459,24 @@ export function NewProjectForm({
             <SegmentedControl items={outputPresetItems} value={outputPreset} onChange={setOutputPreset} label="انتخاب سایز خروجی" />
           </fieldset>
 
+          <section className="rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-3">
+            <label htmlFor="new-project-product-type" className="mb-2 block text-xs font-medium text-surface/72">
+              نوع محصول
+            </label>
+            <select
+              id="new-project-product-type"
+              value={productType}
+              onChange={(event) => setProductType(event.target.value)}
+              className="min-h-10 w-full rounded-full border border-white/12 bg-white/[0.08] px-3 text-sm font-semibold text-surface outline-none transition focus:border-white/28"
+            >
+              {PRODUCT_TYPES.map((item) => (
+                <option key={item} value={item} className="bg-[#171411] text-white">
+                  {item}
+                </option>
+              ))}
+            </select>
+          </section>
+
           <ActionDock className="mt-auto pb-[calc(env(safe-area-inset-bottom)+0.75rem)]" columns={2}>
             <Button type="button" variant="studio-secondary" className="h-12 w-full" onClick={() => setStep("source")}>
               بازگشت
@@ -466,7 +490,7 @@ export function NewProjectForm({
       ) : null}
 
       {step === "style" ? (
-        <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
+        <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
           <JewelryImageFrame
             aspect="landscape"
             treatment="dark"

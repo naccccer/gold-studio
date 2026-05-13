@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { after } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { analyzeAndStoreProductAssetVision } from "@/lib/product-vision";
 import { generateNumericSupportCode, logSupportError } from "@/lib/support-code";
 import { saveUploadedFile } from "@/lib/uploads";
 
@@ -18,8 +20,6 @@ export async function POST(
     where: {
       id: assetId,
       userId: session.userId,
-      status: "READY",
-      archivedAt: null,
     },
     select: {
       id: true,
@@ -49,11 +49,31 @@ export async function POST(
         mimeType: uploaded.mimeType,
         originalName: asset.originalName || uploaded.originalName,
         title: asset.title || asset.originalName || uploaded.originalName,
+        status: "READY",
+        archivedAt: null,
+        visionShortTitle: null,
+        visionDescription: null,
+        visionAngle: null,
+        visionQualityIssues: null,
+        visionConfidence: null,
+        visionModel: null,
+        visionAnalyzedAt: null,
+        visionError: null,
       },
       select: {
         id: true,
         fileUrl: true,
+        title: true,
       },
+    });
+    after(async () => {
+      const analyzed = await analyzeAndStoreProductAssetVision(updatedAsset.id);
+      if (!updatedAsset.title && analyzed?.visionShortTitle) {
+        await db.productAsset.update({
+          where: { id: updatedAsset.id },
+          data: { title: analyzed.visionShortTitle },
+        });
+      }
     });
 
     return NextResponse.json({

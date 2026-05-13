@@ -231,6 +231,15 @@ model ProductAsset {
   originalName String?
   title        String?
   notes        String?
+  productType  String?
+  visionShortTitle String?
+  visionDescription String?               @db.Text
+  visionAngle  String?
+  visionQualityIssues String?             @db.Text
+  visionConfidence Float?
+  visionModel  String?
+  visionAnalyzedAt DateTime?
+  visionError  String?                    @db.Text
   status       ProductAssetStatus    @default(READY)
   archivedAt   DateTime?
   projects     Project[]

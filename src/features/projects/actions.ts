@@ -4,10 +4,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { db } from "@/lib/db";
+import { buildVisionPromptContext } from "@/lib/ai/vision";
 import { requireUserSession } from "@/lib/auth/session";
 import { consumeGenerationCredit } from "@/lib/billing";
 import { processImageProject, processTextProject } from "@/lib/generation/jobs";
 import { getOutputPresetSpec, normalizeOutputPreset } from "@/lib/output-presets";
+import { analyzeAndStoreProductAssetVision, pickVisionTitle } from "@/lib/product-vision";
+import { isProductType } from "@/lib/product-types";
 import { getStyleForGeneration, type StyleForGeneration } from "@/lib/styles";
 import { saveTextPromptSourceImage, saveUploadedFile } from "@/lib/uploads";
 
@@ -57,11 +60,16 @@ function normalizeModesty(value: number) {
   return Math.min(90, Math.max(0, value));
 }
 
-function buildPrompt(style: StyleForGeneration, formData: FormData) {
+function buildPrompt(
+  style: StyleForGeneration,
+  formData: FormData,
+  vision?: { productType?: string | null; visionDescription?: string | null; visionConfidence?: number | null } | null,
+) {
   const outputPreset = normalizeOutputPreset(formData.get("outputPreset"));
   const modelGender = String(formData.get("modelGender") ?? "");
   const modestyValue = Number.parseInt(String(formData.get("modesty") ?? "65"), 10);
   const promptParts = [style.prompt, getOutputPresetSpec(outputPreset).instruction];
+  const visionContext = vision ? buildVisionPromptContext(vision) : "";
   const includesHumanModel = hasHumanModelControls(style);
 
   if (includesHumanModel) {
@@ -76,6 +84,10 @@ function buildPrompt(style: StyleForGeneration, formData: FormData) {
     );
   }
 
+  if (visionContext) {
+    promptParts.push(visionContext);
+  }
+
   return promptParts.join("\n");
 }
 
@@ -88,6 +100,8 @@ export async function createProjectAction(
   const title = String(formData.get("title") ?? "").trim();
   const mode = String(formData.get("generationMode") ?? "image");
   const sourceAssetId = String(formData.get("sourceAssetId") ?? "").trim();
+  const submittedProductType = String(formData.get("productType") ?? "").trim();
+  const selectedProductType = isProductType(submittedProductType) ? submittedProductType : "محصول";
   const outputPreset = normalizeOutputPreset(formData.get("outputPreset"));
   const styleId = String(formData.get("styleId") ?? "");
   const style = await getStyleForGeneration(styleId);
@@ -149,19 +163,38 @@ export async function createProjectAction(
       return { error: credit.error };
     }
 
+    if (asset.productType !== selectedProductType) {
+      await db.productAsset.updateMany({
+        where: { id: asset.id, userId: session.userId, status: "READY", archivedAt: null },
+        data: { productType: selectedProductType },
+      });
+    }
+
+    const projectPrompt = buildPrompt(style, formData, {
+      productType: selectedProductType,
+      visionDescription: asset.visionDescription,
+      visionConfidence: asset.visionConfidence,
+    });
     const project = await db.project.create({
       data: {
         userId: session.userId,
         sourceAssetId: asset.id,
-        title: title || asset.title || asset.originalName || null,
+        title: pickVisionTitle({
+          userTitle: title,
+          visionShortTitle: asset.visionShortTitle,
+          fallbackTitle: asset.title || asset.originalName,
+        }),
         sourceImageUrl: asset.fileUrl,
         outputPreset,
         styleId: style.id,
-        prompt: stylePrompt,
+        prompt: projectPrompt,
         status: "QUEUED",
       },
     });
 
+    if (!asset.visionAnalyzedAt) {
+      after(() => analyzeAndStoreProductAssetVision(asset.id));
+    }
     after(() => processImageProject(project.id));
     redirect(`/projects/${project.id}`);
   }
@@ -184,23 +217,42 @@ export async function createProjectAction(
       storageKey: uploaded.storageKey,
       mimeType: uploaded.mimeType,
       originalName: uploaded.originalName,
-      title: title || uploaded.originalName,
+      title: title || null,
+      productType: selectedProductType,
     },
+  });
+  const projectPrompt = buildPrompt(style, formData, {
+    productType: selectedProductType,
+    visionDescription: null,
+    visionConfidence: null,
   });
 
   const project = await db.project.create({
     data: {
       userId: session.userId,
       sourceAssetId: asset.id,
-      title: title || null,
+      title: pickVisionTitle({
+        userTitle: title,
+        visionShortTitle: null,
+        fallbackTitle: uploaded.originalName,
+      }),
       sourceImageUrl: uploaded.publicUrl,
       outputPreset,
       styleId: style.id,
-      prompt: stylePrompt,
+      prompt: projectPrompt,
       status: "QUEUED",
     },
   });
 
+  after(async () => {
+    const analyzedAsset = await analyzeAndStoreProductAssetVision(asset.id);
+    if (!title && analyzedAsset?.visionShortTitle) {
+      await db.productAsset.update({
+        where: { id: asset.id },
+        data: { title: analyzedAsset.visionShortTitle },
+      });
+    }
+  });
   after(() => processImageProject(project.id));
   redirect(`/projects/${project.id}`);
 }
@@ -220,6 +272,33 @@ export async function renameProjectAction(formData: FormData) {
   });
 
   revalidatePath("/projects");
+  revalidatePath(`/projects/${projectId}`);
+}
+
+export async function updateProjectProductTypeAction(formData: FormData) {
+  const session = await requireUserSession();
+  const projectId = String(formData.get("projectId") ?? "").trim();
+  const productType = String(formData.get("productType") ?? "").trim();
+
+  if (!projectId || !isProductType(productType)) {
+    return;
+  }
+
+  const project = await db.project.findFirst({
+    where: { id: projectId, userId: session.userId, archivedAt: null },
+    select: { sourceAssetId: true },
+  });
+
+  if (!project?.sourceAssetId) {
+    return;
+  }
+
+  await db.productAsset.updateMany({
+    where: { id: project.sourceAssetId, userId: session.userId, status: "READY", archivedAt: null },
+    data: { productType },
+  });
+
+  revalidatePath("/gallery");
   revalidatePath(`/projects/${projectId}`);
 }
 

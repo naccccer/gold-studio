@@ -200,12 +200,16 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                     aria-label={`انتخاب ${title}`}
                     className="block w-full text-right"
                   >
-                    <JewelryImageFrame aspect="landscape" selected={selected} className="rounded-[var(--radius-lg)]">
+                    <JewelryImageFrame aspect="gallery" selected={selected} className="rounded-[var(--radius-lg)]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={asset.fileUrl} alt={title} className="h-full w-full object-cover" />
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/58 via-black/8 to-transparent p-2.5">
-                        <p className="truncate text-xs font-semibold text-surface">{title}</p>
-                        <p className="mt-1 text-[10px] text-surface/72">
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/68 via-black/24 via-38% to-transparent px-2.5 pb-1.5 pt-5">
+                        <div
+                          className="absolute inset-x-0 bottom-0 z-0 h-14 bg-black/12 backdrop-blur-[2px] [mask-image:linear-gradient(to_top,black_0%,rgba(0,0,0,0.72)_34%,transparent_100%)]"
+                          aria-hidden={true}
+                        />
+                        <p className="relative z-10 flex min-h-11 items-center truncate pl-12 text-xs font-semibold text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)]">{title}</p>
+                        <p className="hidden">
                           {asset.projects.length > 0
                             ? `${asset.projects.length.toLocaleString("fa-IR")} پروژه`
                             : "آماده برای ساخت"}

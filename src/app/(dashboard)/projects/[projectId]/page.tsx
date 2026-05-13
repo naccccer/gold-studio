@@ -23,7 +23,7 @@ export default async function ProjectDetailPage({
         select: { name: true },
       },
       sourceAsset: {
-        select: { storageKey: true },
+        select: { storageKey: true, productType: true },
       },
     },
   });
@@ -41,6 +41,7 @@ export default async function ProjectDetailPage({
             ? storagePublicUrl(project.sourceAsset.storageKey)
             : project.sourceImageUrl,
           resultImageUrl: project.resultStorageKey ? storagePublicUrl(project.resultStorageKey) : project.resultImageUrl,
+          productType: project.sourceAsset?.productType ?? null,
         } as ProjectDetail
       }
     />

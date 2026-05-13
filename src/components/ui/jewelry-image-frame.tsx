@@ -2,7 +2,7 @@ import type { HTMLAttributes, ReactNode } from "react";
 
 type JewelryImageFrameProps = HTMLAttributes<HTMLDivElement> & {
   children: ReactNode;
-  aspect?: "square" | "portrait" | "landscape" | "story" | "banner";
+  aspect?: "square" | "portrait" | "landscape" | "gallery" | "story" | "banner";
   treatment?: "standard" | "hero" | "quiet" | "dark";
   selected?: boolean;
   disabled?: boolean;
@@ -12,6 +12,7 @@ const aspectClasses = {
   square: "aspect-square",
   portrait: "aspect-[4/5]",
   landscape: "aspect-[5/4]",
+  gallery: "aspect-[1/1.18]",
   story: "aspect-[9/16]",
   banner: "aspect-[16/9]",
 };

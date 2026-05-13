@@ -23,6 +23,7 @@ export default async function NewProjectPage({
         storageKey: true,
         title: true,
         originalName: true,
+        productType: true,
       },
     }),
     getUserVisibleStyles(),

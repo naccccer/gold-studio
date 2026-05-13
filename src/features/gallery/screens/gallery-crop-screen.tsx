@@ -1,20 +1,35 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
-import { Camera, CheckCircle2, Crop, ImageIcon, LoaderCircle, UploadCloud, X } from "lucide-react";
+import { Crop, ImageIcon, LoaderCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   applyCropToPendingUpload,
   clearPendingGalleryUpload,
+  confirmPendingGalleryUpload,
+  discardPendingGalleryUpload,
   type PendingGalleryUpload,
   usePendingGalleryUpload,
-  waitForPendingGalleryUpload,
 } from "@/features/gallery/client-upload-store";
 
 type GalleryCropScreenProps = {
   uploadId: string;
   onClose: (options?: { refresh?: boolean }) => void;
 };
+
+type FrameSize = {
+  width: number;
+  height: number;
+};
+
+type CropRect = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+type ResizeHandle = "n" | "e" | "s" | "w" | "ne" | "nw" | "se" | "sw";
 
 function ErrorNotice({
   title,
@@ -43,6 +58,34 @@ function ErrorNotice({
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
+}
+
+function getInitialCropRect(frameSize: FrameSize, imageBounds?: CropRect | null): CropRect | null {
+  if (!frameSize.width || !frameSize.height) {
+    return null;
+  }
+
+  const base = imageBounds ?? { x: 0, y: 0, width: frameSize.width, height: frameSize.height };
+  const inset = Math.max(12, Math.round(Math.min(base.width, base.height) * 0.06));
+
+  return {
+    x: base.x + inset,
+    y: base.y + inset,
+    width: Math.max(84, base.width - inset * 2),
+    height: Math.max(84, base.height - inset * 2),
+  };
+}
+
+function normalizeCropRect(rect: CropRect, frameSize: FrameSize) {
+  const width = clamp(rect.width, 84, frameSize.width);
+  const height = clamp(rect.height, 84, frameSize.height);
+
+  return {
+    x: clamp(rect.x, 0, Math.max(0, frameSize.width - width)),
+    y: clamp(rect.y, 0, Math.max(0, frameSize.height - height)),
+    width,
+    height,
+  };
 }
 
 function statusCopy(upload: PendingGalleryUpload | null) {
@@ -87,8 +130,8 @@ function statusCopy(upload: PendingGalleryUpload | null) {
   };
 }
 
-function useSquareFrameSize(targetRef: RefObject<HTMLDivElement | null>) {
-  const [size, setSize] = useState(0);
+function useFrameSize(targetRef: RefObject<HTMLDivElement | null>) {
+  const [size, setSize] = useState<FrameSize>({ width: 0, height: 0 });
 
   useEffect(() => {
     const node = targetRef.current;
@@ -96,7 +139,7 @@ function useSquareFrameSize(targetRef: RefObject<HTMLDivElement | null>) {
       return;
     }
 
-    const updateSize = () => setSize(node.clientWidth);
+    const updateSize = () => setSize({ width: node.clientWidth, height: node.clientHeight });
     updateSize();
 
     const observer = new ResizeObserver(updateSize);
@@ -124,31 +167,31 @@ async function buildCroppedFile(
   upload: PendingGalleryUpload,
   naturalWidth: number,
   naturalHeight: number,
-  frameSize: number,
+  frameWidth: number,
+  frameHeight: number,
+  cropRect: CropRect,
   zoom: number,
   offsetX: number,
   offsetY: number,
 ) {
   const image = await loadPreviewImage(upload.previewUrl);
-  const coverScale = Math.max(frameSize / naturalWidth, frameSize / naturalHeight);
-  const renderScale = coverScale * zoom;
+  const containScale = Math.min(frameWidth / naturalWidth, frameHeight / naturalHeight);
+  const renderScale = containScale * zoom;
   const displayedWidth = naturalWidth * renderScale;
   const displayedHeight = naturalHeight * renderScale;
-  const left = frameSize / 2 - displayedWidth / 2 + offsetX;
-  const top = frameSize / 2 - displayedHeight / 2 + offsetY;
+  const left = frameWidth / 2 - displayedWidth / 2 + offsetX;
+  const top = frameHeight / 2 - displayedHeight / 2 + offsetY;
 
-  const sourceX = clamp((0 - left) / renderScale, 0, naturalWidth);
-  const sourceY = clamp((0 - top) / renderScale, 0, naturalHeight);
-  const sourceSize = Math.min(
-    naturalWidth - sourceX,
-    naturalHeight - sourceY,
-    frameSize / renderScale,
-  );
-
-  const outputSize = Math.max(720, Math.round(sourceSize));
+  const sourceX = clamp((cropRect.x - left) / renderScale, 0, naturalWidth);
+  const sourceY = clamp((cropRect.y - top) / renderScale, 0, naturalHeight);
+  const sourceWidth = clamp(cropRect.width / renderScale, 1, naturalWidth - sourceX);
+  const sourceHeight = clamp(cropRect.height / renderScale, 1, naturalHeight - sourceY);
+  const outputScale = Math.max(1, 1080 / Math.max(sourceWidth, sourceHeight));
+  const outputWidth = Math.max(360, Math.round(sourceWidth * outputScale));
+  const outputHeight = Math.max(360, Math.round(sourceHeight * outputScale));
   const canvas = document.createElement("canvas");
-  canvas.width = outputSize;
-  canvas.height = outputSize;
+  canvas.width = outputWidth;
+  canvas.height = outputHeight;
 
   const context = canvas.getContext("2d");
   if (!context) {
@@ -159,12 +202,12 @@ async function buildCroppedFile(
     image,
     sourceX,
     sourceY,
-    sourceSize,
-    sourceSize,
+    sourceWidth,
+    sourceHeight,
     0,
     0,
-    outputSize,
-    outputSize,
+    outputWidth,
+    outputHeight,
   );
 
   const blob = await new Promise<Blob>((resolve, reject) => {
@@ -184,42 +227,65 @@ async function buildCroppedFile(
 export function GalleryCropScreen({ uploadId, onClose }: GalleryCropScreenProps) {
   const upload = usePendingGalleryUpload(uploadId);
   const frameRef = useRef<HTMLDivElement>(null);
-  const frameSize = useSquareFrameSize(frameRef);
+  const frameSize = useFrameSize(frameRef);
   const dragStateRef = useRef<{ startX: number; startY: number; startOffsetX: number; startOffsetY: number } | null>(null);
+  const cropDragStateRef = useRef<{
+    startX: number;
+    startY: number;
+    startRect: CropRect;
+    mode: "move" | ResizeHandle;
+  } | null>(null);
 
   const [zoom, setZoom] = useState(1);
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
   const [naturalSize, setNaturalSize] = useState({ width: 0, height: 0 });
+  const [cropRect, setCropRect] = useState<CropRect | null>(null);
   const [submitting, setSubmitting] = useState<"crop" | "skip" | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
+  const uploadStatusLabel = upload ? statusCopy(upload).label : undefined;
 
-  const status = statusCopy(upload);
-  const coverScale = useMemo(() => {
-    if (!frameSize || !naturalSize.width || !naturalSize.height) {
+  const containScale = useMemo(() => {
+    if (!frameSize.width || !frameSize.height || !naturalSize.width || !naturalSize.height) {
       return 0;
     }
 
-    return Math.max(frameSize / naturalSize.width, frameSize / naturalSize.height);
-  }, [frameSize, naturalSize.height, naturalSize.width]);
+    return Math.min(frameSize.width / naturalSize.width, frameSize.height / naturalSize.height);
+  }, [frameSize.height, frameSize.width, naturalSize.height, naturalSize.width]);
 
-  const displayedWidth = naturalSize.width * coverScale * zoom;
-  const displayedHeight = naturalSize.height * coverScale * zoom;
-  const limitX = Math.max(0, (displayedWidth - frameSize) / 2);
-  const limitY = Math.max(0, (displayedHeight - frameSize) / 2);
+  const displayedWidth = naturalSize.width * containScale * zoom;
+  const displayedHeight = naturalSize.height * containScale * zoom;
+  const limitX = Math.max(0, (displayedWidth - frameSize.width) / 2);
+  const limitY = Math.max(0, (displayedHeight - frameSize.height) / 2);
   const clampedOffsetX = clamp(offsetX, -limitX, limitX);
   const clampedOffsetY = clamp(offsetY, -limitY, limitY);
+  const displayedImageBounds = displayedWidth && displayedHeight
+    ? {
+        x: frameSize.width / 2 - displayedWidth / 2 + clampedOffsetX,
+        y: frameSize.height / 2 - displayedHeight / 2 + clampedOffsetY,
+        width: displayedWidth,
+        height: displayedHeight,
+      }
+    : null;
+  const activeCropRect = cropRect
+    ? normalizeCropRect(cropRect, frameSize)
+    : getInitialCropRect(frameSize, displayedImageBounds);
 
-  function closeModal(options?: { refresh?: boolean }) {
-    if (upload && (upload.status === "failed" || upload.status === "cropped")) {
-      clearPendingGalleryUpload(upload.id);
+  function closeModal(options?: { refresh?: boolean; discard?: boolean }) {
+    const shouldDiscard = options?.discard ?? true;
+    if (upload) {
+      if (shouldDiscard) {
+        void discardPendingGalleryUpload(upload.id);
+      } else if (upload.status === "failed" || upload.status === "cropped") {
+        clearPendingGalleryUpload(upload.id);
+      }
     }
 
-    onClose(options);
+    onClose({ refresh: options?.refresh });
   }
 
   function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
-    if (!frameSize || !naturalSize.width || !naturalSize.height) {
+    if (!frameSize.width || !frameSize.height || !naturalSize.width || !naturalSize.height) {
       return;
     }
 
@@ -249,6 +315,77 @@ export function GalleryCropScreen({ uploadId, onClose }: GalleryCropScreenProps)
     }
   }
 
+  function resizeCropRect(startRect: CropRect, mode: "move" | ResizeHandle, deltaX: number, deltaY: number) {
+    const minimumSize = 84;
+    const next = { ...startRect };
+
+    if (mode === "move") {
+      next.x = clamp(startRect.x + deltaX, 0, Math.max(0, frameSize.width - startRect.width));
+      next.y = clamp(startRect.y + deltaY, 0, Math.max(0, frameSize.height - startRect.height));
+      return next;
+    }
+
+    if (mode.includes("w")) {
+      const right = startRect.x + startRect.width;
+      next.x = clamp(startRect.x + deltaX, 0, right - minimumSize);
+      next.width = right - next.x;
+    }
+
+    if (mode.includes("e")) {
+      next.width = clamp(startRect.width + deltaX, minimumSize, frameSize.width - startRect.x);
+    }
+
+    if (mode.includes("n")) {
+      const bottom = startRect.y + startRect.height;
+      next.y = clamp(startRect.y + deltaY, 0, bottom - minimumSize);
+      next.height = bottom - next.y;
+    }
+
+    if (mode.includes("s")) {
+      next.height = clamp(startRect.height + deltaY, minimumSize, frameSize.height - startRect.y);
+    }
+
+    return next;
+  }
+
+  function handleCropPointerDown(event: ReactPointerEvent<HTMLElement>, mode: "move" | ResizeHandle) {
+    if (!activeCropRect || !frameSize.width || !frameSize.height) {
+      return;
+    }
+
+    event.stopPropagation();
+    cropDragStateRef.current = {
+      startX: event.clientX,
+      startY: event.clientY,
+      startRect: activeCropRect,
+      mode,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function handleCropPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    const dragState = cropDragStateRef.current;
+    if (!dragState) {
+      return;
+    }
+
+    event.stopPropagation();
+    setCropRect(resizeCropRect(
+      dragState.startRect,
+      dragState.mode,
+      event.clientX - dragState.startX,
+      event.clientY - dragState.startY,
+    ));
+  }
+
+  function handleCropPointerUp(event: ReactPointerEvent<HTMLDivElement>) {
+    cropDragStateRef.current = null;
+    event.stopPropagation();
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }
+
   async function handleSkipCrop() {
     if (!upload) {
       return;
@@ -258,9 +395,9 @@ export function GalleryCropScreen({ uploadId, onClose }: GalleryCropScreenProps)
     setLocalError(null);
 
     try {
-      await waitForPendingGalleryUpload(upload.id);
+      await confirmPendingGalleryUpload(upload.id);
       clearPendingGalleryUpload(upload.id);
-      closeModal({ refresh: true });
+      closeModal({ refresh: true, discard: false });
     } catch (error) {
       setLocalError(error instanceof Error ? error.message : "بازگشت به گالری بدون کراپ انجام نشد.");
       setSubmitting(null);
@@ -268,7 +405,7 @@ export function GalleryCropScreen({ uploadId, onClose }: GalleryCropScreenProps)
   }
 
   async function handleApplyCrop() {
-    if (!upload || !frameSize || !naturalSize.width || !naturalSize.height) {
+    if (!upload || !frameSize.width || !frameSize.height || !activeCropRect || !naturalSize.width || !naturalSize.height) {
       return;
     }
 
@@ -280,7 +417,9 @@ export function GalleryCropScreen({ uploadId, onClose }: GalleryCropScreenProps)
         upload,
         naturalSize.width,
         naturalSize.height,
-        frameSize,
+        frameSize.width,
+        frameSize.height,
+        activeCropRect,
         zoom,
         clampedOffsetX,
         clampedOffsetY,
@@ -288,7 +427,7 @@ export function GalleryCropScreen({ uploadId, onClose }: GalleryCropScreenProps)
 
       await applyCropToPendingUpload(upload.id, croppedFile);
       clearPendingGalleryUpload(upload.id);
-      closeModal({ refresh: true });
+      closeModal({ refresh: true, discard: false });
     } catch (error) {
       setLocalError(error instanceof Error ? error.message : "ذخیره کراپ انجام نشد.");
       setSubmitting(null);
@@ -296,14 +435,15 @@ export function GalleryCropScreen({ uploadId, onClose }: GalleryCropScreenProps)
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#11100e]/56 px-3 pb-3 pt-8 backdrop-blur-sm md:items-center md:p-6">
+    <div className="fixed inset-0 z-[999] flex items-start justify-center bg-[#11100e]/56 px-3 pb-3 pt-4 backdrop-blur-sm md:items-center md:p-6">
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="gallery-crop-title"
-        className="grid w-full max-w-[28rem] grid-rows-[auto,minmax(0,1fr),auto] overflow-hidden rounded-[1.7rem] border border-white/15 bg-[linear-gradient(180deg,#f7f2ea_0%,#f2eadf_100%)] shadow-[0_36px_96px_-42px_rgba(0,0,0,0.72)]"
+        aria-label={uploadStatusLabel}
+        className="grid max-h-[calc(100dvh-2rem)] w-full max-w-[28rem] grid-rows-[auto,minmax(0,1fr),auto] overflow-hidden rounded-[1.7rem] border border-white/15 bg-[linear-gradient(180deg,#f7f2ea_0%,#f2eadf_100%)] shadow-[0_36px_96px_-42px_rgba(0,0,0,0.72)]"
       >
-        <div className="flex items-start justify-between gap-3 border-b border-black/6 px-4 pb-3 pt-4 md:px-5">
+        <div className="flex items-start justify-between gap-3 border-b border-black/6 px-4 pb-2.5 pt-3 md:px-5">
           <div className="space-y-1.5">
             <p id="gallery-crop-title" className="text-sm font-semibold text-foreground md:text-base">
               کراپ تصویر
@@ -322,7 +462,7 @@ export function GalleryCropScreen({ uploadId, onClose }: GalleryCropScreenProps)
           </button>
         </div>
 
-        <div className="min-h-0 overflow-y-auto px-3 pb-3 pt-3 md:px-5 md:pb-4">
+        <div className="min-h-0 overflow-y-auto px-3 pb-2.5 pt-2.5 md:px-5 md:pb-4">
           {!upload ? (
             <div className="rounded-[1.25rem] border border-border/70 bg-surface px-4 py-6 text-center">
               <ImageIcon aria-hidden={true} className="mx-auto h-6 w-6 text-muted" />
@@ -330,31 +470,11 @@ export function GalleryCropScreen({ uploadId, onClose }: GalleryCropScreenProps)
               <p className="mt-1 text-xs leading-6 text-muted">پنجره را ببندید و دوباره از گالری شروع کنید.</p>
             </div>
           ) : (
-            <div className="space-y-3.5 md:space-y-4">
-              <section className="rounded-[1.2rem] border border-white/80 bg-white/62 px-3.5 py-3 shadow-[0_16px_34px_-30px_rgba(17,16,14,0.45)]">
-                <div className="flex items-start gap-3">
-                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#efe2cd] text-[#8b6835]">
-                    {upload.source === "camera" ? (
-                      <Camera aria-hidden={true} className="h-4.5 w-4.5" />
-                    ) : upload.status === "uploading" || upload.status === "saving_crop" ? (
-                      <LoaderCircle aria-hidden={true} className="h-4.5 w-4.5 animate-spin" />
-                    ) : upload.status === "failed" ? (
-                      <UploadCloud aria-hidden={true} className="h-4.5 w-4.5" />
-                    ) : (
-                      <CheckCircle2 aria-hidden={true} className="h-4.5 w-4.5" />
-                    )}
-                  </span>
-                  <div className="min-w-0 space-y-1">
-                    <p className="text-sm font-semibold text-foreground md:text-base">{status.label}</p>
-                    <p className="text-[11px] leading-5 text-muted md:text-xs md:leading-6">{status.description}</p>
-                  </div>
-                </div>
-              </section>
-
+            <div className="space-y-2.5 md:space-y-3">
               <section className="rounded-[1.35rem] border border-white/80 bg-[#efe7db] p-2.5 shadow-[0_28px_58px_-46px_rgba(17,16,14,0.32)] md:p-3">
                 <div
                   ref={frameRef}
-                  className="relative aspect-square overflow-hidden rounded-[1.15rem] bg-[#11100e]"
+                  className="relative aspect-[4/3] overflow-hidden rounded-[1.15rem] bg-[#11100e]"
                   onPointerDown={handlePointerDown}
                   onPointerMove={handlePointerMove}
                   onPointerUp={handlePointerUp}
@@ -380,17 +500,75 @@ export function GalleryCropScreen({ uploadId, onClose }: GalleryCropScreenProps)
                     }}
                   />
                   <div className="pointer-events-none absolute inset-0 border border-white/18" />
-                  <div className="pointer-events-none absolute inset-3 rounded-[1rem] border border-white/48 shadow-[inset_0_0_0_999px_rgba(0,0,0,0.26)] md:inset-4" />
-                  <div className="pointer-events-none absolute inset-3 grid grid-cols-3 grid-rows-3 md:inset-4">
-                    {Array.from({ length: 9 }).map((_, index) => (
-                      <span key={index} className="border border-white/14" />
-                    ))}
-                  </div>
+                  {activeCropRect ? (
+                    <>
+                      <div
+                        className="pointer-events-none absolute rounded-[1rem] shadow-[0_0_0_999px_rgba(0,0,0,0.34)]"
+                        style={{
+                          left: activeCropRect.x,
+                          top: activeCropRect.y,
+                          width: activeCropRect.width,
+                          height: activeCropRect.height,
+                        }}
+                      />
+                      <div
+                        className="absolute rounded-[1rem] border border-white/76 shadow-[0_14px_42px_-24px_rgba(0,0,0,0.75)] touch-none"
+                        style={{
+                          left: activeCropRect.x,
+                          top: activeCropRect.y,
+                          width: activeCropRect.width,
+                          height: activeCropRect.height,
+                        }}
+                        onPointerDown={(event) => handleCropPointerDown(event, "move")}
+                        onPointerMove={handleCropPointerMove}
+                        onPointerUp={handleCropPointerUp}
+                        onPointerCancel={handleCropPointerUp}
+                      >
+                        <div className="pointer-events-none absolute inset-0 grid grid-cols-3 grid-rows-3 overflow-hidden rounded-[0.95rem]">
+                          {Array.from({ length: 9 }).map((_, index) => (
+                            <span key={index} className="border border-white/18" />
+                          ))}
+                        </div>
+                        {[
+                          ["nw", "left-0 top-0 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize"],
+                          ["ne", "right-0 top-0 translate-x-1/2 -translate-y-1/2 cursor-nesw-resize"],
+                          ["sw", "bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-nesw-resize"],
+                          ["se", "bottom-0 right-0 translate-x-1/2 translate-y-1/2 cursor-nwse-resize"],
+                        ].map(([handle, className]) => (
+                          <span
+                            key={handle}
+                            aria-hidden={true}
+                            className={`absolute h-5 w-5 rounded-full border border-white/85 bg-[#f7f2ea] shadow-[0_8px_22px_-12px_rgba(0,0,0,0.85)] ${className}`}
+                            onPointerDown={(event) => handleCropPointerDown(event, handle as ResizeHandle)}
+                            onPointerMove={handleCropPointerMove}
+                            onPointerUp={handleCropPointerUp}
+                            onPointerCancel={handleCropPointerUp}
+                          />
+                        ))}
+                        {[
+                          ["n", "left-1/2 top-0 h-2.5 w-10 -translate-x-1/2 -translate-y-1/2 cursor-ns-resize"],
+                          ["s", "bottom-0 left-1/2 h-2.5 w-10 -translate-x-1/2 translate-y-1/2 cursor-ns-resize"],
+                          ["w", "left-0 top-1/2 h-10 w-2.5 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize"],
+                          ["e", "right-0 top-1/2 h-10 w-2.5 translate-x-1/2 -translate-y-1/2 cursor-ew-resize"],
+                        ].map(([handle, className]) => (
+                          <span
+                            key={handle}
+                            aria-hidden={true}
+                            className={`absolute rounded-full bg-white/78 shadow-[0_8px_22px_-14px_rgba(0,0,0,0.85)] ${className}`}
+                            onPointerDown={(event) => handleCropPointerDown(event, handle as ResizeHandle)}
+                            onPointerMove={handleCropPointerMove}
+                            onPointerUp={handleCropPointerUp}
+                            onPointerCancel={handleCropPointerUp}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  ) : null}
                 </div>
               </section>
 
-              <section className="rounded-[1.15rem] border border-white/78 bg-white/55 px-3.5 py-3">
-                <div className="mb-2.5 flex items-center justify-between text-[11px] font-medium text-muted md:text-xs">
+              <section className="rounded-[1.15rem] border border-white/78 bg-white/55 px-3.5 py-2.5">
+                <div className="mb-2 flex items-center justify-between text-[11px] font-medium text-muted md:text-xs">
                   <span>بزرگنمایی</span>
                   <span dir="ltr">{zoom.toFixed(2)}x</span>
                 </div>
@@ -403,7 +581,7 @@ export function GalleryCropScreen({ uploadId, onClose }: GalleryCropScreenProps)
                   onChange={(event) => setZoom(Number(event.target.value))}
                   className="w-full accent-[#c89f61]"
                 />
-                <p className="mt-2.5 text-[11px] leading-5 text-muted md:leading-6">
+                <p className="hidden">
                   تصویر را جابه‌جا کنید تا محصول داخل قاب دقیق قرار بگیرد. بعد از تایید، همین نسخه در گالری ذخیره می‌شود.
                 </p>
               </section>
@@ -437,7 +615,7 @@ export function GalleryCropScreen({ uploadId, onClose }: GalleryCropScreenProps)
               <Button
                 type="button"
                 className="h-12 rounded-[1rem]"
-                disabled={!naturalSize.width || !frameSize || submitting !== null}
+                disabled={!naturalSize.width || !frameSize.width || !frameSize.height || !activeCropRect || submitting !== null}
                 onClick={handleApplyCrop}
               >
                 {submitting === "crop" ? (
