@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Add,
   CloseCircle,
@@ -115,7 +115,6 @@ function buildProcessingMoments(styleName: string) {
     withModel ? "در حال هماهنگ کردن با مدل" : "پاک‌سازی زمینه",
     "تنظیم نور",
     "مرتب‌کاری لبه‌ها",
-    "اعمال کارهای عجیب!",
   ];
   const phaseTwo = [
     "چیدمان قاب",
@@ -124,11 +123,20 @@ function buildProcessingMoments(styleName: string) {
     "لمس آخر",
   ];
 
-  return Array.from({ length: 4 }).flatMap((_, index) => ([
-    { step: phaseZero[index], phase: 0 },
-    { step: phaseOne[index], phase: 1 },
-    { step: phaseTwo[index], phase: 2 },
-  ]));
+  const phases = [phaseZero, phaseOne, phaseTwo] as const;
+  const totalRows = Math.max(...phases.map((steps) => steps.length));
+
+  return Array.from({ length: totalRows }).flatMap((_, index) =>
+    phases.flatMap((steps, phase) => {
+      const step = steps[index];
+
+      return step ? [{ step, phase }] : [];
+    }),
+  );
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
 }
 
 export type ProjectDetail = {
@@ -250,8 +258,13 @@ function DetailMeta({
 }
 
 export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
+  const fullscreenViewportRef = useRef<HTMLDivElement>(null);
+  const fullscreenDragStateRef = useRef<{ startX: number; startY: number; startPanX: number; startPanY: number } | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
   const [showBefore, setShowBefore] = useState(false);
+  const [fullscreenZoom, setFullscreenZoom] = useState(1);
+  const [fullscreenPan, setFullscreenPan] = useState({ x: 0, y: 0 });
+  const [fullscreenViewport, setFullscreenViewport] = useState({ width: 0, height: 0 });
   const status = statusConfig[project.status] ?? {
     label: "ثبت شده",
     supportCopy: "وضعیت پروژه ثبت شد.",
@@ -265,6 +278,83 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
   const errorPresentation = formatProjectError(project);
   const projectTitle = project.title?.trim() || "پروژه محصول";
   const statusVariant = getStatusVariant(project.status);
+  const fullscreenPanLimitX = Math.max(0, (fullscreenViewport.width * (fullscreenZoom - 1)) / 2);
+  const fullscreenPanLimitY = Math.max(0, (fullscreenViewport.height * (fullscreenZoom - 1)) / 2);
+  const clampedFullscreenPanX = clamp(fullscreenPan.x, -fullscreenPanLimitX, fullscreenPanLimitX);
+  const clampedFullscreenPanY = clamp(fullscreenPan.y, -fullscreenPanLimitY, fullscreenPanLimitY);
+
+  const updateFullscreenViewport = useCallback(() => {
+    const element = fullscreenViewportRef.current;
+    if (!element) {
+      return;
+    }
+
+    setFullscreenViewport({
+      width: element.clientWidth,
+      height: element.clientHeight,
+    });
+  }, []);
+
+  const resetFullscreenView = useCallback(() => {
+    setFullscreenZoom(1);
+    setFullscreenPan({ x: 0, y: 0 });
+  }, []);
+
+  const closeFullscreen = useCallback(() => {
+    resetFullscreenView();
+    setFullscreen(false);
+  }, [resetFullscreenView]);
+
+  function applyFullscreenZoom(nextZoom: number) {
+    const zoom = clamp(nextZoom, 1, 3);
+    setFullscreenZoom(zoom);
+
+    if (zoom === 1) {
+      setFullscreenPan({ x: 0, y: 0 });
+      return;
+    }
+
+    const nextLimitX = Math.max(0, (fullscreenViewport.width * (zoom - 1)) / 2);
+    const nextLimitY = Math.max(0, (fullscreenViewport.height * (zoom - 1)) / 2);
+    setFullscreenPan((current) => ({
+      x: clamp(current.x, -nextLimitX, nextLimitX),
+      y: clamp(current.y, -nextLimitY, nextLimitY),
+    }));
+  }
+
+  function handleFullscreenPointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    if (fullscreenZoom <= 1) {
+      return;
+    }
+
+    fullscreenDragStateRef.current = {
+      startX: event.clientX,
+      startY: event.clientY,
+      startPanX: clampedFullscreenPanX,
+      startPanY: clampedFullscreenPanY,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function handleFullscreenPointerMove(event: React.PointerEvent<HTMLDivElement>) {
+    const dragState = fullscreenDragStateRef.current;
+    if (!dragState) {
+      return;
+    }
+
+    setFullscreenPan({
+      x: clamp(dragState.startPanX + (event.clientX - dragState.startX), -fullscreenPanLimitX, fullscreenPanLimitX),
+      y: clamp(dragState.startPanY + (event.clientY - dragState.startY), -fullscreenPanLimitY, fullscreenPanLimitY),
+    });
+  }
+
+  function handleFullscreenPointerUp(event: React.PointerEvent<HTMLDivElement>) {
+    fullscreenDragStateRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }
+
   useEffect(() => {
     if (!fullscreen) {
       return;
@@ -272,17 +362,20 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
 
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        setFullscreen(false);
+        closeFullscreen();
       }
     }
 
     document.body.style.overflow = "hidden";
+    updateFullscreenViewport();
     document.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("resize", updateFullscreenViewport);
     return () => {
       document.body.style.overflow = "";
       document.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("resize", updateFullscreenViewport);
     };
-  }, [fullscreen]);
+  }, [closeFullscreen, fullscreen, updateFullscreenViewport]);
 
   if (isActive) {
     return (
@@ -441,39 +534,110 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                setFullscreen(false);
+                closeFullscreen();
               }}
               aria-label="بستن نمایش تمام صفحه"
               className="absolute left-4 top-[calc(env(safe-area-inset-top)+1rem)] z-20 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/16 bg-white/10 text-white backdrop-blur"
             >
               <CloseCircle aria-hidden={true} className="h-5 w-5" />
             </button>
-            <div className="pointer-events-none absolute inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+1.5rem)] z-10 flex justify-center px-6">
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  setShowBefore((current) => !current);
-                }}
-                aria-pressed={showBefore}
-                className={[
-                  "pointer-events-auto inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold backdrop-blur transition",
-                  showBefore
-                    ? "border-accent-soft bg-accent-wash/92 text-accent-deep"
-                    : "border-white/18 bg-black/34 text-white/86",
-                ].join(" ")}
-              >
-                <Scan aria-hidden={true} className="h-4 w-4" />
-                {showBefore ? "نمایش خروجی" : "دیدن عکس خام"}
-              </button>
+            <div className="pointer-events-none absolute inset-x-4 top-[calc(env(safe-area-inset-top)+1rem)] z-20 flex justify-center px-16">
+              <div className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/42 px-2 py-2 text-white/88 backdrop-blur">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    applyFullscreenZoom(fullscreenZoom - 0.25);
+                  }}
+                  aria-label="کم کردن بزرگنمایی"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-base font-semibold transition hover:bg-white/18"
+                >
+                  -
+                </button>
+                <span dir="ltr" className="min-w-11 text-center text-xs font-semibold">
+                  {fullscreenZoom.toFixed(1)}x
+                </span>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    applyFullscreenZoom(fullscreenZoom + 0.25);
+                  }}
+                  aria-label="زیاد کردن بزرگنمایی"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-base font-semibold transition hover:bg-white/18"
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    resetFullscreenView();
+                  }}
+                  aria-label="بازنشانی بزرگنمایی"
+                  className="inline-flex min-h-8 items-center rounded-full bg-white/10 px-3 text-[11px] font-semibold transition hover:bg-white/18"
+                >
+                  بازنشانی
+                </button>
+              </div>
             </div>
-            <div className="relative h-full w-full">
+            <div className="pointer-events-none absolute inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+1.5rem)] z-20 flex justify-center px-6">
+              <div className="pointer-events-auto w-full max-w-xs space-y-3">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setShowBefore((current) => !current);
+                  }}
+                  aria-pressed={showBefore}
+                  className={[
+                    "pointer-events-auto inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold backdrop-blur transition",
+                    showBefore
+                      ? "border-accent-soft bg-accent-wash/92 text-accent-deep"
+                      : "border-white/18 bg-black/34 text-white/86",
+                  ].join(" ")}
+                >
+                  <Scan aria-hidden={true} className="h-4 w-4" />
+                  {showBefore ? "نمایش خروجی" : "دیدن عکس خام"}
+                </button>
+              </div>
+            </div>
+            <div
+              ref={fullscreenViewportRef}
+              className={`relative h-full w-full overflow-hidden ${fullscreenZoom > 1 ? "cursor-grab active:cursor-grabbing touch-none" : ""}`}
+              onDoubleClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (fullscreenZoom > 1) {
+                  resetFullscreenView();
+                } else {
+                  applyFullscreenZoom(2);
+                }
+              }}
+              onPointerDown={handleFullscreenPointerDown}
+              onPointerMove={handleFullscreenPointerMove}
+              onPointerUp={handleFullscreenPointerUp}
+              onPointerCancel={handleFullscreenPointerUp}
+              onWheel={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                applyFullscreenZoom(fullscreenZoom + (event.deltaY < 0 ? 0.15 : -0.15));
+              }}
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={resultImageSrc}
                 alt={project.title || "خروجی نهایی محصول"}
+                draggable={false}
                 className={`absolute inset-0 h-full w-full bg-black object-contain object-center transition-opacity duration-150 ${showBefore ? "opacity-0" : "opacity-100"}`}
+                style={{
+                  transform: `translate(${clampedFullscreenPanX}px, ${clampedFullscreenPanY}px) scale(${fullscreenZoom})`,
+                  transformOrigin: "center center",
+                }}
                 decoding="async"
                 onError={(event) => {
                   event.currentTarget.src = resultHeroDark.src;
@@ -486,6 +650,10 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
                 alt="تصویر اولیه"
                 fill
                 className={`pointer-events-none object-contain transition duration-150 ${showBefore ? "opacity-100" : "opacity-0"}`}
+                style={{
+                  transform: `translate(${clampedFullscreenPanX}px, ${clampedFullscreenPanY}px) scale(${fullscreenZoom})`,
+                  transformOrigin: "center center",
+                }}
                 sizes="100vw"
               />
             </div>

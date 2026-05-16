@@ -60,10 +60,48 @@ function normalizeModesty(value: number) {
   return Math.min(90, Math.max(0, value));
 }
 
+function getCompositionInstruction(productType?: string | null, visionAngle?: string | null) {
+  const isWatch = productType === "ساعت";
+  const isWorn = visionAngle === "worn";
+
+  const instructions = [
+    "Composition: keep the product clearly prominent and easy to inspect in frame.",
+    "Favor a balanced close composition where the product usually occupies roughly one-third to three-fifths of the frame.",
+    "Do not use an extreme tight crop, and do not leave the product as a small secondary element inside wide empty space.",
+  ];
+
+  if (isWatch && isWorn) {
+    instructions.push(
+      "For a worn watch, keep a natural amount of wrist and skin visible, but frame closely enough that the watch remains the obvious hero of the image.",
+    );
+  }
+
+  return instructions.join("\n");
+}
+
+function getFineDetailInstruction(productType?: string | null) {
+  if (productType === "ساعت") {
+    return [
+      "Fine detail priority: preserve the watch face layout, display structure, bezel markings, button placement, engravings, and case edges.",
+      "Keep small functional details crisp and believable; do not blur, simplify, repaint, or replace them with generic shapes.",
+    ].join("\n");
+  }
+
+  return [
+    "Fine detail priority: preserve engravings, edges, stone settings, clasp details, and other small visible design cues.",
+    "Do not blur, simplify, repaint, or replace small product details with generic shapes.",
+  ].join("\n");
+}
+
 function buildPrompt(
   style: StyleForGeneration,
   formData: FormData,
-  vision?: { productType?: string | null; visionDescription?: string | null; visionConfidence?: number | null } | null,
+  vision?: {
+    productType?: string | null;
+    visionDescription?: string | null;
+    visionConfidence?: number | null;
+    visionAngle?: string | null;
+  } | null,
 ) {
   const outputPreset = normalizeOutputPreset(formData.get("outputPreset"));
   const modelGender = String(formData.get("modelGender") ?? "");
@@ -71,6 +109,8 @@ function buildPrompt(
   const promptParts = [style.prompt, getOutputPresetSpec(outputPreset).instruction];
   const visionContext = vision ? buildVisionPromptContext(vision) : "";
   const includesHumanModel = hasHumanModelControls(style);
+  const submittedProductType = String(formData.get("productType") ?? "").trim();
+  const productType = vision?.productType ?? (submittedProductType || null);
 
   if (includesHumanModel) {
     const modelGenderInstruction = modelGenderInstructions[modelGender];
@@ -83,6 +123,9 @@ function buildPrompt(
       "Human realism: preserve natural skin texture, visible pores, subtle fine lines, realistic hands, neck, ears, and skin tone variation. Avoid waxy, porcelain, airbrushed, plastic, doll-like, or AI-smoothed skin.",
     );
   }
+
+  promptParts.push(getCompositionInstruction(productType, vision?.visionAngle));
+  promptParts.push(getFineDetailInstruction(productType));
 
   if (visionContext) {
     promptParts.push(visionContext);
@@ -174,6 +217,7 @@ export async function createProjectAction(
       productType: selectedProductType,
       visionDescription: asset.visionDescription,
       visionConfidence: asset.visionConfidence,
+      visionAngle: asset.visionAngle,
     });
     const project = await db.project.create({
       data: {
@@ -225,6 +269,7 @@ export async function createProjectAction(
     productType: selectedProductType,
     visionDescription: null,
     visionConfidence: null,
+    visionAngle: null,
   });
 
   const project = await db.project.create({
