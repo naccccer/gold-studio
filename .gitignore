@@ -49,3 +49,4 @@ raw-placeholders/
 *.tiff
 *.heic
 /src/generated/prisma
+/public/uploads/
