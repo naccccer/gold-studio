@@ -57,7 +57,7 @@ export async function processImageProject(projectId: string) {
       model: liaraModel(),
       statusDetail: `outputPreset=${project.outputPreset}`,
     });
-    const result = await saveGeneratedImage(generatedImage.imageBuffer);
+    const result = await saveGeneratedImage(generatedImage.imageBuffer, generatedImage.mimeType);
 
     await db.project.update({
       where: { id: projectId },
@@ -107,7 +107,7 @@ export async function processTextProject({
       status: "SUCCESS",
       model: liaraModel(),
     });
-    const result = await saveGeneratedImage(generatedImage.imageBuffer);
+    const result = await saveGeneratedImage(generatedImage.imageBuffer, generatedImage.mimeType);
 
     await db.project.update({
       where: { id: projectId },

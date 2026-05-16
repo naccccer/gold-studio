@@ -40,6 +40,7 @@ Mobile user navigation:
 - UI Phase 8 first slice is implemented: shared CSS motion tokens/utilities now support calm press feedback, page transitions, context-menu opening, state transitions, selected media states, soft reveal rhythm, bottom-nav motion, and reduced-motion behavior across user-facing account, billing, gallery, and projects surfaces.
 - Project fullscreen review layering is patched so the inline before/after toggle no longer appears over the fullscreen modal.
 - Gallery selection controls now keep cancel beside the sticky selected-item actions instead of inside the upload panel.
+- Generation result storage now normalizes the actual output image format before saving, preventing real Liara outputs from falling back to placeholder imagery when provider mime metadata is inconsistent.
 
 ## Next Priorities
 - Production hardening: verify real Liara generation, retry behavior, storage display URLs, and failed-state recovery on the deployment target.
