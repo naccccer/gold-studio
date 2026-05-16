@@ -53,7 +53,7 @@ npm run lint
 npm run build
 ```
 
-If build fails only because of the known Prisma engine/client issue, report it clearly as unrelated.
+`npm run build` is expected to pass after the Prisma MariaDB JS adapter migration.
 
 ## Scrolling Policy
 
@@ -154,7 +154,7 @@ Completion notes:
 - Replaced legacy product naming with Ovala in app metadata, visible admin labels, tests, Remotion launch copy, and foundation docs.
 - Repaired corrupted Persian mojibake in source and docs while keeping Persian as direct UTF-8.
 - Strengthened `npm run check:mojibake` to catch representative Latin-1/Windows-1252 mojibake sequences.
-- Verification: `npm run check:mojibake` passed, `npm run lint` passed, and `npm run build` reached the known Prisma engine file-lock failure during `prisma generate`.
+- Verification: `npm run check:mojibake` passed, `npm run lint` passed, and `npm run build` now passes after the Prisma MariaDB JS adapter migration.
 - Screenshots were not captured because Phase 0 did not include visual redesign work.
 
 Scope:
@@ -191,7 +191,7 @@ Completion notes:
 - Password recovery is intentionally deferred until SMS provider setup; track it as auth debt instead of shipping an incomplete flow.
 - Auth form icons now use `vuesax-icons-react`; remaining user-facing lucide icons should be migrated deliberately in the UI primitives/token phase.
 - Screenshots captured in `output/playwright/phase-1`: login, signup, home/dashboard, new project, processing, result, and desktop centered shell.
-- Verification: `npm run check:mojibake` passed, `npm run lint` passed, and `npm run build` reached the known Prisma engine file-lock failure during `prisma generate`.
+- Verification: `npm run check:mojibake` passed, `npm run lint` passed, and `npm run build` now passes after the Prisma MariaDB JS adapter migration.
 
 Scope: user shell, dashboard frame, masthead/top bar, bottom nav, brand logo component, auth/home shell behavior, studio shell behavior.
 
@@ -225,7 +225,7 @@ Completion notes:
 - Project-list follow-up: matched project thumbnail rhythm to gallery spacing, removed date overlays from project thumbnails, reduced action-dock distance from the bottom nav, and softened the desktop phone-frame corner radius so margins read more clearly.
 - Follow-up screenshots captured in `output/playwright/phase-2-followup`: `home-no-credit.png`, `gallery-spacing-menu-dock.png`, `account-logout-spacing.png`, and `projects-gallery-spacing-no-dates.png`.
 - Verification: `npm run check:mojibake` passed and `npm run lint` passed.
-- Build caveat: `npm run build` still fails during `prisma generate` with Windows `EPERM rename query_engine-windows.dll.node`, before Next compilation; this matches the known Prisma engine/client issue and is unrelated to Phase 2 UI changes.
+- Verification note updated: the old Windows Prisma engine file-lock caveat no longer applies after the Prisma MariaDB JS adapter migration.
 
 Scope: shared UI components, gallery/projects cards, new project controls, account rows, billing controls, safe admin reuse.
 
@@ -272,7 +272,7 @@ Completion notes:
 - Migrated touched home user-facing icons from lucide to `vuesax-icons-react`.
 - Screenshot QA was started, then intentionally stopped and discarded after the follow-up request to skip screenshots for token budget.
 - Verification: `npm run check:mojibake` passed and `npm run lint` passed.
-- Build caveat: `npm run build` still fails during `prisma generate` with Windows `EPERM rename query_engine-windows.dll.node`, before Next compilation; this matches the known Prisma engine/client issue and is unrelated to Phase 2.5 layout changes.
+- Verification note updated: the old Windows Prisma engine file-lock caveat no longer applies after the Prisma MariaDB JS adapter migration.
 
 ## Phase 3: First Impression Screens
 
@@ -292,7 +292,7 @@ Completion notes:
 - Restored the previous hero overlay text after review feedback and did not introduce new home copy.
 - Screenshots were skipped per Phase 3 request because the change was intentionally small.
 - Verification: `npm run check:mojibake` passed and `npm run lint` passed.
-- Build caveat: `npm run build` still fails during `prisma generate` with Windows `EPERM rename query_engine-windows.dll.node`, before Next compilation; this matches the known Prisma engine/client issue and is unrelated to Phase 3.
+- Verification note updated: the old Windows Prisma engine file-lock caveat no longer applies after the Prisma MariaDB JS adapter migration.
 
 Must pass:
 
@@ -325,7 +325,7 @@ Completion notes:
 - Gallery crop overlay was left functionally unchanged because no Phase 4 blocker required crop redesign.
 - Screenshots were initially skipped per request; follow-up result-review debug screenshots were later captured in `output/playwright/phase-5-debug` to verify the mobile bottom overlay.
 - Verification: `npm run check:mojibake` passed and `npm run lint` passed.
-- Build caveat: `npm run build` still fails during `prisma generate` with Windows `EPERM rename query_engine-windows.dll.node`, before Next compilation; this matches the known Prisma engine/client issue and is unrelated to Phase 4 UI changes.
+- Verification note updated: the old Windows Prisma engine file-lock caveat no longer applies after the Prisma MariaDB JS adapter migration.
 
 Must pass:
 
@@ -355,7 +355,7 @@ Completion notes:
 - Improved project cards with clearer ready/processing/failed cues, stronger title/style/date ownership signals, and menu ordering that prioritizes viewing and saving before secondary actions.
 - Screenshots were intentionally skipped for this phase per request.
 - Verification: `npm run check:mojibake` passed and `npm run lint` passed.
-- Build caveat: `npm run build` still fails during `prisma generate` with Windows `EPERM rename query_engine-windows.dll.node`, before Next compilation; this matches the known Prisma engine/client issue and is unrelated to Phase 5 UI changes.
+- Verification note updated: the old Windows Prisma engine file-lock caveat no longer applies after the Prisma MariaDB JS adapter migration.
 
 Must pass:
 
@@ -384,7 +384,7 @@ Completion notes:
 - Repaired mojibake that was still present in the Phase 6 account and billing surfaces.
 - Screenshots were intentionally skipped for this phase per request.
 - Verification: `npm run check:mojibake` passed and `npm run lint` passed.
-- Build caveat: `npm run build` still fails during `prisma generate` with Windows `EPERM rename query_engine-windows.dll.node`, before Next compilation; this matches the known Prisma engine/client issue and is unrelated to Phase 6 UI changes.
+- Verification note updated: the old Windows Prisma engine file-lock caveat no longer applies after the Prisma MariaDB JS adapter migration.
 
 Must pass:
 
@@ -411,7 +411,7 @@ Completion notes:
 - Preserved provider/debug and internal prompt controls as admin-only.
 - Screenshots were intentionally skipped per request.
 - Verification: `npm run check:mojibake` passed and `npm run lint` passed.
-- Build caveat: `npm run build` still fails during `prisma generate` with Windows `EPERM rename query_engine-windows.dll.node`, before Next compilation; this matches the known Prisma engine/client issue and is unrelated to Phase 7.
+- Verification note updated: the old Windows Prisma engine file-lock caveat no longer applies after the Prisma MariaDB JS adapter migration.
 - Extra caveat: `npx tsc --noEmit` still fails because `tests/home.spec.ts` references missing `@playwright/test` types; no admin TypeScript errors were reported before that existing test setup issue.
 
 Scope: admin layout, home, users, projects, assets, packages, styles, provider events, support, access/credits.

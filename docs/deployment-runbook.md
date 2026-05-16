@@ -35,6 +35,11 @@ cd /var/www/gold-studio
 
 If direct Git access is blocked, upload a clean project zip and extract it to `/var/www/gold-studio`.
 
+Preferred rule:
+- Keep the live app in a real Git clone when possible.
+- If you had to deploy by zip first, clone the repo into a separate folder such as `/var/www/gold-studio-git`, verify it on port `3001`, then switch PM2/Nginx to the clone.
+- Do not rely on `git pull` inside a zip-extracted folder that has no `.git` directory.
+
 ## Database Setup
 Open MySQL:
 
@@ -87,6 +92,7 @@ Notes:
 - `ALLOW_INSECURE_COOKIES="true"` is only a temporary HTTP/live-IP workaround before HTTPS is ready.
 - After SSL is active, set `ALLOW_INSECURE_COOKIES="false"` or remove it.
 - Current VPS live tests should use `STORAGE_DRIVER="local"` with writable `public/uploads`.
+- `public/uploads` is intentionally Git-ignored and must be preserved separately when moving between deploy folders.
 - Switch to `STORAGE_DRIVER="s3"` only when persistent object storage is intentionally configured.
 
 ## First Deploy
@@ -109,6 +115,9 @@ pm2 save
 ```
 
 Prisma packages must stay on matching major versions. If `@prisma/client` and `prisma` are on `6.x`, keep `@prisma/adapter-mariadb` on `6.x` too.
+
+Prisma runtime note:
+- This repo now uses Prisma's MariaDB JS adapter at runtime to avoid the old Windows engine DLL file-lock failure during `prisma generate`.
 
 ## Nginx
 Create `/etc/nginx/sites-available/gold-studio`:
@@ -176,6 +185,39 @@ pm2 save
 
 If the server cannot pull from Git, upload a fresh deploy zip, replace project files, then run the same install/generate/migrate/build/restart sequence.
 
+If your active VPS path is the verified Git clone, use that real clone directory instead of `/var/www/gold-studio`, for example:
+
+```bash
+cd /var/www/gold-studio-git
+git pull origin main
+npm install
+export DATABASE_URL="mysql://gold_studio_user:CHANGE_THIS_DB_PASSWORD@127.0.0.1:3306/gold_studio"
+npm run db:generate
+npx prisma migrate deploy
+npm run build
+pm2 restart gold-studio
+pm2 save
+```
+
+If the previous live app was a zip deploy and you are moving to a fresh clone:
+
+```bash
+cp /var/www/gold-studio/.env /var/www/gold-studio-git/.env
+mkdir -p /var/www/gold-studio-git/public
+cp -a /var/www/gold-studio/public/uploads /var/www/gold-studio-git/public/
+```
+
+Optional safety check before switching traffic:
+
+```bash
+cd /var/www/gold-studio-git
+PORT=3001 npm start
+curl -I http://127.0.0.1:3001
+curl -I http://127.0.0.1:3001/login
+```
+
+Then stop the temporary `3001` process, switch PM2 to the clone, and keep Nginx pointing at port `3000`.
+
 ## Health Checks
 ```bash
 pm2 status
@@ -212,6 +254,33 @@ pm2 restart gold-studio
 If a missing property is a Prisma model delegate such as `db.userSubscription`, the generated client is stale.
 
 Run `npm run db:generate`, then rebuild. This repo generates Prisma into `src/generated/prisma`.
+
+### `git pull` says `not a git repository`
+Cause: the app directory was created from a zip instead of a Git clone.
+
+Fix:
+
+```bash
+cd /var/www
+git clone https://github.com/naccccer/gold-studio.git gold-studio-git
+cp /var/www/gold-studio/.env /var/www/gold-studio-git/.env
+mkdir -p /var/www/gold-studio-git/public
+cp -a /var/www/gold-studio/public/uploads /var/www/gold-studio-git/public/
+```
+
+Build and verify the clone, then switch PM2 to that directory.
+
+### GitHub HTTPS works intermittently on the VPS
+Symptoms may include `gnutls_handshake() failed: Handshake failed` even though a later `git ls-remote` succeeds.
+
+Try:
+
+```bash
+git ls-remote https://github.com/naccccer/gold-studio.git
+openssl s_client -connect github.com:443 -servername github.com
+```
+
+If the live clone works, prefer testing the real clone directly instead of reusing an old zip folder.
 
 ### `Missing required environment variable: DATABASE_URL`
 For this repo, Prisma may need a shell env var in addition to `.env`:

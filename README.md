@@ -60,6 +60,8 @@ Image generation defaults in docs should match `.env.example`:
 
 For local/live VPS tests, keep `STORAGE_DRIVER="local"` and make sure `public/uploads` is writable. Switch to `STORAGE_DRIVER="s3"` only when persistent object storage is intentionally configured.
 
+When `STORAGE_DRIVER="local"`, uploaded files live under `public/uploads`. That directory is intentionally Git-ignored and should be copied separately between deploy folders or servers.
+
 ## Routes
 User routes:
 - `/`

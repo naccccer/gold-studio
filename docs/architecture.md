@@ -8,6 +8,7 @@
 - Signed cookie auth with role-based admin access.
 - Liara OpenAI-compatible image generation boundary.
 - Local filesystem storage by default, optional S3-compatible storage.
+- Local uploads under `public/uploads` are deployment data, not source, and are intentionally excluded from Git.
 
 ## Product Boundaries
 - `ProductAsset`: uploaded source product photos owned by Gallery.
