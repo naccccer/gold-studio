@@ -168,24 +168,7 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                 sizes="(max-width: 768px) 100vw, 680px"
               />
             }
-            action={
-              <div className="grid grid-cols-2 gap-3">
-                <label htmlFor="gallery-file-input" className={buttonClasses({ className: "h-12 w-full" })}>
-                  <DocumentUpload aria-hidden={true} className="h-4 w-4" />
-                  آپلود
-                </label>
-                <label
-                  htmlFor="gallery-camera-input"
-                  className={buttonClasses({ variant: "secondary", className: "h-12 w-full" })}
-                >
-                  <Camera aria-hidden={true} className="h-4 w-4" />
-                  دوربین
-                </label>
-              </div>
-            }
-          >
-            اولین عکس منبع را اضافه کنید تا مسیر ساخت پروژه از همین‌جا شروع شود.
-          </EmptyState>
+          />
         ) : (
           <section className="grid grid-cols-2 gap-3">
             {assets.map((asset) => {
@@ -208,7 +191,9 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                           className="absolute inset-x-0 bottom-0 z-0 h-14 bg-black/12 backdrop-blur-[2px] [mask-image:linear-gradient(to_top,black_0%,rgba(0,0,0,0.72)_34%,transparent_100%)]"
                           aria-hidden={true}
                         />
-                        <p className="relative z-10 flex min-h-11 items-center truncate pl-12 text-xs font-semibold text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)]">{title}</p>
+                        <p className="relative z-10 flex min-h-11 items-center truncate pl-12 text-xs font-semibold text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)]">
+                          {title}
+                        </p>
                         <p className="hidden">
                           {asset.projects.length > 0
                             ? `${asset.projects.length.toLocaleString("fa-IR")} پروژه`

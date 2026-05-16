@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 
-const SESSION_COOKIE = "gold_session";
+export const SESSION_COOKIE = "gold_session";
 const ONE_WEEK_SECONDS = 60 * 60 * 24 * 7;
 
 type SessionPayload = {
@@ -82,17 +82,22 @@ export async function requireUserSession() {
   if (!session) {
     redirect("/login");
   }
-  return session;
+
+  const user = await db.user.findUnique({
+    where: { id: session.userId },
+    select: { id: true, role: true },
+  });
+
+  if (!user) {
+    redirect("/logout?redirect=/login");
+  }
+
+  return { userId: user.id, role: user.role };
 }
 
 export async function requireAdminSession() {
   const session = await requireUserSession();
-  const user = await db.user.findUnique({
-    where: { id: session.userId },
-    select: { role: true },
-  });
-
-  if (!user || user.role !== "ADMIN") {
+  if (session.role !== "ADMIN") {
     redirect("/dashboard");
   }
 

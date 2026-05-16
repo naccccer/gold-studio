@@ -1,3 +1,4 @@
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "@/generated/prisma";
 
 const globalForPrisma = globalThis as unknown as {
@@ -15,7 +16,7 @@ function getDatabaseUrl() {
 export const db =
   globalForPrisma.prisma ??
   new PrismaClient({
-    datasourceUrl: getDatabaseUrl(),
+    adapter: new PrismaMariaDb(getDatabaseUrl()),
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
 

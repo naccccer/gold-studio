@@ -1,10 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client, type S3ClientConfig } from "@aws-sdk/client-s3";
 
 const LOCAL_STORAGE_KIND = "local";
 const S3_STORAGE_KIND = "s3";
+const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
+const PUBLIC_UPLOADS_ROOT = path.join(/* turbopackIgnore: true */ MODULE_DIR, "..", "..", "public", "uploads");
 
 type StorageKind = typeof LOCAL_STORAGE_KIND | typeof S3_STORAGE_KIND;
 
@@ -48,7 +51,7 @@ function getLocalPublicPath(key: string) {
   }
 
   const relativeUploadsPath = normalized.slice(uploadsRoot.length);
-  return path.join(/* turbopackIgnore: true */ process.cwd(), "public", "uploads", relativeUploadsPath);
+  return path.join(/* turbopackIgnore: true */ PUBLIC_UPLOADS_ROOT, relativeUploadsPath);
 }
 
 const localStorageAdapter: StorageAdapter = {

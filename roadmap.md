@@ -23,7 +23,7 @@ Mobile user navigation:
 
 ## Current Feature Status
 - Auth, onboarding, account, billing, gallery, project creation, project status, result review, and admin routes are implemented in the single Next.js app.
-- Prisma uses MySQL and generates the client into `src/generated/prisma`.
+- Prisma uses MySQL, generates the client into `src/generated/prisma`, and runs through the MariaDB JS adapter to avoid Windows engine file-lock issues.
 - Storage supports local filesystem uploads by default and optional S3-compatible storage when intentionally enabled.
 - Image generation uses the Liara-compatible provider boundary in `src/lib/ai`.
 - Output preset is persisted per project so ratio-specific generation settings do not collapse into one global square default.
@@ -57,7 +57,6 @@ npm run lint
 npm run build
 ```
 
-If build fails only because of the known PrismaClient issue in `src/lib/db.ts`, report it as unrelated and unchanged.
 
 ## Local Database Notes
 - `npm run db:start` starts the isolated local MariaDB helper for this project.
