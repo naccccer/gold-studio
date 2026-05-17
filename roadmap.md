@@ -30,26 +30,19 @@ Mobile user navigation:
 - New users start with 5 tracked signup credits and can consume active subscription credit before standalone wallet credit.
 - Manual card-to-card purchase requests, receipt upload, admin approval, package/subscription groundwork, credit events, support tickets, FAQ, and provider event logging are present.
 - Soft archive behavior exists for assets/projects, with `npm run cleanup:archives` for retention cleanup.
-- UI Phase 2 is complete: shared tokens and primitives now cover action hierarchy, media cards, fields, menus, segmented controls, status pills, and the touched gallery/projects/new-project/account/billing surfaces.
-- UI Phase 2.5 is implemented: user-shell gutters, desktop phone-frame rhythm, responsive media-card sizing, sticky bottom dock spacing, context-menu clamping, and long-page bottom spacing have been tuned. Screenshot QA was skipped after the latest request to conserve token budget.
-- UI Phase 3 is complete: auth first-impression screens were reviewed without redesign, home thumbnail date tags were removed, and the home shell/hero rhythm was tuned to avoid accidental scrolling while preserving the existing direction for later redesign.
-- UI Phase 4 is complete: gallery intake and selection, the new-project source/size/style wizard, and the active processing screen now read as one guided studio flow while keeping user-facing text-to-image out of scope.
-- UI Phase 5 is complete: result review and project ownership now use clearer status/metadata cues, more discoverable before/after comparison, stronger download hierarchy, and more trustworthy project-card ownership signals without expanding beyond the project surfaces.
-- UI Phase 6 is complete: account, billing, support, referral, FAQ, profile, security, and output settings now use clearer utility grouping, repaired Persian copy, more trustworthy payment/support presentation, and consistent Vuesax-based user-facing iconography on the touched surfaces.
-- UI Phase 7 is implemented: live admin routes now use a desktop-first operations shell, denser shared admin primitives, Ovala token alignment, direct assets navigation, and Vuesax-based icons on touched admin-facing UI while keeping provider/debug controls admin-only.
-- UI Phase 8 first slice is implemented: shared CSS motion tokens/utilities now support calm press feedback, page transitions, context-menu opening, state transitions, selected media states, soft reveal rhythm, bottom-nav motion, and reduced-motion behavior across user-facing account, billing, gallery, and projects surfaces.
+- UI Phase 2 through Phase 8 are implemented across shared primitives, guided creation, result review, account/billing/support, admin operations, and calm motion utilities.
 - Project fullscreen review layering is patched so the inline before/after toggle no longer appears over the fullscreen modal.
 - Gallery selection controls now keep cancel beside the sticky selected-item actions instead of inside the upload panel.
-- Generation result storage now normalizes the actual output image format before saving, preventing real Liara outputs from falling back to placeholder imagery when provider mime metadata is inconsistent.
-- Missing or unreadable completed result files now surface an explicit project error and server log instead of silently showing placeholder imagery.
-- Generated outputs are now rejected before completion if the saved bytes are not a valid PNG/JPEG/WEBP image.
-- Local upload/result URLs now stream through `/api/storage/...` and resolve files from the project-root `public/uploads` directory, keeping MVP storage local while avoiding production static-file misses.
+- Generation result storage now normalizes the actual output image format before saving, validates saved bytes, and surfaces missing files as explicit project errors.
+- Local upload/result URLs now stream through `/api/storage/...` and resolve files from the project-root `public/uploads` directory.
 - Admin user management now separates direct credit-pack assignment from subscription assignment, so credit packs increase wallet credits instead of creating a subscription.
+- User-visible styles are curated to six directions: `با مدل`, `پس‌زمینه سفید`, `دکور انتزاعی`, `شبکه اجتماعی`, `ادیتوریال`, and `سینماتیک`; the model style now explicitly targets young adult models, generally 25 to 35.
+- Gallery, camera, crop, and receipt uploads now normalize images before storage, stripping metadata and resizing large files to keep live uploads faster and storage lighter.
 
 ## Next Priorities
 - Production hardening: verify real Liara generation, retry behavior, storage display URLs, and failed-state recovery on the deployment target.
-- Release readiness: finish route QA across auth, home, gallery, new project, project detail, projects, account, billing, support, settings, and admin, with special attention to the completed Phase 4 guided flow, Phase 5 result ownership polish, Phase 6 utility-surface updates, and Phase 7 admin desktop operations.
-- Mobile polish: check `393x852` screenshots for Farsi wrapping, RTL controls, bottom navigation, action placement, calm Phase 8 motion, and the no-accidental-scroll behavior on focused creation screens when screenshot capture is requested.
+- Release readiness: finish route QA across auth, home, gallery, new project, project detail, projects, account, billing, support, settings, and admin.
+- Mobile polish: check `393x852` screenshots for Farsi wrapping, RTL controls, bottom navigation, action placement, calm motion, and no accidental focused-screen scrolling.
 - Admin operations QA: review the desktop-first admin panel with real data for table density, payment review speed, provider event scanning, and long-form package editing.
 - Documentation hygiene: keep docs short and current; update this file when scope or active priorities change.
 
@@ -61,7 +54,6 @@ npm run check:mojibake
 npm run lint
 npm run build
 ```
-
 
 ## Local Database Notes
 - `npm run db:start` starts the isolated local MariaDB helper for this project.

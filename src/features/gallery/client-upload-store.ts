@@ -38,6 +38,9 @@ type UploadRouteError = {
   supportCode?: string;
 };
 
+const MAX_INITIAL_UPLOAD_EDGE = 2400;
+const MAX_INITIAL_UPLOAD_BYTES = 4 * 1024 * 1024;
+const INITIAL_UPLOAD_JPEG_QUALITY = 0.86;
 const uploads = new Map<string, PendingGalleryUpload>();
 const listeners = new Set<() => void>();
 const uploadPromises = new Map<string, Promise<PendingGalleryUpload>>();
@@ -78,6 +81,70 @@ function parseErrorPayload(payload: unknown, fallback: string) {
     message: fallback,
     supportCode: undefined,
   };
+}
+
+function loadImageElement(file: File) {
+  const objectUrl = URL.createObjectURL(file);
+  const image = new Image();
+  image.decoding = "async";
+
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("تصویر انتخاب‌شده قابل آماده‌سازی نیست."));
+    };
+    image.src = objectUrl;
+  });
+}
+
+async function prepareInitialUploadFile(file: File) {
+  if (!file.type.startsWith("image/") || file.type === "image/svg+xml") {
+    return file;
+  }
+
+  const image = await loadImageElement(file);
+  const naturalWidth = image.naturalWidth;
+  const naturalHeight = image.naturalHeight;
+  const longestEdge = Math.max(naturalWidth, naturalHeight);
+  const shouldResize = longestEdge > MAX_INITIAL_UPLOAD_EDGE || file.size > MAX_INITIAL_UPLOAD_BYTES;
+
+  if (!shouldResize) {
+    return file;
+  }
+
+  const scale = Math.min(1, MAX_INITIAL_UPLOAD_EDGE / longestEdge);
+  const outputWidth = Math.max(1, Math.round(naturalWidth * scale));
+  const outputHeight = Math.max(1, Math.round(naturalHeight * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = outputWidth;
+  canvas.height = outputHeight;
+
+  const context = canvas.getContext("2d", { alpha: false });
+  if (!context) {
+    return file;
+  }
+
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, outputWidth, outputHeight);
+  context.drawImage(image, 0, 0, outputWidth, outputHeight);
+
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(resolve, "image/jpeg", INITIAL_UPLOAD_JPEG_QUALITY);
+  });
+
+  if (!blob) {
+    return file;
+  }
+
+  const baseName = file.name.replace(/\.[^.]+$/, "") || "gallery-upload";
+  return new File([blob], `${baseName}-optimized.jpg`, {
+    type: "image/jpeg",
+    lastModified: file.lastModified,
+  });
 }
 
 export function createPendingGalleryUpload(file: File, source: PendingUploadSource) {
@@ -135,8 +202,21 @@ export function startPendingGalleryUpload(uploadId: string) {
   }
 
   const task = (async () => {
+    let uploadFile: File;
+    try {
+      uploadFile = await prepareInitialUploadFile(current.file);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "آماده‌سازی تصویر برای آپلود کامل نشد.";
+      updateUpload(uploadId, {
+        status: "failed",
+        error: message,
+        supportCode: undefined,
+      });
+      throw new Error(message);
+    }
+
     const formData = new FormData();
-    formData.set("image", current.file);
+    formData.set("image", uploadFile);
 
     const response = await fetch("/api/gallery/uploads", {
       method: "POST",

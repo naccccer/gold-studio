@@ -1,10 +1,19 @@
 import path from "node:path";
+import sharp from "sharp";
 import { buildStorageKey, readStorageObject, saveStorageObject, storagePublicUrl } from "@/lib/storage";
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const SOURCE_UPLOAD_DIR = path.join("uploads", "source");
 const RESULT_UPLOAD_DIR = path.join("uploads", "result");
 const RECEIPT_UPLOAD_DIR = path.join("uploads", "receipts");
+const NORMALIZED_UPLOAD_MIME_TYPE = "image/jpeg";
+const NORMALIZED_UPLOAD_EXTENSION = "jpg";
+const MAX_SOURCE_INPUT_BYTES = 15 * 1024 * 1024;
+const MAX_RECEIPT_INPUT_BYTES = 10 * 1024 * 1024;
+const SOURCE_MAX_EDGE = 2400;
+const SOURCE_JPEG_QUALITY = 86;
+const RECEIPT_MAX_EDGE = 1800;
+const RECEIPT_JPEG_QUALITY = 82;
 
 function extensionFromType(type: string) {
   if (type === "image/png") return "png";
@@ -103,28 +112,93 @@ export type StoredUpload = {
   originalName: string | null;
 };
 
+type NormalizeImageOptions = {
+  maxInputBytes: number;
+  maxEdge: number;
+  quality: number;
+  invalidTypeMessage: string;
+  tooLargeMessage: string;
+  invalidImageMessage: string;
+};
+
+async function normalizeUploadImage(file: File, options: NormalizeImageOptions) {
+  if (!ALLOWED_TYPES.has(file.type)) {
+    throw new Error(options.invalidTypeMessage);
+  }
+
+  if (file.size > options.maxInputBytes) {
+    throw new Error(options.tooLargeMessage);
+  }
+
+  const inputBuffer = Buffer.from(await file.arrayBuffer());
+  if (!detectKnownImageMimeType(inputBuffer)) {
+    throw new Error(options.invalidImageMessage);
+  }
+
+  try {
+    const normalizedBuffer = await sharp(inputBuffer, { failOn: "none" })
+      .rotate()
+      .resize({
+        width: options.maxEdge,
+        height: options.maxEdge,
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .flatten({ background: "#ffffff" })
+      .jpeg({
+        quality: options.quality,
+        mozjpeg: true,
+      })
+      .toBuffer();
+
+    if (!detectKnownImageMimeType(normalizedBuffer)) {
+      throw new Error(options.invalidImageMessage);
+    }
+
+    return {
+      buffer: normalizedBuffer,
+      mimeType: NORMALIZED_UPLOAD_MIME_TYPE,
+      extension: NORMALIZED_UPLOAD_EXTENSION,
+    };
+  } catch (error) {
+    console.error("[upload-image-normalize-failed]", {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+      error,
+    });
+    throw new Error(options.invalidImageMessage);
+  }
+}
+
 export async function saveUploadedFile(file: File): Promise<StoredUpload> {
   if (!ALLOWED_TYPES.has(file.type)) {
     throw new Error("فرمت فایل باید JPG، PNG یا WEBP باشد.");
   }
 
-  const maxSizeBytes = 10 * 1024 * 1024;
+  const maxSizeBytes = MAX_SOURCE_INPUT_BYTES;
   if (file.size > maxSizeBytes) {
-    throw new Error("حجم فایل باید کمتر از ۱۰ مگابایت باشد.");
+    throw new Error("حجم فایل باید کمتر از ۱۵ مگابایت باشد.");
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const ext = extensionFromType(file.type);
-  const storageKey = buildStorageKey(SOURCE_UPLOAD_DIR, ext);
+  const normalized = await normalizeUploadImage(file, {
+    maxInputBytes: MAX_SOURCE_INPUT_BYTES,
+    maxEdge: SOURCE_MAX_EDGE,
+    quality: SOURCE_JPEG_QUALITY,
+    invalidTypeMessage: "فرمت فایل باید JPG، PNG یا WEBP باشد.",
+    tooLargeMessage: "حجم فایل باید کمتر از ۱۵ مگابایت باشد.",
+    invalidImageMessage: "تصویر انتخاب‌شده معتبر نیست یا قابل پردازش نبود.",
+  });
+  const storageKey = buildStorageKey(SOURCE_UPLOAD_DIR, normalized.extension);
   const publicUrl = await saveStorageObject({
-    buffer,
-    contentType: file.type,
+    buffer: normalized.buffer,
+    contentType: normalized.mimeType,
     key: storageKey,
   });
 
   return {
-    buffer,
-    mimeType: file.type,
+    buffer: normalized.buffer,
+    mimeType: normalized.mimeType,
     publicUrl,
     storageKey,
     originalName: file.name || null,
@@ -157,16 +231,23 @@ export async function saveReceiptFile(file: File) {
     throw new Error("فرمت رسید باید JPG، PNG یا WEBP باشد.");
   }
 
-  const maxSizeBytes = 8 * 1024 * 1024;
+  const maxSizeBytes = MAX_RECEIPT_INPUT_BYTES;
   if (file.size > maxSizeBytes) {
-    throw new Error("حجم رسید باید کمتر از ۸ مگابایت باشد.");
+    throw new Error("حجم رسید باید کمتر از ۱۰ مگابایت باشد.");
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const storageKey = buildStorageKey(RECEIPT_UPLOAD_DIR, extensionFromType(file.type));
+  const normalized = await normalizeUploadImage(file, {
+    maxInputBytes: MAX_RECEIPT_INPUT_BYTES,
+    maxEdge: RECEIPT_MAX_EDGE,
+    quality: RECEIPT_JPEG_QUALITY,
+    invalidTypeMessage: "فرمت رسید باید JPG، PNG یا WEBP باشد.",
+    tooLargeMessage: "حجم رسید باید کمتر از ۱۰ مگابایت باشد.",
+    invalidImageMessage: "تصویر رسید معتبر نیست یا قابل پردازش نبود.",
+  });
+  const storageKey = buildStorageKey(RECEIPT_UPLOAD_DIR, normalized.extension);
   const publicUrl = await saveStorageObject({
-    buffer,
-    contentType: file.type,
+    buffer: normalized.buffer,
+    contentType: normalized.mimeType,
     key: storageKey,
   });
 

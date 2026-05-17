@@ -29,8 +29,8 @@ async function getReadyUser(userId: string) {
 }
 
 const modelGenderInstructions: Record<string, string> = {
-  woman: "Use an elegant adult woman model when a human model is needed.",
-  man: "Use an elegant adult man model when a human model is needed.",
+  woman: "Use an elegant adult woman model, generally 25 to 35 years old, when a human model is needed.",
+  man: "Use an elegant adult man model, generally 25 to 35 years old, when a human model is needed.",
 };
 
 function hasHumanModelControls(style: StyleForGeneration) {
@@ -120,6 +120,9 @@ function buildPrompt(
     }
 
     promptParts.push(getModestyInstruction(normalizeModesty(modestyValue)));
+    promptParts.push(
+      "Model age and casting: if a human model appears, use a believable young adult model, generally 25 to 35 years old. Avoid elderly, childlike, teen, overly aged, tired, or heavily wrinkled faces and hands.",
+    );
     promptParts.push(
       "Human realism: preserve natural skin texture, visible pores, subtle fine lines, realistic hands, neck, ears, and skin tone variation. Avoid waxy, porcelain, airbrushed, plastic, doll-like, or AI-smoothed skin.",
     );

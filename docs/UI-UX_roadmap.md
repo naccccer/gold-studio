@@ -151,7 +151,7 @@ Goal: make the project consistently Ovala and remove corrupted Persian before vi
 
 Completion notes:
 
-- Replaced legacy product naming with Ovala in app metadata, visible admin labels, tests, Remotion launch copy, and foundation docs.
+- Replaced legacy product naming with Ovala in app metadata, visible admin labels, tests, launch copy, and foundation docs.
 - Repaired corrupted Persian mojibake in source and docs while keeping Persian as direct UTF-8.
 - Strengthened `npm run check:mojibake` to catch representative Latin-1/Windows-1252 mojibake sequences.
 - Verification: `npm run check:mojibake` passed, `npm run lint` passed, and `npm run build` now passes after the Prisma MariaDB JS adapter migration.
