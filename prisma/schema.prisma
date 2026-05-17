@@ -90,7 +90,7 @@ model User {
   referralCode          String?            @unique
   passwordHash          String
   role                  UserRole           @default(USER)
-  credits               Int                @default(1)
+  credits               Int                @default(5)
   projects              Project[]
   assets                ProductAsset[]
   collections           AssetCollection[]

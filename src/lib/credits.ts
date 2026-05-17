@@ -1,0 +1,1 @@
+export const INITIAL_SIGNUP_CREDITS = 5;

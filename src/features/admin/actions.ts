@@ -8,6 +8,7 @@ import { normalizeLoginIdentifier } from "@/lib/auth/identifier";
 import { hashPassword } from "@/lib/auth/password";
 import { getSubscriptionPeriod, logAdminAudit } from "@/lib/billing";
 import { normalizeBillingPlanColorPreset } from "@/lib/billing-plan-colors";
+import { INITIAL_SIGNUP_CREDITS } from "@/lib/credits";
 import { processImageProject } from "@/lib/generation/jobs";
 import { referralCodeFromUserId } from "@/lib/referrals";
 
@@ -387,7 +388,7 @@ export async function createAdminUserAction(formData: FormData) {
         phone: phone.value,
         passwordHash: await hashPassword(password),
         role,
-        credits: 1,
+        credits: INITIAL_SIGNUP_CREDITS,
       },
     });
 
@@ -400,9 +401,9 @@ export async function createAdminUserAction(formData: FormData) {
       data: {
         userId: created.id,
         actorAdminId: session.userId,
-        delta: 1,
+        delta: INITIAL_SIGNUP_CREDITS,
         balanceBefore: 0,
-        balanceAfter: 1,
+        balanceAfter: INITIAL_SIGNUP_CREDITS,
         reason: "اعتبار اولیه ساخت حساب",
         source: "SIGNUP",
       },

@@ -11,6 +11,7 @@ import { processImageProject, processTextProject } from "@/lib/generation/jobs";
 import { getOutputPresetSpec, normalizeOutputPreset } from "@/lib/output-presets";
 import { analyzeAndStoreProductAssetVision, pickVisionTitle } from "@/lib/product-vision";
 import { isProductType } from "@/lib/product-types";
+import { readStorageObject } from "@/lib/storage";
 import { getStyleForGeneration, type StyleForGeneration } from "@/lib/styles";
 import { saveTextPromptSourceImage, saveUploadedFile } from "@/lib/uploads";
 
@@ -373,16 +374,35 @@ export async function retryProjectAction(formData: FormData) {
   }
 
   const project = await db.project.findFirst({
-    where: { id: projectId, userId: session.userId, status: "FAILED", archivedAt: null },
-    select: { id: true, sourceAssetId: true },
+    where: { id: projectId, userId: session.userId, status: { in: ["FAILED", "COMPLETED"] }, archivedAt: null },
+    select: { id: true, sourceAssetId: true, status: true, resultImageUrl: true, resultStorageKey: true },
   });
 
   if (!project?.sourceAssetId) {
     return;
   }
 
+  if (project.status === "COMPLETED") {
+    if (!project.resultStorageKey && project.resultImageUrl) {
+      return;
+    }
+
+    if (project.resultStorageKey) {
+      try {
+        await readStorageObject(project.resultStorageKey, "application/octet-stream");
+        return;
+      } catch (error) {
+        console.error("[retry-missing-completed-result]", {
+          projectId: project.id,
+          resultStorageKey: project.resultStorageKey,
+          error,
+        });
+      }
+    }
+  }
+
   const updated = await db.project.updateMany({
-    where: { id: project.id, userId: session.userId, status: "FAILED", archivedAt: null },
+    where: { id: project.id, userId: session.userId, status: project.status, archivedAt: null },
     data: { status: "QUEUED", errorMessage: null, resultImageUrl: null, resultStorageKey: null },
   });
 

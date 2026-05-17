@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { normalizeLoginIdentifier } from "@/lib/auth/identifier";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { clearSession, createSession } from "@/lib/auth/session";
+import { INITIAL_SIGNUP_CREDITS } from "@/lib/credits";
 import { db } from "@/lib/db";
 import { referralCodeFromUserId } from "@/lib/referrals";
 
@@ -50,15 +51,16 @@ export async function signupAction(
         phone,
         passwordHash,
         role: adminEmail && adminEmail === email ? "ADMIN" : "USER",
+        credits: INITIAL_SIGNUP_CREDITS,
       },
     });
 
     await tx.creditEvent.create({
       data: {
         userId: created.id,
-        delta: 1,
+        delta: INITIAL_SIGNUP_CREDITS,
         balanceBefore: 0,
-        balanceAfter: 1,
+        balanceAfter: INITIAL_SIGNUP_CREDITS,
         reason: "اعتبار رایگان ثبت‌نام",
         source: "SIGNUP",
       },

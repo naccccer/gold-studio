@@ -20,7 +20,8 @@ export async function GET(
         "Content-Type": storedObject.mimeType,
       },
     });
-  } catch {
+  } catch (error) {
+    console.error("[storage-object-read-failed]", { storageKey, error });
     return NextResponse.json({ error: "File not found." }, { status: 404 });
   }
 }

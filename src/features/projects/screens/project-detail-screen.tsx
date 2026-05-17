@@ -60,6 +60,14 @@ function getStatusVariant(status: string) {
 }
 
 function formatProjectError(project: ProjectDetail) {
+  if (project.resultImageError) {
+    return {
+      title: "خروجی ساخته شده، اما فایل تصویر قابل نمایش نیست",
+      description: project.resultImageError,
+      supportCode: generateNumericSupportCode(project.id),
+    };
+  }
+
   const raw = project.errorMessage?.trim() ?? "";
   const supportCode = generateNumericSupportCode(project.id);
   const normalized = raw.toLowerCase();
@@ -150,6 +158,7 @@ export type ProjectDetail = {
   productType: string | null;
   style: { name: string };
   errorMessage: string | null;
+  resultImageError?: string | null;
   createdAt?: Date | string;
 };
 
@@ -262,6 +271,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
   const fullscreenDragStateRef = useRef<{ startX: number; startY: number; startPanX: number; startPanY: number } | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
   const [showBefore, setShowBefore] = useState(false);
+  const [resultImageLoadFailed, setResultImageLoadFailed] = useState(false);
   const [fullscreenZoom, setFullscreenZoom] = useState(1);
   const [fullscreenPan, setFullscreenPan] = useState({ x: 0, y: 0 });
   const [fullscreenViewport, setFullscreenViewport] = useState({ width: 0, height: 0 });
@@ -270,12 +280,18 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
     supportCopy: "وضعیت پروژه ثبت شد.",
   };
   const hasResult = Boolean(project.resultImageUrl);
+  const resultImageError =
+    project.resultImageError ??
+    (resultImageLoadFailed && project.resultImageUrl
+      ? `فایل خروجی از این آدرس در مرورگر لود نشد: ${project.resultImageUrl}`
+      : null);
+  const visibleProject = resultImageError ? { ...project, resultImageError } : project;
   const isActive = project.status === "QUEUED" || project.status === "PROCESSING";
   const resultImageSrc = project.resultImageUrl || resultHeroDark.src;
   const sourceImageSrc = project.sourceImageUrl || uploadPreview.src;
   const newVersionHref = project.sourceAssetId ? `/projects/new?assetId=${project.sourceAssetId}` : "/projects/new";
   const processingMoments = buildProcessingMoments(project.style.name);
-  const errorPresentation = formatProjectError(project);
+  const errorPresentation = formatProjectError(visibleProject);
   const projectTitle = project.title?.trim() || "پروژه محصول";
   const statusVariant = getStatusVariant(project.status);
   const fullscreenPanLimitX = Math.max(0, (fullscreenViewport.width * (fullscreenZoom - 1)) / 2);
@@ -417,7 +433,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
     );
   }
 
-  if (hasResult && project.status === "COMPLETED") {
+  if (hasResult && project.status === "COMPLETED" && !resultImageError) {
     return (
       <PageShell maxWidth="lg" className="h-[calc(100svh-9.8rem)] overflow-hidden pb-1 text-surface">
         <section className="flex h-full flex-col gap-3 overflow-hidden">
@@ -449,8 +465,12 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
                 alt={project.title || "خروجی نهایی محصول"}
                 className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-150 ${showBefore ? "opacity-0" : "opacity-100"}`}
                 decoding="async"
-                onError={(event) => {
-                  event.currentTarget.src = resultHeroDark.src;
+                onError={() => {
+                  console.error("[project-result-image-load-failed]", {
+                    projectId: project.id,
+                    resultImageUrl: project.resultImageUrl,
+                  });
+                  setResultImageLoadFailed(true);
                 }}
               />
               <SafeJewelryImage
@@ -639,8 +659,12 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
                   transformOrigin: "center center",
                 }}
                 decoding="async"
-                onError={(event) => {
-                  event.currentTarget.src = resultHeroDark.src;
+                onError={() => {
+                  console.error("[project-result-image-load-failed]", {
+                    projectId: project.id,
+                    resultImageUrl: project.resultImageUrl,
+                  });
+                  setResultImageLoadFailed(true);
                 }}
               />
               <SafeJewelryImage
