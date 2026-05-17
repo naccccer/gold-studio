@@ -625,6 +625,61 @@ export async function assignSubscriptionAction(formData: FormData) {
   revalidateAdmin();
 }
 
+export async function assignCreditPackAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const userId = text(formData, "userId");
+  const packageId = text(formData, "packageId");
+  const notes = text(formData, "notes");
+
+  const result = await db.$transaction(async (tx) => {
+    const [user, billingPackage] = await Promise.all([
+      tx.user.findUnique({ where: { id: userId }, select: { credits: true } }),
+      tx.billingPackage.findFirst({
+        where: { id: packageId, type: "CREDIT_PACK", archivedAt: null },
+        select: { id: true, title: true, credits: true },
+      }),
+    ]);
+
+    if (!user || !billingPackage || billingPackage.credits <= 0) {
+      return null;
+    }
+
+    const balanceAfter = user.credits + billingPackage.credits;
+    await tx.user.update({
+      where: { id: userId },
+      data: { credits: balanceAfter },
+    });
+
+    const event = await tx.creditEvent.create({
+      data: {
+        userId,
+        actorAdminId: session.userId,
+        delta: billingPackage.credits,
+        balanceBefore: user.credits,
+        balanceAfter,
+        reason: notes || `اختصاص دستی ${billingPackage.title}`,
+        source: "ADMIN",
+        packageId: billingPackage.id,
+      },
+    });
+
+    return { billingPackage, event };
+  });
+
+  if (result) {
+    await logAdminAudit({
+      actorAdminId: session.userId,
+      action: "credits.assign_pack",
+      targetType: "CreditEvent",
+      targetId: result.event.id,
+      summary: `بسته اعتباری ${result.billingPackage.title} به کاربر اختصاص یافت.`,
+      metadata: { packageId, credits: result.billingPackage.credits },
+    });
+  }
+
+  revalidateAdmin();
+}
+
 export async function updateSubscriptionStatusAction(formData: FormData) {
   const session = await requireAdminSession();
   const subscriptionId = text(formData, "subscriptionId");

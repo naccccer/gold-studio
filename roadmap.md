@@ -44,6 +44,7 @@ Mobile user navigation:
 - Missing or unreadable completed result files now surface an explicit project error and server log instead of silently showing placeholder imagery.
 - Generated outputs are now rejected before completion if the saved bytes are not a valid PNG/JPEG/WEBP image.
 - Local upload/result URLs now stream through `/api/storage/...` and resolve files from the project-root `public/uploads` directory, keeping MVP storage local while avoiding production static-file misses.
+- Admin user management now separates direct credit-pack assignment from subscription assignment, so credit packs increase wallet credits instead of creating a subscription.
 
 ## Next Priorities
 - Production hardening: verify real Liara generation, retry behavior, storage display URLs, and failed-state recovery on the deployment target.

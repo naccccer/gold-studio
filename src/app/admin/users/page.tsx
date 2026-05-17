@@ -18,6 +18,7 @@ import {
 import {
   adjustUserCreditsAction,
   approvePurchaseRequestAction,
+  assignCreditPackAction,
   assignSubscriptionAction,
   createAdminUserAction,
   rejectPurchaseRequestAction,
@@ -71,7 +72,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
       }
     : {};
 
-  const [users, subscriptionPackages, selectedUser, selectedCreditSummary, pendingRequestsCount] = await Promise.all([
+  const [users, subscriptionPackages, creditPackages, selectedUser, selectedCreditSummary, pendingRequestsCount] = await Promise.all([
     db.user.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -88,6 +89,10 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
     }),
     db.billingPackage.findMany({
       where: { type: "SUBSCRIPTION", archivedAt: null },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    }),
+    db.billingPackage.findMany({
+      where: { type: "CREDIT_PACK", archivedAt: null },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     }),
     selectedUserId
@@ -291,6 +296,31 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
                     <Button type="submit" size="sm">
                       <Save2 aria-hidden="true" className="h-4 w-4" />
                       ثبت اعتبار
+                    </Button>
+                  </div>
+                </form>
+
+                <form action={assignCreditPackAction} className={formPanelClass}>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <Wallet aria-hidden="true" className="h-4 w-4" />
+                    بسته اعتباری
+                  </div>
+                  <input type="hidden" name="userId" value={selectedUser.id} />
+                  <div className="grid gap-3 md:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)_auto] md:items-end">
+                    <Field label="بسته">
+                      <select name="packageId" className={inputClass}>
+                        {creditPackages.map((billingPackage) => (
+                          <option key={billingPackage.id} value={billingPackage.id}>
+                            {billingPackage.title} · {billingPackage.credits.toLocaleString("fa-IR")} اعتبار
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field label="یادداشت">
+                      <input name="notes" placeholder="یادداشت اختصاص اعتبار" className={inputClass} />
+                    </Field>
+                    <Button type="submit" size="sm" disabled={creditPackages.length === 0}>
+                      افزودن به کیف پول
                     </Button>
                   </div>
                 </form>
