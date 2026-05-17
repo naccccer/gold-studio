@@ -3,12 +3,76 @@ import { logProviderEvent } from "@/lib/billing";
 import { db } from "@/lib/db";
 import { readStoredUpload, saveGeneratedImage } from "@/lib/uploads";
 
-function errorMessage(error: unknown, fallback: string) {
-  if (error instanceof Error && error.message.includes("temporary network error")) {
-    return "اتصال به سرویس تولید تصویر لحظه‌ای قطع شد. دوباره تلاش کنید.";
+function collectErrorText(error: unknown, depth = 0): string {
+  if (depth > 3 || error === null || error === undefined) {
+    return "";
   }
 
-  return error instanceof Error ? error.message : fallback;
+  if (typeof error === "string") {
+    return error;
+  }
+
+  if (typeof error !== "object") {
+    return "";
+  }
+
+  const maybeError = error as {
+    message?: unknown;
+    code?: unknown;
+    cause?: unknown;
+    error?: { message?: unknown; code?: unknown };
+  };
+
+  return [
+    typeof maybeError.message === "string" ? maybeError.message : "",
+    typeof maybeError.code === "string" ? maybeError.code : "",
+    typeof maybeError.error?.message === "string" ? maybeError.error.message : "",
+    typeof maybeError.error?.code === "string" ? maybeError.error.code : "",
+    collectErrorText(maybeError.cause, depth + 1),
+  ].join(" ");
+}
+
+function technicalErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  const collected = collectErrorText(error).trim();
+  return collected || fallback;
+}
+
+function userErrorMessage(error: unknown, fallback: string) {
+  const detail = collectErrorText(error).toLowerCase();
+
+  if (detail.includes("liara_api_key")) {
+    return "تنظیمات سرویس تولید تصویر کامل نیست. کلید LIARA_API_KEY در محیط اجرا تنظیم نشده است.";
+  }
+
+  if (detail.includes("insufficient balance") || detail.includes("status 402")) {
+    return "اعتبار پنل Liara برای ساخت این تصویر کافی نیست. شارژ سرویس تولید تصویر را بررسی کنید.";
+  }
+
+  if (detail.includes("temporary network error")) {
+    return "ارتباط سرور با Liara بعد از چند تلاش کامل نشد. اگر روی لوکال هستید، اتصال اینترنت یا پراکسی Liara را بررسی کنید و دوباره تلاش کنید.";
+  }
+
+  if (detail.includes("timeout") || detail.includes("timed out")) {
+    return "زمان پاسخ‌گویی سرویس تولید تصویر بیش از حد طولانی شد. چند دقیقه بعد دوباره تلاش کنید.";
+  }
+
+  if (detail.includes("socket hang up") || detail.includes("provider_error") || detail.includes("status 400")) {
+    return "درخواست تولید تصویر به Liara رسید، اما provider آن را کامل نکرد. مدل، سایز خروجی، اعتبار Liara و دسترسی شبکه را بررسی کنید.";
+  }
+
+  if (detail.includes("did not return an image")) {
+    return "سرویس تولید تصویر پاسخ داد، اما فایل تصویر خروجی برنگرداند. دوباره تلاش کنید یا مدل Liara را بررسی کنید.";
+  }
+
+  if (detail.includes("not a valid png") || detail.includes("تصویر معتبر")) {
+    return "فایل خروجی سرویس تولید تصویر معتبر نبود و ذخیره نشد.";
+  }
+
+  return fallback;
 }
 
 async function claimQueuedProject(projectId: string) {
@@ -69,13 +133,13 @@ export async function processImageProject(projectId: string) {
       operation: "image.edit",
       status: "FAILED",
       model: liaraModel(),
-      errorMessage: errorMessage(error, "خطا در تولید تصویر رخ داد."),
+      errorMessage: technicalErrorMessage(error, "خطا در تولید تصویر رخ داد."),
     });
     await db.project.update({
       where: { id: projectId },
       data: {
         status: "FAILED",
-        errorMessage: errorMessage(error, "خطا در تولید تصویر رخ داد."),
+        errorMessage: userErrorMessage(error, "تولید تصویر کامل نشد. جزئیات بیشتر در بخش ادمین و رویدادهای provider ثبت شد."),
       },
     });
   }
@@ -119,13 +183,13 @@ export async function processTextProject({
       operation: "image.generate",
       status: "FAILED",
       model: liaraModel(),
-      errorMessage: errorMessage(error, "خطا در تست متن به تصویر رخ داد."),
+      errorMessage: technicalErrorMessage(error, "خطا در تست متن به تصویر رخ داد."),
     });
     await db.project.update({
       where: { id: projectId },
       data: {
         status: "FAILED",
-        errorMessage: errorMessage(error, "خطا در تست متن به تصویر رخ داد."),
+        errorMessage: userErrorMessage(error, "تست متن به تصویر کامل نشد. جزئیات بیشتر در بخش ادمین و رویدادهای provider ثبت شد."),
       },
     });
   }

@@ -36,8 +36,10 @@ Mobile user navigation:
 - Generation result storage now normalizes the actual output image format before saving, validates saved bytes, and surfaces missing files as explicit project errors.
 - Local upload/result URLs now stream through `/api/storage/...` and resolve files from the project-root `public/uploads` directory.
 - Admin user management now separates direct credit-pack assignment from subscription assignment, so credit packs increase wallet credits instead of creating a subscription.
-- User-visible styles are curated to six directions: `با مدل`, `پس‌زمینه سفید`, `دکور انتزاعی`, `شبکه اجتماعی`, `ادیتوریال`, and `سینماتیک`; the model style now explicitly targets young adult models, generally 25 to 35.
+- User-visible styles are curated to six directions: `با مدل`, `پس‌زمینه سفید`, `دکور انتزاعی`, `شبکه اجتماعی`, `ادیتوریال`, and `سینماتیک`; the model style targets young adult models, generally 25 to 35.
+- Admin styles now support editable card `previewImageUrl` values and simple per-style controls (`CHOICE`, `RANGE`, `BOOLEAN`) that render in the user new-project flow and feed concise AI prompt instructions.
 - Gallery, camera, crop, and receipt uploads now normalize images before storage, stripping metadata and resizing large files to keep live uploads faster and storage lighter.
+- Gallery crop now exports JPEG instead of large PNG blobs, and upload/generation failures surface clearer user-facing causes while keeping technical provider details in admin logs.
 
 ## Next Priorities
 - Production hardening: verify real Liara generation, retry behavior, storage display URLs, and failed-state recovery on the deployment target.

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { db } from "@/lib/db";
+import { buildStyleControlPrompt, hasHumanModelStyleControls } from "@/lib/ai/style-controls";
 import { buildVisionPromptContext } from "@/lib/ai/vision";
 import { requireUserSession } from "@/lib/auth/session";
 import { consumeGenerationCredit } from "@/lib/billing";
@@ -26,39 +27,6 @@ async function getReadyUser(userId: string) {
   }
 
   return { user };
-}
-
-const modelGenderInstructions: Record<string, string> = {
-  woman: "Use an elegant adult woman model, generally 25 to 35 years old, when a human model is needed.",
-  man: "Use an elegant adult man model, generally 25 to 35 years old, when a human model is needed.",
-};
-
-function hasHumanModelControls(style: StyleForGeneration) {
-  return style.controls?.some((control) => control.key === "modelGender" || control.key === "modesty") ?? false;
-}
-
-function getModestyInstruction(value: number) {
-  if (value <= 0) {
-    return "Modesty styling: no hijab or religious head covering is required. Keep the image elegant, tasteful, non-sexual, adult, and product-first.";
-  }
-
-  if (value <= 30) {
-    return "Modesty styling: low coverage preference. No hijab requirement; use refined contemporary styling, tasteful wardrobe, and no sexualized posing.";
-  }
-
-  if (value <= 65) {
-    return "Modesty styling: moderate coverage preference. Use elegant covered styling or a light head covering only if it fits the composition naturally.";
-  }
-
-  return "Modesty styling: high coverage preference. Use conservative elegant wardrobe, covered hair when appropriate, and refined fashion-editorial styling without costume-like exaggeration.";
-}
-
-function normalizeModesty(value: number) {
-  if (!Number.isFinite(value)) {
-    return 65;
-  }
-
-  return Math.min(90, Math.max(0, value));
 }
 
 function getCompositionInstruction(productType?: string | null, visionAngle?: string | null) {
@@ -105,27 +73,24 @@ function buildPrompt(
   } | null,
 ) {
   const outputPreset = normalizeOutputPreset(formData.get("outputPreset"));
-  const modelGender = String(formData.get("modelGender") ?? "");
-  const modestyValue = Number.parseInt(String(formData.get("modesty") ?? "65"), 10);
   const promptParts = [style.prompt, getOutputPresetSpec(outputPreset).instruction];
   const visionContext = vision ? buildVisionPromptContext(vision) : "";
-  const includesHumanModel = hasHumanModelControls(style);
+  const styleControlPrompt = buildStyleControlPrompt(style, formData);
+  const includesHumanModel = hasHumanModelStyleControls(style);
   const submittedProductType = String(formData.get("productType") ?? "").trim();
   const productType = vision?.productType ?? (submittedProductType || null);
 
   if (includesHumanModel) {
-    const modelGenderInstruction = modelGenderInstructions[modelGender];
-    if (modelGenderInstruction) {
-      promptParts.push(modelGenderInstruction);
-    }
-
-    promptParts.push(getModestyInstruction(normalizeModesty(modestyValue)));
     promptParts.push(
       "Model age and casting: if a human model appears, use a believable young adult model, generally 25 to 35 years old. Avoid elderly, childlike, teen, overly aged, tired, or heavily wrinkled faces and hands.",
     );
     promptParts.push(
       "Human realism: preserve natural skin texture, visible pores, subtle fine lines, realistic hands, neck, ears, and skin tone variation. Avoid waxy, porcelain, airbrushed, plastic, doll-like, or AI-smoothed skin.",
     );
+  }
+
+  if (styleControlPrompt) {
+    promptParts.push(styleControlPrompt);
   }
 
   promptParts.push(getCompositionInstruction(productType, vision?.visionAngle));

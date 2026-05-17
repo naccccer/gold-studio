@@ -6,6 +6,14 @@ import { analyzeAndStoreProductAssetVision } from "@/lib/product-vision";
 import { generateNumericSupportCode, logSupportError } from "@/lib/support-code";
 import { saveUploadedFile } from "@/lib/uploads";
 
+function uploadErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message.trim()) {
+    return `${error.message} اگر مشکل تکرار شد، کد پیگیری را برای پشتیبانی بفرستید.`;
+  }
+
+  return "آپلود تصویر کامل نشد. ذخیره فایل روی سرور انجام نشد. دوباره تلاش کنید و اگر تکرار شد، کد پیگیری را برای پشتیبانی بفرستید.";
+}
+
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session) {
@@ -63,7 +71,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        error: "آپلود تصویر کامل نشد. دوباره تلاش کنید و اگر تکرار شد، کد پیگیری را برای پشتیبانی بفرستید.",
+        error: uploadErrorMessage(error),
         supportCode,
       },
       { status: 400 },

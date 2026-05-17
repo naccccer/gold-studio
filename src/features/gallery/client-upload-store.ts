@@ -83,6 +83,18 @@ function parseErrorPayload(payload: unknown, fallback: string) {
   };
 }
 
+function fallbackWithStatus(fallback: string, response: Response) {
+  if (response.status === 413) {
+    return `${fallback} حجم فایل برای سرور زیاد است. تصویر را کوچک‌تر کنید یا دوباره با کراپ کم‌حجم‌تر تلاش کنید.`;
+  }
+
+  if (response.status >= 500) {
+    return `${fallback} خطای سرور هنگام ذخیره فایل رخ داد.`;
+  }
+
+  return fallback;
+}
+
 function loadImageElement(file: File) {
   const objectUrl = URL.createObjectURL(file);
   const image = new Image();
@@ -226,7 +238,7 @@ export function startPendingGalleryUpload(uploadId: string) {
     const payload = (await response.json().catch(() => null)) as UploadRouteSuccess | UploadRouteError | null;
 
     if (!response.ok || !payload || !("assetId" in payload) || !("fileUrl" in payload)) {
-      const message = parseErrorPayload(payload, "آپلود تصویر کامل نشد.");
+      const message = parseErrorPayload(payload, fallbackWithStatus("آپلود تصویر کامل نشد.", response));
       updateUpload(uploadId, {
         status: "failed",
         error: message.message,
@@ -282,7 +294,7 @@ export async function confirmPendingGalleryUpload(uploadId: string) {
   const payload = (await response.json().catch(() => null)) as CropRouteSuccess | UploadRouteError | null;
 
   if (!response.ok || !payload || !("assetId" in payload) || !("fileUrl" in payload)) {
-    const message = parseErrorPayload(payload, "ثبت تصویر بدون کراپ کامل نشد.");
+    const message = parseErrorPayload(payload, fallbackWithStatus("ثبت تصویر بدون کراپ کامل نشد.", response));
     updateUpload(uploadId, {
       status: "failed",
       error: message.message,
@@ -327,7 +339,7 @@ export async function applyCropToPendingUpload(uploadId: string, croppedFile: Fi
   const payload = (await response.json().catch(() => null)) as CropRouteSuccess | UploadRouteError | null;
 
   if (!response.ok || !payload || !("assetId" in payload) || !("fileUrl" in payload)) {
-    const message = parseErrorPayload(payload, "ذخیره کراپ کامل نشد.");
+    const message = parseErrorPayload(payload, fallbackWithStatus("ذخیره کراپ کامل نشد.", response));
     updateUpload(uploadId, {
       status: "failed",
       error: message.message,

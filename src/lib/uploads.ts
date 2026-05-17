@@ -6,6 +6,7 @@ const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const SOURCE_UPLOAD_DIR = path.join("uploads", "source");
 const RESULT_UPLOAD_DIR = path.join("uploads", "result");
 const RECEIPT_UPLOAD_DIR = path.join("uploads", "receipts");
+const STYLE_PREVIEW_UPLOAD_DIR = path.join("uploads", "style-previews");
 const NORMALIZED_UPLOAD_MIME_TYPE = "image/jpeg";
 const NORMALIZED_UPLOAD_EXTENSION = "jpg";
 const MAX_SOURCE_INPUT_BYTES = 15 * 1024 * 1024;
@@ -122,17 +123,18 @@ type NormalizeImageOptions = {
 };
 
 async function normalizeUploadImage(file: File, options: NormalizeImageOptions) {
-  if (!ALLOWED_TYPES.has(file.type)) {
-    throw new Error(options.invalidTypeMessage);
-  }
-
   if (file.size > options.maxInputBytes) {
     throw new Error(options.tooLargeMessage);
   }
 
   const inputBuffer = Buffer.from(await file.arrayBuffer());
-  if (!detectKnownImageMimeType(inputBuffer)) {
+  const detectedInputType = detectKnownImageMimeType(inputBuffer);
+  if (!detectedInputType) {
     throw new Error(options.invalidImageMessage);
+  }
+
+  if (file.type && !ALLOWED_TYPES.has(file.type) && !ALLOWED_TYPES.has(detectedInputType)) {
+    throw new Error(options.invalidTypeMessage);
   }
 
   try {
@@ -172,7 +174,7 @@ async function normalizeUploadImage(file: File, options: NormalizeImageOptions) 
 }
 
 export async function saveUploadedFile(file: File): Promise<StoredUpload> {
-  if (!ALLOWED_TYPES.has(file.type)) {
+  if (file.type && !ALLOWED_TYPES.has(file.type)) {
     throw new Error("فرمت فایل باید JPG، PNG یا WEBP باشد.");
   }
 
@@ -227,7 +229,7 @@ export async function saveGeneratedImage(buffer: Buffer, mimeType = "image/png")
 }
 
 export async function saveReceiptFile(file: File) {
-  if (!ALLOWED_TYPES.has(file.type)) {
+  if (file.type && !ALLOWED_TYPES.has(file.type)) {
     throw new Error("فرمت رسید باید JPG، PNG یا WEBP باشد.");
   }
 
@@ -245,6 +247,25 @@ export async function saveReceiptFile(file: File) {
     invalidImageMessage: "تصویر رسید معتبر نیست یا قابل پردازش نبود.",
   });
   const storageKey = buildStorageKey(RECEIPT_UPLOAD_DIR, normalized.extension);
+  const publicUrl = await saveStorageObject({
+    buffer: normalized.buffer,
+    contentType: normalized.mimeType,
+    key: storageKey,
+  });
+
+  return { publicUrl, storageKey };
+}
+
+export async function saveStylePreviewFile(file: File) {
+  const normalized = await normalizeUploadImage(file, {
+    maxInputBytes: MAX_RECEIPT_INPUT_BYTES,
+    maxEdge: 1400,
+    quality: 84,
+    invalidTypeMessage: "فرمت عکس سبک باید JPG، PNG یا WEBP باشد.",
+    tooLargeMessage: "حجم عکس سبک باید کمتر از ۱۰ مگابایت باشد.",
+    invalidImageMessage: "عکس سبک معتبر نیست یا قابل پردازش نبود.",
+  });
+  const storageKey = buildStorageKey(STYLE_PREVIEW_UPLOAD_DIR, normalized.extension);
   const publicUrl = await saveStorageObject({
     buffer: normalized.buffer,
     contentType: normalized.mimeType,

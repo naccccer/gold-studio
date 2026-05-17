@@ -10,7 +10,7 @@ function toStyleOption(style: {
   controls?: Array<{
     key: string;
     label: string;
-    type: "CHOICE" | "RANGE";
+    type: "CHOICE" | "RANGE" | "BOOLEAN";
     optionsJson: string | null;
     defaultValue: string | null;
     minValue: number | null;

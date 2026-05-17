@@ -43,6 +43,7 @@ type NewProjectFormProps = {
 
 type OutputPresetId = "post" | "story" | "banner";
 type WizardStep = "source" | "size" | "style";
+type StyleControl = NonNullable<StyleOption["controls"]>[number];
 
 const outputPresets: Array<{
   id: OutputPresetId;
@@ -132,6 +133,21 @@ function parseChoiceOptions(optionsJson?: string | null): StyleControlOption[] {
   }
 }
 
+function getControlDefaultValue(control: StyleControl) {
+  if (control.defaultValue !== null && control.defaultValue !== undefined) {
+    return control.defaultValue;
+  }
+
+  if (control.type === "BOOLEAN") return "false";
+  if (control.type === "RANGE") return String(control.minValue ?? 0);
+
+  return parseChoiceOptions(control.optionsJson)[0]?.value ?? "";
+}
+
+function getInitialStyleControlValues(style?: StyleOption) {
+  return Object.fromEntries((style?.controls ?? []).map((control) => [control.key, getControlDefaultValue(control)]));
+}
+
 export function NewProjectForm({
   action,
   galleryAssets,
@@ -149,8 +165,7 @@ export function NewProjectForm({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [outputPreset, setOutputPreset] = useState<OutputPresetId>(defaultOutputPreset);
   const [selectedStyle, setSelectedStyle] = useState(defaultStyle?.id ?? "");
-  const [modelGender, setModelGender] = useState("woman");
-  const [modesty, setModesty] = useState("65");
+  const [styleControlValues, setStyleControlValues] = useState<Record<string, string>>(() => getInitialStyleControlValues(defaultStyle));
   const [productType, setProductType] = useState(explicitSelectedAsset?.productType || "محصول");
 
   useEffect(() => {
@@ -176,10 +191,7 @@ export function NewProjectForm({
       </span>
     ),
   }));
-  const modelControls = selectedStyleData?.controls ?? [];
-  const genderControl = modelControls.find((control) => control.key === "modelGender");
-  const modestyControl = modelControls.find((control) => control.key === "modesty");
-  const genderOptions = parseChoiceOptions(genderControl?.optionsJson);
+  const styleControls = selectedStyleData?.controls ?? [];
   const visibleGalleryAssets = galleryAssets.slice(0, 4);
   const currentImageSrc = previewUrl ?? selectedAsset?.fileUrl ?? null;
   const hasSource = Boolean(currentImageSrc);
@@ -226,20 +238,21 @@ export function NewProjectForm({
   }
 
   function selectStyle(style: StyleOption) {
-    const nextGenderControl = style.controls?.find((control) => control.key === "modelGender");
-    const nextModestyControl = style.controls?.find((control) => control.key === "modesty");
-
     setSelectedStyle(style.id);
-    setModelGender(nextGenderControl?.defaultValue ?? "woman");
-    setModesty(nextModestyControl?.defaultValue ?? "65");
+    setStyleControlValues(getInitialStyleControlValues(style));
+  }
+
+  function setStyleControlValue(key: string, value: string) {
+    setStyleControlValues((current) => ({ ...current, [key]: value }));
   }
 
   return (
     <form action={formAction} className="flex h-full min-h-0 flex-col gap-4 overflow-hidden">
       <input type="hidden" name="generationMode" value="image" />
       <input type="hidden" name="outputPreset" value={outputPreset} />
-      <input type="hidden" name="modelGender" value={modelGender} />
-      <input type="hidden" name="modesty" value={modesty} />
+      {styleControls.map((control) => (
+        <input key={control.key} type="hidden" name={`styleControl_${control.key}`} value={styleControlValues[control.key] ?? getControlDefaultValue(control)} />
+      ))}
       {selectedAsset ? <input type="hidden" name="sourceAssetId" value={selectedAsset.id} /> : null}
       <input type="hidden" name="productType" value={productType} />
 
@@ -567,40 +580,71 @@ export function NewProjectForm({
               })}
           </div>
 
-          {genderOptions.length > 0 || modestyControl ? (
+          {styleControls.length > 0 ? (
             <section className="space-y-3 rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-3">
-              {genderOptions.length > 0 ? (
-                <div className="grid grid-cols-2 gap-2">
-                  {genderOptions.map((item) => (
-                    <button
-                      key={item.value}
-                      type="button"
-                      onClick={() => setModelGender(item.value)}
-                      className={buttonClasses({
-                        variant: modelGender === item.value ? "secondary" : "ghost",
-                        className: modelGender === item.value
-                          ? "min-h-11 border border-accent-bright bg-accent-wash/90 !text-accent-deep shadow-[0_14px_26px_-24px_rgba(17,16,14,0.62)]"
-                          : "min-h-11 border border-white/14 bg-white/[0.04] text-sm !text-surface/84 hover:border-white/22 hover:bg-white/[0.08]",
-                      })}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-              {modestyControl ? (
-                <label className="block space-y-2">
-                  <span className="block text-xs text-surface/72" style={{ textAlign: "justify", textAlignLast: "right" }}>{modestyControl.label}</span>
-                  <input
-                    type="range"
-                    min={modestyControl.minValue ?? 35}
-                    max={modestyControl.maxValue ?? 90}
-                    value={modesty}
-                    onChange={(event) => setModesty(event.target.value)}
-                    className="w-full accent-accent-bright"
-                  />
-                </label>
-              ) : null}
+              {styleControls.map((control) => {
+                const value = styleControlValues[control.key] ?? getControlDefaultValue(control);
+                const choiceOptions = parseChoiceOptions(control.optionsJson);
+
+                if (control.type === "CHOICE" && choiceOptions.length > 0) {
+                  return (
+                    <div key={control.key} className="space-y-2">
+                      <p className="text-xs text-surface/72">{control.label}</p>
+                      <div className={`grid gap-2 ${choiceOptions.length <= 2 ? "grid-cols-2" : "grid-cols-3"}`}>
+                        {choiceOptions.map((item) => (
+                          <button
+                            key={item.value}
+                            type="button"
+                            onClick={() => setStyleControlValue(control.key, item.value)}
+                            className={buttonClasses({
+                              variant: value === item.value ? "secondary" : "ghost",
+                              className:
+                                value === item.value
+                                  ? "min-h-11 border border-accent-bright bg-accent-wash/90 !text-accent-deep shadow-[0_14px_26px_-24px_rgba(17,16,14,0.62)]"
+                                  : "min-h-11 border border-white/14 bg-white/[0.04] text-sm !text-surface/84 hover:border-white/22 hover:bg-white/[0.08]",
+                            })}
+                          >
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (control.type === "RANGE") {
+                  return (
+                    <label key={control.key} className="block space-y-2">
+                      <span className="flex items-center justify-between gap-3 text-xs text-surface/72">
+                        <span>{control.label}</span>
+                        <span className="rounded-full border border-white/14 bg-white/[0.05] px-2 py-0.5 text-[10px]" dir="ltr">
+                          {value}
+                        </span>
+                      </span>
+                      <input
+                        type="range"
+                        min={control.minValue ?? 0}
+                        max={control.maxValue ?? 100}
+                        value={value}
+                        onChange={(event) => setStyleControlValue(control.key, event.target.value)}
+                        className="w-full accent-accent-bright"
+                      />
+                    </label>
+                  );
+                }
+
+                return (
+                  <label key={control.key} className="flex min-h-11 items-center justify-between gap-3 rounded-[0.9rem] border border-white/14 bg-white/[0.04] px-3 py-2 text-sm text-surface/84">
+                    <span>{control.label}</span>
+                    <input
+                      type="checkbox"
+                      checked={value === "true"}
+                      onChange={(event) => setStyleControlValue(control.key, event.target.checked ? "true" : "false")}
+                      className="h-4 w-4 accent-accent-bright"
+                    />
+                  </label>
+                );
+              })}
             </section>
           ) : null}
 

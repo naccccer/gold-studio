@@ -11,6 +11,7 @@ import { normalizeBillingPlanColorPreset } from "@/lib/billing-plan-colors";
 import { INITIAL_SIGNUP_CREDITS } from "@/lib/credits";
 import { processImageProject } from "@/lib/generation/jobs";
 import { referralCodeFromUserId } from "@/lib/referrals";
+import { saveStylePreviewFile } from "@/lib/uploads";
 
 function text(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -19,6 +20,52 @@ function text(formData: FormData, key: string) {
 function integer(formData: FormData, key: string, fallback = 0) {
   const value = Number.parseInt(String(formData.get(key) ?? ""), 10);
   return Number.isFinite(value) ? value : fallback;
+}
+
+function optionalInteger(formData: FormData, key: string) {
+  const raw = text(formData, key);
+  if (!raw) return null;
+
+  const value = Number.parseInt(raw, 10);
+  return Number.isFinite(value) ? value : null;
+}
+
+function parseStyleControlType(value: string) {
+  if (value === "RANGE" || value === "BOOLEAN") return value;
+  return "CHOICE";
+}
+
+function normalizeControlOptions(options: string, type: "CHOICE" | "RANGE" | "BOOLEAN") {
+  if (type !== "CHOICE") return null;
+  if (!options) return null;
+
+  try {
+    const parsed = JSON.parse(options) as unknown;
+    if (!Array.isArray(parsed)) return null;
+
+    const clean = parsed
+      .map((item) => {
+        if (!item || typeof item !== "object") return null;
+        const option = item as { value?: unknown; label?: unknown };
+        const value = String(option.value ?? "").trim();
+        const label = String(option.label ?? "").trim();
+        return value && label ? { value, label } : null;
+      })
+      .filter((item): item is { value: string; label: string } => Boolean(item));
+
+    return clean.length > 0 ? JSON.stringify(clean) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function getStylePreviewImageUrl(formData: FormData, fallback = "") {
+  const image = formData.get("previewImage");
+  if (image instanceof File && image.size > 0) {
+    return (await saveStylePreviewFile(image)).publicUrl;
+  }
+
+  return fallback || text(formData, "previewImageUrl");
 }
 
 function parseRole(value: string) {
@@ -995,7 +1042,7 @@ export async function updateCreativeStyleAction(formData: FormData) {
   const name = text(formData, "name");
   const description = text(formData, "description");
   const prompt = text(formData, "prompt");
-  const previewImageUrl = text(formData, "previewImageUrl");
+  const previewImageUrl = await getStylePreviewImageUrl(formData, text(formData, "currentPreviewImageUrl"));
   const sortOrder = integer(formData, "sortOrder");
 
   if (!styleId || !name || !description || !prompt || !previewImageUrl) {
@@ -1044,7 +1091,7 @@ export async function createCreativeStyleAction(formData: FormData) {
   const name = text(formData, "name");
   const description = text(formData, "description");
   const prompt = text(formData, "prompt");
-  const previewImageUrl = text(formData, "previewImageUrl");
+  const previewImageUrl = await getStylePreviewImageUrl(formData, "/images/placeholders/jewelry/style-minimal.webp");
 
   if (!name || !description || !prompt || !previewImageUrl) {
     return;
@@ -1068,6 +1115,101 @@ export async function createCreativeStyleAction(formData: FormData) {
     targetType: "CreativeStyle",
     targetId: style.id,
     summary: `سبک ${name} ساخته شد.`,
+  });
+
+  revalidatePath("/admin/styles");
+  revalidatePath("/projects/new");
+  revalidatePath("/gallery");
+}
+
+export async function updateStyleControlAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const controlId = text(formData, "controlId");
+  const key = text(formData, "key");
+  const label = text(formData, "label");
+  const type = parseStyleControlType(text(formData, "type"));
+  const defaultValue = text(formData, "defaultValue");
+  const optionsJson = normalizeControlOptions(text(formData, "optionsJson"), type);
+
+  if (!controlId || !key || !label) {
+    return;
+  }
+
+  const control = await db.styleControl.update({
+    where: { id: controlId },
+    data: {
+      key,
+      label,
+      type,
+      optionsJson,
+      defaultValue: defaultValue || null,
+      minValue: type === "RANGE" ? optionalInteger(formData, "minValue") : null,
+      maxValue: type === "RANGE" ? optionalInteger(formData, "maxValue") : null,
+      sortOrder: integer(formData, "sortOrder"),
+      isActive: formData.has("isActive"),
+    },
+    select: { id: true },
+  });
+
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: "style_control.update",
+    targetType: "StyleControl",
+    targetId: control.id,
+    summary: `کنترل ${label} ویرایش شد.`,
+  });
+
+  revalidatePath("/admin/styles");
+  revalidatePath("/projects/new");
+  revalidatePath("/gallery");
+}
+
+export async function createStyleControlAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const styleId = text(formData, "styleId");
+  const key = text(formData, "key");
+  const label = text(formData, "label");
+  const type = parseStyleControlType(text(formData, "type"));
+  const defaultValue = text(formData, "defaultValue");
+  const optionsJson = normalizeControlOptions(text(formData, "optionsJson"), type);
+
+  if (!styleId || !key || !label) {
+    return;
+  }
+
+  const control = await db.styleControl.upsert({
+    where: { styleId_key: { styleId, key } },
+    create: {
+      styleId,
+      key,
+      label,
+      type,
+      optionsJson,
+      defaultValue: defaultValue || null,
+      minValue: type === "RANGE" ? optionalInteger(formData, "minValue") : null,
+      maxValue: type === "RANGE" ? optionalInteger(formData, "maxValue") : null,
+      sortOrder: integer(formData, "sortOrder"),
+      isActive: formData.has("isActive"),
+    },
+    update: {
+      label,
+      type,
+      optionsJson,
+      defaultValue: defaultValue || null,
+      minValue: type === "RANGE" ? optionalInteger(formData, "minValue") : null,
+      maxValue: type === "RANGE" ? optionalInteger(formData, "maxValue") : null,
+      sortOrder: integer(formData, "sortOrder"),
+      isActive: formData.has("isActive"),
+    },
+    select: { id: true },
+  });
+
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: "style_control.create",
+    targetType: "StyleControl",
+    targetId: control.id,
+    summary: `کنترل ${label} ساخته شد.`,
   });
 
   revalidatePath("/admin/styles");

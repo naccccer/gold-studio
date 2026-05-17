@@ -33,7 +33,7 @@ export function AdminSection({
   children: ReactNode;
 }) {
   return (
-    <section className="h-full rounded-[var(--radius-lg)] border border-border/80 bg-surface p-3 shadow-[var(--shadow-soft)] md:p-3.5">
+    <section className="rounded-[var(--radius-lg)] border border-border/80 bg-surface p-3 shadow-[var(--shadow-soft)] md:p-3.5">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3 border-b border-border/55 pb-2.5">
         <div>
           {eyebrow ? <p className="text-[11px] font-medium leading-5 text-muted">{eyebrow}</p> : null}

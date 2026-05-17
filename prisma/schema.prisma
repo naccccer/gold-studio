@@ -36,6 +36,7 @@ enum GenerationBatchStatus {
 enum StyleControlType {
   CHOICE
   RANGE
+  BOOLEAN
 }
 
 enum BillingPackageType {

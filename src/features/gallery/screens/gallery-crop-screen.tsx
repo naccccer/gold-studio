@@ -193,11 +193,13 @@ async function buildCroppedFile(
   canvas.width = outputWidth;
   canvas.height = outputHeight;
 
-  const context = canvas.getContext("2d");
+  const context = canvas.getContext("2d", { alpha: false });
   if (!context) {
     throw new Error("امکان ساخت خروجی کراپ وجود ندارد.");
   }
 
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, outputWidth, outputHeight);
   context.drawImage(
     image,
     sourceX,
@@ -217,11 +219,11 @@ async function buildCroppedFile(
       } else {
         reject(new Error("خروجی کراپ ساخته نشد."));
       }
-    }, "image/png");
+    }, "image/jpeg", 0.9);
   });
 
   const baseName = upload.file.name.replace(/\.[^.]+$/, "") || "gallery-crop";
-  return new File([blob], `${baseName}-crop.png`, { type: "image/png" });
+  return new File([blob], `${baseName}-crop.jpg`, { type: "image/jpeg" });
 }
 
 export function GalleryCropScreen({ uploadId, onClose }: GalleryCropScreenProps) {

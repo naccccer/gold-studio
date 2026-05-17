@@ -6,6 +6,14 @@ import { analyzeAndStoreProductAssetVision } from "@/lib/product-vision";
 import { generateNumericSupportCode, logSupportError } from "@/lib/support-code";
 import { saveUploadedFile } from "@/lib/uploads";
 
+function cropErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message.trim()) {
+    return `ذخیره نسخه کراپ‌شده کامل نشد: ${error.message} اگر مشکل تکرار شد، کد پیگیری را برای پشتیبانی بفرستید.`;
+  }
+
+  return "ذخیره نسخه کراپ‌شده کامل نشد. ذخیره فایل روی سرور انجام نشد. دوباره تلاش کنید و اگر تکرار شد، کد پیگیری را برای پشتیبانی بفرستید.";
+}
+
 export async function POST(
   request: Request,
   context: { params: Promise<{ assetId: string }> },
@@ -91,7 +99,7 @@ export async function POST(
 
     return NextResponse.json(
       {
-        error: "ذخیره نسخه ویرایش‌شده کامل نشد. دوباره تلاش کنید و اگر تکرار شد، کد پیگیری را برای پشتیبانی بفرستید.",
+        error: cropErrorMessage(error),
         supportCode,
       },
       { status: 400 },

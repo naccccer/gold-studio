@@ -83,8 +83,8 @@ function formatProjectError(project: ProjectDetail) {
 
   if (normalized.includes("insufficient balance")) {
     return {
-      title: "سرویس تولید موقتاً آماده نبود",
-      description: "پردازش از سمت سرویس تولید متوقف شد. این مورد معمولاً با پیگیری پشتیبانی یا تلاش دوباره برطرف می‌شود.",
+      title: "اعتبار سرویس تولید کافی نیست",
+      description: "اعتبار پنل Liara برای ساخت این تصویر کافی نیست. شارژ سرویس تولید تصویر را بررسی کنید.",
       supportCode,
     };
   }
@@ -97,17 +97,25 @@ function formatProjectError(project: ProjectDetail) {
     };
   }
 
-  if (normalized.includes("network") || normalized.includes("fetch")) {
+  if (normalized.includes("network") || normalized.includes("fetch") || raw.includes("اتصال به سرویس تولید")) {
     return {
       title: "ارتباط با سرویس تولید کامل نشد",
-      description: "در ارتباط با سرویس پردازش اختلال کوتاه رخ داد. تلاش دوباره معمولاً کافی است.",
+      description: "ارتباط سرور با Liara کامل نشد. اگر روی لوکال هستید، اتصال اینترنت یا پراکسی Liara را بررسی کنید و دوباره تلاش کنید.",
+      supportCode,
+    };
+  }
+
+  if (normalized.includes("liara") || normalized.includes("provider") || normalized.includes("status 400")) {
+    return {
+      title: "سرویس تولید تصویر پاسخ کامل نداد",
+      description: "درخواست به Liara رسید، اما provider آن را کامل نکرد. مدل، سایز خروجی، اعتبار Liara و دسترسی شبکه را بررسی کنید.",
       supportCode,
     };
   }
 
   return {
     title: "پروژه کامل نشد",
-    description: "جزئیات فنی این خطا برای کاربر نمایش داده نمی‌شود. اگر با تلاش دوباره حل نشد، کد پیگیری را برای پشتیبانی ارسال کنید.",
+    description: raw || "تولید تصویر کامل نشد. دوباره تلاش کنید و اگر تکرار شد، کد پیگیری را برای پشتیبانی ارسال کنید.",
     supportCode,
   };
 }
