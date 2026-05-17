@@ -1,13 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client, type S3ClientConfig } from "@aws-sdk/client-s3";
 
 const LOCAL_STORAGE_KIND = "local";
 const S3_STORAGE_KIND = "s3";
-const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
-const PUBLIC_UPLOADS_ROOT = path.join(/* turbopackIgnore: true */ MODULE_DIR, "..", "..", "public", "uploads");
+const PUBLIC_UPLOADS_ROOT = path.join(/* turbopackIgnore: true */ process.cwd(), "public", "uploads");
 
 type StorageKind = typeof LOCAL_STORAGE_KIND | typeof S3_STORAGE_KIND;
 
@@ -39,7 +37,16 @@ function normalizeKey(key: string) {
 }
 
 function getLocalPublicUrl(key: string) {
-  return `/${normalizeKey(key)}`;
+  return `/api/storage/${normalizeKey(key)}`;
+}
+
+function mimeTypeFromStorageKey(key: string) {
+  const extension = path.extname(key).toLowerCase();
+  if (extension === ".png") return "image/png";
+  if (extension === ".jpg" || extension === ".jpeg") return "image/jpeg";
+  if (extension === ".webp") return "image/webp";
+  if (extension === ".svg") return "image/svg+xml";
+  return null;
 }
 
 function getLocalPublicPath(key: string) {
@@ -59,7 +66,7 @@ const localStorageAdapter: StorageAdapter = {
   getPublicUrl: getLocalPublicUrl,
   async readObject(key, fallbackMimeType) {
     const buffer = await readFile(getLocalPublicPath(key));
-    return { buffer, mimeType: fallbackMimeType };
+    return { buffer, mimeType: mimeTypeFromStorageKey(key) || fallbackMimeType };
   },
   async saveObject({ buffer, key }) {
     const targetPath = getLocalPublicPath(key);

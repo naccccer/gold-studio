@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Add,
   CloseCircle,
+  Copy,
   DocumentDownload,
   Edit2,
   Gallery,
@@ -271,6 +272,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
   const fullscreenDragStateRef = useRef<{ startX: number; startY: number; startPanX: number; startPanY: number } | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
   const [showBefore, setShowBefore] = useState(false);
+  const [copiedError, setCopiedError] = useState(false);
   const [resultImageLoadFailed, setResultImageLoadFailed] = useState(false);
   const [fullscreenZoom, setFullscreenZoom] = useState(1);
   const [fullscreenPan, setFullscreenPan] = useState({ x: 0, y: 0 });
@@ -292,6 +294,12 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
   const newVersionHref = project.sourceAssetId ? `/projects/new?assetId=${project.sourceAssetId}` : "/projects/new";
   const processingMoments = buildProcessingMoments(project.style.name);
   const errorPresentation = formatProjectError(visibleProject);
+  const errorCopyText = [
+    errorPresentation.title,
+    errorPresentation.description,
+    failedCreditReassurance,
+    `کد پیگیری: ${errorPresentation.supportCode}`,
+  ].join("\n");
   const projectTitle = project.title?.trim() || "پروژه محصول";
   const statusVariant = getStatusVariant(project.status);
   const fullscreenPanLimitX = Math.max(0, (fullscreenViewport.width * (fullscreenZoom - 1)) / 2);
@@ -368,6 +376,16 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
     fullscreenDragStateRef.current = null;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }
+
+  async function handleCopyError() {
+    try {
+      await navigator.clipboard.writeText(errorCopyText);
+      setCopiedError(true);
+      window.setTimeout(() => setCopiedError(false), 1600);
+    } catch {
+      setCopiedError(false);
     }
   }
 
@@ -709,21 +727,33 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
             className="object-cover object-[46%_55%]"
             sizes="(max-width: 768px) 100vw, 760px"
           />
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/72 via-black/28 to-transparent p-4">
-            <div className="space-y-2.5">
-              <p className="text-sm font-semibold leading-7 text-surface" style={{ textAlign: "justify", textAlignLast: "right" }}>
-                {errorPresentation.title}
-              </p>
-              <p className="text-[12px] leading-6 text-surface/76" style={{ textAlign: "justify", textAlignLast: "right" }}>
-                {errorPresentation.description}
-              </p>
-              <p className="rounded-[0.9rem] border border-white/12 bg-white/8 px-3 py-2 text-[11px] leading-6 text-surface/84" style={{ textAlign: "justify", textAlignLast: "right" }}>
-                {failedCreditReassurance}
-              </p>
-              <p className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/24 px-2.5 py-1 text-[10px] text-surface/72">
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/76 via-black/34 to-transparent p-4">
+            <div className="rounded-[1.05rem] border border-white/12 bg-black/24 px-3.5 py-3 text-right backdrop-blur">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 space-y-1.5">
+                  <p className="text-sm font-semibold leading-7 text-surface">
+                    {errorPresentation.title}
+                  </p>
+                  <p className="break-words text-[12px] leading-6 text-surface/78">
+                    {errorPresentation.description}
+                  </p>
+                  <p className="text-[11px] leading-6 text-surface/70">
+                    {failedCreditReassurance}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopyError}
+                  aria-label={copiedError ? "خطا کپی شد" : "کپی خطا"}
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/14 bg-white/10 text-surface/82 transition hover:bg-white/16"
+                >
+                  {copiedError ? <TickCircle aria-hidden={true} className="h-4 w-4" /> : <Copy aria-hidden={true} className="h-4 w-4" />}
+                </button>
+              </div>
+              <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-white/10 pt-2 text-[10px] text-surface/72">
                 <span>کد پیگیری</span>
                 <span dir="ltr" className="font-semibold tracking-wide">{errorPresentation.supportCode}</span>
-              </p>
+              </div>
             </div>
           </div>
         </JewelryImageFrame>
