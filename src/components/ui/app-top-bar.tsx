@@ -12,6 +12,7 @@ type AppTopBarProps = {
   hideLogo?: boolean;
   tone?: "light" | "dark";
   action?: ReactNode;
+  onBack?: () => void;
   className?: string;
 };
 
@@ -24,6 +25,7 @@ export function AppTopBar({
   hideLogo = false,
   tone = "light",
   action,
+  onBack,
   className = "",
 }: AppTopBarProps) {
   const dark = tone === "dark";
@@ -56,23 +58,39 @@ export function AppTopBar({
         ) : null}
       </div>
 
-      <div dir="rtl" className="flex min-w-0 flex-1 items-center justify-start gap-2">
-        {backHref ? (
-          <Link
-            href={backHref}
-            aria-label="بازگشت"
-            className={[
-              "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
-              dark
-                ? "border-white/12 bg-white/[0.04] text-white/72 hover:bg-white/[0.08] hover:text-white"
-                : "border-border bg-surface/70 text-muted shadow-[var(--shadow-soft)] hover:bg-surface-soft hover:text-foreground",
-            ].join(" ")}
-          >
-            <ArrowRight2 aria-hidden="true" className="h-4 w-4" />
-          </Link>
+      <div dir="rtl" className="flex min-w-0 flex-1 items-center justify-start gap-2 overflow-visible">
+        {backHref || onBack ? (
+          onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label="بازگشت"
+              className={[
+                "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+                dark
+                  ? "border-white/12 bg-white/[0.04] text-white/72 hover:bg-white/[0.08] hover:text-white"
+                  : "border-border bg-surface/70 text-muted shadow-[var(--shadow-soft)] hover:bg-surface-soft hover:text-foreground",
+              ].join(" ")}
+            >
+              <ArrowRight2 aria-hidden="true" className="h-4 w-4" />
+            </button>
+          ) : (
+            <Link
+              href={backHref as string}
+              aria-label="بازگشت"
+              className={[
+                "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+                dark
+                  ? "border-white/12 bg-white/[0.04] text-white/72 hover:bg-white/[0.08] hover:text-white"
+                  : "border-border bg-surface/70 text-muted shadow-[var(--shadow-soft)] hover:bg-surface-soft hover:text-foreground",
+              ].join(" ")}
+            >
+              <ArrowRight2 aria-hidden="true" className="h-4 w-4" />
+            </Link>
+          )
         ) : null}
         {title ? (
-          <h1 className={["truncate text-[17px] font-semibold leading-none", dark ? "!text-[#fffdf9]" : "!text-foreground"].join(" ")}>
+          <h1 className={["min-w-0 truncate pb-1 text-[17px] font-semibold leading-6", dark ? "!text-[#fffdf9]" : "!text-foreground"].join(" ")}>
             {title}
           </h1>
         ) : null}

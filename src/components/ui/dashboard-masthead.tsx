@@ -11,7 +11,7 @@ type DashboardMastheadProps = {
 };
 
 const titles: Array<{ match: (pathname: string) => boolean; title: string; parent?: string }> = [
-  { match: (pathname) => pathname === "/projects/new", title: "پروژه جدید", parent: "/dashboard" },
+  { match: (pathname) => pathname === "/projects/new", title: "ابعاد و نوع محصول", parent: "/gallery" },
   { match: (pathname) => pathname.startsWith("/gallery/batches/"), title: "دسته تولید", parent: "/gallery" },
   { match: (pathname) => pathname === "/gallery/crop", title: "کراپ", parent: "/gallery" },
   { match: (pathname) => /^\/gallery\/[^/]+$/.test(pathname), title: "تصویر خام", parent: "/gallery" },
@@ -43,20 +43,23 @@ export function DashboardMasthead({ userLabel, remainingCredits }: DashboardMast
   const pathname = usePathname();
   const context = pageContext(pathname);
   const isHome = pathname === "/dashboard";
+  const isNewProject = pathname === "/projects/new";
   const isProjectDarkSurface = pathname === "/projects/new" || /^\/projects\/[^/]+$/.test(pathname);
   const showBottomNav = !isProjectDarkSurface;
 
   return (
     <>
-      <AppTopBar
-        title={isHome ? undefined : context.title}
-        backHref={context.parent}
-        centeredLogo={isHome}
-        logoVariant={isHome ? "primary" : isProjectDarkSurface ? "mark-light" : "mark"}
-        tone={isProjectDarkSurface ? "dark" : "light"}
-        action={!isHome && !isProjectDarkSurface ? <CreditBadge credits={remainingCredits} /> : undefined}
-        className={isHome ? "mb-4 px-4" : isProjectDarkSurface ? "mb-3 px-4" : "mb-4 px-4"}
-      />
+      {!isNewProject ? (
+        <AppTopBar
+          title={isHome ? undefined : context.title}
+          backHref={context.parent}
+          centeredLogo={isHome}
+          logoVariant={isHome ? "primary" : isProjectDarkSurface ? "mark-light" : "mark"}
+          tone={isProjectDarkSurface ? "dark" : "light"}
+          action={!isHome && !isProjectDarkSurface ? <CreditBadge credits={remainingCredits} /> : undefined}
+          className={isHome ? "mb-4 px-4" : isProjectDarkSurface ? "mb-3 px-4" : "mb-4 px-4"}
+        />
+      ) : null}
 
       <span className="sr-only">{userLabel}</span>
 

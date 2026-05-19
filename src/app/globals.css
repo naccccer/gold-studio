@@ -223,6 +223,15 @@ h1,h2,h3,h4,h5,h6 {
   transform: scale(0.985);
 }
 
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 @keyframes before-after-reveal {
   0%, 100% { clip-path: inset(0 54% 0 0); }
   50% { clip-path: inset(0 14% 0 0); }

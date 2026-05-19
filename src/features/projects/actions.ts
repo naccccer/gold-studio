@@ -14,7 +14,7 @@ import {
 } from "@/lib/billing";
 import { processImageProject, processTextProject } from "@/lib/generation/jobs";
 import { getOutputPresetSpec, normalizeOutputPreset } from "@/lib/output-presets";
-import { analyzeAndStoreProductAssetVision, pickVisionTitle } from "@/lib/product-vision";
+import { pickVisionTitle, retryProjectVisionTitle } from "@/lib/product-vision";
 import { isProductType } from "@/lib/product-types";
 import { readStorageObject } from "@/lib/storage";
 import { getStyleForGeneration, type StyleForGeneration } from "@/lib/styles";
@@ -235,7 +235,7 @@ export async function createProjectAction(
     }
 
     if (!asset.visionAnalyzedAt) {
-      after(() => analyzeAndStoreProductAssetVision(asset.id));
+      after(() => retryProjectVisionTitle(project.id, session.userId, { forceAnalyze: true }));
     }
     after(() => processImageProject(project.id));
     redirect(`/projects/${project.id}`);
@@ -298,13 +298,7 @@ export async function createProjectAction(
   }
 
   after(async () => {
-    const analyzedAsset = await analyzeAndStoreProductAssetVision(asset.id);
-    if (!title && analyzedAsset?.visionShortTitle) {
-      await db.productAsset.update({
-        where: { id: asset.id },
-        data: { title: analyzedAsset.visionShortTitle },
-      });
-    }
+    await retryProjectVisionTitle(project.id, session.userId, { forceAnalyze: true });
   });
   after(() => processImageProject(project.id));
   redirect(`/projects/${project.id}`);

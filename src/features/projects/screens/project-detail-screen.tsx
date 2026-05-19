@@ -20,11 +20,9 @@ import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
 import { ProcessingCanvas } from "@/components/ui/processing-canvas";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
-import { StatusPill } from "@/components/ui/status-pill";
-import { renameProjectAction, retryProjectAction, updateProjectProductTypeAction } from "@/features/projects/actions";
+import { renameProjectAction, retryProjectAction } from "@/features/projects/actions";
 import { ProjectStatusRefresh } from "@/features/projects/components/project-status-refresh";
 import { resultHeroDark, uploadPreview } from "@/lib/placeholders/jewelry-images";
-import { PRODUCT_TYPES } from "@/lib/product-types";
 import { generateNumericSupportCode } from "@/lib/support-code";
 
 const statusConfig: Record<string, { label: string; supportCopy: string }> = {
@@ -45,20 +43,6 @@ const statusConfig: Record<string, { label: string; supportCopy: string }> = {
     supportCopy: "تولید کامل نشد. دوباره تلاش کنید.",
   },
 };
-
-function getStatusVariant(status: string) {
-  switch (status) {
-    case "QUEUED":
-    case "PROCESSING":
-      return "pending" as const;
-    case "COMPLETED":
-      return "completed" as const;
-    case "FAILED":
-      return "failed" as const;
-    default:
-      return "neutral" as const;
-  }
-}
 
 function formatProjectError(project: ProjectDetail) {
   if (project.resultImageError) {
@@ -169,6 +153,7 @@ export type ProjectDetail = {
   errorMessage: string | null;
   resultImageError?: string | null;
   createdAt?: Date | string;
+  titleRefreshPending?: boolean;
 };
 
 const failedCreditReassurance =
@@ -179,15 +164,9 @@ type ProjectDetailScreenProps = { project: ProjectDetail };
 function DetailMeta({
   projectId,
   title,
-  status,
-  statusVariant,
-  productType,
 }: {
   projectId: string;
   title: string;
-  status: string;
-  statusVariant: "neutral" | "pending" | "completed" | "failed" | "accent";
-  productType?: string | null;
 }) {
   const [editingTitle, setEditingTitle] = useState(false);
 
@@ -247,30 +226,7 @@ function DetailMeta({
             </div>
           )}
         </div>
-        <StatusPill variant={statusVariant} className="border-white/10 bg-white/8 text-surface">
-          {status}
-        </StatusPill>
       </div>
-
-      <form action={updateProjectProductTypeAction} className="flex items-center gap-2">
-        <input type="hidden" name="projectId" value={projectId} />
-        <label className="shrink-0 text-[11px] font-medium text-surface/66" htmlFor={`project-product-type-${projectId}`}>
-          نوع محصول
-        </label>
-        <select
-          id={`project-product-type-${projectId}`}
-          name="productType"
-          defaultValue={productType || "محصول"}
-          onChange={(event) => event.currentTarget.form?.requestSubmit()}
-          className="min-h-8 flex-1 rounded-full border border-white/10 bg-white/[0.06] px-2.5 text-xs text-surface outline-none transition focus:border-white/24"
-        >
-          {PRODUCT_TYPES.map((item) => (
-            <option key={item} value={item} className="bg-[#171411] text-white">
-              {item}
-            </option>
-          ))}
-        </select>
-      </form>
     </div>
   );
 }
@@ -309,7 +265,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
     `کد پیگیری: ${errorPresentation.supportCode}`,
   ].join("\n");
   const projectTitle = project.title?.trim() || "پروژه محصول";
-  const statusVariant = getStatusVariant(project.status);
+  const titleRefreshPending = Boolean(project.titleRefreshPending);
   const fullscreenPanLimitX = Math.max(0, (fullscreenViewport.width * (fullscreenZoom - 1)) / 2);
   const fullscreenPanLimitY = Math.max(0, (fullscreenViewport.height * (fullscreenZoom - 1)) / 2);
   const clampedFullscreenPanX = clamp(fullscreenPan.x, -fullscreenPanLimitX, fullscreenPanLimitX);
@@ -428,20 +384,18 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
           <DetailMeta
             projectId={project.id}
             title={projectTitle}
-            status={status.label}
-            statusVariant={statusVariant}
-            productType={project.productType}
           />
 
           <ProcessingCanvas
             imageSrc={sourceImageSrc}
             imageAlt="در حال پردازش تصویر"
             title={status.label}
-            caption={`${project.style.name} در حال اجراست. می‌توانید از این صفحه خارج شوید و وضعیت پروژه را بعداً در پروژه‌ها ببینید.`}
+            styleLabel={project.style.name}
+            caption="می‌توانید از این صفحه خارج شوید و نتیجه را در تب پروژه‌ها ببینید."
             steps={["تشخیص محصول", "پاک‌سازی زمینه", "ساخت خروجی نهایی"]}
             moments={processingMoments}
             className="min-h-0 flex-1"
-            frameClassName="h-[calc(100%-7.8rem)] min-h-0"
+            frameClassName="h-full min-h-0"
           />
 
           <ActionDock columns={2} className="shrink-0 pb-0">
@@ -462,13 +416,12 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
   if (hasResult && project.status === "COMPLETED" && !resultImageError) {
     return (
       <PageShell maxWidth="lg" className="h-[calc(100svh-9.8rem)] overflow-hidden pb-1 text-surface">
+        <ProjectStatusRefresh active={titleRefreshPending} />
+
         <section className="flex h-full flex-col gap-3 overflow-hidden">
           <DetailMeta
             projectId={project.id}
             title={projectTitle}
-            status={status.label}
-            statusVariant={statusVariant}
-            productType={project.productType}
           />
 
           <div
@@ -715,13 +668,12 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
 
   return (
     <PageShell maxWidth="lg" className="h-[calc(100svh-9.8rem)] overflow-hidden pb-1 text-surface">
+      <ProjectStatusRefresh active={titleRefreshPending} />
+
       <section className="flex h-full flex-col gap-3 overflow-hidden">
         <DetailMeta
           projectId={project.id}
           title={projectTitle}
-          status={status.label}
-          statusVariant={statusVariant}
-          productType={project.productType}
         />
 
         <JewelryImageFrame aspect="portrait" treatment="dark" className="min-h-0 flex-1 rounded-[1.45rem]">

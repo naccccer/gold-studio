@@ -2,7 +2,9 @@
 
 import { useActionState, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
+  ArrowDown2,
   ArrowLeft,
   Camera,
   DocumentUpload,
@@ -11,6 +13,7 @@ import {
   TickCircle,
 } from "vuesax-icons-react";
 import { ActionDock } from "@/components/ui/action-dock";
+import { AppTopBar } from "@/components/ui/app-top-bar";
 import { Button, ButtonLink, buttonClasses } from "@/components/ui/button";
 import { ImageOverlayPill, JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
@@ -44,6 +47,22 @@ type NewProjectFormProps = {
 type OutputPresetId = "post" | "story" | "banner";
 type WizardStep = "source" | "size" | "style";
 type StyleControl = NonNullable<StyleOption["controls"]>[number];
+
+const topBarTitles: Record<WizardStep, string> = {
+  source: "پروژه جدید",
+  size: "ابعاد و نوع محصول",
+  style: "انتخاب سبک",
+};
+
+function StepScrollPanel({ children }: { children: React.ReactNode }) {
+  return (
+    <section className="min-h-0 flex-1 overflow-hidden">
+      <div className="scrollbar-none -ml-6 flex h-full min-h-0 w-[calc(100%+1.5rem)] flex-col gap-5 overflow-y-auto pl-6 pt-3">
+        {children}
+      </div>
+    </section>
+  );
+}
 
 const outputPresets: Array<{
   id: OutputPresetId;
@@ -83,12 +102,12 @@ const stepMeta: Record<WizardStep, { stepNumber: string; title: string; descript
   },
   size: {
     stepNumber: "مرحله ۲ از ۳",
-    title: "قاب خروجی را مشخص کنید",
+    title: "ابعاد خروجی را مشخص کنید",
     description: "همان عکسی که انتخاب کرده‌اید در نسبت نهایی بازسازی می‌شود.",
   },
   style: {
     stepNumber: "مرحله ۳ از ۳",
-    title: "سبک خروجی را نهایی کنید",
+    title: "انتخاب سبک",
     description: "یک ظاهر آماده را انتخاب کنید تا پردازش استودیویی شروع شود.",
   },
 };
@@ -155,6 +174,7 @@ export function NewProjectForm({
   styles,
   defaultOutputPreset = "post",
 }: NewProjectFormProps) {
+  const router = useRouter();
   const explicitSelectedAsset = selectedAssetId
     ? galleryAssets.find((asset) => asset.id === selectedAssetId) ?? null
     : null;
@@ -246,8 +266,29 @@ export function NewProjectForm({
     setStyleControlValues((current) => ({ ...current, [key]: value }));
   }
 
+  function handleTopBarBack() {
+    if (step === "style") {
+      setStep("size");
+      return;
+    }
+
+    if (step === "size") {
+      setStep("source");
+      return;
+    }
+
+    router.push("/gallery");
+  }
+
   return (
-    <form action={formAction} className="flex h-full min-h-0 flex-col gap-4 overflow-hidden">
+    <form action={formAction} className="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
+      <AppTopBar
+        title={topBarTitles[step]}
+        onBack={handleTopBarBack}
+        logoVariant="mark-light"
+        tone="dark"
+        className="mb-0 min-h-12 px-0"
+      />
       <input type="hidden" name="generationMode" value="image" />
       <input type="hidden" name="outputPreset" value={outputPreset} />
       {styleControls.map((control) => (
@@ -278,16 +319,11 @@ export function NewProjectForm({
         }}
       />
 
-      <header className="space-y-3">
-        <div className="rounded-[1.15rem] border border-white/10 bg-white/[0.04] px-3.5 py-3 shadow-[0_16px_36px_-34px_rgba(0,0,0,0.62)]">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <h2 className="text-[1.12rem] font-semibold leading-7 !text-surface">{currentMeta.title}</h2>
-            </div>
-            <ImageOverlayPill tone="accent" className="w-fit">
-              {currentMeta.stepNumber}
-            </ImageOverlayPill>
-          </div>
+      <header className="-mt-2 space-y-3">
+        <div className="flex items-center justify-center">
+          <ImageOverlayPill tone="accent" className="w-fit">
+            {currentMeta.stepNumber}
+          </ImageOverlayPill>
         </div>
         <div className="flex items-center justify-center gap-2" aria-label="مراحل پروژه">
           {(["source", "size", "style"] as WizardStep[]).map((item, index) => {
@@ -307,7 +343,7 @@ export function NewProjectForm({
       </header>
 
       {step === "source" ? (
-        <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+        <StepScrollPanel>
           <JewelryImageFrame
             aspect="portrait"
             treatment="dark"
@@ -414,11 +450,11 @@ export function NewProjectForm({
               <ArrowLeft aria-hidden={true} className="h-4 w-4" />
             </Button>
           </ActionDock>
-        </section>
+        </StepScrollPanel>
       ) : null}
 
       {step === "size" ? (
-        <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+        <StepScrollPanel>
           <JewelryImageFrame
             aspect="portrait"
             treatment="dark"
@@ -449,22 +485,6 @@ export function NewProjectForm({
             <div className="absolute inset-0 flex items-center justify-center p-5">
               <div className={`rounded-[1.25rem] border border-white/55 bg-white/10 shadow-[0_18px_36px_-28px_rgba(0,0,0,0.72)] backdrop-blur-sm ${selectedPreset.previewFrameClassName}`} />
             </div>
-            <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
-              <div className="space-y-1">
-                <ImageOverlayPill tone="accent" className="w-fit">
-                  قاب {selectedPreset.label}
-                </ImageOverlayPill>
-                <p
-                  className="text-[11px] leading-5 text-surface/72"
-                  style={{ textAlign: "justify", textAlignLast: "right" }}
-                >
-                  خروجی نهایی با همین نسبت ساخته می‌شود.
-                </p>
-              </div>
-              <div className="rounded-full border border-white/18 bg-black/18 px-3 py-1 text-xs font-medium text-surface/82" dir="ltr">
-                {selectedPreset.ratio}
-              </div>
-            </div>
           </JewelryImageFrame>
 
           <fieldset className="space-y-3">
@@ -476,18 +496,21 @@ export function NewProjectForm({
             <label htmlFor="new-project-product-type" className="mb-2 block text-xs font-medium text-surface/72">
               نوع محصول
             </label>
-            <select
-              id="new-project-product-type"
-              value={productType}
-              onChange={(event) => setProductType(event.target.value)}
-              className="min-h-10 w-full rounded-full border border-white/12 bg-white/[0.08] px-3 text-sm font-semibold text-surface outline-none transition focus:border-white/28"
-            >
-              {PRODUCT_TYPES.map((item) => (
-                <option key={item} value={item} className="bg-[#171411] text-white">
-                  {item}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                id="new-project-product-type"
+                value={productType}
+                onChange={(event) => setProductType(event.target.value)}
+                className="min-h-10 w-full appearance-none rounded-full border border-white/12 bg-white/[0.08] py-0 pr-3 pl-10 text-sm font-semibold text-surface outline-none transition focus:border-white/28"
+              >
+                {PRODUCT_TYPES.map((item) => (
+                  <option key={item} value={item} className="bg-[#171411] text-white">
+                    {item}
+                  </option>
+                ))}
+              </select>
+              <ArrowDown2 aria-hidden={true} className="pointer-events-none absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-surface/72" />
+            </div>
           </section>
 
           <ActionDock className="mt-auto pb-[calc(env(safe-area-inset-bottom)+0.75rem)]" columns={2}>
@@ -499,47 +522,11 @@ export function NewProjectForm({
               <ArrowLeft aria-hidden={true} className="h-4 w-4" />
             </Button>
           </ActionDock>
-        </section>
+        </StepScrollPanel>
       ) : null}
 
       {step === "style" ? (
-        <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
-          <JewelryImageFrame
-            aspect="landscape"
-            treatment="dark"
-            className="h-[min(176px,20svh)] min-h-[144px] rounded-[1.45rem]"
-          >
-            <Image
-              src={selectedStyleData?.previewImageUrl || uploadPreview.src}
-              alt={selectedStyleData?.label || "پیش‌نمایش سبک"}
-              fill
-              priority
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 760px"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/72 via-black/14 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
-              <div className="space-y-1">
-                <ImageOverlayPill tone="accent" className="w-fit">
-                  {selectedStyleData?.label || "سبک آماده"}
-                </ImageOverlayPill>
-                {selectedStyleData?.description ? (
-                  <p
-                    className="max-w-[16rem] text-[11px] leading-5 text-surface/72"
-                    style={{ textAlign: "justify", textAlignLast: "right" }}
-                  >
-                    {selectedStyleData.description}
-                  </p>
-                ) : null}
-              </div>
-              <div className="space-y-1 text-left">
-                <div className="rounded-full border border-white/18 bg-black/18 px-3 py-1 text-xs font-medium text-surface/82">
-                  {selectedPreset.label}
-                </div>
-              </div>
-            </div>
-          </JewelryImageFrame>
-
+        <StepScrollPanel>
           <div className="grid grid-cols-3 gap-2">
               {styles.map((preset) => {
                 const checked = selectedStyle === preset.id;
@@ -669,7 +656,7 @@ export function NewProjectForm({
               <Magicpen aria-hidden={true} className="h-4 w-4" />
             </Button>
           </ActionDock>
-        </section>
+        </StepScrollPanel>
       ) : null}
     </form>
   );

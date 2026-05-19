@@ -14,7 +14,7 @@ import {
 
 type GalleryCropScreenProps = {
   uploadId: string;
-  onClose: (options?: { refresh?: boolean }) => void;
+  onClose: (options?: { refresh?: boolean; selectedAssetId?: string }) => void;
 };
 
 type FrameSize = {
@@ -273,7 +273,7 @@ export function GalleryCropScreen({ uploadId, onClose }: GalleryCropScreenProps)
     ? normalizeCropRect(cropRect, frameSize)
     : getInitialCropRect(frameSize, displayedImageBounds);
 
-  function closeModal(options?: { refresh?: boolean; discard?: boolean }) {
+  function closeModal(options?: { refresh?: boolean; discard?: boolean; selectedAssetId?: string }) {
     const shouldDiscard = options?.discard ?? true;
     if (upload) {
       if (shouldDiscard) {
@@ -283,7 +283,7 @@ export function GalleryCropScreen({ uploadId, onClose }: GalleryCropScreenProps)
       }
     }
 
-    onClose({ refresh: options?.refresh });
+    onClose({ refresh: options?.refresh, selectedAssetId: options?.selectedAssetId });
   }
 
   function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
@@ -397,9 +397,9 @@ export function GalleryCropScreen({ uploadId, onClose }: GalleryCropScreenProps)
     setLocalError(null);
 
     try {
-      await confirmPendingGalleryUpload(upload.id);
+      const confirmed = await confirmPendingGalleryUpload(upload.id);
       clearPendingGalleryUpload(upload.id);
-      closeModal({ refresh: true, discard: false });
+      closeModal({ refresh: true, discard: false, selectedAssetId: confirmed.assetId });
     } catch (error) {
       setLocalError(error instanceof Error ? error.message : "بازگشت به گالری بدون کراپ انجام نشد.");
       setSubmitting(null);
@@ -427,9 +427,9 @@ export function GalleryCropScreen({ uploadId, onClose }: GalleryCropScreenProps)
         clampedOffsetY,
       );
 
-      await applyCropToPendingUpload(upload.id, croppedFile);
+      const cropped = await applyCropToPendingUpload(upload.id, croppedFile);
       clearPendingGalleryUpload(upload.id);
-      closeModal({ refresh: true, discard: false });
+      closeModal({ refresh: true, discard: false, selectedAssetId: cropped.assetId });
     } catch (error) {
       setLocalError(error instanceof Error ? error.message : "ذخیره کراپ انجام نشد.");
       setSubmitting(null);

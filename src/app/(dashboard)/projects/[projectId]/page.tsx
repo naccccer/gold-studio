@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
+import { after } from "next/server";
 import { ProjectDetailScreen, type ProjectDetail } from "@/features/projects/screens/project-detail-screen";
 import { db } from "@/lib/db";
 import { requireUserSession } from "@/lib/auth/session";
+import { isRawImageFilenameTitle, retryProjectVisionTitle } from "@/lib/product-vision";
 import { readStorageObject, storagePublicUrl } from "@/lib/storage";
 
 export default async function ProjectDetailPage({
@@ -23,7 +25,7 @@ export default async function ProjectDetailPage({
         select: { name: true },
       },
       sourceAsset: {
-        select: { storageKey: true, productType: true },
+        select: { storageKey: true, productType: true, visionShortTitle: true },
       },
     },
   });
@@ -34,6 +36,16 @@ export default async function ProjectDetailPage({
 
   let resultImageError: string | null = null;
   const resultImageUrl = project.resultStorageKey ? storagePublicUrl(project.resultStorageKey) : project.resultImageUrl;
+  const visionTitle = project.sourceAsset?.visionShortTitle?.trim() || null;
+  let title = project.title;
+
+  if (isRawImageFilenameTitle(title) && visionTitle) {
+    title = visionTitle;
+    await db.project.updateMany({
+      where: { id: project.id, userId: session.userId, archivedAt: null },
+      data: { title: visionTitle },
+    });
+  }
 
   if (project.status === "COMPLETED" && project.resultStorageKey) {
     try {
@@ -49,17 +61,25 @@ export default async function ProjectDetailPage({
     }
   }
 
+  const titleRefreshPending = Boolean(project.sourceAssetId && isRawImageFilenameTitle(title));
+
+  if (titleRefreshPending) {
+    after(() => retryProjectVisionTitle(project.id, session.userId));
+  }
+
   return (
     <ProjectDetailScreen
       project={
         {
           ...project,
+          title,
           sourceImageUrl: project.sourceAsset?.storageKey
             ? storagePublicUrl(project.sourceAsset.storageKey)
             : project.sourceImageUrl,
           resultImageUrl,
           resultImageError,
           productType: project.sourceAsset?.productType ?? null,
+          titleRefreshPending,
         } as ProjectDetail
       }
     />

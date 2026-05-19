@@ -93,6 +93,53 @@ export async function ensureProductAssetVision(assetId: string) {
   return analyzeAndStoreProductAssetVision(asset.id);
 }
 
+export function isRawImageFilenameTitle(value: string | null | undefined) {
+  const title = value?.trim();
+
+  return Boolean(title && (/\.(avif|gif|heic|jpeg|jpg|png|webp)$/i.test(title) || title.includes("_")));
+}
+
+export async function retryProjectVisionTitle(projectId: string, userId: string, options?: { forceAnalyze?: boolean }) {
+  const project = await db.project.findFirst({
+    where: { id: projectId, userId, archivedAt: null },
+    select: {
+      id: true,
+      title: true,
+      sourceAssetId: true,
+    },
+  });
+
+  if (!project?.sourceAssetId) {
+    return null;
+  }
+
+  const shouldUpdateTitle = isRawImageFilenameTitle(project.title);
+
+  if (!options?.forceAnalyze && !shouldUpdateTitle) {
+    return null;
+  }
+
+  const analyzedAsset = await analyzeAndStoreProductAssetVision(project.sourceAssetId);
+  const title = analyzedAsset?.visionShortTitle?.trim();
+
+  if (!shouldUpdateTitle || !title) {
+    return null;
+  }
+
+  await db.$transaction([
+    db.project.updateMany({
+      where: { id: project.id, userId, archivedAt: null },
+      data: { title },
+    }),
+    db.productAsset.updateMany({
+      where: { id: project.sourceAssetId, userId, status: "READY", archivedAt: null },
+      data: { title },
+    }),
+  ]);
+
+  return title;
+}
+
 export function pickVisionTitle(input: {
   userTitle?: string | null;
   visionShortTitle?: string | null;
