@@ -67,6 +67,17 @@ enum CreditEventSource {
   REFERRAL
 }
 
+enum GenerationCreditReservationSource {
+  CREDIT_BALANCE
+  SUBSCRIPTION
+}
+
+enum GenerationCreditReservationStatus {
+  RESERVED
+  CAPTURED
+  RELEASED
+}
+
 enum ProviderEventStatus {
   SUCCESS
   FAILED
@@ -92,6 +103,7 @@ model User {
   passwordHash          String
   role                  UserRole           @default(USER)
   credits               Int                @default(5)
+  reservedCredits       Int                @default(0)
   projects              Project[]
   assets                ProductAsset[]
   collections           AssetCollection[]
@@ -100,6 +112,7 @@ model User {
   assignedSubscriptions UserSubscription[] @relation("AssignedSubscriptions")
   purchaseRequests      PurchaseRequest[]
   creditEvents          CreditEvent[]      @relation("UserCreditEvents")
+  creditReservations    GenerationCreditReservation[]
   authoredCreditEvents  CreditEvent[]      @relation("AdminCreditEvents")
   invitedReferrals      Referral[]         @relation("InviterReferrals")
   acceptedReferral      Referral?          @relation("InviteeReferral")
@@ -131,6 +144,7 @@ model Project {
   archivedAt       DateTime?
   batchItems       GenerationBatchItem[]
   providerEvents   ProviderEvent[]
+  creditReservations GenerationCreditReservation[]
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
 
@@ -263,6 +277,7 @@ model GenerationBatch {
   outputPreset String
   status       GenerationBatchStatus @default(QUEUED)
   items        GenerationBatchItem[]
+  creditReservations GenerationCreditReservation[]
   createdAt    DateTime              @default(now())
   updatedAt    DateTime              @updatedAt
 
@@ -320,12 +335,14 @@ model UserSubscription {
   currentPeriodEnd      DateTime
   creditsPerPeriod      Int
   creditsUsedThisPeriod Int                @default(0)
+  reservedCredits       Int                @default(0)
   assignedByAdminId     String?
   assignedByAdmin       User?              @relation("AssignedSubscriptions", fields: [assignedByAdminId], references: [id], onDelete: SetNull)
   purchaseRequestId     String?            @unique
   purchaseRequest       PurchaseRequest?   @relation(fields: [purchaseRequestId], references: [id], onDelete: SetNull)
   notes                 String?            @db.Text
   creditEvents          CreditEvent[]
+  creditReservations    GenerationCreditReservation[]
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
 
@@ -395,6 +412,29 @@ model CreditEvent {
   @@index([subscriptionId])
   @@index([referralId])
   @@index([source])
+}
+
+model GenerationCreditReservation {
+  id             String                            @id @default(cuid())
+  userId         String
+  user           User                              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId      String?
+  project        Project?                          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  batchId        String?
+  batch          GenerationBatch?                  @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  subscriptionId String?
+  subscription   UserSubscription?                 @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  source         GenerationCreditReservationSource
+  status         GenerationCreditReservationStatus @default(RESERVED)
+  capturedAt     DateTime?
+  releasedAt     DateTime?
+  createdAt      DateTime                          @default(now())
+  updatedAt      DateTime                          @updatedAt
+
+  @@index([userId, status, createdAt])
+  @@index([projectId, status])
+  @@index([batchId, status])
+  @@index([subscriptionId, status])
 }
 
 model Referral {

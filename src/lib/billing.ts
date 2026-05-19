@@ -1,7 +1,7 @@
 import type { Prisma } from "@/generated/prisma";
 import { db } from "@/lib/db";
 
-export const NO_CREDITS_ERROR = "اعتبار کافی برای ساخت خروجی ندارید. از بخش خرید اعتبار یا اشتراک، پلن یا اشتراک جدید ثبت کنید.";
+export const NO_CREDITS_ERROR = "اعتبار کافی برای ساخت خروجی ندارید. از بخش خرید اعتبار یا اشتراک، پلن جدید ثبت کنید.";
 
 export async function logAdminAudit({
   actorAdminId,
@@ -60,7 +60,15 @@ export async function logProviderEvent({
   });
 }
 
-export async function consumeGenerationCredit(userId: string) {
+export async function reserveGenerationCredit({
+  userId,
+  projectId,
+  batchId,
+}: {
+  userId: string;
+  projectId?: string | null;
+  batchId?: string | null;
+}) {
   const now = new Date();
 
   return db.$transaction(async (tx) => {
@@ -74,55 +82,217 @@ export async function consumeGenerationCredit(userId: string) {
       orderBy: { currentPeriodEnd: "asc" },
       take: 5,
     });
-    const subscription = subscriptions.find((item) => item.creditsUsedThisPeriod < item.creditsPerPeriod);
+    const subscription = subscriptions.find(
+      (item) => item.creditsUsedThisPeriod + item.reservedCredits < item.creditsPerPeriod,
+    );
 
     if (subscription) {
-      const balanceBefore = subscription.creditsPerPeriod - subscription.creditsUsedThisPeriod;
       await tx.userSubscription.update({
         where: { id: subscription.id },
-        data: { creditsUsedThisPeriod: { increment: 1 } },
+        data: { reservedCredits: { increment: 1 } },
       });
-      await tx.creditEvent.create({
+      const reservation = await tx.generationCreditReservation.create({
         data: {
           userId,
-          delta: -1,
-          balanceBefore,
-          balanceAfter: balanceBefore - 1,
-          reason: "مصرف اعتبار اشتراک برای ساخت خروجی",
+          projectId: projectId || null,
+          batchId: batchId || null,
           source: "SUBSCRIPTION",
-          packageId: subscription.packageId,
           subscriptionId: subscription.id,
         },
       });
 
-      return { ok: true as const, source: "SUBSCRIPTION" as const };
+      return { ok: true as const, reservationId: reservation.id, source: "SUBSCRIPTION" as const };
     }
 
     const user = await tx.user.findUnique({
       where: { id: userId },
-      select: { credits: true },
+      select: { credits: true, reservedCredits: true },
     });
 
-    if (!user || user.credits < 1) {
+    if (!user || user.credits - user.reservedCredits < 1) {
       return { ok: false as const, error: NO_CREDITS_ERROR };
     }
 
     await tx.user.update({
       where: { id: userId },
-      data: { credits: { decrement: 1 } },
+      data: { reservedCredits: { increment: 1 } },
     });
-    await tx.creditEvent.create({
+    const reservation = await tx.generationCreditReservation.create({
       data: {
         userId,
-        delta: -1,
-        balanceBefore: user.credits,
-        balanceAfter: user.credits - 1,
-        reason: "مصرف اعتبار خریداری‌شده برای ساخت خروجی",
-        source: "GENERATION",
+        projectId: projectId || null,
+        batchId: batchId || null,
+        source: "CREDIT_BALANCE",
       },
     });
 
-    return { ok: true as const, source: "CREDIT_BALANCE" as const };
+    return { ok: true as const, reservationId: reservation.id, source: "CREDIT_BALANCE" as const };
+  });
+}
+
+export async function attachGenerationCreditReservation({
+  reservationId,
+  projectId,
+  batchId,
+}: {
+  reservationId: string;
+  projectId?: string | null;
+  batchId?: string | null;
+}) {
+  await db.generationCreditReservation.updateMany({
+    where: { id: reservationId, status: "RESERVED" },
+    data: {
+      projectId: projectId || undefined,
+      batchId: batchId || undefined,
+    },
+  });
+}
+
+async function getReservedGenerationCredit(
+  tx: Prisma.TransactionClient,
+  {
+    reservationId,
+    projectId,
+  }: {
+    reservationId?: string | null;
+    projectId?: string | null;
+  },
+) {
+  if (reservationId) {
+    return tx.generationCreditReservation.findFirst({
+      where: { id: reservationId, status: "RESERVED" },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  if (projectId) {
+    return tx.generationCreditReservation.findFirst({
+      where: { projectId, status: "RESERVED" },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  return null;
+}
+
+export async function captureGenerationCreditReservation({
+  reservationId,
+  projectId,
+}: {
+  reservationId?: string | null;
+  projectId?: string | null;
+}) {
+  return db.$transaction(async (tx) => {
+    const reservation = await getReservedGenerationCredit(tx, { reservationId, projectId });
+    if (!reservation) {
+      return { ok: false as const, error: "NO_RESERVED_CREDIT" };
+    }
+
+    if (reservation.source === "SUBSCRIPTION") {
+      const subscription = reservation.subscriptionId
+        ? await tx.userSubscription.findUnique({ where: { id: reservation.subscriptionId } })
+        : null;
+      if (!subscription) {
+        await tx.generationCreditReservation.update({
+          where: { id: reservation.id },
+          data: { status: "RELEASED", releasedAt: new Date() },
+        });
+        return { ok: false as const, error: "SUBSCRIPTION_NOT_FOUND" };
+      }
+
+      await tx.userSubscription.update({
+        where: { id: subscription.id },
+        data: {
+          reservedCredits: { decrement: 1 },
+          creditsUsedThisPeriod: { increment: 1 },
+        },
+      });
+      await tx.creditEvent.create({
+        data: {
+          userId: reservation.userId,
+          delta: -1,
+          balanceBefore: Math.max(1, subscription.creditsPerPeriod - subscription.creditsUsedThisPeriod),
+          balanceAfter: Math.max(0, subscription.creditsPerPeriod - subscription.creditsUsedThisPeriod - 1),
+          reason: "مصرف اعتبار اشتراک پس از ساخت موفق خروجی",
+          source: "SUBSCRIPTION",
+          packageId: subscription.packageId,
+          subscriptionId: subscription.id,
+        },
+      });
+    } else {
+      const user = await tx.user.findUnique({
+        where: { id: reservation.userId },
+        select: { credits: true },
+      });
+      if (!user) {
+        await tx.generationCreditReservation.update({
+          where: { id: reservation.id },
+          data: { status: "RELEASED", releasedAt: new Date() },
+        });
+        return { ok: false as const, error: "USER_NOT_FOUND" };
+      }
+
+      await tx.user.update({
+        where: { id: reservation.userId },
+        data: {
+          reservedCredits: { decrement: 1 },
+          credits: { decrement: 1 },
+        },
+      });
+      await tx.creditEvent.create({
+        data: {
+          userId: reservation.userId,
+          delta: -1,
+          balanceBefore: user.credits,
+          balanceAfter: user.credits - 1,
+          reason: "مصرف اعتبار کیف پول پس از ساخت موفق خروجی",
+          source: "GENERATION",
+        },
+      });
+    }
+
+    await tx.generationCreditReservation.update({
+      where: { id: reservation.id },
+      data: { status: "CAPTURED", capturedAt: new Date() },
+    });
+
+    return { ok: true as const, reservationId: reservation.id };
+  });
+}
+
+export async function releaseGenerationCreditReservation({
+  reservationId,
+  projectId,
+}: {
+  reservationId?: string | null;
+  projectId?: string | null;
+}) {
+  return db.$transaction(async (tx) => {
+    const reservation = await getReservedGenerationCredit(tx, { reservationId, projectId });
+    if (!reservation) {
+      return { ok: false as const, error: "NO_RESERVED_CREDIT" };
+    }
+
+    if (reservation.source === "SUBSCRIPTION" && reservation.subscriptionId) {
+      await tx.userSubscription.update({
+        where: { id: reservation.subscriptionId },
+        data: { reservedCredits: { decrement: 1 } },
+      });
+    }
+
+    if (reservation.source === "CREDIT_BALANCE") {
+      await tx.user.update({
+        where: { id: reservation.userId },
+        data: { reservedCredits: { decrement: 1 } },
+      });
+    }
+
+    await tx.generationCreditReservation.update({
+      where: { id: reservation.id },
+      data: { status: "RELEASED", releasedAt: new Date() },
+    });
+
+    return { ok: true as const, reservationId: reservation.id };
   });
 }
 
@@ -134,7 +304,7 @@ export async function getAvailableGenerationCredits(userId: string) {
 export async function getUserCreditSummary(userId: string) {
   const now = new Date();
   const [user, subscriptions] = await Promise.all([
-    db.user.findUnique({ where: { id: userId }, select: { credits: true } }),
+    db.user.findUnique({ where: { id: userId }, select: { credits: true, reservedCredits: true } }),
     db.userSubscription.findMany({
       where: {
         userId,
@@ -147,6 +317,7 @@ export async function getUserCreditSummary(userId: string) {
         id: true,
         creditsPerPeriod: true,
         creditsUsedThisPeriod: true,
+        reservedCredits: true,
         currentPeriodEnd: true,
         package: { select: { title: true } },
       },
@@ -154,19 +325,23 @@ export async function getUserCreditSummary(userId: string) {
   ]);
 
   const subscriptionCredits = subscriptions.reduce(
-    (sum, subscription) => sum + Math.max(0, subscription.creditsPerPeriod - subscription.creditsUsedThisPeriod),
+    (sum, subscription) =>
+      sum + Math.max(0, subscription.creditsPerPeriod - subscription.creditsUsedThisPeriod - subscription.reservedCredits),
     0,
   );
+  const walletCredits = Math.max(0, (user?.credits ?? 0) - (user?.reservedCredits ?? 0));
 
   return {
-    walletCredits: user?.credits ?? 0,
+    walletCredits,
+    reservedWalletCredits: user?.reservedCredits ?? 0,
     subscriptionCredits,
-    totalAvailableCredits: subscriptionCredits + (user?.credits ?? 0),
+    totalAvailableCredits: subscriptionCredits + walletCredits,
     activeSubscription: subscriptions[0]
       ? {
           title: subscriptions[0].package.title,
           creditsPerPeriod: subscriptions[0].creditsPerPeriod,
           creditsUsedThisPeriod: subscriptions[0].creditsUsedThisPeriod,
+          reservedCredits: subscriptions[0].reservedCredits,
           currentPeriodEnd: subscriptions[0].currentPeriodEnd,
         }
       : null,

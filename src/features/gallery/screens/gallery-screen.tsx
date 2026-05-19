@@ -49,16 +49,16 @@ export type GalleryAssetItem = {
 type GalleryScreenProps = {
   assets: GalleryAssetItem[];
   styles: StyleOption[];
-  batchAction: (formData: FormData) => Promise<void>;
 };
 
-export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProps) {
+export function GalleryScreen({ assets, styles }: GalleryScreenProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [pickerError, setPickerError] = useState<string | null>(null);
   const cropUploadId = searchParams.get("cropUploadId");
   const selectedCount = selectedIds.length;
+  const batchHref = `/gallery/batches/new?assetIds=${encodeURIComponent(selectedIds.join(","))}`;
 
   function toggleAsset(assetId: string) {
     setSelectedIds((current) =>
@@ -287,17 +287,11 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
                   <CloseCircle aria-hidden={true} className="h-4 w-4" />
                   لغو
                 </Button>
-                <form action={batchAction}>
-                  {selectedIds.map((id) => (
-                    <input key={id} type="hidden" name="assetIds" value={id} />
-                  ))}
-                  <input type="hidden" name="styleId" value={styles[0]?.id ?? ""} />
-                  <input type="hidden" name="outputPreset" value="post" />
-                  <Button type="submit" className="h-12 w-full rounded-[1rem]">
+                <ButtonLink href={styles.length > 0 ? batchHref : "/gallery"} className="h-12 w-full rounded-[1rem]">
+                  <span className="sr-only">{selectedCount.toLocaleString("fa-IR")} تصویر انتخاب شده</span>
                     <Magicpen aria-hidden={true} className="h-4 w-4" />
                     ساخت گروهی
-                  </Button>
-                </form>
+                </ButtonLink>
               </>
             )}
           </ActionDock>

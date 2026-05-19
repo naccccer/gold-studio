@@ -3,14 +3,20 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
+import { buildVisionPromptContext } from "@/lib/ai/vision";
 import { requireUserSession } from "@/lib/auth/session";
-import { consumeGenerationCredit, getAvailableGenerationCredits, NO_CREDITS_ERROR } from "@/lib/billing";
+import {
+  attachGenerationCreditReservation,
+  getAvailableGenerationCredits,
+  NO_CREDITS_ERROR,
+  releaseGenerationCreditReservation,
+  reserveGenerationCredit,
+} from "@/lib/billing";
 import { db } from "@/lib/db";
 import { processGenerationBatch } from "@/lib/generation/jobs";
 import { getOutputPresetSpec, normalizeOutputPreset } from "@/lib/output-presets";
-import { buildVisionPromptContext } from "@/lib/ai/vision";
-import { isProductType } from "@/lib/product-types";
 import { analyzeAndStoreProductAssetVision, ensureProductAssetVision, pickVisionTitle } from "@/lib/product-vision";
+import { isProductType } from "@/lib/product-types";
 import { getStyleForGeneration } from "@/lib/styles";
 import { saveUploadedFile } from "@/lib/uploads";
 
@@ -50,12 +56,12 @@ export async function uploadGalleryAssetsAction(formData: FormData) {
 
 export async function createBatchFromGalleryAction(formData: FormData) {
   const session = await requireUserSession();
-  const assetIds = formData.getAll("assetIds").map(String).filter(Boolean);
+  const assetIds = Array.from(new Set(formData.getAll("assetIds").map(String).filter(Boolean)));
   const styleId = String(formData.get("styleId") ?? "");
   const outputPreset = normalizeOutputPreset(formData.get("outputPreset"));
   const style = await getStyleForGeneration(styleId);
 
-  if (assetIds.length === 0 || !style) {
+  if (assetIds.length < 2 || !style) {
     redirect("/gallery");
   }
 
@@ -69,22 +75,16 @@ export async function createBatchFromGalleryAction(formData: FormData) {
     orderBy: { createdAt: "asc" },
   });
 
-  if (assets.length === 0) {
+  if (assets.length < 2) {
     redirect("/gallery");
   }
 
   const availableCredits = await getAvailableGenerationCredits(session.userId);
   if (availableCredits < assets.length) {
-    redirect(`/gallery?error=${encodeURIComponent(NO_CREDITS_ERROR)}`);
+    redirect(`/gallery/batches/new?assetIds=${encodeURIComponent(assetIds.join(","))}&error=${encodeURIComponent(NO_CREDITS_ERROR)}`);
   }
 
-  for (let index = 0; index < assets.length; index += 1) {
-    const credit = await consumeGenerationCredit(session.userId);
-    if (!credit.ok) {
-      redirect(`/gallery?error=${encodeURIComponent(credit.error)}`);
-    }
-  }
-
+  const reservations: string[] = [];
   const batch = await db.generationBatch.create({
     data: {
       userId: session.userId,
@@ -93,39 +93,63 @@ export async function createBatchFromGalleryAction(formData: FormData) {
       outputPreset,
       status: "QUEUED",
     },
+    select: { id: true },
   });
 
-  for (const asset of assets) {
-    const analyzedAsset = await ensureProductAssetVision(asset.id);
-    const visionContext = buildVisionPromptContext({
-      productType: analyzedAsset?.productType,
-      visionDescription: analyzedAsset?.visionDescription,
-      visionConfidence: analyzedAsset?.visionConfidence,
-    });
-    const project = await db.project.create({
-      data: {
-        userId: session.userId,
-        sourceAssetId: asset.id,
-        title: pickVisionTitle({
-          userTitle: asset.title,
-          visionShortTitle: analyzedAsset?.visionShortTitle,
-          fallbackTitle: asset.originalName,
-        }),
-        sourceImageUrl: asset.fileUrl,
-        outputPreset,
-        styleId: style.id,
-        prompt: [style.prompt, getOutputPresetSpec(outputPreset).instruction, visionContext].filter(Boolean).join("\n"),
-        status: "QUEUED",
-      },
-    });
+  try {
+    for (const asset of assets) {
+      const reservation = await reserveGenerationCredit({ userId: session.userId, batchId: batch.id });
+      if (!reservation.ok) {
+        throw new Error(reservation.error);
+      }
+      reservations.push(reservation.reservationId);
 
-    await db.generationBatchItem.create({
-      data: {
-        batchId: batch.id,
-        assetId: asset.id,
+      const analyzedAsset = await ensureProductAssetVision(asset.id);
+      const visionContext = buildVisionPromptContext({
+        productType: analyzedAsset?.productType,
+        visionDescription: analyzedAsset?.visionDescription,
+        visionConfidence: analyzedAsset?.visionConfidence,
+      });
+      const project = await db.project.create({
+        data: {
+          userId: session.userId,
+          sourceAssetId: asset.id,
+          title: pickVisionTitle({
+            userTitle: asset.title,
+            visionShortTitle: analyzedAsset?.visionShortTitle,
+            fallbackTitle: asset.originalName,
+          }),
+          sourceImageUrl: asset.fileUrl,
+          outputPreset,
+          styleId: style.id,
+          prompt: [style.prompt, getOutputPresetSpec(outputPreset).instruction, visionContext].filter(Boolean).join("\n"),
+          status: "QUEUED",
+        },
+        select: { id: true },
+      });
+
+      await attachGenerationCreditReservation({
+        reservationId: reservation.reservationId,
         projectId: project.id,
-      },
-    });
+        batchId: batch.id,
+      });
+
+      await db.generationBatchItem.create({
+        data: {
+          batchId: batch.id,
+          assetId: asset.id,
+          projectId: project.id,
+        },
+      });
+    }
+  } catch (error) {
+    await Promise.all(reservations.map((reservationId) => releaseGenerationCreditReservation({ reservationId })));
+    await db.generationBatch.delete({ where: { id: batch.id } }).catch(() => undefined);
+    redirect(
+      `/gallery/batches/new?assetIds=${encodeURIComponent(assetIds.join(","))}&error=${encodeURIComponent(
+        error instanceof Error ? error.message : NO_CREDITS_ERROR,
+      )}`,
+    );
   }
 
   after(() => processGenerationBatch(batch.id));

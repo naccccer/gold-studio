@@ -11,8 +11,22 @@ This repo is often used from Iran, where some external services may be blocked a
 Use proxy when needed for:
 - npm package downloads.
 - Prisma engine downloads from `binaries.prisma.sh`.
-- Liara/Gemini image generation calls.
+- Gemini or other blocked AI calls.
 - S3-compatible storage only if the storage endpoint is blocked directly.
+
+Liara image generation should use direct Iran IP access. If v2rayN/TUN is enabled, add a direct/bypass rule for:
+
+```text
+ai.liara.ir
+.liara.ir
+185.208.181.174
+```
+
+Check local Node access:
+
+```powershell
+npm run check:liara
+```
 
 ## v2rayN PowerShell Setup
 If v2rayN listens on `127.0.0.1:10808`, proxy env vars must include a scheme.

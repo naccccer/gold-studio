@@ -40,6 +40,9 @@ Mobile user navigation:
 - Admin styles now support editable card `previewImageUrl` values and simple per-style controls (`CHOICE`, `RANGE`, `BOOLEAN`) that render in the user new-project flow and feed concise AI prompt instructions.
 - Gallery, camera, crop, and receipt uploads now normalize images before storage, stripping metadata and resizing large files to keep live uploads faster and storage lighter.
 - Gallery crop now exports JPEG instead of large PNG blobs, and upload/generation failures surface clearer user-facing causes while keeping technical provider details in admin logs.
+- Batch generation now uses a guided confirmation step from Gallery, creates one project per selected source photo, and reserves generation credit until each output succeeds.
+- Liara generation now sends the configured pixel `LIARA_IMAGE_SIZE` to the provider; output presets remain prompt/layout guidance instead of provider `size` values.
+- Added a local Liara direct-access check for diagnosing v2rayN/TUN bypass issues before testing generation.
 
 ## Next Priorities
 - Production hardening: verify real Liara generation, retry behavior, storage display URLs, and failed-state recovery on the deployment target.

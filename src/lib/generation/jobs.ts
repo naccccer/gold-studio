@@ -1,5 +1,5 @@
 import { generateStyledImageWithLiara, generateTextImageWithLiara, liaraModel } from "@/lib/ai/liara";
-import { logProviderEvent } from "@/lib/billing";
+import { captureGenerationCreditReservation, logProviderEvent, releaseGenerationCreditReservation } from "@/lib/billing";
 import { db } from "@/lib/db";
 import { readStoredUpload, saveGeneratedImage } from "@/lib/uploads";
 
@@ -33,11 +33,13 @@ function collectErrorText(error: unknown, depth = 0): string {
 }
 
 function technicalErrorMessage(error: unknown, fallback: string) {
+  const collected = collectErrorText(error).trim();
+
   if (error instanceof Error && error.message.trim()) {
-    return error.message;
+    const details = [error.message, collected].filter(Boolean);
+    return Array.from(new Set(details)).join(" | ");
   }
 
-  const collected = collectErrorText(error).trim();
   return collected || fallback;
 }
 
@@ -84,6 +86,44 @@ async function claimQueuedProject(projectId: string) {
   return claimed.count > 0;
 }
 
+async function resolveBatchStatus(batchId: string) {
+  const [completedCount, activeCount, failedCount] = await Promise.all([
+    db.generationBatchItem.count({
+      where: { batchId, project: { status: "COMPLETED" } },
+    }),
+    db.generationBatchItem.count({
+      where: { batchId, project: { status: { in: ["QUEUED", "PROCESSING"] } } },
+    }),
+    db.generationBatchItem.count({
+      where: { batchId, project: { status: "FAILED" } },
+    }),
+  ]);
+
+  return activeCount > 0
+    ? "PROCESSING"
+    : completedCount > 0 && failedCount === 0
+      ? "COMPLETED"
+      : completedCount === 0 && failedCount > 0
+        ? "FAILED"
+        : completedCount > 0 && failedCount > 0
+          ? "PROCESSING"
+          : "FAILED";
+}
+
+async function refreshGenerationBatchesForProject(projectId: string) {
+  const batchItems = await db.generationBatchItem.findMany({
+    where: { projectId },
+    select: { batchId: true },
+  });
+
+  for (const item of batchItems) {
+    await db.generationBatch.update({
+      where: { id: item.batchId },
+      data: { status: await resolveBatchStatus(item.batchId) },
+    });
+  }
+}
+
 export async function processImageProject(projectId: string) {
   const claimed = await claimQueuedProject(projectId);
   if (!claimed) {
@@ -127,7 +167,10 @@ export async function processImageProject(projectId: string) {
       where: { id: projectId },
       data: { status: "COMPLETED", resultImageUrl: result.publicUrl, resultStorageKey: result.storageKey, errorMessage: null },
     });
+    await captureGenerationCreditReservation({ projectId });
+    await refreshGenerationBatchesForProject(projectId);
   } catch (error) {
+    await releaseGenerationCreditReservation({ projectId });
     await logProviderEvent({
       projectId,
       operation: "image.edit",
@@ -142,6 +185,7 @@ export async function processImageProject(projectId: string) {
         errorMessage: userErrorMessage(error, "تولید تصویر کامل نشد. جزئیات بیشتر در بخش ادمین و رویدادهای provider ثبت شد."),
       },
     });
+    await refreshGenerationBatchesForProject(projectId);
   }
 }
 
@@ -177,7 +221,10 @@ export async function processTextProject({
       where: { id: projectId },
       data: { status: "COMPLETED", resultImageUrl: result.publicUrl, resultStorageKey: result.storageKey, errorMessage: null },
     });
+    await captureGenerationCreditReservation({ projectId });
+    await refreshGenerationBatchesForProject(projectId);
   } catch (error) {
+    await releaseGenerationCreditReservation({ projectId });
     await logProviderEvent({
       projectId,
       operation: "image.generate",
@@ -227,22 +274,8 @@ export async function processGenerationBatch(batchId: string) {
     }
   }
 
-  const [completedCount, activeCount, failedCount] = await Promise.all([
-    db.generationBatchItem.count({
-      where: { batchId, project: { status: "COMPLETED" } },
-    }),
-    db.generationBatchItem.count({
-      where: { batchId, project: { status: { in: ["QUEUED", "PROCESSING"] } } },
-    }),
-    db.generationBatchItem.count({
-      where: { batchId, project: { status: "FAILED" } },
-    }),
-  ]);
-
   await db.generationBatch.update({
     where: { id: batchId },
-    data: {
-      status: activeCount > 0 ? "PROCESSING" : completedCount > 0 ? "COMPLETED" : failedCount > 0 ? "FAILED" : "FAILED",
-    },
+    data: { status: await resolveBatchStatus(batchId) },
   });
 }

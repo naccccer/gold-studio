@@ -7,7 +7,11 @@ import { db } from "@/lib/db";
 import { buildStyleControlPrompt, hasHumanModelStyleControls } from "@/lib/ai/style-controls";
 import { buildVisionPromptContext } from "@/lib/ai/vision";
 import { requireUserSession } from "@/lib/auth/session";
-import { consumeGenerationCredit } from "@/lib/billing";
+import {
+  attachGenerationCreditReservation,
+  releaseGenerationCreditReservation,
+  reserveGenerationCredit,
+} from "@/lib/billing";
 import { processImageProject, processTextProject } from "@/lib/generation/jobs";
 import { getOutputPresetSpec, normalizeOutputPreset } from "@/lib/output-presets";
 import { analyzeAndStoreProductAssetVision, pickVisionTitle } from "@/lib/product-vision";
@@ -27,6 +31,15 @@ async function getReadyUser(userId: string) {
   }
 
   return { user };
+}
+
+async function reserveCreditOrState(userId: string) {
+  const reservation = await reserveGenerationCredit({ userId });
+  if (!reservation.ok) {
+    return { ok: false as const, error: reservation.error };
+  }
+
+  return { ok: true as const, reservationId: reservation.reservationId };
 }
 
 function getCompositionInstruction(productType?: string | null, visionAngle?: string | null) {
@@ -139,13 +152,15 @@ export async function createProjectAction(
       return { error: "برای اجرای تست داخلی، یک ورودی کوتاه ثبت کنید." };
     }
 
-    const credit = await consumeGenerationCredit(session.userId);
-    if (!credit.ok) {
-      return { error: credit.error };
+    const reserved = await reserveCreditOrState(session.userId);
+    if (!reserved.ok) {
+      return { error: reserved.error };
     }
 
-    const sourceImageUrl = await saveTextPromptSourceImage(textPrompt);
-    const project = await db.project.create({
+    let project: { id: string };
+    try {
+      const sourceImageUrl = await saveTextPromptSourceImage(textPrompt);
+      project = await db.project.create({
       data: {
         userId: session.userId,
         title: title || "تست داخلی متن به تصویر",
@@ -155,7 +170,13 @@ export async function createProjectAction(
         prompt: `${textPrompt}\n\n${stylePrompt}`,
         status: "QUEUED",
       },
-    });
+        select: { id: true },
+      });
+      await attachGenerationCreditReservation({ reservationId: reserved.reservationId, projectId: project.id });
+    } catch (error) {
+      await releaseGenerationCreditReservation({ reservationId: reserved.reservationId });
+      throw error;
+    }
 
     after(() => processTextProject({ projectId: project.id, textPrompt, stylePrompt }));
     redirect(`/projects/${project.id}`);
@@ -170,11 +191,13 @@ export async function createProjectAction(
       return { error: "تصویر گالری یافت نشد." };
     }
 
-    const credit = await consumeGenerationCredit(session.userId);
-    if (!credit.ok) {
-      return { error: credit.error };
+    const reserved = await reserveCreditOrState(session.userId);
+    if (!reserved.ok) {
+      return { error: reserved.error };
     }
 
+    let project: { id: string };
+    try {
     if (asset.productType !== selectedProductType) {
       await db.productAsset.updateMany({
         where: { id: asset.id, userId: session.userId, status: "READY", archivedAt: null },
@@ -188,7 +211,7 @@ export async function createProjectAction(
       visionConfidence: asset.visionConfidence,
       visionAngle: asset.visionAngle,
     });
-    const project = await db.project.create({
+    project = await db.project.create({
       data: {
         userId: session.userId,
         sourceAssetId: asset.id,
@@ -203,7 +226,13 @@ export async function createProjectAction(
         prompt: projectPrompt,
         status: "QUEUED",
       },
+      select: { id: true },
     });
+    await attachGenerationCreditReservation({ reservationId: reserved.reservationId, projectId: project.id });
+    } catch (error) {
+      await releaseGenerationCreditReservation({ reservationId: reserved.reservationId });
+      throw error;
+    }
 
     if (!asset.visionAnalyzedAt) {
       after(() => analyzeAndStoreProductAssetVision(asset.id));
@@ -217,46 +246,56 @@ export async function createProjectAction(
     return { error: "لطفا تصویر محصول را انتخاب کنید." };
   }
 
-  const credit = await consumeGenerationCredit(session.userId);
-  if (!credit.ok) {
-    return { error: credit.error };
+  const reserved = await reserveCreditOrState(session.userId);
+  if (!reserved.ok) {
+    return { error: reserved.error };
   }
 
-  const uploaded = await saveUploadedFile(image);
-  const asset = await db.productAsset.create({
-    data: {
+  let asset: { id: string };
+  let project: { id: string };
+  try {
+    const uploaded = await saveUploadedFile(image);
+    asset = await db.productAsset.create({
+      data: {
         userId: session.userId,
-      fileUrl: uploaded.publicUrl,
-      storageKey: uploaded.storageKey,
-      mimeType: uploaded.mimeType,
-      originalName: uploaded.originalName,
-      title: title || null,
+        fileUrl: uploaded.publicUrl,
+        storageKey: uploaded.storageKey,
+        mimeType: uploaded.mimeType,
+        originalName: uploaded.originalName,
+        title: title || null,
+        productType: selectedProductType,
+      },
+      select: { id: true },
+    });
+    const projectPrompt = buildPrompt(style, formData, {
       productType: selectedProductType,
-    },
-  });
-  const projectPrompt = buildPrompt(style, formData, {
-    productType: selectedProductType,
-    visionDescription: null,
-    visionConfidence: null,
-    visionAngle: null,
-  });
+      visionDescription: null,
+      visionConfidence: null,
+      visionAngle: null,
+    });
 
-  const project = await db.project.create({
-    data: {
-      userId: session.userId,
-      sourceAssetId: asset.id,
-      title: pickVisionTitle({
-        userTitle: title,
-        visionShortTitle: null,
-        fallbackTitle: uploaded.originalName,
-      }),
-      sourceImageUrl: uploaded.publicUrl,
-      outputPreset,
-      styleId: style.id,
-      prompt: projectPrompt,
-      status: "QUEUED",
-    },
-  });
+    project = await db.project.create({
+      data: {
+        userId: session.userId,
+        sourceAssetId: asset.id,
+        title: pickVisionTitle({
+          userTitle: title,
+          visionShortTitle: null,
+          fallbackTitle: uploaded.originalName,
+        }),
+        sourceImageUrl: uploaded.publicUrl,
+        outputPreset,
+        styleId: style.id,
+        prompt: projectPrompt,
+        status: "QUEUED",
+      },
+      select: { id: true },
+    });
+    await attachGenerationCreditReservation({ reservationId: reserved.reservationId, projectId: project.id });
+  } catch (error) {
+    await releaseGenerationCreditReservation({ reservationId: reserved.reservationId });
+    throw error;
+  }
 
   after(async () => {
     const analyzedAsset = await analyzeAndStoreProductAssetVision(asset.id);
@@ -369,12 +408,18 @@ export async function retryProjectAction(formData: FormData) {
     }
   }
 
+  const reservation = await reserveGenerationCredit({ userId: session.userId, projectId: project.id });
+  if (!reservation.ok) {
+    redirect(`/billing?error=${encodeURIComponent(reservation.error)}`);
+  }
+
   const updated = await db.project.updateMany({
     where: { id: project.id, userId: session.userId, status: project.status, archivedAt: null },
     data: { status: "QUEUED", errorMessage: null, resultImageUrl: null, resultStorageKey: null },
   });
 
   if (updated.count === 0) {
+    await releaseGenerationCreditReservation({ reservationId: reservation.reservationId });
     return;
   }
 
