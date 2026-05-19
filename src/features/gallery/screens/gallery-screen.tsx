@@ -108,46 +108,9 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
   }
 
   return (
-    <PageShell maxWidth="lg" className="space-y-5 pb-32">
-      <div className="flex flex-col gap-5">
-        <section className="motion-reveal-soft rounded-[1.35rem] border border-dashed border-accent/58 bg-surface/62 p-4 shadow-[0_16px_36px_-34px_rgba(17,16,14,0.3)]">
-          <div className="grid grid-cols-2 gap-3">
-            <label htmlFor="gallery-file-input" className={buttonClasses({ className: "h-12 w-full" })}>
-              <DocumentUpload aria-hidden={true} className="h-4 w-4" />
-              آپلود عکس
-            </label>
-            <label
-              htmlFor="gallery-camera-input"
-              className={buttonClasses({ variant: "secondary", className: "h-12 w-full" })}
-            >
-              <Camera aria-hidden={true} className="h-4 w-4" />
-              دوربین
-            </label>
-          </div>
-
-          <input
-            id="gallery-camera-input"
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="sr-only"
-            onChange={(event) => {
-              beginCropFlow(event.target.files?.[0] ?? null, "camera");
-              event.currentTarget.value = "";
-            }}
-          />
-          <input
-            id="gallery-file-input"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="sr-only"
-            onChange={(event) => {
-              beginCropFlow(event.target.files?.[0] ?? null, "files");
-              event.currentTarget.value = "";
-            }}
-          />
-        </section>
-
+    <>
+      <PageShell maxWidth="lg" className="space-y-5 pb-[12.5rem]">
+        <div className="flex flex-col gap-5">
         {pickerError ? (
           <p className="motion-state rounded-[1rem] border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
             {pickerError}
@@ -267,83 +230,122 @@ export function GalleryScreen({ assets, styles, batchAction }: GalleryScreenProp
           </section>
         )}
 
-        <ActionDock sticky className={selectedCount > 0 ? "!grid-cols-[2.75rem_4rem_minmax(0,1fr)] items-center" : ""}>
-          {selectedCount === 1 ? (
-            <>
-              <form
-                action={archiveAssetAction}
-                onSubmit={(event) => {
-                  if (!window.confirm("آیتم انتخاب‌شده به آرشیو می‌رود و بعد از ۱۴ روز حذف کامل می‌شود. ادامه می‌دهید؟")) {
-                    event.preventDefault();
-                  }
-                }}
-              >
-                <input type="hidden" name="assetId" value={selectedIds[0]} />
-                <IconButton type="submit" label="حذف" variant="danger" className="h-11 w-11">
-                  <Trash aria-hidden={true} className="h-4 w-4" />
-                </IconButton>
-              </form>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setSelectedIds([])}
-                className="h-11 w-full rounded-full border border-foreground/18 bg-surface text-xs font-bold text-foreground shadow-[0_12px_24px_-20px_rgba(17,16,14,0.68)] hover:bg-surface-soft"
-              >
-                <CloseCircle aria-hidden={true} className="h-4 w-4" />
-                لغو
-              </Button>
-              <ButtonLink href={`/projects/new?assetId=${selectedIds[0]}`} className="h-12 w-full rounded-[1rem]">
-                ادامه به پروژه
-                <ArrowLeft aria-hidden={true} className="h-4 w-4" />
-              </ButtonLink>
-            </>
-          ) : selectedCount > 1 ? (
-            <>
-              <form
-                action={archiveAssetAction}
-                onSubmit={(event) => {
-                  if (!window.confirm("آیتم‌های انتخاب‌شده به آرشیو می‌روند و بعد از ۱۴ روز حذف کامل می‌شوند. ادامه می‌دهید؟")) {
-                    event.preventDefault();
-                  }
-                }}
-              >
-                {selectedIds.map((id) => (
-                  <input key={id} type="hidden" name="assetId" value={id} />
-                ))}
-                <IconButton type="submit" label="حذف" variant="danger" className="h-11 w-11">
-                  <Trash aria-hidden={true} className="h-4 w-4" />
-                </IconButton>
-              </form>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setSelectedIds([])}
-                className="h-11 w-full rounded-full border border-foreground/18 bg-surface text-xs font-bold text-foreground shadow-[0_12px_24px_-20px_rgba(17,16,14,0.68)] hover:bg-surface-soft"
-              >
-                <CloseCircle aria-hidden={true} className="h-4 w-4" />
-                لغو
-              </Button>
-              <form action={batchAction}>
-                {selectedIds.map((id) => (
-                  <input key={id} type="hidden" name="assetIds" value={id} />
-                ))}
-                <input type="hidden" name="styleId" value={styles[0]?.id ?? ""} />
-                <input type="hidden" name="outputPreset" value="post" />
-                <Button type="submit" className="h-12 w-full rounded-[1rem]">
-                  <Magicpen aria-hidden={true} className="h-4 w-4" />
-                  ساخت گروهی
+        {selectedCount > 0 ? (
+          <ActionDock sticky className={selectedCount > 0 ? "!grid-cols-[2.75rem_4rem_minmax(0,1fr)] items-center" : ""}>
+            {selectedCount === 1 ? (
+              <>
+                <form
+                  action={archiveAssetAction}
+                  onSubmit={(event) => {
+                    if (!window.confirm("آیتم انتخاب‌شده به آرشیو می‌رود و بعد از ۱۴ روز حذف کامل می‌شود. ادامه می‌دهید؟")) {
+                      event.preventDefault();
+                    }
+                  }}
+                >
+                  <input type="hidden" name="assetId" value={selectedIds[0]} />
+                  <IconButton type="submit" label="حذف" variant="danger" className="h-11 w-11">
+                    <Trash aria-hidden={true} className="h-4 w-4" />
+                  </IconButton>
+                </form>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setSelectedIds([])}
+                  className="h-11 w-full rounded-full border border-foreground/18 bg-surface text-xs font-bold text-foreground shadow-[0_12px_24px_-20px_rgba(17,16,14,0.68)] hover:bg-surface-soft"
+                >
+                  <CloseCircle aria-hidden={true} className="h-4 w-4" />
+                  لغو
                 </Button>
-              </form>
-            </>
-          ) : (
-            <Button type="button" size="full" className="h-12 rounded-[1rem]" disabled>
-              ادامه به پروژه
-            </Button>
-          )}
-        </ActionDock>
-      </div>
+                <ButtonLink href={`/projects/new?assetId=${selectedIds[0]}`} className="h-12 w-full rounded-[1rem]">
+                  ادامه به پروژه
+                  <ArrowLeft aria-hidden={true} className="h-4 w-4" />
+                </ButtonLink>
+              </>
+            ) : (
+              <>
+                <form
+                  action={archiveAssetAction}
+                  onSubmit={(event) => {
+                    if (!window.confirm("آیتم‌های انتخاب‌شده به آرشیو می‌روند و بعد از ۱۴ روز حذف کامل می‌شوند. ادامه می‌دهید؟")) {
+                      event.preventDefault();
+                    }
+                  }}
+                >
+                  {selectedIds.map((id) => (
+                    <input key={id} type="hidden" name="assetId" value={id} />
+                  ))}
+                  <IconButton type="submit" label="حذف" variant="danger" className="h-11 w-11">
+                    <Trash aria-hidden={true} className="h-4 w-4" />
+                  </IconButton>
+                </form>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setSelectedIds([])}
+                  className="h-11 w-full rounded-full border border-foreground/18 bg-surface text-xs font-bold text-foreground shadow-[0_12px_24px_-20px_rgba(17,16,14,0.68)] hover:bg-surface-soft"
+                >
+                  <CloseCircle aria-hidden={true} className="h-4 w-4" />
+                  لغو
+                </Button>
+                <form action={batchAction}>
+                  {selectedIds.map((id) => (
+                    <input key={id} type="hidden" name="assetIds" value={id} />
+                  ))}
+                  <input type="hidden" name="styleId" value={styles[0]?.id ?? ""} />
+                  <input type="hidden" name="outputPreset" value="post" />
+                  <Button type="submit" className="h-12 w-full rounded-[1rem]">
+                    <Magicpen aria-hidden={true} className="h-4 w-4" />
+                    ساخت گروهی
+                  </Button>
+                </form>
+              </>
+            )}
+          </ActionDock>
+        ) : null}
+        </div>
+      </PageShell>
+
+      {selectedCount === 0 ? (
+        <section className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+4.9rem)] z-30 mx-auto w-full max-w-[393px] px-4 md:max-w-[425px]">
+          <div className="pointer-events-auto grid grid-cols-2 gap-3 rounded-[1.25rem] border border-dashed border-accent/58 bg-surface/95 p-3 shadow-[0_18px_42px_-30px_rgba(17,16,14,0.32)] backdrop-blur">
+            <label htmlFor="gallery-file-input" className={buttonClasses({ className: "h-12 w-full rounded-[1rem]" })}>
+              <DocumentUpload aria-hidden={true} className="h-4 w-4" />
+              آپلود عکس
+            </label>
+            <label
+              htmlFor="gallery-camera-input"
+              className={buttonClasses({ variant: "secondary", className: "h-12 w-full rounded-[1rem]" })}
+            >
+              <Camera aria-hidden={true} className="h-4 w-4" />
+              دوربین
+            </label>
+          </div>
+        </section>
+      ) : null}
+
+      <input
+        id="gallery-camera-input"
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="sr-only"
+        onChange={(event) => {
+          beginCropFlow(event.target.files?.[0] ?? null, "camera");
+          event.currentTarget.value = "";
+        }}
+      />
+      <input
+        id="gallery-file-input"
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="sr-only"
+        onChange={(event) => {
+          beginCropFlow(event.target.files?.[0] ?? null, "files");
+          event.currentTarget.value = "";
+        }}
+      />
 
       {cropUploadId ? <GalleryCropScreen uploadId={cropUploadId} onClose={closeCropOverlay} /> : null}
-    </PageShell>
+    </>
   );
 }

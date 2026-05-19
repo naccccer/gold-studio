@@ -33,8 +33,8 @@ export function DashboardFrame({ children, userLabel, remainingCredits, needsNam
         data-ovala-phone-frame
         className={
           frameTone === "studio"
-            ? "mx-auto flex h-[100dvh] w-full max-w-[393px] flex-col overflow-hidden bg-[#0d0c0a] md:h-[calc(100svh-3rem)] md:max-w-[425px] md:rounded-[1.35rem] md:border md:border-white/10 md:shadow-[0_38px_100px_-64px_rgba(0,0,0,1)]"
-            : "mx-auto min-h-[calc(100svh-1rem)] w-full max-w-[393px] bg-background md:min-h-[calc(100svh-3rem)] md:max-w-[425px] md:overflow-hidden md:rounded-[1.35rem] md:border md:border-white/80 md:shadow-[0_30px_80px_-52px_rgba(23,20,17,0.65)]"
+            ? "relative mx-auto flex h-[100dvh] w-full max-w-[393px] flex-col overflow-hidden bg-[#0d0c0a] md:h-[calc(100svh-3rem)] md:max-w-[425px] md:rounded-[1.35rem] md:border md:border-white/10 md:shadow-[0_38px_100px_-64px_rgba(0,0,0,1)]"
+            : "relative mx-auto min-h-[calc(100svh-1rem)] w-full max-w-[393px] bg-background md:min-h-[calc(100svh-3rem)] md:max-w-[425px] md:overflow-hidden md:rounded-[1.35rem] md:border md:border-white/80 md:shadow-[0_30px_80px_-52px_rgba(23,20,17,0.65)]"
         }
       >
         <DashboardMasthead userLabel={userLabel} remainingCredits={remainingCredits} />
