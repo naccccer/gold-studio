@@ -41,6 +41,7 @@ Mobile user navigation:
 - Gallery, camera, crop, and receipt uploads now normalize images before storage, stripping metadata and resizing large files to keep live uploads faster and storage lighter.
 - Gallery crop now exports JPEG instead of large PNG blobs, and upload/generation failures surface clearer user-facing causes while keeping technical provider details in admin logs.
 - Batch generation now uses a guided confirmation step from Gallery, creates one project per selected source photo, and reserves generation credit until each output succeeds.
+- Batch creation and batch detail now use the mobile studio pattern; creation includes selected assets, per-image product type, output size, style controls, and credit confirmation.
 - Liara generation now sends the configured pixel `LIARA_IMAGE_SIZE` to the provider; output presets remain prompt/layout guidance instead of provider `size` values.
 - Added a local Liara direct-access check for diagnosing v2rayN/TUN bypass issues before testing generation.
 

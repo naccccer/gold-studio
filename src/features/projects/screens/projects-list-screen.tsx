@@ -194,7 +194,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                                 {project.resultImageUrl ? (
                                   <a href={project.resultImageUrl} download className={contextMenuItemClasses}>
                                     <DocumentDownload aria-hidden={true} className="h-3.5 w-3.5" />
-                                    ذخیره خروجی
+                                    دانلود خروجی
                                   </a>
                                 ) : null}
                                 <Link

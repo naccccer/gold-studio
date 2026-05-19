@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { AppTopBar } from "@/components/ui/app-top-bar";
 import { MobileTabBar } from "@/components/ui/mobile-tab-bar";
 
@@ -41,18 +41,21 @@ function CreditBadge({ credits }: { credits: number }) {
 
 export function DashboardMasthead({ userLabel, remainingCredits }: DashboardMastheadProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const context = pageContext(pathname);
   const isHome = pathname === "/dashboard";
-  const isNewProject = pathname === "/projects/new";
-  const isProjectDarkSurface = pathname === "/projects/new" || /^\/projects\/[^/]+$/.test(pathname);
+  const isStudioWizard = pathname === "/projects/new" || pathname === "/gallery/batches/new";
+  const isProjectDarkSurface = isStudioWizard || pathname.startsWith("/gallery/batches/") || /^\/projects\/[^/]+$/.test(pathname);
   const showBottomNav = !isProjectDarkSurface;
+  const fromBatch = searchParams.get("fromBatch");
+  const backHref = fromBatch && /^\/projects\/[^/]+$/.test(pathname) ? `/gallery/batches/${fromBatch}` : context.parent;
 
   return (
     <>
-      {!isNewProject ? (
+      {!isStudioWizard ? (
         <AppTopBar
           title={isHome ? undefined : context.title}
-          backHref={context.parent}
+          backHref={backHref}
           centeredLogo={isHome}
           logoVariant={isHome ? "primary" : isProjectDarkSurface ? "mark-light" : "mark"}
           tone={isProjectDarkSurface ? "dark" : "light"}

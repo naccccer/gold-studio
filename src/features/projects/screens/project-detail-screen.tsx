@@ -510,7 +510,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               })}
             >
               <DocumentDownload aria-hidden={true} className="h-4 w-4" />
-              ذخیره
+              دانلود
             </a>
             <ButtonLink href={newVersionHref} variant="secondary" className="h-12 w-full rounded-[1rem] text-sm">
               <Refresh aria-hidden={true} className="h-4 w-4" />

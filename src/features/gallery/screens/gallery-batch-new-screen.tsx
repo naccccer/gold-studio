@@ -1,16 +1,26 @@
-import { ArrowLeft, ArrowRight, Magicpen } from "vuesax-icons-react";
-import { ButtonLink, buttonClasses } from "@/components/ui/button";
-import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
+"use client";
+
+import { useMemo, useState } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { ArrowDown2, ArrowLeft, Magicpen, TickCircle } from "vuesax-icons-react";
+import { ActionDock } from "@/components/ui/action-dock";
+import { AppTopBar } from "@/components/ui/app-top-bar";
+import { Button, ButtonLink } from "@/components/ui/button";
+import { ImageOverlayPill, JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
-import type { StyleOption } from "@/features/projects/presets";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import type { StyleControlOption, StyleOption } from "@/features/projects/presets";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
+import { normalizeProductType, PRODUCT_TYPES } from "@/lib/product-types";
 
 export type BatchSourceAsset = {
   id: string;
   fileUrl: string;
   title: string | null;
   originalName: string | null;
+  productType: string | null;
 };
 
 type GalleryBatchNewScreenProps = {
@@ -21,11 +31,74 @@ type GalleryBatchNewScreenProps = {
   action: (formData: FormData) => Promise<void>;
 };
 
-const outputPresets = [
-  { id: "post", label: "پست", ratio: "۱:۱" },
-  { id: "story", label: "استوری", ratio: "۹:۱۶" },
-  { id: "banner", label: "بنر", ratio: "۱۶:۹" },
+type OutputPresetId = "post" | "story" | "banner";
+type WizardStep = "assets" | "size" | "style";
+type StyleControl = NonNullable<StyleOption["controls"]>[number];
+
+const topBarTitles: Record<WizardStep, string> = {
+  assets: "ساخت گروهی",
+  size: "ابعاد خروجی",
+  style: "انتخاب سبک",
+};
+
+const outputPresets: Array<{
+  id: OutputPresetId;
+  label: string;
+  ratio: string;
+  previewFrameClassName: string;
+}> = [
+  { id: "post", label: "پست", ratio: "۱:۱", previewFrameClassName: "h-[62%] aspect-square" },
+  { id: "story", label: "استوری", ratio: "۹:۱۶", previewFrameClassName: "h-[78%] aspect-[9/16]" },
+  { id: "banner", label: "بنر", ratio: "۱۶:۹", previewFrameClassName: "w-[82%] aspect-video" },
 ];
+
+const stepMeta: Record<WizardStep, { stepNumber: string; title: string }> = {
+  assets: { stepNumber: "مرحله ۱ از ۳", title: "عکس‌های انتخاب‌شده" },
+  size: { stepNumber: "مرحله ۲ از ۳", title: "قاب خروجی" },
+  style: { stepNumber: "مرحله ۳ از ۳", title: "سبک استودیو" },
+};
+
+function StepScrollPanel({ children }: { children: React.ReactNode }) {
+  return (
+    <section className="min-h-0 flex-1 overflow-hidden">
+      <div className="scrollbar-none -ml-6 flex h-full min-h-0 w-[calc(100%+1.5rem)] flex-col gap-5 overflow-y-auto pl-6 pt-3">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function assetTitle(asset?: BatchSourceAsset) {
+  return asset?.title || asset?.originalName || "تصویر محصول";
+}
+
+function parseChoiceOptions(optionsJson?: string | null): StyleControlOption[] {
+  if (!optionsJson) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(optionsJson);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function getControlDefaultValue(control: StyleControl) {
+  if (control.defaultValue !== null && control.defaultValue !== undefined) {
+    return control.defaultValue;
+  }
+
+  if (control.type === "BOOLEAN") return "false";
+  if (control.type === "RANGE") return String(control.minValue ?? 0);
+
+  return parseChoiceOptions(control.optionsJson)[0]?.value ?? "";
+}
+
+function getInitialStyleControlValues(style?: StyleOption) {
+  return Object.fromEntries((style?.controls ?? []).map((control) => [control.key, getControlDefaultValue(control)]));
+}
 
 export function GalleryBatchNewScreen({
   assets,
@@ -34,138 +107,367 @@ export function GalleryBatchNewScreen({
   error,
   action,
 }: GalleryBatchNewScreenProps) {
+  const router = useRouter();
+  const [step, setStep] = useState<WizardStep>("assets");
+  const [outputPreset, setOutputPreset] = useState<OutputPresetId>("post");
+  const defaultStyle = styles[0];
+  const [selectedStyle, setSelectedStyle] = useState(defaultStyle?.id ?? "");
+  const [styleControlValues, setStyleControlValues] = useState<Record<string, string>>(() => getInitialStyleControlValues(defaultStyle));
+  const [productTypes, setProductTypes] = useState<Record<string, string>>(() =>
+    Object.fromEntries(assets.map((asset) => [asset.id, normalizeProductType(asset.productType)])),
+  );
   const requiredCredits = assets.length;
   const hasEnoughCredits = availableCredits >= requiredCredits;
-  const defaultStyleId = styles[0]?.id ?? "";
+  const selectedPreset = outputPresets.find((preset) => preset.id === outputPreset) ?? outputPresets[0];
+  const selectedStyleData = useMemo(
+    () => styles.find((style) => style.id === selectedStyle) ?? defaultStyle,
+    [defaultStyle, selectedStyle, styles],
+  );
+  const styleControls = selectedStyleData?.controls ?? [];
+  const currentMeta = stepMeta[step];
+  const heroAsset = assets[0];
+  const outputPresetItems = outputPresets.map((preset) => ({
+    value: preset.id,
+    label: preset.label,
+    badge: (
+      <span className="text-[10px] font-medium text-muted" dir="ltr">
+        {preset.ratio}
+      </span>
+    ),
+  }));
+
+  function handleTopBarBack() {
+    if (step === "style") {
+      setStep("size");
+      return;
+    }
+
+    if (step === "size") {
+      setStep("assets");
+      return;
+    }
+
+    router.push("/gallery");
+  }
+
+  function selectStyle(style: StyleOption) {
+    setSelectedStyle(style.id);
+    setStyleControlValues(getInitialStyleControlValues(style));
+  }
+
+  function setStyleControlValue(key: string, value: string) {
+    setStyleControlValues((current) => ({ ...current, [key]: value }));
+  }
 
   return (
-    <PageShell maxWidth="lg" className="space-y-5 pb-28">
-      <ButtonLink href="/gallery" variant="ghost" size="sm" className="w-fit">
-        <ArrowRight aria-hidden={true} className="h-4 w-4" />
-        بازگشت به گالری
-      </ButtonLink>
+    <PageShell maxWidth="lg" minHeight={false} className="flex-1 overflow-hidden pb-0">
+      <form action={action} className="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
+        <AppTopBar
+          title={topBarTitles[step]}
+          onBack={handleTopBarBack}
+          logoVariant="mark-light"
+          tone="dark"
+          className="mb-0 min-h-12 px-0"
+        />
 
-      <section className="space-y-3 rounded-[1.25rem] border border-border/70 bg-surface px-4 py-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <h2 className="text-base font-semibold text-foreground">تولید گروهی</h2>
-            <p className="text-sm leading-7 text-muted">
-              برای هر عکس یک پروژه جدا ساخته می‌شود و خروجی‌ها در پروژه‌ها ذخیره می‌شوند.
-            </p>
-          </div>
-          <div className="rounded-full border border-accent-soft bg-accent-wash px-3 py-1 text-xs font-semibold text-accent-deep">
-            {requiredCredits.toLocaleString("fa-IR")} اعتبار
-          </div>
-        </div>
-        <p className="text-xs leading-6 text-muted">
-          اعتبار هنگام شروع رزرو می‌شود و فقط بعد از ساخت موفق هر خروجی مصرف می‌شود.
-        </p>
-        {!hasEnoughCredits || error ? (
-          <p className="rounded-[1rem] border border-danger/25 bg-danger-soft px-3 py-2 text-sm leading-6 text-danger">
-            {error || "اعتبار آزاد کافی برای این تعداد تصویر ندارید."}
-          </p>
-        ) : null}
-      </section>
-
-      <form action={action} className="space-y-5">
         {assets.map((asset) => (
           <input key={asset.id} type="hidden" name="assetIds" value={asset.id} />
         ))}
+        <input type="hidden" name="outputPreset" value={outputPreset} />
+        {styleControls.map((control) => (
+          <input key={control.key} type="hidden" name={`styleControl_${control.key}`} value={styleControlValues[control.key] ?? getControlDefaultValue(control)} />
+        ))}
 
-        <fieldset className="space-y-3">
-          <legend className="text-sm font-semibold text-foreground">قاب خروجی</legend>
-          <div className="grid grid-cols-3 gap-2">
-            {outputPresets.map((preset) => (
-              <label
-                key={preset.id}
-                className="motion-press rounded-[1rem] border border-border/70 bg-surface px-3 py-3 text-center text-sm font-semibold text-foreground has-[:checked]:border-accent-soft has-[:checked]:bg-accent-wash has-[:checked]:text-accent-deep"
-              >
-                <input
-                  type="radio"
-                  name="outputPreset"
-                  value={preset.id}
-                  defaultChecked={preset.id === "post"}
-                  className="sr-only"
-                />
-                <span className="block">{preset.label}</span>
-                <span className="mt-1 block text-[11px] text-muted" dir="ltr">
-                  {preset.ratio}
-                </span>
-              </label>
-            ))}
+        <header className="-mt-2 space-y-3">
+          <div className="flex items-center justify-center">
+            <ImageOverlayPill tone="accent" className="w-fit">
+              {currentMeta.stepNumber}
+            </ImageOverlayPill>
           </div>
-        </fieldset>
+          <div className="flex items-center justify-center gap-2" aria-label="مراحل ساخت گروهی">
+            {(["assets", "size", "style"] as WizardStep[]).map((item, index) => {
+              const isActive = step === item;
+              const isDone = ["assets", "size", "style"].indexOf(step) > index;
 
-        <fieldset className="space-y-3">
-          <legend className="text-sm font-semibold text-foreground">سبک خروجی</legend>
-          <div className="grid grid-cols-2 gap-3">
-            {styles.map((style) => (
-              <label
-                key={style.id}
-                className="motion-press overflow-hidden rounded-[1rem] border border-border/70 bg-surface text-right has-[:checked]:border-accent-soft has-[:checked]:ring-1 has-[:checked]:ring-accent-soft"
-              >
-                <input
-                  type="radio"
-                  name="styleId"
-                  value={style.id}
-                  defaultChecked={style.id === defaultStyleId}
-                  className="sr-only"
-                />
-                <JewelryImageFrame aspect="landscape" className="rounded-none border-0 shadow-none">
-                  <SafeJewelryImage
-                    src={style.previewImageUrl}
-                    fallbackSrc={uploadPreview.src}
-                    fallbackAlt={uploadPreview.alt}
-                    alt={style.label}
-                    fill
-                    className="object-cover"
-                    sizes="180px"
-                  />
-                </JewelryImageFrame>
-                <div className="space-y-1 px-3 py-2">
-                  <p className="truncate text-xs font-semibold text-foreground">{style.label}</p>
-                  <p className="line-clamp-2 text-[11px] leading-5 text-muted">{style.description}</p>
-                </div>
-              </label>
-            ))}
-          </div>
-        </fieldset>
-
-        <section className="space-y-3">
-          <h3 className="text-sm font-semibold text-foreground">عکس‌های انتخاب‌شده</h3>
-          <div className="grid grid-cols-3 gap-2">
-            {assets.map((asset) => {
-              const title = asset.title || asset.originalName || "تصویر محصول";
               return (
-                <JewelryImageFrame key={asset.id} aspect="square" className="rounded-[1rem]">
+                <span
+                  key={item}
+                  className={`h-1.5 rounded-full transition ${
+                    isActive ? "w-9 bg-accent-bright" : isDone ? "w-6 bg-accent/60" : "w-5 bg-white/18"
+                  }`}
+                />
+              );
+            })}
+          </div>
+        </header>
+
+        {step === "assets" ? (
+          <StepScrollPanel>
+            <div className="grid grid-cols-4 gap-3">
+              {assets.map((asset) => (
+                <JewelryImageFrame key={asset.id} aspect="square" treatment="quiet" className="rounded-[1rem]">
                   <SafeJewelryImage
                     src={asset.fileUrl}
                     fallbackSrc={uploadPreview.src}
                     fallbackAlt={uploadPreview.alt}
-                    alt={title}
+                    alt={assetTitle(asset)}
                     fill
                     className="object-cover"
-                    sizes="128px"
+                    sizes="120px"
                   />
                 </JewelryImageFrame>
-              );
-            })}
-          </div>
-        </section>
+              ))}
+            </div>
 
-        <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+4.6rem)] z-30 mx-auto w-full max-w-[393px] px-4 md:max-w-[425px]">
-          {hasEnoughCredits ? (
-            <button type="submit" className={buttonClasses({ className: "h-12 w-full rounded-[1rem]" })}>
-              شروع تولید گروهی
-              <Magicpen aria-hidden={true} className="h-4 w-4" />
-            </button>
-          ) : (
-            <ButtonLink href="/billing" className="h-12 w-full rounded-[1rem]">
-              خرید اعتبار
-              <ArrowLeft aria-hidden={true} className="h-4 w-4" />
-            </ButtonLink>
-          )}
-        </div>
+            <section className="grid grid-cols-3 gap-3 rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-3">
+              <div>
+                <p className="text-[11px] text-surface/60">عکس‌ها</p>
+                <p className="mt-1 text-sm font-semibold text-surface">{requiredCredits.toLocaleString("fa-IR")}</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-surface/60">اعتبار لازم</p>
+                <p className="mt-1 text-sm font-semibold text-surface">{requiredCredits.toLocaleString("fa-IR")}</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-surface/60">اعتبار شما</p>
+                <p className="mt-1 text-sm font-semibold text-surface">{availableCredits.toLocaleString("fa-IR")}</p>
+              </div>
+            </section>
+
+            <section className="space-y-2">
+              {assets.map((asset) => (
+                <div key={asset.id} className="flex items-center gap-3 rounded-[1rem] border border-white/12 bg-white/[0.04] px-3 py-2">
+                  <JewelryImageFrame aspect="square" treatment="quiet" className="h-11 w-11 shrink-0 rounded-[0.8rem]">
+                    <SafeJewelryImage
+                      src={asset.fileUrl}
+                      fallbackSrc={uploadPreview.src}
+                      fallbackAlt={uploadPreview.alt}
+                      alt={assetTitle(asset)}
+                      fill
+                      className="object-cover"
+                      sizes="44px"
+                    />
+                  </JewelryImageFrame>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-semibold text-surface">{assetTitle(asset)}</p>
+                    <div className="relative mt-1">
+                      <select
+                        name={`productType_${asset.id}`}
+                        value={productTypes[asset.id] ?? "محصول"}
+                        onChange={(event) =>
+                          setProductTypes((current) => ({ ...current, [asset.id]: event.target.value }))
+                        }
+                        aria-label={`نوع محصول ${assetTitle(asset)}`}
+                        className="min-h-8 w-full appearance-none rounded-full border border-white/12 bg-white/[0.08] py-0 pr-3 pl-8 text-xs font-semibold text-surface outline-none transition focus:border-white/28"
+                      >
+                        {PRODUCT_TYPES.map((item) => (
+                          <option key={item} value={item} className="bg-[#171411] text-white">
+                            {item}
+                          </option>
+                        ))}
+                      </select>
+                      <ArrowDown2 aria-hidden={true} className="pointer-events-none absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2 text-surface/72" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </section>
+
+            <ActionDock className="mt-auto pb-[calc(env(safe-area-inset-bottom)+0.75rem)]" columns={2}>
+              <Button type="button" variant="studio-secondary" className="h-12 w-full" onClick={() => router.push("/gallery")}>
+                تغییر عکس‌ها
+              </Button>
+              <Button type="button" variant="studio-primary" className="h-12 w-full" onClick={() => setStep("size")}>
+                ادامه
+                <ArrowLeft aria-hidden={true} className="h-4 w-4" />
+              </Button>
+            </ActionDock>
+          </StepScrollPanel>
+        ) : null}
+
+        {step === "size" ? (
+          <StepScrollPanel>
+            <JewelryImageFrame
+              aspect="portrait"
+              treatment="dark"
+              className="flex h-[min(288px,34svh)] min-h-[224px] items-center justify-center rounded-[1.45rem]"
+            >
+              <Image
+                src={heroAsset?.fileUrl || uploadPreview.src}
+                alt={assetTitle(heroAsset)}
+                fill
+                priority
+                className="object-cover object-[46%_55%] opacity-64"
+                sizes="(max-width: 768px) 100vw, 760px"
+              />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(255,253,249,0.10)_0%,rgba(17,16,14,0.20)_54%,rgba(17,16,14,0.58)_100%)]" />
+              <div className="absolute inset-0 flex items-center justify-center p-5">
+                <div className={`rounded-[1.25rem] border border-white/55 bg-white/10 shadow-[0_18px_36px_-28px_rgba(0,0,0,0.72)] backdrop-blur-sm ${selectedPreset.previewFrameClassName}`} />
+              </div>
+            </JewelryImageFrame>
+
+            <fieldset className="space-y-3">
+              <legend className="sr-only">انتخاب ابعاد خروجی</legend>
+              <SegmentedControl
+                items={outputPresetItems}
+                value={outputPreset}
+                onChange={setOutputPreset}
+                label="انتخاب ابعاد خروجی"
+              />
+            </fieldset>
+
+            <ActionDock className="mt-auto pb-[calc(env(safe-area-inset-bottom)+0.75rem)]" columns={2}>
+              <Button type="button" variant="studio-secondary" className="h-12 w-full" onClick={() => setStep("assets")}>
+                بازگشت
+              </Button>
+              <Button type="button" variant="studio-primary" className="h-12 w-full" onClick={() => setStep("style")}>
+                ادامه
+                <ArrowLeft aria-hidden={true} className="h-4 w-4" />
+              </Button>
+            </ActionDock>
+          </StepScrollPanel>
+        ) : null}
+
+        {step === "style" ? (
+          <StepScrollPanel>
+            <div className="grid grid-cols-3 gap-2">
+              {styles.map((style) => {
+                const checked = selectedStyle === style.id;
+
+                return (
+                  <label
+                    key={style.id}
+                    className={`relative overflow-hidden rounded-[1rem] border transition ${
+                      checked ? "border-accent-bright bg-surface/12 ring-1 ring-accent-bright/45" : "border-white/12 bg-white/[0.04]"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="styleId"
+                      value={style.id}
+                      checked={checked}
+                      onChange={() => selectStyle(style)}
+                      className="sr-only"
+                    />
+                    <JewelryImageFrame aspect="square" treatment="quiet" className="rounded-none border-0 bg-transparent shadow-none">
+                      <Image
+                        src={style.previewImageUrl}
+                        alt={style.label}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 24vw, 140px"
+                      />
+                    </JewelryImageFrame>
+                    <div className="px-2 py-1.5">
+                      <p className="truncate text-[10px] font-semibold leading-4 text-surface">{style.label}</p>
+                    </div>
+                    {checked ? (
+                      <span className="absolute left-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-surface">
+                        <TickCircle aria-hidden={true} className="h-3 w-3" />
+                      </span>
+                    ) : null}
+                  </label>
+                );
+              })}
+            </div>
+
+            {styleControls.length > 0 ? (
+              <section className="space-y-3 rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-3">
+                {styleControls.map((control) => {
+                  const value = styleControlValues[control.key] ?? getControlDefaultValue(control);
+                  const choiceOptions = parseChoiceOptions(control.optionsJson);
+
+                  if (control.type === "CHOICE" && choiceOptions.length > 0) {
+                    return (
+                      <div key={control.key} className="space-y-2">
+                        <p className="text-xs text-surface/72">{control.label}</p>
+                        <div className={`grid gap-2 ${choiceOptions.length <= 2 ? "grid-cols-2" : "grid-cols-3"}`}>
+                          {choiceOptions.map((item) => (
+                            <button
+                              key={item.value}
+                              type="button"
+                              onClick={() => setStyleControlValue(control.key, item.value)}
+                              className={[
+                                "motion-press inline-flex min-h-11 items-center justify-center rounded-[var(--radius-lg)] border px-2 text-sm font-semibold focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+                                value === item.value
+                                  ? "border-accent-bright bg-accent-wash/90 text-accent-deep shadow-[0_14px_26px_-24px_rgba(17,16,14,0.62)]"
+                                  : "border-white/14 bg-white/[0.04] text-surface/84 hover:border-white/22 hover:bg-white/[0.08]",
+                              ].join(" ")}
+                            >
+                              {item.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (control.type === "RANGE") {
+                    return (
+                      <label key={control.key} className="block space-y-2">
+                        <span className="flex items-center justify-between gap-3 text-xs text-surface/72">
+                          <span>{control.label}</span>
+                          <span className="rounded-full border border-white/14 bg-white/[0.05] px-2 py-0.5 text-[10px]" dir="ltr">
+                            {value}
+                          </span>
+                        </span>
+                        <input
+                          type="range"
+                          min={control.minValue ?? 0}
+                          max={control.maxValue ?? 100}
+                          value={value}
+                          onChange={(event) => setStyleControlValue(control.key, event.target.value)}
+                          className="w-full accent-accent-bright"
+                        />
+                      </label>
+                    );
+                  }
+
+                  return (
+                    <label key={control.key} className="flex min-h-11 items-center justify-between gap-3 rounded-[0.9rem] border border-white/14 bg-white/[0.04] px-3 py-2 text-sm text-surface/84">
+                      <span>{control.label}</span>
+                      <input
+                        type="checkbox"
+                        checked={value === "true"}
+                        onChange={(event) => setStyleControlValue(control.key, event.target.checked ? "true" : "false")}
+                        className="h-4 w-4 accent-accent-bright"
+                      />
+                    </label>
+                  );
+                })}
+              </section>
+            ) : null}
+
+            {!hasEnoughCredits || error ? (
+              <div className="rounded-[1rem] border border-danger/24 bg-danger-soft/92 px-3 py-3 text-danger shadow-[0_18px_32px_-26px_rgba(152,59,52,0.42)]">
+                <p className="text-sm font-semibold">اعتبار کافی نیست</p>
+                <p className="mt-1 text-[12px] leading-6 text-danger/88">
+                  {error || "برای این تعداد عکس اعتبار آزاد کافی ندارید."}
+                </p>
+              </div>
+            ) : null}
+
+            <ActionDock className="mt-auto pb-[calc(env(safe-area-inset-bottom)+0.75rem)]" columns={2}>
+              <Button type="button" variant="studio-secondary" className="h-12 w-full" onClick={() => setStep("size")}>
+                بازگشت
+              </Button>
+              {hasEnoughCredits ? (
+                <Button type="submit" disabled={!selectedStyleData} variant="studio-primary" className="h-12 w-full">
+                  شروع گروهی
+                  <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-studio-control/15 bg-studio-control/12 px-2 text-[11px] font-bold text-studio-control" aria-label={`${requiredCredits.toLocaleString("fa-IR")} اعتبار`}>
+                    {requiredCredits.toLocaleString("fa-IR")}
+                  </span>
+                  <Magicpen aria-hidden={true} className="h-4 w-4" />
+                </Button>
+              ) : (
+                <ButtonLink href="/billing" variant="studio-primary" className="h-12 w-full">
+                  خرید اعتبار
+                  <ArrowLeft aria-hidden={true} className="h-4 w-4" />
+                </ButtonLink>
+              )}
+            </ActionDock>
+          </StepScrollPanel>
+        ) : null}
       </form>
     </PageShell>
   );

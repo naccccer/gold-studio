@@ -34,6 +34,7 @@ export default async function NewGalleryBatchPage({
         storageKey: true,
         title: true,
         originalName: true,
+        productType: true,
       },
     }),
     getUserVisibleStyles(),
@@ -49,6 +50,7 @@ export default async function NewGalleryBatchPage({
     fileUrl: storagePublicUrl(asset.storageKey),
     title: asset.title,
     originalName: asset.originalName,
+    productType: asset.productType,
   }));
 
   return (

@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { ArrowRight, Gallery, Magicpen } from "vuesax-icons-react";
+import { Gallery, Magicpen } from "vuesax-icons-react";
 import { ButtonLink } from "@/components/ui/button";
-import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
+import { ImageOverlayPill, JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 import { StatusPill } from "@/components/ui/status-pill";
@@ -46,46 +46,45 @@ export function GalleryBatchScreen({ batch }: GalleryBatchScreenProps) {
   const isActive = batch.status === "QUEUED" || batch.status === "PROCESSING";
 
   return (
-    <PageShell maxWidth="lg" className="space-y-5 pb-28">
+    <PageShell maxWidth="lg" minHeight={false} className="flex-1 space-y-5 overflow-y-auto pb-6 text-surface">
       <ProjectStatusRefresh active={isActive} />
 
       <div className="flex items-center justify-between gap-3">
-        <ButtonLink href="/gallery" variant="ghost" size="sm" className="w-fit">
-          <ArrowRight aria-hidden={true} className="h-4 w-4" />
+        <ButtonLink href="/gallery" variant="studio-secondary" size="sm" className="w-fit rounded-full border border-white/12 bg-white/[0.06] shadow-none">
           گالری
         </ButtonLink>
-        <ButtonLink href="/projects" variant="secondary" size="sm" className="w-fit">
+        <ButtonLink href="/projects" variant="studio-secondary" size="sm" className="w-fit rounded-full border border-white/12 bg-white/[0.06] shadow-none">
           <Gallery aria-hidden={true} className="h-4 w-4" />
           پروژه‌ها
         </ButtonLink>
       </div>
 
-      <section className="space-y-3 rounded-[1.25rem] border border-border/70 bg-surface px-4 py-4">
+      <section className="space-y-3 rounded-[1.25rem] border border-white/12 bg-white/[0.05] px-4 py-4 shadow-[var(--shadow-studio-frame)]">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
-            <h2 className="inline-flex items-center gap-2 text-base font-semibold text-foreground">
+            <h2 className="inline-flex items-center gap-2 text-base font-semibold text-surface">
               <Magicpen aria-hidden={true} className="h-4 w-4" />
               تولید گروهی
             </h2>
-            <p className="text-sm leading-7 text-muted">
+            <p className="text-sm leading-7 text-surface/68">
               {batch.items.length.toLocaleString("fa-IR")} تصویر با سبک {batch.style.name}
             </p>
           </div>
-          <StatusPill variant={statusVariant(batch.status)}>{statusLabelMap[batch.status] ?? batch.status}</StatusPill>
+          <ImageOverlayPill tone="accent">{statusLabelMap[batch.status] ?? batch.status}</ImageOverlayPill>
         </div>
 
         <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="rounded-[1rem] bg-surface-soft px-2 py-2">
-            <p className="text-sm font-semibold text-foreground">{completedCount.toLocaleString("fa-IR")}</p>
-            <p className="mt-1 text-[11px] text-muted">آماده</p>
+          <div className="rounded-[1rem] bg-white/[0.06] px-2 py-2">
+            <p className="text-sm font-semibold text-surface">{completedCount.toLocaleString("fa-IR")}</p>
+            <p className="mt-1 text-[11px] text-surface/60">آماده</p>
           </div>
-          <div className="rounded-[1rem] bg-surface-soft px-2 py-2">
-            <p className="text-sm font-semibold text-foreground">{activeCount.toLocaleString("fa-IR")}</p>
-            <p className="mt-1 text-[11px] text-muted">در جریان</p>
+          <div className="rounded-[1rem] bg-white/[0.06] px-2 py-2">
+            <p className="text-sm font-semibold text-surface">{activeCount.toLocaleString("fa-IR")}</p>
+            <p className="mt-1 text-[11px] text-surface/60">در جریان</p>
           </div>
-          <div className="rounded-[1rem] bg-surface-soft px-2 py-2">
-            <p className="text-sm font-semibold text-foreground">{failedCount.toLocaleString("fa-IR")}</p>
-            <p className="mt-1 text-[11px] text-muted">نیازمند بررسی</p>
+          <div className="rounded-[1rem] bg-white/[0.06] px-2 py-2">
+            <p className="text-sm font-semibold text-surface">{failedCount.toLocaleString("fa-IR")}</p>
+            <p className="mt-1 text-[11px] text-surface/60">نیازمند بررسی</p>
           </div>
         </div>
       </section>
@@ -108,8 +107,8 @@ export function GalleryBatchScreen({ batch }: GalleryBatchScreenProps) {
                 />
               </JewelryImageFrame>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-foreground">{title}</p>
-                <p className="mt-1 text-xs text-muted">یک پروژه جدا برای این عکس ساخته شده است</p>
+                <p className="truncate text-sm font-semibold text-surface">{title}</p>
+                <p className="mt-1 text-xs text-surface/62">یک پروژه جدا برای این عکس ساخته شده است</p>
               </div>
               <StatusPill variant={statusVariant(status)}>{statusLabelMap[status] ?? status}</StatusPill>
             </>
@@ -118,13 +117,13 @@ export function GalleryBatchScreen({ batch }: GalleryBatchScreenProps) {
           return item.project ? (
             <Link
               key={item.id}
-              href={`/projects/${item.project.id}`}
-              className="motion-press flex items-center gap-3 rounded-[1rem] border border-border/70 bg-surface px-3 py-3 text-right"
+              href={`/projects/${item.project.id}?fromBatch=${batch.id}`}
+              className="motion-press flex items-center gap-3 rounded-[1rem] border border-white/12 bg-white/[0.05] px-3 py-3 text-right"
             >
               {content}
             </Link>
           ) : (
-            <div key={item.id} className="flex items-center gap-3 rounded-[1rem] border border-border/70 bg-surface px-3 py-3 text-right">
+            <div key={item.id} className="flex items-center gap-3 rounded-[1rem] border border-white/12 bg-white/[0.05] px-3 py-3 text-right">
               {content}
             </div>
           );

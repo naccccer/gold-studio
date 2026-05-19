@@ -88,9 +88,9 @@ export function ProcessingCanvas({
               {styleLabel}
             </span>
           ) : null}
-          <div className="mx-auto max-w-[18rem] space-y-2 px-8 text-center">
+          <div className="ml-auto max-w-[18rem] space-y-2 px-8 text-right">
             <p className="text-base font-semibold text-surface">{title}</p>
-            <p className="text-center text-xs leading-6 text-surface/72">
+            <p className="text-right text-xs leading-6 text-surface/72">
               {caption}
             </p>
           </div>

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
+import { buildStyleControlPrompt } from "@/lib/ai/style-controls";
 import { buildVisionPromptContext } from "@/lib/ai/vision";
 import { requireUserSession } from "@/lib/auth/session";
 import {
@@ -16,7 +17,7 @@ import { db } from "@/lib/db";
 import { processGenerationBatch } from "@/lib/generation/jobs";
 import { getOutputPresetSpec, normalizeOutputPreset } from "@/lib/output-presets";
 import { analyzeAndStoreProductAssetVision, ensureProductAssetVision, pickVisionTitle } from "@/lib/product-vision";
-import { isProductType } from "@/lib/product-types";
+import { isProductType, normalizeProductType } from "@/lib/product-types";
 import { getStyleForGeneration } from "@/lib/styles";
 import { saveUploadedFile } from "@/lib/uploads";
 
@@ -85,6 +86,7 @@ export async function createBatchFromGalleryAction(formData: FormData) {
   }
 
   const reservations: string[] = [];
+  const styleControlPrompt = buildStyleControlPrompt(style, formData);
   const batch = await db.generationBatch.create({
     data: {
       userId: session.userId,
@@ -105,8 +107,15 @@ export async function createBatchFromGalleryAction(formData: FormData) {
       reservations.push(reservation.reservationId);
 
       const analyzedAsset = await ensureProductAssetVision(asset.id);
+      const submittedProductType = normalizeProductType(formData.get(`productType_${asset.id}`));
+      if (asset.productType !== submittedProductType) {
+        await db.productAsset.updateMany({
+          where: { id: asset.id, userId: session.userId, status: "READY", archivedAt: null },
+          data: { productType: submittedProductType },
+        });
+      }
       const visionContext = buildVisionPromptContext({
-        productType: analyzedAsset?.productType,
+        productType: submittedProductType || analyzedAsset?.productType,
         visionDescription: analyzedAsset?.visionDescription,
         visionConfidence: analyzedAsset?.visionConfidence,
       });
@@ -122,7 +131,7 @@ export async function createBatchFromGalleryAction(formData: FormData) {
           sourceImageUrl: asset.fileUrl,
           outputPreset,
           styleId: style.id,
-          prompt: [style.prompt, getOutputPresetSpec(outputPreset).instruction, visionContext].filter(Boolean).join("\n"),
+          prompt: [style.prompt, getOutputPresetSpec(outputPreset).instruction, styleControlPrompt, visionContext].filter(Boolean).join("\n"),
           status: "QUEUED",
         },
         select: { id: true },

@@ -15,7 +15,8 @@ type DashboardFrameProps = {
 export function DashboardFrame({ children, userLabel, remainingCredits, needsNameOnboarding }: DashboardFrameProps) {
   const pathname = usePathname();
   const isHome = pathname === "/dashboard";
-  const isProjectDarkSurface = pathname === "/projects/new" || /^\/projects\/[^/]+$/.test(pathname);
+  const isProjectDarkSurface =
+    pathname === "/projects/new" || pathname.startsWith("/gallery/batches/") || /^\/projects\/[^/]+$/.test(pathname);
   const frameTone = isProjectDarkSurface ? "studio" : "normal";
 
   return (

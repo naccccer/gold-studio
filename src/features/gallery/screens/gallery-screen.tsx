@@ -29,6 +29,7 @@ import { PageShell } from "@/components/ui/page-shell";
 import { archiveAssetAction, renameAssetAction } from "@/features/gallery/actions";
 import {
   createPendingGalleryUpload,
+  discardPendingGalleryUpload,
   startPendingGalleryUpload,
   waitForPendingGalleryUpload,
 } from "@/features/gallery/client-upload-store";
@@ -50,14 +51,29 @@ type GalleryScreenProps = {
   styles: StyleOption[];
 };
 
+const MAX_BATCH_UPLOAD_FILES = 10;
+
+function scrollGalleryToTop() {
+  requestAnimationFrame(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    document.querySelector("[data-ovala-phone-frame]")?.scrollTo({ top: 0, behavior: "smooth" });
+  });
+}
+
 export function GalleryScreen({ assets, styles }: GalleryScreenProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [cropQueue, setCropQueue] = useState<string[]>([]);
   const [pickerError, setPickerError] = useState<string | null>(null);
   const cropUploadId = searchParams.get("cropUploadId");
   const selectedCount = selectedIds.length;
   const batchHref = `/gallery/batches/new?assetIds=${encodeURIComponent(selectedIds.join(","))}`;
+  const cropQueueIndex = cropUploadId ? cropQueue.indexOf(cropUploadId) : -1;
+  const cropProgressLabel =
+    cropUploadId && cropQueueIndex >= 0 && cropQueue.length > 1
+      ? `${(cropQueueIndex + 1).toLocaleString("fa-IR")}/${cropQueue.length.toLocaleString("fa-IR")}`
+      : undefined;
 
   function toggleAsset(assetId: string) {
     setSelectedIds((current) =>
@@ -65,55 +81,82 @@ export function GalleryScreen({ assets, styles }: GalleryScreenProps) {
     );
   }
 
-  function beginCropFlow(file: File | null, source: "camera" | "files") {
-    if (!file) {
+  function beginCropFlow(files: File[], source: "camera" | "files") {
+    if (files.length === 0) {
       return;
     }
 
     setPickerError(null);
 
     try {
-      const pendingUpload = createPendingGalleryUpload(file, source);
-      void startPendingGalleryUpload(pendingUpload.id);
+      const uploadFiles = files.slice(0, MAX_BATCH_UPLOAD_FILES);
+      if (files.length > MAX_BATCH_UPLOAD_FILES) {
+        setPickerError(`حداکثر ${MAX_BATCH_UPLOAD_FILES.toLocaleString("fa-IR")} عکس در هر نوبت آپلود می‌شود. ${MAX_BATCH_UPLOAD_FILES.toLocaleString("fa-IR")} عکس اول وارد صف شد.`);
+      }
+      const pendingUploads = uploadFiles.map((file) => createPendingGalleryUpload(file, source));
+      pendingUploads.forEach((pendingUpload) => {
+        void startPendingGalleryUpload(pendingUpload.id);
+      });
+      setCropQueue(pendingUploads.map((upload) => upload.id));
 
       const nextParams = new URLSearchParams(searchParams.toString());
-      nextParams.set("cropUploadId", pendingUpload.id);
+      nextParams.set("cropUploadId", pendingUploads[0].id);
       router.push(`/gallery?${nextParams.toString()}`, { scroll: false });
     } catch (error) {
       setPickerError(error instanceof Error ? error.message : "شروع آپلود تصویر ممکن نشد.");
     }
   }
 
-  function selectUploadedAsset(assetId: string) {
-    setSelectedIds([assetId]);
+  function selectUploadedAsset(assetId: string, append = false) {
+    setSelectedIds((current) => (append ? Array.from(new Set([...current, assetId])) : [assetId]));
   }
 
   function closeCropOverlay(options?: { refresh?: boolean; selectedAssetId?: string }) {
     const uploadId = cropUploadId;
     const nextParams = new URLSearchParams(searchParams.toString());
     nextParams.delete("cropUploadId");
-    const nextQuery = nextParams.toString();
+    const queueIndex = uploadId ? cropQueue.indexOf(uploadId) : -1;
+    const nextUploadId = options?.selectedAssetId && queueIndex >= 0 ? cropQueue[queueIndex + 1] : undefined;
 
     if (options?.selectedAssetId) {
-      selectUploadedAsset(options.selectedAssetId);
+      selectUploadedAsset(options.selectedAssetId, cropQueue.length > 1);
     }
 
-    router.replace(nextQuery ? `/gallery?${nextQuery}` : "/gallery", { scroll: false });
-
-    if (options?.refresh) {
+    if (nextUploadId) {
+      nextParams.set("cropUploadId", nextUploadId);
+      router.replace(`/gallery?${nextParams.toString()}`, { scroll: false });
       router.refresh();
       return;
     }
+
+    if (!options?.selectedAssetId && cropQueue.length > 0) {
+      cropQueue.forEach((queuedUploadId) => {
+        if (queuedUploadId !== uploadId) {
+          void discardPendingGalleryUpload(queuedUploadId);
+        }
+      });
+    }
+
+    setCropQueue([]);
+    const nextQuery = nextParams.toString();
+    router.replace(nextQuery ? `/gallery?${nextQuery}` : "/gallery", { scroll: false });
+    scrollGalleryToTop();
 
     if (uploadId) {
       void waitForPendingGalleryUpload(uploadId)
         .then((upload) => {
           if (upload.assetId) {
-            selectUploadedAsset(upload.assetId);
-          }
-          router.refresh();
-        })
-        .catch(() => undefined);
+              selectUploadedAsset(upload.assetId);
+            }
+            router.refresh();
+            scrollGalleryToTop();
+          })
+          .catch(() => undefined);
+    }
+
+    if (options?.refresh) {
+      router.refresh();
+      scrollGalleryToTop();
     }
   }
 
@@ -314,7 +357,8 @@ export function GalleryScreen({ assets, styles }: GalleryScreenProps) {
         capture="environment"
         className="sr-only"
         onChange={(event) => {
-          beginCropFlow(event.target.files?.[0] ?? null, "camera");
+          const file = event.target.files?.[0];
+          beginCropFlow(file ? [file] : [], "camera");
           event.currentTarget.value = "";
         }}
       />
@@ -322,14 +366,15 @@ export function GalleryScreen({ assets, styles }: GalleryScreenProps) {
         id="gallery-file-input"
         type="file"
         accept="image/jpeg,image/png,image/webp"
+        multiple
         className="sr-only"
         onChange={(event) => {
-          beginCropFlow(event.target.files?.[0] ?? null, "files");
+          beginCropFlow(Array.from(event.target.files ?? []), "files");
           event.currentTarget.value = "";
         }}
       />
 
-      {cropUploadId ? <GalleryCropScreen uploadId={cropUploadId} onClose={closeCropOverlay} /> : null}
+      {cropUploadId ? <GalleryCropScreen key={cropUploadId} uploadId={cropUploadId} progressLabel={cropProgressLabel} onClose={closeCropOverlay} /> : null}
     </>
   );
 }

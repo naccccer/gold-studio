@@ -15,6 +15,7 @@ import {
 type GalleryCropScreenProps = {
   uploadId: string;
   onClose: (options?: { refresh?: boolean; selectedAssetId?: string }) => void;
+  progressLabel?: string;
 };
 
 type FrameSize = {
@@ -226,7 +227,7 @@ async function buildCroppedFile(
   return new File([blob], `${baseName}-crop.jpg`, { type: "image/jpeg" });
 }
 
-export function GalleryCropScreen({ uploadId, onClose }: GalleryCropScreenProps) {
+export function GalleryCropScreen({ uploadId, onClose, progressLabel }: GalleryCropScreenProps) {
   const upload = usePendingGalleryUpload(uploadId);
   const frameRef = useRef<HTMLDivElement>(null);
   const frameSize = useFrameSize(frameRef);
@@ -447,9 +448,16 @@ export function GalleryCropScreen({ uploadId, onClose }: GalleryCropScreenProps)
       >
         <div className="flex items-start justify-between gap-3 border-b border-black/6 px-4 pb-2.5 pt-3 md:px-5">
           <div className="space-y-1.5">
-            <p id="gallery-crop-title" className="text-sm font-semibold text-foreground md:text-base">
-              کراپ تصویر
-            </p>
+            <div className="flex items-center gap-2">
+              <p id="gallery-crop-title" className="text-sm font-semibold text-foreground md:text-base">
+                کراپ تصویر
+              </p>
+              {progressLabel ? (
+                <span className="rounded-full border border-accent-soft bg-accent-wash px-2.5 py-1 text-[10px] font-semibold text-accent-deep" dir="ltr">
+                  {progressLabel}
+                </span>
+              ) : null}
+            </div>
             <p className="max-w-[16rem] text-[11px] leading-5 text-muted md:max-w-none md:text-xs md:leading-6">
               قاب را تنظیم کنید تا محصول تمیز و نزدیک به مرکز بماند.
             </p>
@@ -484,6 +492,7 @@ export function GalleryCropScreen({ uploadId, onClose }: GalleryCropScreenProps)
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
+                    key={upload.id}
                     src={upload.previewUrl}
                     alt="پیش نمایش کراپ"
                     draggable={false}
