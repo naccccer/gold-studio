@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { Coin } from "vuesax-icons-react";
 import { AppTopBar } from "@/components/ui/app-top-bar";
 import { MobileTabBar } from "@/components/ui/mobile-tab-bar";
 
@@ -18,6 +19,12 @@ const titles: Array<{ match: (pathname: string) => boolean; title: string; paren
   { match: (pathname) => pathname.startsWith("/gallery"), title: "گالری" },
   { match: (pathname) => /^\/projects\/[^/]+$/.test(pathname), title: "نتیجه", parent: "/projects" },
   { match: (pathname) => pathname === "/projects", title: "پروژه‌ها" },
+  { match: (pathname) => pathname === "/account/profile", title: "مشخصات حساب", parent: "/account" },
+  { match: (pathname) => pathname === "/account/referral", title: "کد معرفی", parent: "/account" },
+  { match: (pathname) => pathname === "/account/security", title: "امنیت حساب", parent: "/account" },
+  { match: (pathname) => pathname === "/account/support", title: "پشتیبانی", parent: "/account" },
+  { match: (pathname) => pathname === "/account/faq", title: "سوالات پرتکرار", parent: "/account" },
+  { match: (pathname) => pathname === "/account/output-settings", title: "تنظیمات خروجی", parent: "/account" },
   { match: (pathname) => pathname === "/account", title: "حساب" },
   { match: () => true, title: "خانه" },
 ];
@@ -34,7 +41,7 @@ function CreditBadge({ credits }: { credits: number }) {
       className="inline-flex h-10 shrink-0 items-center rounded-full border border-border bg-surface/70 px-3 text-xs font-semibold text-foreground shadow-[var(--shadow-soft)] transition hover:bg-surface focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
     >
       <span className="leading-none">{credits.toLocaleString("fa-IR")}</span>
-      <span className="mr-1.5 text-[10px] font-medium leading-none text-muted">اعتبار</span>
+      <Coin aria-hidden={true} className="mr-1.5 h-3.5 w-3.5 text-muted" />
     </Link>
   );
 }
@@ -54,13 +61,14 @@ export function DashboardMasthead({ userLabel, remainingCredits }: DashboardMast
     <>
       {!isStudioWizard ? (
         <AppTopBar
-          title={isHome ? undefined : context.title}
+          title={undefined}
           backHref={backHref}
           centeredLogo={isHome}
-          logoVariant={isHome ? "primary" : isProjectDarkSurface ? "mark-light" : "mark"}
+          framed={!isHome}
+          logoVariant={isHome ? "primary" : isProjectDarkSurface ? "mark-light" : "logo"}
           tone={isProjectDarkSurface ? "dark" : "light"}
           action={!isHome && !isProjectDarkSurface ? <CreditBadge credits={remainingCredits} /> : undefined}
-          className={isHome ? "mb-4 px-4" : isProjectDarkSurface ? "mb-3 px-4" : "mb-4 px-4"}
+          className={isHome ? "mb-4 px-4" : isProjectDarkSurface ? "mx-4 mb-3" : "mx-4 mb-4"}
         />
       ) : null}
 

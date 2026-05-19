@@ -18,6 +18,7 @@ import { StatusPill } from "@/components/ui/status-pill";
 import { LogoutButton } from "@/features/auth/components/logout-button";
 import { accountCardClass } from "@/features/account/components/account-subpage";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
+import { normalizeBillingPlanColorPreset, type BillingPlanColorPreset } from "@/lib/billing-plan-colors";
 import { archiveItems } from "@/lib/placeholders/jewelry-images";
 
 type PendingPurchase = {
@@ -31,15 +32,10 @@ type AccountScreenProps = {
   email: string | null;
   phone: string | null;
   role: string;
-  credits: number;
-  walletCredits: number;
-  subscriptionCredits: number;
   pendingRequests: PendingPurchase[];
   activeSubscription: {
     title: string;
-    creditsPerPeriod: number;
-    creditsUsedThisPeriod: number;
-    currentPeriodEnd: Date;
+    colorPreset: string;
   } | null;
 };
 
@@ -54,6 +50,43 @@ const rowItems: AccountRowItem[] = [
   { title: "کد معرفی", href: "/account/referral", icon: Gift },
   { title: "امنیت حساب", href: "/account/security", icon: Lock },
 ];
+
+const planBadgeSkins = {
+  amber:
+    "border-[#f4d69b]/42 bg-[radial-gradient(circle_at_16%_12%,rgba(255,235,178,0.42),transparent_31%),linear-gradient(135deg,#20140f_0%,#4b2b1f_48%,#9b7040_100%)] text-[#fff4d8]",
+  rose:
+    "border-[#d7c8ff]/38 bg-[radial-gradient(circle_at_18%_10%,rgba(238,220,255,0.42),transparent_30%),linear-gradient(135deg,#15131f_0%,#34264d_48%,#8b6677_100%)] text-[#f5e9ff]",
+  emerald:
+    "border-[#c7f0e0]/34 bg-[radial-gradient(circle_at_18%_10%,rgba(215,255,236,0.34),transparent_31%),linear-gradient(135deg,#101a17_0%,#16392f_48%,#b09358_100%)] text-[#e8fff4]",
+  sapphire:
+    "border-[#c8ddff]/34 bg-[radial-gradient(circle_at_18%_10%,rgba(207,226,255,0.38),transparent_31%),linear-gradient(135deg,#101521_0%,#203a5f_50%,#7c6843_100%)] text-[#e8f2ff]",
+  plum:
+    "border-[#e7c7f0]/34 bg-[radial-gradient(circle_at_18%_10%,rgba(245,215,255,0.34),transparent_31%),linear-gradient(135deg,#18111d_0%,#4c2d59_50%,#9a7250_100%)] text-[#f8e5ff]",
+  graphite:
+    "border-[#ddd4c8]/30 bg-[radial-gradient(circle_at_18%_10%,rgba(230,222,211,0.3),transparent_31%),linear-gradient(135deg,#11100e_0%,#302b26_50%,#746552_100%)] text-[#f2eadf]",
+  bronze:
+    "border-[#f1c995]/34 bg-[radial-gradient(circle_at_18%_10%,rgba(255,214,161,0.34),transparent_31%),linear-gradient(135deg,#1f120b_0%,#613a20_50%,#a57842_100%)] text-[#ffe7c6]",
+  teal:
+    "border-[#bde9e5]/34 bg-[radial-gradient(circle_at_18%_10%,rgba(199,255,250,0.3),transparent_31%),linear-gradient(135deg,#0d1a1a_0%,#164647_50%,#9a7a4d_100%)] text-[#e5fffb]",
+  ruby:
+    "border-[#f0c1c8]/34 bg-[radial-gradient(circle_at_18%_10%,rgba(255,207,215,0.3),transparent_31%),linear-gradient(135deg,#1f1012_0%,#5f2831_50%,#a07147_100%)] text-[#ffe7eb]",
+  ivory:
+    "border-[#ead7a8]/40 bg-[radial-gradient(circle_at_18%_10%,rgba(255,241,199,0.48),transparent_31%),linear-gradient(135deg,#231b12_0%,#6d5630_50%,#d6bf91_100%)] text-[#fff4d2]",
+} satisfies Record<BillingPlanColorPreset, string>;
+
+function PlanBadge({ title, colorPreset }: { title: string; colorPreset: string }) {
+  const skin = planBadgeSkins[normalizeBillingPlanColorPreset(colorPreset)];
+
+  return (
+    <Link
+      href="/billing"
+      aria-label={`اشتراک فعال: ${title}`}
+      className={`inline-flex h-9 max-w-[8.5rem] items-center rounded-full border px-3 text-[11px] font-semibold shadow-[0_16px_34px_-24px_rgba(17,16,14,0.78)] transition hover:brightness-110 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)] ${skin}`}
+    >
+      <span className="truncate leading-none">{title}</span>
+    </Link>
+  );
+}
 
 function AccountRow({ item }: { item: AccountRowItem }) {
   const Icon = item.icon;
@@ -80,10 +113,8 @@ export function AccountScreen({
   email,
   phone,
   role,
-  credits,
-  walletCredits,
-  subscriptionCredits,
   pendingRequests,
+  activeSubscription,
 }: AccountScreenProps) {
   const isAdmin = role.toUpperCase() === "ADMIN";
   const displayName = getUserDisplayName({ name, email, phone });
@@ -97,7 +128,7 @@ export function AccountScreen({
     <PageShell maxWidth="md" className="space-y-3 pb-32">
       <div className="flex min-h-[calc(100svh-12rem)] flex-col gap-3">
         <section className="motion-reveal rounded-[1.45rem] border border-white/80 bg-surface/62 p-3.5 shadow-[0_22px_50px_-44px_rgba(17,16,14,0.72)]">
-          <div className="flex items-start gap-3">
+          <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 flex-1 items-center gap-3">
               <div className="relative h-14 w-14 overflow-hidden rounded-[1rem] bg-[#e8dfd2]">
                 <Image src={archiveItems[1].src} alt="" fill className="object-cover" sizes="64px" />
@@ -109,21 +140,11 @@ export function AccountScreen({
                 </p>
               </div>
             </div>
-          </div>
-
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            <div className="motion-state rounded-[1rem] bg-white/62 px-3 py-2.5 text-right">
-              <p className="text-[11px] font-medium text-muted">اعتبار</p>
-              <p className="mt-1 text-lg font-semibold text-foreground">{credits.toLocaleString("fa-IR")}</p>
-            </div>
-            <div className="motion-state rounded-[1rem] bg-white/62 px-3 py-2.5 text-right">
-              <p className="text-[11px] font-medium text-muted">اشتراک</p>
-              <p className="mt-1 text-sm font-semibold text-foreground">{subscriptionCredits.toLocaleString("fa-IR")}</p>
-            </div>
-            <div className="motion-state rounded-[1rem] bg-white/62 px-3 py-2.5 text-right">
-              <p className="text-[11px] font-medium text-muted">جداگانه</p>
-              <p className="mt-1 text-sm font-semibold text-foreground">{walletCredits.toLocaleString("fa-IR")}</p>
-            </div>
+            {activeSubscription ? (
+              <div className="shrink-0 pt-0.5">
+                <PlanBadge title={activeSubscription.title} colorPreset={activeSubscription.colorPreset} />
+              </div>
+            ) : null}
           </div>
         </section>
 

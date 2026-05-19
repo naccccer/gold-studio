@@ -1,7 +1,5 @@
 import type { ComponentType, ReactNode } from "react";
-import { ArrowRight2 } from "vuesax-icons-react";
 import { fieldControlClassName, fieldTextAreaClassName } from "@/components/ui/field";
-import { ButtonLink } from "@/components/ui/button";
 import { PageShell } from "@/components/ui/page-shell";
 
 type SectionIcon = ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
@@ -14,17 +12,7 @@ type AccountSubpageProps = {
 };
 
 export function AccountSubpage({ children }: AccountSubpageProps) {
-  return (
-    <PageShell maxWidth="md" className="space-y-3 pb-28">
-      <header className="motion-reveal-soft rounded-[1.35rem] border border-white/80 bg-surface/62 p-3.5 shadow-[0_22px_50px_-44px_rgba(17,16,14,0.72)]">
-        <ButtonLink href="/account" variant="secondary" size="sm" className="h-10 w-fit rounded-full px-3">
-          <ArrowRight2 aria-hidden={true} className="h-4 w-4" />
-          حساب
-        </ButtonLink>
-      </header>
-      {children}
-    </PageShell>
-  );
+  return <PageShell maxWidth="md" className="space-y-3 pb-28">{children}</PageShell>;
 }
 
 export function AccountSectionHeader({

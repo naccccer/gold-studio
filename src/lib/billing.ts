@@ -319,7 +319,7 @@ export async function getUserCreditSummary(userId: string) {
         creditsUsedThisPeriod: true,
         reservedCredits: true,
         currentPeriodEnd: true,
-        package: { select: { title: true } },
+        package: { select: { title: true, colorPreset: true } },
       },
     }),
   ]);
@@ -339,6 +339,7 @@ export async function getUserCreditSummary(userId: string) {
     activeSubscription: subscriptions[0]
       ? {
           title: subscriptions[0].package.title,
+          colorPreset: subscriptions[0].package.colorPreset,
           creditsPerPeriod: subscriptions[0].creditsPerPeriod,
           creditsUsedThisPeriod: subscriptions[0].creditsUsedThisPeriod,
           reservedCredits: subscriptions[0].reservedCredits,

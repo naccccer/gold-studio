@@ -11,7 +11,7 @@ export default async function AccountPage() {
   const [user, purchaseRequests, creditSummary] = await Promise.all([
     db.user.findUnique({
       where: { id: session.userId },
-      select: { name: true, email: true, phone: true, role: true, credits: true },
+      select: { name: true, email: true, phone: true, role: true },
     }),
     db.purchaseRequest.findMany({
       where: { userId: session.userId, status: "PENDING" },
@@ -35,9 +35,6 @@ export default async function AccountPage() {
       email={user.email}
       phone={user.phone}
       role={user.role}
-      credits={creditSummary.totalAvailableCredits}
-      walletCredits={creditSummary.walletCredits}
-      subscriptionCredits={creditSummary.subscriptionCredits}
       pendingRequests={purchaseRequests}
       activeSubscription={creditSummary.activeSubscription}
     />

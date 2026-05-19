@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
@@ -24,6 +24,10 @@ import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { PRODUCT_TYPES } from "@/lib/product-types";
 
 const INITIAL_STATE: ProjectFormState = {};
+const MAX_PROJECT_UPLOAD_EDGE = 2400;
+const MAX_PROJECT_UPLOAD_BYTES = 4 * 1024 * 1024;
+const PROJECT_UPLOAD_JPEG_QUALITY = 0.86;
+const PROJECT_UPLOAD_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export type GalleryAssetOption = {
   id: string;
@@ -167,6 +171,77 @@ function getInitialStyleControlValues(style?: StyleOption) {
   return Object.fromEntries((style?.controls ?? []).map((control) => [control.key, getControlDefaultValue(control)]));
 }
 
+function loadImageElement(file: File) {
+  const objectUrl = URL.createObjectURL(file);
+  const image = new window.Image();
+  image.decoding = "async";
+
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("تصویر انتخاب‌شده قابل آماده‌سازی نیست. لطفا از گالری یک فایل JPG، PNG یا WEBP انتخاب کنید."));
+    };
+    image.src = objectUrl;
+  });
+}
+
+async function prepareProjectUploadFile(file: File) {
+  if (!file.type.startsWith("image/") || file.type === "image/svg+xml") {
+    return file;
+  }
+
+  const shouldNormalize = !PROJECT_UPLOAD_TYPES.has(file.type) || file.size > MAX_PROJECT_UPLOAD_BYTES;
+  if (!shouldNormalize) {
+    return file;
+  }
+
+  const image = await loadImageElement(file);
+  const longestEdge = Math.max(image.naturalWidth, image.naturalHeight);
+  const scale = Math.min(1, MAX_PROJECT_UPLOAD_EDGE / longestEdge);
+  const outputWidth = Math.max(1, Math.round(image.naturalWidth * scale));
+  const outputHeight = Math.max(1, Math.round(image.naturalHeight * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = outputWidth;
+  canvas.height = outputHeight;
+
+  const context = canvas.getContext("2d", { alpha: false });
+  if (!context) {
+    return file;
+  }
+
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, outputWidth, outputHeight);
+  context.drawImage(image, 0, 0, outputWidth, outputHeight);
+
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(resolve, "image/jpeg", PROJECT_UPLOAD_JPEG_QUALITY);
+  });
+
+  if (!blob) {
+    return file;
+  }
+
+  const baseName = file.name.replace(/\.[^.]+$/, "") || "project-upload";
+  return new File([blob], `${baseName}-optimized.jpg`, {
+    type: "image/jpeg",
+    lastModified: file.lastModified,
+  });
+}
+
+function replaceInputFile(input: HTMLInputElement, file: File) {
+  if (typeof DataTransfer === "undefined") {
+    return;
+  }
+
+  const transfer = new DataTransfer();
+  transfer.items.add(file);
+  input.files = transfer.files;
+}
+
 export function NewProjectForm({
   action,
   galleryAssets,
@@ -187,6 +262,9 @@ export function NewProjectForm({
   const [selectedStyle, setSelectedStyle] = useState(defaultStyle?.id ?? "");
   const [styleControlValues, setStyleControlValues] = useState<Record<string, string>>(() => getInitialStyleControlValues(defaultStyle));
   const [productType, setProductType] = useState(explicitSelectedAsset?.productType || "محصول");
+  const [sourcePreparing, setSourcePreparing] = useState(false);
+  const [sourceError, setSourceError] = useState<string | null>(null);
+  const fileInputRequestRef = useRef(0);
 
   useEffect(() => {
     return () => {
@@ -215,13 +293,15 @@ export function NewProjectForm({
   const visibleGalleryAssets = galleryAssets.slice(0, 4);
   const currentImageSrc = previewUrl ?? selectedAsset?.fileUrl ?? null;
   const hasSource = Boolean(currentImageSrc);
-  const canSubmit = Boolean(selectedStyleData) && hasSource;
+  const canContinue = hasSource && !sourcePreparing && !sourceError;
+  const canSubmit = Boolean(selectedStyleData) && canContinue;
   const currentMeta = stepMeta[step];
 
   function setPreview(file: File | null) {
     if (file) {
       setSelectedAsset(null);
       setProductType("محصول");
+      setSourceError(null);
     }
 
     setPreviewUrl((currentPreview) => {
@@ -236,7 +316,51 @@ export function NewProjectForm({
     }
   }
 
+  async function handleImageInputChange(event: React.ChangeEvent<HTMLInputElement>, otherInputId: string) {
+    const input = event.currentTarget;
+    const file = input.files?.[0] ?? null;
+    const requestId = fileInputRequestRef.current + 1;
+    fileInputRequestRef.current = requestId;
+    setSourceError(null);
+
+    const otherInput = document.getElementById(otherInputId);
+    if (otherInput instanceof HTMLInputElement) {
+      otherInput.value = "";
+    }
+
+    if (!file) {
+      setSourcePreparing(false);
+      setPreview(null);
+      return;
+    }
+
+    setPreview(file);
+    setSourcePreparing(true);
+
+    try {
+      const preparedFile = await prepareProjectUploadFile(file);
+      if (fileInputRequestRef.current !== requestId) {
+        return;
+      }
+      replaceInputFile(input, preparedFile);
+    } catch (error) {
+      if (fileInputRequestRef.current !== requestId) {
+        return;
+      }
+      input.value = "";
+      setPreview(null);
+      setSourceError(error instanceof Error ? error.message : "آماده‌سازی تصویر کامل نشد. لطفا دوباره تلاش کنید.");
+    } finally {
+      if (fileInputRequestRef.current === requestId) {
+        setSourcePreparing(false);
+      }
+    }
+  }
+
   function selectAsset(asset: GalleryAssetOption) {
+    fileInputRequestRef.current += 1;
+    setSourcePreparing(false);
+    setSourceError(null);
     setSelectedAsset(asset);
     setProductType(asset.productType || "محصول");
     setPreviewUrl((currentPreview) => {
@@ -248,6 +372,17 @@ export function NewProjectForm({
   }
 
   function clearSource() {
+    fileInputRequestRef.current += 1;
+    setSourcePreparing(false);
+    setSourceError(null);
+    const cameraInput = document.getElementById("project-camera-input");
+    const fileInput = document.getElementById("project-file-input");
+    if (cameraInput instanceof HTMLInputElement) {
+      cameraInput.value = "";
+    }
+    if (fileInput instanceof HTMLInputElement) {
+      fileInput.value = "";
+    }
     setSelectedAsset(null);
     setPreviewUrl((currentPreview) => {
       if (currentPreview) {
@@ -304,9 +439,7 @@ export function NewProjectForm({
         accept="image/*"
         capture="environment"
         className="sr-only"
-        onChange={(event) => {
-          setPreview(event.target.files?.[0] ?? null);
-        }}
+        onChange={(event) => void handleImageInputChange(event, "project-file-input")}
       />
       <input
         id="project-file-input"
@@ -314,9 +447,7 @@ export function NewProjectForm({
         type="file"
         accept="image/jpeg,image/png,image/webp"
         className="sr-only"
-        onChange={(event) => {
-          setPreview(event.target.files?.[0] ?? null);
-        }}
+        onChange={(event) => void handleImageInputChange(event, "project-camera-input")}
       />
 
       <header className="-mt-2 space-y-3">
@@ -393,6 +524,19 @@ export function NewProjectForm({
             </SourceActionButton>
           </div>
 
+          {sourcePreparing ? (
+            <p className="rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-2 text-xs leading-6 text-surface/72">
+              در حال آماده‌سازی عکس برای آپلود...
+            </p>
+          ) : null}
+
+          {sourceError ? (
+            <div className="rounded-[1rem] border border-danger/24 bg-danger-soft/92 px-3 py-3 text-danger shadow-[0_18px_32px_-26px_rgba(152,59,52,0.42)]">
+              <p className="text-sm font-semibold">عکس آماده نشد</p>
+              <p className="mt-1 text-[12px] leading-6 text-danger/88">{sourceError}</p>
+            </div>
+          ) : null}
+
           {visibleGalleryAssets.length > 0 ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-3">
@@ -445,8 +589,8 @@ export function NewProjectForm({
                 تغییر عکس
               </Button>
             ) : null}
-            <Button type="button" variant="studio-primary" className="h-12 w-full" onClick={() => setStep("size")} disabled={!hasSource}>
-              ادامه
+            <Button type="button" variant="studio-primary" className="h-12 w-full" onClick={() => setStep("size")} disabled={!canContinue}>
+              {sourcePreparing ? "آماده‌سازی..." : "ادامه"}
               <ArrowLeft aria-hidden={true} className="h-4 w-4" />
             </Button>
           </ActionDock>
@@ -517,8 +661,8 @@ export function NewProjectForm({
             <Button type="button" variant="studio-secondary" className="h-12 w-full" onClick={() => setStep("source")}>
               بازگشت
             </Button>
-            <Button type="button" variant="studio-primary" className="h-12 w-full" onClick={() => setStep("style")} disabled={!hasSource}>
-              ادامه
+            <Button type="button" variant="studio-primary" className="h-12 w-full" onClick={() => setStep("style")} disabled={!canContinue}>
+              {sourcePreparing ? "آماده‌سازی..." : "ادامه"}
               <ArrowLeft aria-hidden={true} className="h-4 w-4" />
             </Button>
           </ActionDock>
@@ -635,14 +779,14 @@ export function NewProjectForm({
             </section>
           ) : null}
 
-          {state.error ? (
+          {state.error || sourceError ? (
             <div className="rounded-[1rem] border border-danger/24 bg-danger-soft/92 px-3 py-3 text-danger shadow-[0_18px_32px_-26px_rgba(152,59,52,0.42)]">
               <p className="text-sm font-semibold">این مرحله کامل نشد</p>
               <p
                 className="mt-1 text-[12px] leading-6 text-danger/88"
                 style={{ textAlign: "justify", textAlignLast: "right" }}
               >
-                {state.error}
+                {sourceError || state.error}
               </p>
             </div>
           ) : null}
@@ -652,7 +796,7 @@ export function NewProjectForm({
               بازگشت
             </Button>
             <Button type="submit" disabled={pending || !canSubmit} variant="studio-primary" className="h-12 w-full">
-              {pending ? "در حال ساخت..." : "شروع پردازش"}
+              {sourcePreparing ? "آماده‌سازی..." : pending ? "در حال ساخت..." : "شروع پردازش"}
               <Magicpen aria-hidden={true} className="h-4 w-4" />
             </Button>
           </ActionDock>

@@ -546,7 +546,6 @@ export async function approvePurchaseRequestAction(formData: FormData) {
       include: { package: true, user: { select: { credits: true } } },
     });
     if (!request || request.status !== "PENDING") return null;
-    if (!request.receiptImageUrl) return null;
 
     await tx.purchaseRequest.update({
       where: { id: request.id },

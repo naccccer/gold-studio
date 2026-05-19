@@ -12,7 +12,12 @@ type DashboardFrameProps = {
   needsNameOnboarding: boolean;
 };
 
-export function DashboardFrame({ children, userLabel, remainingCredits, needsNameOnboarding }: DashboardFrameProps) {
+export function DashboardFrame({
+  children,
+  userLabel,
+  remainingCredits,
+  needsNameOnboarding,
+}: DashboardFrameProps) {
   const pathname = usePathname();
   const isHome = pathname === "/dashboard";
   const isProjectDarkSurface =
@@ -38,7 +43,10 @@ export function DashboardFrame({ children, userLabel, remainingCredits, needsNam
             : "relative mx-auto min-h-[calc(100svh-1rem)] w-full max-w-[393px] bg-background md:min-h-[calc(100svh-3rem)] md:max-w-[425px] md:overflow-hidden md:rounded-[1.35rem] md:border md:border-white/80 md:shadow-[0_30px_80px_-52px_rgba(23,20,17,0.65)]"
         }
       >
-        <DashboardMasthead userLabel={userLabel} remainingCredits={remainingCredits} />
+        <DashboardMasthead
+          userLabel={userLabel}
+          remainingCredits={remainingCredits}
+        />
         {children}
       </div>
       {needsNameOnboarding ? <OnboardingNameModal /> : null}
