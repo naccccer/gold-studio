@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { ComponentType } from "react";
 import {
   ArrowLeft2,
+  ArchiveBook,
   Card,
   Gift,
   Lifebuoy,
@@ -47,6 +48,7 @@ type AccountRowItem = {
 
 const rowItems: AccountRowItem[] = [
   { title: "مشخصات حساب", href: "/account/profile", icon: UserEdit },
+  { title: "آرشیو", href: "/account/archive", icon: ArchiveBook },
   { title: "کد معرفی", href: "/account/referral", icon: Gift },
   { title: "امنیت حساب", href: "/account/security", icon: Lock },
 ];

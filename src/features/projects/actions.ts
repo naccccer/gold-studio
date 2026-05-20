@@ -76,6 +76,18 @@ function getFineDetailInstruction(productType?: string | null) {
   ].join("\n");
 }
 
+function stripVersionSuffix(title: string) {
+  return title.replace(/\s*[-–]\s*نسخه\s+(?:دیگر|[0-9۰-۹٠-٩]+)\s*$/u, "").trim();
+}
+
+function versionedProjectTitle(title: string | null, versionNumber: number) {
+  const cleanTitle = title?.trim() || "نسخه دیگر";
+  const baseTitle = stripVersionSuffix(cleanTitle) || cleanTitle;
+  if (versionNumber <= 1) return baseTitle;
+
+  return `${baseTitle} - نسخه ${versionNumber.toLocaleString("fa-IR")}`;
+}
+
 function buildPrompt(
   style: StyleForGeneration,
   formData: FormData,
@@ -126,6 +138,7 @@ export async function createProjectAction(
   const title = String(formData.get("title") ?? "").trim();
   const mode = String(formData.get("generationMode") ?? "image");
   const sourceAssetId = String(formData.get("sourceAssetId") ?? "").trim();
+  const freeVariantParentId = String(formData.get("freeVariantParentId") ?? "").trim();
   const submittedProductType = String(formData.get("productType") ?? "").trim();
   const selectedProductType = isProductType(submittedProductType) ? submittedProductType : "محصول";
   const outputPreset = normalizeOutputPreset(formData.get("outputPreset"));
@@ -192,47 +205,135 @@ export async function createProjectAction(
       return { error: "تصویر گالری یافت نشد." };
     }
 
-    const reserved = await reserveCreditOrState(session.userId);
-    if (!reserved.ok) {
-      return { error: reserved.error };
-    }
-
-    let project: { id: string };
-    try {
-    if (asset.productType !== selectedProductType) {
-      await db.productAsset.updateMany({
-        where: { id: asset.id, userId: session.userId, status: "READY", archivedAt: null },
-        data: { productType: selectedProductType },
-      });
-    }
-
     const projectPrompt = buildPrompt(style, formData, {
       productType: selectedProductType,
       visionDescription: asset.visionDescription,
       visionConfidence: asset.visionConfidence,
       visionAngle: asset.visionAngle,
     });
-    project = await db.project.create({
-      data: {
-        userId: session.userId,
-        sourceAssetId: asset.id,
-        title: pickVisionTitle({
-          userTitle: title,
-          visionShortTitle: asset.visionShortTitle,
-          fallbackTitle: asset.title || asset.originalName,
-        }),
-        sourceImageUrl: asset.fileUrl,
-        outputPreset,
-        styleId: style.id,
-        prompt: projectPrompt,
-        status: "QUEUED",
-      },
-      select: { id: true },
+
+    const projectTitle = pickVisionTitle({
+      userTitle: title,
+      visionShortTitle: asset.visionShortTitle,
+      fallbackTitle: asset.title || asset.originalName,
     });
-    await attachGenerationCreditReservation({ reservationId: reserved.reservationId, projectId: project.id });
+    let project: { id: string };
+    let reservationId: string | null = null;
+    const freeVariantId = freeVariantParentId ? randomUUID() : null;
+
+    try {
+      if (freeVariantParentId) {
+        const freeVariant = await db.$transaction(async (tx) => {
+          const parent = await tx.project.findFirst({
+            where: {
+              id: freeVariantParentId,
+              userId: session.userId,
+              status: "COMPLETED",
+              sourceAssetId: asset.id,
+              archivedAt: null,
+              variantParentId: null,
+              freeVariantUsedAt: null,
+              freeVariantProjectId: null,
+            },
+            select: { id: true },
+          });
+
+          if (!parent || !freeVariantId) {
+            return null;
+          }
+
+          const claimed = await tx.project.updateMany({
+            where: {
+              id: parent.id,
+              userId: session.userId,
+              status: "COMPLETED",
+              sourceAssetId: asset.id,
+              archivedAt: null,
+              variantParentId: null,
+              freeVariantUsedAt: null,
+              freeVariantProjectId: null,
+            },
+            data: { freeVariantProjectId: freeVariantId },
+          });
+
+          if (claimed.count === 0) {
+            return null;
+          }
+
+          if (asset.productType !== selectedProductType) {
+            await tx.productAsset.updateMany({
+              where: { id: asset.id, userId: session.userId, status: "READY", archivedAt: null },
+              data: { productType: selectedProductType },
+            });
+          }
+
+          const existingCount = await tx.project.count({
+            where: { userId: session.userId, sourceAssetId: asset.id, archivedAt: null },
+          });
+
+          return tx.project.create({
+            data: {
+              id: freeVariantId,
+              userId: session.userId,
+              sourceAssetId: asset.id,
+              title: versionedProjectTitle(projectTitle, existingCount + 1),
+              sourceImageUrl: asset.fileUrl,
+              outputPreset,
+              styleId: style.id,
+              prompt: projectPrompt,
+              status: "QUEUED",
+              variantParentId: parent.id,
+            },
+            select: { id: true },
+          });
+        });
+
+        if (freeVariant) {
+          project = freeVariant;
+        } else {
+          return { error: "فرصت رایگان این پروژه دیگر در دسترس نیست. دوباره از صفحه نتیجه اقدام کنید یا نسخه عادی بسازید." };
+        }
+      } else {
+        const reserved = await reserveCreditOrState(session.userId);
+        if (!reserved.ok) {
+          return { error: reserved.error };
+        }
+        reservationId = reserved.reservationId;
+        if (asset.productType !== selectedProductType) {
+          await db.productAsset.updateMany({
+            where: { id: asset.id, userId: session.userId, status: "READY", archivedAt: null },
+            data: { productType: selectedProductType },
+          });
+        }
+        const existingCount = await db.project.count({
+          where: { userId: session.userId, sourceAssetId: asset.id, archivedAt: null },
+        });
+
+        project = await db.project.create({
+          data: {
+            userId: session.userId,
+            sourceAssetId: asset.id,
+            title: versionedProjectTitle(projectTitle, existingCount + 1),
+            sourceImageUrl: asset.fileUrl,
+            outputPreset,
+            styleId: style.id,
+            prompt: projectPrompt,
+            status: "QUEUED",
+          },
+          select: { id: true },
+        });
+        await attachGenerationCreditReservation({ reservationId, projectId: project.id });
+      }
     } catch (error) {
-      await releaseGenerationCreditReservation({ reservationId: reserved.reservationId });
+      if (reservationId) {
+        await releaseGenerationCreditReservation({ reservationId });
+      }
+
       throw error;
+    }
+
+    if (!project) {
+      return { error: "ساخت پروژه کامل نشد. دوباره تلاش کنید." };
     }
 
     if (!asset.visionAnalyzedAt) {
@@ -367,7 +468,7 @@ export async function archiveProjectAction(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
-export async function createFreeProjectVariantAction(formData: FormData) {
+export async function restoreProjectAction(formData: FormData) {
   const session = await requireUserSession();
   const projectId = String(formData.get("projectId") ?? "").trim();
 
@@ -375,77 +476,14 @@ export async function createFreeProjectVariantAction(formData: FormData) {
     return;
   }
 
-  const variantId = randomUUID();
-  const variant = await db.$transaction(async (tx) => {
-    const parent = await tx.project.findFirst({
-      where: {
-        id: projectId,
-        userId: session.userId,
-        status: "COMPLETED",
-        archivedAt: null,
-        variantParentId: null,
-      },
-      select: {
-        id: true,
-        userId: true,
-        sourceAssetId: true,
-        title: true,
-        sourceImageUrl: true,
-        outputPreset: true,
-        styleId: true,
-        prompt: true,
-        freeVariantUsedAt: true,
-        freeVariantProjectId: true,
-      },
-    });
-
-    if (!parent?.sourceAssetId || parent.freeVariantUsedAt || parent.freeVariantProjectId) {
-      return null;
-    }
-
-    const claimed = await tx.project.updateMany({
-      where: {
-        id: parent.id,
-        userId: session.userId,
-        status: "COMPLETED",
-        archivedAt: null,
-        variantParentId: null,
-        freeVariantUsedAt: null,
-        freeVariantProjectId: null,
-      },
-      data: { freeVariantProjectId: variantId },
-    });
-
-    if (claimed.count === 0) {
-      return null;
-    }
-
-    return tx.project.create({
-      data: {
-        id: variantId,
-        userId: parent.userId,
-        sourceAssetId: parent.sourceAssetId,
-        title: parent.title ? `${parent.title} - نسخه دیگر` : "نسخه دیگر",
-        sourceImageUrl: parent.sourceImageUrl,
-        outputPreset: parent.outputPreset,
-        styleId: parent.styleId,
-        prompt: parent.prompt,
-        status: "QUEUED",
-        variantParentId: parent.id,
-      },
-      select: { id: true },
-    });
+  await db.project.updateMany({
+    where: { id: projectId, userId: session.userId, archivedAt: { not: null } },
+    data: { archivedAt: null },
   });
 
-  if (!variant) {
-    revalidatePath(`/projects/${projectId}`);
-    return;
-  }
-
-  revalidatePath(`/projects/${projectId}`);
+  revalidatePath("/account/archive");
   revalidatePath("/projects");
-  after(() => processImageProject(variant.id));
-  redirect(`/projects/${variant.id}`);
+  revalidatePath("/dashboard");
 }
 
 export async function retryProjectAction(formData: FormData) {

@@ -67,6 +67,17 @@ export default async function ProjectDetailPage({
     after(() => retryProjectVisionTitle(project.id, session.userId));
   }
 
+  let variantNumber: number | null = null;
+  if (project.sourceAssetId) {
+    const sourceProjects = await db.project.findMany({
+      where: { userId: session.userId, sourceAssetId: project.sourceAssetId, archivedAt: null },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      select: { id: true },
+    });
+    const variantIndex = sourceProjects.findIndex((item) => item.id === project.id);
+    variantNumber = variantIndex >= 0 ? variantIndex + 1 : null;
+  }
+
   return (
     <ProjectDetailScreen
       project={
@@ -80,6 +91,7 @@ export default async function ProjectDetailPage({
           resultImageError,
           productType: project.sourceAsset?.productType ?? null,
           titleRefreshPending,
+          variantNumber,
         } as ProjectDetail
       }
     />

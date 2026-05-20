@@ -19,6 +19,7 @@ import { ImageOverlayPill, JewelryImageFrame } from "@/components/ui/jewelry-ima
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import type { ProjectFormState } from "@/features/projects/actions";
+import { StyleChoiceControl } from "@/features/projects/components/style-choice-control";
 import type { StyleControlOption, StyleOption } from "@/features/projects/presets";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { PRODUCT_TYPES } from "@/lib/product-types";
@@ -44,6 +45,7 @@ type NewProjectFormProps = {
   ) => Promise<ProjectFormState>;
   galleryAssets: GalleryAssetOption[];
   selectedAssetId?: string;
+  freeVariantParentId?: string;
   styles: StyleOption[];
   defaultOutputPreset?: OutputPresetId;
 };
@@ -246,6 +248,7 @@ export function NewProjectForm({
   action,
   galleryAssets,
   selectedAssetId,
+  freeVariantParentId,
   styles,
   defaultOutputPreset = "post",
 }: NewProjectFormProps) {
@@ -255,7 +258,7 @@ export function NewProjectForm({
     : null;
   const defaultStyle = styles[0];
   const [state, formAction, pending] = useActionState(action, INITIAL_STATE);
-  const [step, setStep] = useState<WizardStep>(explicitSelectedAsset ? "size" : "source");
+  const [step, setStep] = useState<WizardStep>(explicitSelectedAsset && !freeVariantParentId ? "size" : "source");
   const [selectedAsset, setSelectedAsset] = useState<GalleryAssetOption | null>(explicitSelectedAsset);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [outputPreset, setOutputPreset] = useState<OutputPresetId>(defaultOutputPreset);
@@ -429,6 +432,7 @@ export function NewProjectForm({
       {styleControls.map((control) => (
         <input key={control.key} type="hidden" name={`styleControl_${control.key}`} value={styleControlValues[control.key] ?? getControlDefaultValue(control)} />
       ))}
+      {freeVariantParentId ? <input type="hidden" name="freeVariantParentId" value={freeVariantParentId} /> : null}
       {selectedAsset ? <input type="hidden" name="sourceAssetId" value={selectedAsset.id} /> : null}
       <input type="hidden" name="productType" value={productType} />
 
@@ -719,27 +723,14 @@ export function NewProjectForm({
 
                 if (control.type === "CHOICE" && choiceOptions.length > 0) {
                   return (
-                    <div key={control.key} className="space-y-2">
-                      <p className="text-xs text-surface/72">{control.label}</p>
-                      <div className={`grid gap-2 ${choiceOptions.length <= 2 ? "grid-cols-2" : "grid-cols-3"}`}>
-                        {choiceOptions.map((item) => (
-                          <button
-                            key={item.value}
-                            type="button"
-                            onClick={() => setStyleControlValue(control.key, item.value)}
-                            className={buttonClasses({
-                              variant: value === item.value ? "secondary" : "ghost",
-                              className:
-                                value === item.value
-                                  ? "min-h-11 border border-accent-bright bg-accent-wash/90 !text-accent-deep shadow-[0_14px_26px_-24px_rgba(17,16,14,0.62)]"
-                                  : "min-h-11 border border-white/14 bg-white/[0.04] text-sm !text-surface/84 hover:border-white/22 hover:bg-white/[0.08]",
-                            })}
-                          >
-                            {item.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                    <StyleChoiceControl
+                      key={control.key}
+                      controlKey={control.key}
+                      label={control.label}
+                      options={choiceOptions}
+                      value={value}
+                      onChange={(nextValue) => setStyleControlValue(control.key, nextValue)}
+                    />
                   );
                 }
 

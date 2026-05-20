@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Bank, Card, DocumentUpload, Layer, ReceiptText, TickCircle, Trash, Wallet, type Icon } from "vuesax-icons-react";
+import { Bank, Card, DocumentUpload, Layer, ReceiptText, TickCircle, Trash, Wallet, type Icon } from "vuesax-icons-react";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { fieldControlClassName } from "@/components/ui/field";
 import { PageShell } from "@/components/ui/page-shell";
@@ -247,13 +247,6 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
 
   return (
     <PageShell maxWidth="md" className="space-y-3 pb-32">
-      <header className="motion-reveal rounded-[1.45rem] border border-white/80 bg-surface/62 p-3.5 shadow-[0_22px_50px_-44px_rgba(17,16,14,0.72)]">
-        <ButtonLink href="/account" variant="secondary" size="sm" className="h-10 w-fit rounded-full px-3">
-          <ArrowRight aria-hidden={true} className="h-4 w-4" />
-          حساب
-        </ButtonLink>
-      </header>
-
       <nav className="motion-reveal-soft grid grid-cols-4 gap-1 rounded-[1.1rem] border border-white/72 bg-surface/64 p-1" aria-label="بخش‌های پرداخت">
         {tabs.map((tab) => {
           const Icon = tab.icon;

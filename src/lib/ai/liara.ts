@@ -1,4 +1,5 @@
 import type { ImagesResponse } from "openai/resources/images";
+import { getOutputPresetSpec } from "@/lib/output-presets";
 
 const DEFAULT_LIARA_BASE_URL = "https://ai.liara.ir/api/69fe30c50bb427e049d327f6/v1";
 const DEFAULT_LIARA_IMAGE_MODEL = "google/gemini-3-pro-image-preview";
@@ -99,6 +100,10 @@ function getImageQuality(quality: string) {
   }
 
   return DEFAULT_IMAGE_QUALITY;
+}
+
+function getImageSize(outputPreset: string | null | undefined, configuredSize: string) {
+  return outputPreset ? getOutputPresetSpec(outputPreset).providerSize : configuredSize;
 }
 
 function extensionFromMimeType(mimeType: string) {
@@ -320,15 +325,17 @@ export async function generateStyledImageWithLiara({
   sourceBuffer,
   mimeType,
   stylePrompt,
+  outputPreset,
 }: GenerateImageInput): Promise<LiaraImageResult> {
   const { apiKey, baseURL, model, quality, size } = getLiaraConfig();
+  const imageSize = getImageSize(outputPreset, size);
 
   try {
     return await withTransientRetry(async () => {
       const form = new FormData();
       form.append("model", model);
       form.append("prompt", `${stylePrompt}\n\n${GENERATION_PROMPT_SUFFIX}`);
-      form.append("size", size);
+      form.append("size", imageSize);
       form.append("quality", getImageQuality(quality));
       form.append("image", new Blob([new Uint8Array(sourceBuffer)], { type: mimeType }), `source.${extensionFromMimeType(mimeType)}`);
 
@@ -363,8 +370,10 @@ export async function generateStyledImageWithLiara({
 export async function generateTextImageWithLiara({
   prompt,
   stylePrompt,
+  outputPreset,
 }: GenerateTextImageInput): Promise<LiaraImageResult> {
   const { apiKey, baseURL, model, quality, size } = getLiaraConfig();
+  const imageSize = getImageSize(outputPreset, size);
 
   try {
     return await withTransientRetry(async () => {
@@ -376,7 +385,7 @@ export async function generateTextImageWithLiara({
           body: {
             model,
             prompt: `${prompt}\n\n${stylePrompt}\n\nReturn one final premium studio product image suitable for e-commerce.`,
-            size,
+            size: imageSize,
             quality: getImageQuality(quality),
             n: 1,
           },

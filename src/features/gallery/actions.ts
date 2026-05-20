@@ -18,6 +18,7 @@ import { processGenerationBatch } from "@/lib/generation/jobs";
 import { getOutputPresetSpec, normalizeOutputPreset } from "@/lib/output-presets";
 import { analyzeAndStoreProductAssetVision, ensureProductAssetVision, pickVisionTitle } from "@/lib/product-vision";
 import { isProductType, normalizeProductType } from "@/lib/product-types";
+import { deleteStorageObject } from "@/lib/storage";
 import { getStyleForGeneration } from "@/lib/styles";
 import { saveUploadedFile } from "@/lib/uploads";
 
@@ -208,11 +209,51 @@ export async function archiveAssetAction(formData: FormData) {
     return;
   }
 
-  await db.productAsset.updateMany({
+  const assets = await db.productAsset.findMany({
     where: { id: { in: assetIds }, userId: session.userId, status: "READY", archivedAt: null },
-    data: { status: "ARCHIVED", archivedAt: new Date() },
+    select: {
+      id: true,
+      storageKey: true,
+      _count: {
+        select: { batchItems: true, projects: true },
+      },
+    },
   });
 
-  revalidatePath("/gallery");
+  const deletableAssets = assets.filter((asset) => asset._count.projects === 0 && asset._count.batchItems === 0);
+  const blockedCount = assets.length - deletableAssets.length;
+
+  if (deletableAssets.length > 0) {
+    const deleted = await db.productAsset.deleteMany({
+      where: {
+        id: { in: deletableAssets.map((asset) => asset.id) },
+        userId: session.userId,
+        status: "READY",
+        archivedAt: null,
+      },
+    });
+
+    if (deleted.count > 0) {
+      await Promise.all(
+        deletableAssets.map((asset) =>
+          deleteStorageObject(asset.storageKey).catch((error) => {
+            console.error("[gallery-asset-file-delete-failed]", {
+              assetId: asset.id,
+              storageKey: asset.storageKey,
+              error,
+            });
+          }),
+        ),
+      );
+    }
+  }
+
   revalidatePath("/dashboard");
+  revalidatePath("/gallery");
+
+  if (blockedCount > 0) {
+    redirect(`/gallery?deleteNotice=${deletableAssets.length > 0 ? "partial" : "used"}`);
+  }
+
+  redirect("/gallery?deleteNotice=deleted");
 }

@@ -11,6 +11,7 @@ import { ImageOverlayPill, JewelryImageFrame } from "@/components/ui/jewelry-ima
 import { PageShell } from "@/components/ui/page-shell";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { StyleChoiceControl } from "@/features/projects/components/style-choice-control";
 import type { StyleControlOption, StyleOption } from "@/features/projects/presets";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { normalizeProductType, PRODUCT_TYPES } from "@/lib/product-types";
@@ -379,26 +380,14 @@ export function GalleryBatchNewScreen({
 
                   if (control.type === "CHOICE" && choiceOptions.length > 0) {
                     return (
-                      <div key={control.key} className="space-y-2">
-                        <p className="text-xs text-surface/72">{control.label}</p>
-                        <div className={`grid gap-2 ${choiceOptions.length <= 2 ? "grid-cols-2" : "grid-cols-3"}`}>
-                          {choiceOptions.map((item) => (
-                            <button
-                              key={item.value}
-                              type="button"
-                              onClick={() => setStyleControlValue(control.key, item.value)}
-                              className={[
-                                "motion-press inline-flex min-h-11 items-center justify-center rounded-[var(--radius-lg)] border px-2 text-sm font-semibold focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
-                                value === item.value
-                                  ? "border-accent-bright bg-accent-wash/90 text-accent-deep shadow-[0_14px_26px_-24px_rgba(17,16,14,0.62)]"
-                                  : "border-white/14 bg-white/[0.04] text-surface/84 hover:border-white/22 hover:bg-white/[0.08]",
-                              ].join(" ")}
-                            >
-                              {item.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                      <StyleChoiceControl
+                        key={control.key}
+                        controlKey={control.key}
+                        label={control.label}
+                        options={choiceOptions}
+                        value={value}
+                        onChange={(nextValue) => setStyleControlValue(control.key, nextValue)}
+                      />
                     );
                   }
 

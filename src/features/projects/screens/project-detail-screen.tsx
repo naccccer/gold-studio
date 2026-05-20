@@ -12,15 +12,17 @@ import {
   Refresh,
   Scan,
   TickCircle,
+  Trash,
 } from "vuesax-icons-react";
 import { ActionDock } from "@/components/ui/action-dock";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
+import { ConfirmAction } from "@/components/ui/confirm-action";
 import { fieldControlClassName } from "@/components/ui/field";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
 import { ProcessingCanvas } from "@/components/ui/processing-canvas";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
-import { createFreeProjectVariantAction, renameProjectAction, retryProjectAction } from "@/features/projects/actions";
+import { archiveProjectAction, renameProjectAction, retryProjectAction } from "@/features/projects/actions";
 import { ProjectStatusRefresh } from "@/features/projects/components/project-status-refresh";
 import { resultHeroDark, uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { generateNumericSupportCode } from "@/lib/support-code";
@@ -140,6 +142,68 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
+function stripVersionSuffix(title: string) {
+  return title.replace(/\s*[-–]\s*نسخه\s+(?:دیگر|[0-9۰-۹٠-٩]+)\s*$/u, "").trim();
+}
+
+function extractStyleSettings(prompt?: string | null) {
+  if (!prompt) return [];
+
+  const settings: string[] = [];
+  const exactMatches: Array<[string, string]> = [
+    ["Background type: use a simple seamless", "نوع: ساده"],
+    ["Background type: use refined matte fabric", "نوع: پارچه"],
+    ["Background type: use premium fine-grain leather", "نوع: چرم"],
+    ["Background type: use a clean matte stone", "نوع: سنگ"],
+    ["Background type: use smooth premium paper", "نوع: کاغذ استودیویی"],
+    ["Background color: clean soft white", "رنگ: سفید نرم"],
+    ["Background color: warm milk-white ivory", "رنگ: شیری"],
+    ["Background color: pale champagne cream", "رنگ: کرم شامپاینی"],
+    ["Background color: very light neutral gray", "رنگ: طوسی روشن"],
+    ["Background color: soft warm sand beige", "رنگ: شنی روشن"],
+    ["Background color: very pale blush nude", "رنگ: رز ملایم"],
+    ["Background color: muted pale sage", "رنگ: سبز سیج"],
+    ["Background color: deep refined navy", "رنگ: سرمه‌ای"],
+    ["Background color: deep charcoal", "رنگ: ذغالی"],
+    ["Use an elegant adult woman model", "مدل: زن"],
+    ["Use an elegant adult man model", "مدل: مرد"],
+    ["Decor surface: use a restrained matte stone", "سطح: سنگی"],
+    ["Decor surface: use simple geometric blocks", "سطح: هندسی"],
+    ["Decor surface: use a matte fabric surface", "سطح: پارچه مات"],
+    ["Editorial mood: calm", "حال‌وهوا: آرام"],
+    ["Editorial mood: more luxurious", "حال‌وهوا: لوکس"],
+    ["Editorial mood: slightly bolder", "حال‌وهوا: جسور"],
+  ];
+
+  for (const [needle, label] of exactMatches) {
+    if (prompt.includes(needle)) {
+      settings.push(label);
+    }
+  }
+
+  const levelLabels: Record<string, string> = {
+    low: "کم",
+    moderate: "متوسط",
+    high: "زیاد",
+  };
+  const rangeMatches: Array<[RegExp, string]> = [
+    [/Soft shadow strength: (low|moderate|high)/, "سایه"],
+    [/Decor intensity: (low|moderate|high)/, "شدت دکور"],
+    [/Visual energy: (low|moderate|high)/, "انرژی"],
+    [/Depth of field: (low|moderate|high)/, "عمق میدان"],
+    [/Contrast intensity: (low|moderate|high)/, "کنتراست"],
+  ];
+
+  for (const [pattern, label] of rangeMatches) {
+    const match = prompt.match(pattern);
+    if (match?.[1]) {
+      settings.push(`${label}: ${levelLabels[match[1]] ?? match[1]}`);
+    }
+  }
+
+  return settings;
+}
+
 export type ProjectDetail = {
   id: string;
   title: string | null;
@@ -150,6 +214,7 @@ export type ProjectDetail = {
   outputPreset: string;
   productType: string | null;
   style: { name: string };
+  prompt?: string | null;
   errorMessage: string | null;
   freeVariantUsedAt?: Date | string | null;
   freeVariantProjectId?: string | null;
@@ -157,6 +222,7 @@ export type ProjectDetail = {
   resultImageError?: string | null;
   createdAt?: Date | string;
   titleRefreshPending?: boolean;
+  variantNumber?: number | null;
 };
 
 const failedCreditReassurance =
@@ -167,11 +233,19 @@ type ProjectDetailScreenProps = { project: ProjectDetail };
 function DetailMeta({
   projectId,
   title,
+  variantLabel,
+  styleName,
+  styleSettings,
 }: {
   projectId: string;
   title: string;
+  variantLabel?: string | null;
+  styleName: string;
+  styleSettings: string[];
 }) {
   const [editingTitle, setEditingTitle] = useState(false);
+  const [styleDetailsOpen, setStyleDetailsOpen] = useState(false);
+  const hasStyleSettings = styleSettings.length > 0;
 
   return (
     <div className="shrink-0 space-y-2 rounded-[1.15rem] border border-white/12 bg-white/[0.05] px-3.5 py-3 text-right">
@@ -218,6 +292,11 @@ function DetailMeta({
           ) : (
             <div className="flex items-center gap-2">
               <p className="truncate text-sm font-semibold text-surface">{title}</p>
+              {variantLabel ? (
+                <span className="shrink-0 rounded-full border border-white/10 bg-white/[0.07] px-2 py-0.5 text-sm font-semibold leading-5 text-surface">
+                  {variantLabel}
+                </span>
+              ) : null}
               <button
                 type="button"
                 onClick={() => setEditingTitle(true)}
@@ -228,6 +307,28 @@ function DetailMeta({
               </button>
             </div>
           )}
+        </div>
+        <div className="relative mt-0.5 max-w-[42%] shrink-0">
+          <button
+            type="button"
+            onClick={() => setStyleDetailsOpen((current) => !current)}
+            className="inline-flex w-full items-center rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-[10px] font-semibold leading-5 text-surface/76 transition hover:bg-white/[0.1]"
+            aria-expanded={styleDetailsOpen}
+            aria-label="نمایش تنظیمات سبک"
+          >
+            <span className="truncate">{styleName}</span>
+          </button>
+          {styleDetailsOpen ? (
+            <div className="absolute left-0 top-[calc(100%+0.35rem)] z-30 w-44 rounded-[0.9rem] border border-white/12 bg-[#171411] p-2 text-right shadow-[0_20px_44px_-28px_rgba(0,0,0,0.9)]">
+              <div className="flex flex-wrap gap-1.5">
+                {(hasStyleSettings ? styleSettings : ["تنظیمات خاصی ثبت نشده"]).map((item) => (
+                  <span key={item} className="rounded-full border border-white/10 bg-white/[0.06] px-2 py-1 text-[10px] leading-4 text-surface/76">
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
@@ -259,6 +360,9 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
   const resultImageSrc = project.resultImageUrl || resultHeroDark.src;
   const sourceImageSrc = project.sourceImageUrl || uploadPreview.src;
   const newVersionHref = project.sourceAssetId ? `/projects/new?assetId=${project.sourceAssetId}` : "/projects/new";
+  const freeVariantHref = project.sourceAssetId
+    ? `/projects/new?assetId=${project.sourceAssetId}&freeVariantParentId=${project.id}`
+    : "/projects/new";
   const canCreateFreeVariant =
     project.status === "COMPLETED" &&
     Boolean(project.sourceAssetId) &&
@@ -273,7 +377,12 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
     failedCreditReassurance,
     `کد پیگیری: ${errorPresentation.supportCode}`,
   ].join("\n");
-  const projectTitle = project.title?.trim() || "پروژه محصول";
+  const rawProjectTitle = project.title?.trim() || "پروژه محصول";
+  const projectTitle = stripVersionSuffix(rawProjectTitle) || rawProjectTitle;
+  const variantLabel = project.variantNumber && project.variantNumber > 1
+    ? project.variantNumber.toLocaleString("fa-IR")
+    : null;
+  const styleSettings = extractStyleSettings(project.prompt);
   const titleRefreshPending = Boolean(project.titleRefreshPending);
   const fullscreenPanLimitX = Math.max(0, (fullscreenViewport.width * (fullscreenZoom - 1)) / 2);
   const fullscreenPanLimitY = Math.max(0, (fullscreenViewport.height * (fullscreenZoom - 1)) / 2);
@@ -393,6 +502,9 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
           <DetailMeta
             projectId={project.id}
             title={projectTitle}
+            variantLabel={variantLabel}
+            styleName={project.style.name}
+            styleSettings={styleSettings}
           />
 
           <ProcessingCanvas
@@ -431,6 +543,9 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
           <DetailMeta
             projectId={project.id}
             title={projectTitle}
+            variantLabel={variantLabel}
+            styleName={project.style.name}
+            styleSettings={styleSettings}
           />
 
           <div
@@ -511,33 +626,48 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
           </div>
 
           <ActionDock className="shrink-0 pb-1" columns={2}>
-            <a
-              href={project.resultImageUrl as string}
-              download
-              className={buttonClasses({
-                className: "h-12 w-full rounded-[1rem]",
-              })}
-            >
-              <DocumentDownload aria-hidden={true} className="h-4 w-4" />
-              دانلود
-            </a>
+            <div className="grid grid-cols-[3rem_minmax(0,1fr)] gap-2">
+              <ConfirmAction
+                action={archiveProjectAction}
+                fields={[{ name: "projectId", value: project.id }]}
+                title="انتقال پروژه به آرشیو"
+                description="این پروژه از لیست پروژه‌ها خارج می‌شود و در آرشیو حساب قابل مشاهده و بازیابی خواهد بود."
+                confirmLabel="انتقال به آرشیو"
+                trigger={(open) => (
+                  <button
+                    type="button"
+                    onClick={open}
+                    aria-label="حذف پروژه"
+                    title="حذف"
+                    className={buttonClasses({
+                      variant: "danger",
+                      size: "icon",
+                      className: "h-12 w-12 rounded-[1rem]",
+                    })}
+                  >
+                    <Trash aria-hidden={true} className="h-4 w-4" />
+                  </button>
+                )}
+              />
+              <a
+                href={project.resultImageUrl as string}
+                download
+                className={buttonClasses({
+                  className: "h-12 min-w-0 flex-1 rounded-[1rem]",
+                })}
+              >
+                <DocumentDownload aria-hidden={true} className="h-4 w-4" />
+                دانلود
+              </a>
+            </div>
             {canCreateFreeVariant ? (
-              <form action={createFreeProjectVariantAction}>
-                <input type="hidden" name="projectId" value={project.id} />
-                <button
-                  type="submit"
-                  className={buttonClasses({
-                    variant: "secondary",
-                    className: "h-12 w-full rounded-[1rem] text-sm",
-                  })}
-                >
-                  <Refresh aria-hidden={true} className="h-4 w-4" />
-                  نسخه دیگر
-                  <span className="inline-flex min-h-5 items-center rounded-full border border-accent-soft bg-accent-wash px-2 text-[10px] font-bold leading-none text-accent-deep">
-                    رایگان
-                  </span>
-                </button>
-              </form>
+              <ButtonLink href={freeVariantHref} variant="secondary" className="h-12 w-full rounded-[1rem] text-sm">
+                <Refresh aria-hidden={true} className="h-4 w-4" />
+                نسخه دیگر
+                <span className="inline-flex min-h-5 items-center rounded-full border border-accent-soft bg-accent-wash px-2 text-[10px] font-bold leading-none text-accent-deep">
+                  رایگان
+                </span>
+              </ButtonLink>
             ) : (
               <ButtonLink href={newVersionHref} variant="secondary" className="h-12 w-full rounded-[1rem] text-sm">
                 <Refresh aria-hidden={true} className="h-4 w-4" />
@@ -702,6 +832,9 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
         <DetailMeta
           projectId={project.id}
           title={projectTitle}
+          variantLabel={variantLabel}
+          styleName={project.style.name}
+          styleSettings={styleSettings}
         />
 
         <JewelryImageFrame aspect="portrait" treatment="dark" className="min-h-0 flex-1 rounded-[1.45rem]">

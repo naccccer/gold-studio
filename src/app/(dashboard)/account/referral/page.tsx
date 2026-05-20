@@ -10,9 +10,20 @@ import { ensureUserReferralCode } from "@/lib/referrals";
 
 export const dynamic = "force-dynamic";
 
+function toLatinDigits(value: string) {
+  return value.replace(/[۰-۹٠-٩]/g, (digit) => {
+    const persianIndex = "۰۱۲۳۴۵۶۷۸۹".indexOf(digit);
+    if (persianIndex >= 0) return String(persianIndex);
+
+    const arabicIndex = "٠١٢٣٤٥٦٧٨٩".indexOf(digit);
+    return arabicIndex >= 0 ? String(arabicIndex) : digit;
+  });
+}
+
 export default async function AccountReferralPage() {
   const session = await requireUserSession();
   const referralCode = await ensureUserReferralCode(session.userId);
+  const displayReferralCode = toLatinDigits(referralCode).toLowerCase();
   const [referrals, rewardEvents] = await Promise.all([
     db.referral.findMany({
       where: { inviterId: session.userId },
@@ -36,8 +47,12 @@ export default async function AccountReferralPage() {
           </span>
           <h2 className="text-sm font-semibold text-foreground">کد شما</h2>
         </div>
-        <p className="rounded-[0.95rem] bg-white px-3 py-3 text-xl font-semibold tracking-[0.18em] text-foreground" dir="ltr">
-          {referralCode}
+        <p
+          className="rounded-[0.95rem] bg-white px-3 py-3 font-mono text-xl font-semibold tracking-[0.18em] text-foreground"
+          dir="ltr"
+          lang="en"
+        >
+          {displayReferralCode}
         </p>
       </section>
 

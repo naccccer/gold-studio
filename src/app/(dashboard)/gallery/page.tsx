@@ -4,8 +4,17 @@ import { db } from "@/lib/db";
 import { storagePublicUrl } from "@/lib/storage";
 import { getUserVisibleStyles } from "@/lib/styles";
 
-export default async function GalleryPage() {
+type GalleryPageProps = {
+  searchParams?: Promise<{ deleteNotice?: string }>;
+};
+
+function normalizeDeleteNotice(value?: string) {
+  return value === "deleted" || value === "partial" || value === "used" ? value : undefined;
+}
+
+export default async function GalleryPage({ searchParams }: GalleryPageProps) {
   const session = await requireUserSession();
+  const params = await searchParams;
   const [assets, styles] = await Promise.all([
     db.productAsset.findMany({
       where: { userId: session.userId, status: "READY", archivedAt: null },
@@ -24,5 +33,11 @@ export default async function GalleryPage() {
     fileUrl: storagePublicUrl(asset.storageKey),
   }));
 
-  return <GalleryScreen assets={displayAssets as GalleryAssetItem[]} styles={styles} />;
+  return (
+    <GalleryScreen
+      assets={displayAssets as GalleryAssetItem[]}
+      styles={styles}
+      deleteNotice={normalizeDeleteNotice(params?.deleteNotice)}
+    />
+  );
 }

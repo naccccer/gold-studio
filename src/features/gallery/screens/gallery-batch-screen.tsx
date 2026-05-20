@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Gallery, Magicpen } from "vuesax-icons-react";
+import { Gallery } from "vuesax-icons-react";
 import { ButtonLink } from "@/components/ui/button";
 import { ImageOverlayPill, JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
@@ -59,17 +59,11 @@ export function GalleryBatchScreen({ batch }: GalleryBatchScreenProps) {
         </ButtonLink>
       </div>
 
-      <section className="space-y-3 rounded-[1.25rem] border border-white/12 bg-white/[0.05] px-4 py-4 shadow-[var(--shadow-studio-frame)]">
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <h2 className="inline-flex items-center gap-2 text-base font-semibold text-surface">
-              <Magicpen aria-hidden={true} className="h-4 w-4" />
-              تولید گروهی
-            </h2>
-            <p className="text-sm leading-7 text-surface/68">
-              {batch.items.length.toLocaleString("fa-IR")} تصویر با سبک {batch.style.name}
-            </p>
-          </div>
+      <section className="space-y-3 rounded-[1.25rem] border border-white/12 bg-white/[0.05] px-4 py-3.5 shadow-[var(--shadow-studio-frame)]">
+        <div className="flex items-center justify-between gap-3">
+          <p className="min-w-0 flex-1 truncate text-sm font-semibold leading-7 text-surface/82">
+            {batch.items.length.toLocaleString("fa-IR")} تصویر با سبک {batch.style.name}
+          </p>
           <ImageOverlayPill tone="accent">{statusLabelMap[batch.status] ?? batch.status}</ImageOverlayPill>
         </div>
 

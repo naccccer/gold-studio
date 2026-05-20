@@ -17,6 +17,7 @@ import {
   Trash,
 } from "vuesax-icons-react";
 import { Button, ButtonLink, IconButton, buttonClasses } from "@/components/ui/button";
+import { ConfirmAction } from "@/components/ui/confirm-action";
 import { EmptyState } from "@/components/ui/empty-state";
 import { fieldControlClassName } from "@/components/ui/field";
 import {
@@ -49,6 +50,7 @@ export type GalleryAssetItem = {
 type GalleryScreenProps = {
   assets: GalleryAssetItem[];
   styles: StyleOption[];
+  deleteNotice?: "deleted" | "partial" | "used";
 };
 
 const MAX_BATCH_UPLOAD_FILES = 10;
@@ -60,7 +62,7 @@ function scrollGalleryToTop() {
   });
 }
 
-export function GalleryScreen({ assets, styles }: GalleryScreenProps) {
+export function GalleryScreen({ assets, styles, deleteNotice }: GalleryScreenProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -164,6 +166,16 @@ export function GalleryScreen({ assets, styles }: GalleryScreenProps) {
     <>
       <PageShell maxWidth="lg" className="space-y-5 pb-[12.5rem]">
         <div className="flex flex-col gap-5">
+        {deleteNotice ? (
+          <p className="motion-state rounded-[1rem] border border-accent/24 bg-accent-wash/76 px-3 py-2 text-sm leading-6 text-accent-deep">
+            {deleteNotice === "deleted"
+              ? "عکس از گالری حذف شد."
+              : deleteNotice === "partial"
+                ? "عکس‌های آزاد حذف شدند. عکس‌هایی که در پروژه استفاده شده‌اند برای حفظ خروجی‌ها باقی ماندند."
+                : "این عکس در پروژه استفاده شده و برای حفظ خروجی‌ها حذف نشد."}
+          </p>
+        ) : null}
+
         {pickerError ? (
           <p className="motion-state rounded-[1rem] border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
             {pickerError}
@@ -261,20 +273,18 @@ export function GalleryScreen({ assets, styles }: GalleryScreenProps) {
                           </button>
                         </div>
                       </form>
-                      <form
+                      <ConfirmAction
                         action={archiveAssetAction}
-                        onSubmit={(event) => {
-                          if (!window.confirm("این عکس به آرشیو می‌رود و بعد از ۱۴ روز حذف کامل می‌شود. ادامه می‌دهید؟")) {
-                            event.preventDefault();
-                          }
-                        }}
-                      >
-                        <input type="hidden" name="assetId" value={asset.id} />
-                        <button type="submit" className={contextMenuDangerItemClasses}>
-                          <Trash aria-hidden={true} className="h-3.5 w-3.5" />
-                          حذف
-                        </button>
-                      </form>
+                        fields={[{ name: "assetId", value: asset.id }]}
+                        title="حذف عکس از گالری"
+                        description="این عکس به‌صورت دائمی از گالری حذف می‌شود. اگر در پروژه‌ای استفاده شده باشد، برای حفظ خروجی‌ها حذف نخواهد شد."
+                        trigger={(open) => (
+                          <button type="button" onClick={open} className={contextMenuDangerItemClasses}>
+                            <Trash aria-hidden={true} className="h-3.5 w-3.5" />
+                            حذف
+                          </button>
+                        )}
+                      />
                     </ItemContextMenu>
                   </div>
                 </article>
@@ -303,26 +313,21 @@ export function GalleryScreen({ assets, styles }: GalleryScreenProps) {
           </div>
         ) : (
           <div className="pointer-events-auto grid grid-cols-[2.75rem_4rem_minmax(0,1fr)] items-center gap-3 rounded-[1.25rem] border border-border/65 bg-surface/96 p-3 shadow-[0_18px_42px_-30px_rgba(17,16,14,0.42)] backdrop-blur">
-            <form
+            <ConfirmAction
               action={archiveAssetAction}
-              onSubmit={(event) => {
-                const message =
-                  selectedCount === 1
-                    ? "آیتم انتخاب‌شده به آرشیو می‌رود و بعد از ۱۴ روز حذف کامل می‌شود. ادامه می‌دهید؟"
-                    : "آیتم‌های انتخاب‌شده به آرشیو می‌روند و بعد از ۱۴ روز حذف کامل می‌شوند. ادامه می‌دهید؟";
-
-                if (!window.confirm(message)) {
-                  event.preventDefault();
-                }
-              }}
-            >
-              {selectedIds.map((id) => (
-                <input key={id} type="hidden" name="assetId" value={id} />
-              ))}
-              <IconButton type="submit" label="حذف" variant="danger" className="h-11 w-11">
-                <Trash aria-hidden={true} className="h-4 w-4" />
-              </IconButton>
-            </form>
+              fields={selectedIds.map((id) => ({ name: "assetId", value: id }))}
+              title={selectedCount === 1 ? "حذف عکس از گالری" : "حذف عکس‌های انتخاب‌شده"}
+              description={
+                selectedCount === 1
+                  ? "این عکس به‌صورت دائمی از گالری حذف می‌شود. اگر در پروژه‌ای استفاده شده باشد، برای حفظ خروجی‌ها حذف نخواهد شد."
+                  : "عکس‌های انتخاب‌شده به‌صورت دائمی از گالری حذف می‌شوند. موارد استفاده‌شده در پروژه‌ها برای حفظ خروجی‌ها باقی می‌مانند."
+              }
+              trigger={(open) => (
+                <IconButton type="button" onClick={open} label="حذف" variant="danger" className="h-11 w-11">
+                  <Trash aria-hidden={true} className="h-4 w-4" />
+                </IconButton>
+              )}
+            />
             <Button
               type="button"
               variant="ghost"

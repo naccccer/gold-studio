@@ -5,6 +5,7 @@ import { CloseCircle, DocumentDownload, Edit2, Eye, Refresh, TickCircle, Trash }
 import { useRef, useState } from "react";
 import { ActionDock } from "@/components/ui/action-dock";
 import { Button, IconButton, buttonClasses } from "@/components/ui/button";
+import { ConfirmAction } from "@/components/ui/confirm-action";
 import { EmptyState } from "@/components/ui/empty-state";
 import { fieldControlClassName } from "@/components/ui/field";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
@@ -222,20 +223,19 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                                     </button>
                                   </div>
                                 </form>
-                                <form
+                                <ConfirmAction
                                   action={archiveProjectAction}
-                                  onSubmit={(event) => {
-                                    if (!window.confirm("این پروژه به آرشیو می‌رود و بعد از ۱۴ روز حذف کامل می‌شود. ادامه می‌دهید؟")) {
-                                      event.preventDefault();
-                                    }
-                                  }}
-                                >
-                                  <input type="hidden" name="projectId" value={project.id} />
-                                  <button type="submit" className={contextMenuDangerItemClasses}>
-                                    <Trash aria-hidden={true} className="h-3.5 w-3.5" />
-                                    حذف
-                                  </button>
-                                </form>
+                                  fields={[{ name: "projectId", value: project.id }]}
+                                  title="انتقال پروژه به آرشیو"
+                                  description="این پروژه از لیست پروژه‌ها خارج می‌شود و در آرشیو حساب قابل مشاهده و بازیابی خواهد بود."
+                                  confirmLabel="انتقال به آرشیو"
+                                  trigger={(open) => (
+                                    <button type="button" onClick={open} className={contextMenuDangerItemClasses}>
+                                      <Trash aria-hidden={true} className="h-3.5 w-3.5" />
+                                      حذف
+                                    </button>
+                                  )}
+                                />
                               </ItemContextMenu>
                             </div>
                           </div>
@@ -267,21 +267,18 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
         {selectedIds.length > 0 ? (
           <ActionDock sticky className="!grid-cols-[2.25rem_minmax(0,1fr)] items-center">
             <>
-              <form
+              <ConfirmAction
                 action={archiveProjectAction}
-                onSubmit={(event) => {
-                  if (!window.confirm("پروژه‌های انتخاب‌شده به آرشیو می‌روند و بعد از ۱۴ روز حذف کامل می‌شوند. ادامه می‌دهید؟")) {
-                    event.preventDefault();
-                  }
-                }}
-              >
-                {selectedIds.map((id) => (
-                  <input key={id} type="hidden" name="projectId" value={id} />
-                ))}
-                <IconButton type="submit" label="حذف" variant="danger" className="h-11 w-11">
-                  <Trash aria-hidden={true} className="h-4 w-4" />
-                </IconButton>
-              </form>
+                fields={selectedIds.map((id) => ({ name: "projectId", value: id }))}
+                title="انتقال پروژه‌ها به آرشیو"
+                description="پروژه‌های انتخاب‌شده از لیست پروژه‌ها خارج می‌شوند و در آرشیو حساب قابل مشاهده و بازیابی خواهند بود."
+                confirmLabel="انتقال به آرشیو"
+                trigger={(open) => (
+                  <IconButton type="button" onClick={open} label="حذف" variant="danger" className="h-11 w-11">
+                    <Trash aria-hidden={true} className="h-4 w-4" />
+                  </IconButton>
+                )}
+              />
               <Button type="button" variant="secondary" className="h-12 w-full rounded-[1rem]" onClick={() => setSelectedIds([])}>
                 <CloseCircle aria-hidden={true} className="h-4 w-4" />
                 لغو

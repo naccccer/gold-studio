@@ -8,7 +8,7 @@ import { getUserVisibleStyles } from "@/lib/styles";
 export default async function NewProjectPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ assetId?: string }>;
+  searchParams?: Promise<{ assetId?: string; freeVariantParentId?: string }>;
 }) {
   const session = await requireUserSession();
   const params = await searchParams;
@@ -40,6 +40,7 @@ export default async function NewProjectPage({
       galleryAssets={galleryAssets.map((asset) => ({ ...asset, fileUrl: storagePublicUrl(asset.storageKey) }))}
       styles={styles}
       selectedAssetId={params?.assetId}
+      freeVariantParentId={params?.freeVariantParentId}
       defaultOutputPreset={defaultOutputPreset}
     />
   );

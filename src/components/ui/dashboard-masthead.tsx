@@ -25,7 +25,9 @@ const titles: Array<{ match: (pathname: string) => boolean; title: string; paren
   { match: (pathname) => pathname === "/account/support", title: "پشتیبانی", parent: "/account" },
   { match: (pathname) => pathname === "/account/faq", title: "سوالات پرتکرار", parent: "/account" },
   { match: (pathname) => pathname === "/account/output-settings", title: "تنظیمات خروجی", parent: "/account" },
+  { match: (pathname) => pathname === "/account/archive", title: "آرشیو", parent: "/account" },
   { match: (pathname) => pathname === "/account", title: "حساب" },
+  { match: (pathname) => pathname === "/billing", title: "پلن‌ها", parent: "/account" },
   { match: () => true, title: "خانه" },
 ];
 
