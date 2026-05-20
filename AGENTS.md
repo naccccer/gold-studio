@@ -74,7 +74,7 @@ npm run build
 
 If build fails only because of the known PrismaClient issue in `src/lib/db.ts`, report it clearly as unrelated and unchanged.
 
-Screenshot-driven UI phases should capture mobile screenshots at `393x852` where relevant.
+UI phases should consider the `393x852` mobile layout target, but do not capture screenshots unless explicitly requested.
 
 ## Network/Proxy Rules
 - The developer may be in Iran and using limited paid proxy bandwidth.

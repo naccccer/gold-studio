@@ -4,7 +4,7 @@
 
 Ovala is a Farsi-first, RTL-first, mobile-first product-photo studio for jewelry, gold, watches, and luxury accessories. For the MVP, the user app stays phone-width even on desktop. Desktop should present the same focused mobile workspace inside an intentional premium stage, not expand into a SaaS dashboard.
 
-Primary visual approval size: `393x852`.
+Primary mobile layout target: `393x852`.
 
 ## Direction Check
 
@@ -141,7 +141,7 @@ For each phase:
 - Implement only the phase scope.
 - Do not capture screenshots unless explicitly requested; use code/layout inspection and verification commands instead.
 - Manually review visible Persian text. Automated mojibake checks are not enough.
-- Report screenshots skipped, checks run, known failures, and remaining visual risks.
+- Report checks run, known failures, and remaining visual risks.
 
 ## Phase 0: Foundation, Naming, And Encoding
 
@@ -167,12 +167,12 @@ Scope:
 
 Must pass:
 
-- No visible mojibake in user-facing `393x852` screenshots.
+- No visible mojibake in user-facing `393x852` layouts.
 - Product name appears as Ovala in user-facing UI.
 - Admin remains operational but does not feel like a separate brand.
 - `npm run check:mojibake` catches representative Latin-1 mojibake markers in source/docs where Persian is expected.
 
-Screenshots: login, signup, home, gallery, new project, processing, result, account.
+Visual review targets: login, signup, home, gallery, new project, processing, result, account. Capture screenshots only if explicitly requested.
 
 ## Phase 1: Mobile Shell, Masthead, Navigation, And Logo System
 
@@ -204,7 +204,7 @@ Must pass:
 - Masthead does not clip, disappear, or become low contrast.
 - Focused screens fit `393x852` unless dynamic content requires scroll.
 
-Screenshots: login, signup, home, new project, processing, result, one desktop centered-shell view.
+Visual review targets: login, signup, home, new project, processing, result, one desktop centered-shell view. Capture screenshots only if explicitly requested.
 
 ## Phase 2: UI Primitives And Token Consolidation
 
@@ -237,7 +237,7 @@ Must pass:
 - Tap targets are at least 44px where applicable.
 - Hardcoded visual values are materially reduced in feature screens.
 
-Screenshots: real screens showing buttons, cards, fields, segmented controls, menus, empty states, and status pills.
+Visual review targets: real screens showing buttons, cards, fields, segmented controls, menus, empty states, and status pills. Capture screenshots only if explicitly requested.
 
 ## Phase 2.5: Responsive Layout Rhythm And Shell QA
 
@@ -258,7 +258,7 @@ Must pass:
 - Context menus stay inside media frames visually while retaining accessible tap targets.
 - No individual screen redesign or copy rewrite beyond layout fixes.
 
-Screenshots: home, gallery populated, projects populated, projects empty if easy, new project source, new project size, account, billing, and one desktop centered-shell view at `393x852`, `360x800`, `430x932`, and desktop where relevant.
+Visual review targets: home, gallery populated, projects populated, projects empty if easy, new project source, new project size, account, billing, and one desktop centered-shell view at `393x852`, `360x800`, `430x932`, and desktop where relevant. Capture screenshots only if explicitly requested.
 
 Completion notes:
 
@@ -303,7 +303,7 @@ Must pass:
 - Home has one clear next action.
 - No generic SaaS cards, AI magic language, or decorative filler.
 
-Screenshots: login, signup, home, empty and populated home states if available.
+Visual review targets: login, signup, home, empty and populated home states if available. Capture screenshots only if explicitly requested.
 
 ## Phase 4: Core Creation Flow
 
@@ -336,7 +336,7 @@ Must pass:
 - Style selection is curated and image-led.
 - Processing feels like a controlled studio process, not generic AI animation.
 
-Screenshots: gallery empty, gallery populated, source step, size step, style step, processing.
+Visual review targets: gallery empty, gallery populated, source step, size step, style step, processing. Capture screenshots only if explicitly requested.
 
 ## Phase 5: Result Review And Project Ownership
 
@@ -365,7 +365,7 @@ Must pass:
 - Failed state is calm and recoverable.
 - Projects list scrolls naturally and uses the shared media-card system.
 
-Screenshots: completed result, fullscreen result, failed result, processing, projects list.
+Visual review targets: completed result, fullscreen result, failed result, processing, projects list. Capture screenshots only if explicitly requested.
 
 ## Phase 6: Account, Billing, Support, And Settings
 
@@ -394,7 +394,7 @@ Must pass:
 - Long utility screens scroll naturally with clean section rhythm.
 - Admin entry appears only for admins and is clear but not loud.
 
-Screenshots: account, billing states/tabs, support, FAQ.
+Visual review targets: account, billing states/tabs, support, FAQ. Capture screenshots only if explicitly requested.
 
 ## Phase 7: Admin Alignment
 
@@ -424,7 +424,7 @@ Must pass:
 - Provider/debug controls remain admin-only.
 - Package and payment operations feel trustworthy, not decorative.
 
-Screenshots: admin home, users, packages, projects, styles at `393x852`; desktop admin where density matters.
+Visual review targets: admin home, users, packages, projects, styles at `393x852`; desktop admin where density matters. Capture screenshots only if explicitly requested.
 
 ## Phase 8: Premium Motion Foundation
 
@@ -453,7 +453,7 @@ Must pass:
 - Mobile performance remains safe; no new animation library is introduced without a concrete need.
 - User-facing text-to-image, provider, generation, and debug logic remain untouched.
 
-Screenshots: skipped unless explicitly requested.
+Screenshots: capture only if explicitly requested.
 
 ## Final UI Release Gate
 

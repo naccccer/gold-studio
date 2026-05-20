@@ -11,6 +11,7 @@
     "db:generate": "prisma generate",
     "db:start": "powershell -ExecutionPolicy Bypass -File scripts/db-start.ps1",
     "db:stop": "powershell -ExecutionPolicy Bypass -File scripts/db-stop.ps1",
+    "db:repair-access": "powershell -ExecutionPolicy Bypass -File scripts/db-repair-access.ps1",
     "check:liara": "node scripts/check-liara-direct.mjs",
     "cleanup:archives": "node scripts/cleanup-archives.mjs",
     "check:mojibake": "node scripts/check-mojibake.mjs",

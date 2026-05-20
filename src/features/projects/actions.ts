@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
@@ -364,6 +365,87 @@ export async function archiveProjectAction(formData: FormData) {
 
   revalidatePath("/projects");
   revalidatePath("/dashboard");
+}
+
+export async function createFreeProjectVariantAction(formData: FormData) {
+  const session = await requireUserSession();
+  const projectId = String(formData.get("projectId") ?? "").trim();
+
+  if (!projectId) {
+    return;
+  }
+
+  const variantId = randomUUID();
+  const variant = await db.$transaction(async (tx) => {
+    const parent = await tx.project.findFirst({
+      where: {
+        id: projectId,
+        userId: session.userId,
+        status: "COMPLETED",
+        archivedAt: null,
+        variantParentId: null,
+      },
+      select: {
+        id: true,
+        userId: true,
+        sourceAssetId: true,
+        title: true,
+        sourceImageUrl: true,
+        outputPreset: true,
+        styleId: true,
+        prompt: true,
+        freeVariantUsedAt: true,
+        freeVariantProjectId: true,
+      },
+    });
+
+    if (!parent?.sourceAssetId || parent.freeVariantUsedAt || parent.freeVariantProjectId) {
+      return null;
+    }
+
+    const claimed = await tx.project.updateMany({
+      where: {
+        id: parent.id,
+        userId: session.userId,
+        status: "COMPLETED",
+        archivedAt: null,
+        variantParentId: null,
+        freeVariantUsedAt: null,
+        freeVariantProjectId: null,
+      },
+      data: { freeVariantProjectId: variantId },
+    });
+
+    if (claimed.count === 0) {
+      return null;
+    }
+
+    return tx.project.create({
+      data: {
+        id: variantId,
+        userId: parent.userId,
+        sourceAssetId: parent.sourceAssetId,
+        title: parent.title ? `${parent.title} - نسخه دیگر` : "نسخه دیگر",
+        sourceImageUrl: parent.sourceImageUrl,
+        outputPreset: parent.outputPreset,
+        styleId: parent.styleId,
+        prompt: parent.prompt,
+        status: "QUEUED",
+        variantParentId: parent.id,
+      },
+      select: { id: true },
+    });
+  });
+
+  if (!variant) {
+    revalidatePath(`/projects/${projectId}`);
+    return;
+  }
+
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath("/projects");
+  after(() => processImageProject(variant.id));
+  redirect(`/projects/${variant.id}`);
 }
 
 export async function retryProjectAction(formData: FormData) {

@@ -20,7 +20,7 @@ import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
 import { ProcessingCanvas } from "@/components/ui/processing-canvas";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
-import { renameProjectAction, retryProjectAction } from "@/features/projects/actions";
+import { createFreeProjectVariantAction, renameProjectAction, retryProjectAction } from "@/features/projects/actions";
 import { ProjectStatusRefresh } from "@/features/projects/components/project-status-refresh";
 import { resultHeroDark, uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { generateNumericSupportCode } from "@/lib/support-code";
@@ -151,6 +151,9 @@ export type ProjectDetail = {
   productType: string | null;
   style: { name: string };
   errorMessage: string | null;
+  freeVariantUsedAt?: Date | string | null;
+  freeVariantProjectId?: string | null;
+  variantParentId?: string | null;
   resultImageError?: string | null;
   createdAt?: Date | string;
   titleRefreshPending?: boolean;
@@ -256,6 +259,12 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
   const resultImageSrc = project.resultImageUrl || resultHeroDark.src;
   const sourceImageSrc = project.sourceImageUrl || uploadPreview.src;
   const newVersionHref = project.sourceAssetId ? `/projects/new?assetId=${project.sourceAssetId}` : "/projects/new";
+  const canCreateFreeVariant =
+    project.status === "COMPLETED" &&
+    Boolean(project.sourceAssetId) &&
+    !project.variantParentId &&
+    !project.freeVariantUsedAt &&
+    !project.freeVariantProjectId;
   const processingMoments = buildProcessingMoments(project.style.name);
   const errorPresentation = formatProjectError(visibleProject);
   const errorCopyText = [
@@ -512,10 +521,29 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               <DocumentDownload aria-hidden={true} className="h-4 w-4" />
               دانلود
             </a>
-            <ButtonLink href={newVersionHref} variant="secondary" className="h-12 w-full rounded-[1rem] text-sm">
-              <Refresh aria-hidden={true} className="h-4 w-4" />
-              نسخه دیگر
-            </ButtonLink>
+            {canCreateFreeVariant ? (
+              <form action={createFreeProjectVariantAction}>
+                <input type="hidden" name="projectId" value={project.id} />
+                <button
+                  type="submit"
+                  className={buttonClasses({
+                    variant: "secondary",
+                    className: "h-12 w-full rounded-[1rem] text-sm",
+                  })}
+                >
+                  <Refresh aria-hidden={true} className="h-4 w-4" />
+                  نسخه دیگر
+                  <span className="inline-flex min-h-5 items-center rounded-full border border-accent-soft bg-accent-wash px-2 text-[10px] font-bold leading-none text-accent-deep">
+                    رایگان
+                  </span>
+                </button>
+              </form>
+            ) : (
+              <ButtonLink href={newVersionHref} variant="secondary" className="h-12 w-full rounded-[1rem] text-sm">
+                <Refresh aria-hidden={true} className="h-4 w-4" />
+                نسخه دیگر
+              </ButtonLink>
+            )}
           </ActionDock>
         </section>
 

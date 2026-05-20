@@ -142,6 +142,9 @@ model Project {
   prompt           String                @db.Text
   errorMessage     String?
   archivedAt       DateTime?
+  freeVariantUsedAt DateTime?
+  freeVariantProjectId String?
+  variantParentId String?
   batchItems       GenerationBatchItem[]
   providerEvents   ProviderEvent[]
   creditReservations GenerationCreditReservation[]
@@ -152,6 +155,8 @@ model Project {
   @@index([userId, archivedAt])
   @@index([sourceAssetId])
   @@index([styleId])
+  @@index([freeVariantProjectId])
+  @@index([variantParentId])
 }
 
 model StyleCategory {

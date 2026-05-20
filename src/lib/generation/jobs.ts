@@ -167,6 +167,12 @@ export async function processImageProject(projectId: string) {
       where: { id: projectId },
       data: { status: "COMPLETED", resultImageUrl: result.publicUrl, resultStorageKey: result.storageKey, errorMessage: null },
     });
+    if (project.variantParentId) {
+      await db.project.updateMany({
+        where: { id: project.variantParentId, freeVariantProjectId: projectId, freeVariantUsedAt: null },
+        data: { freeVariantUsedAt: new Date() },
+      });
+    }
     await captureGenerationCreditReservation({ projectId });
     await refreshGenerationBatchesForProject(projectId);
   } catch (error) {
@@ -185,6 +191,16 @@ export async function processImageProject(projectId: string) {
         errorMessage: userErrorMessage(error, "تولید تصویر کامل نشد. جزئیات بیشتر در بخش ادمین و رویدادهای provider ثبت شد."),
       },
     });
+    const failedProject = await db.project.findUnique({
+      where: { id: projectId },
+      select: { variantParentId: true },
+    });
+    if (failedProject?.variantParentId) {
+      await db.project.updateMany({
+        where: { id: failedProject.variantParentId, freeVariantProjectId: projectId, freeVariantUsedAt: null },
+        data: { freeVariantProjectId: null },
+      });
+    }
     await refreshGenerationBatchesForProject(projectId);
   }
 }
