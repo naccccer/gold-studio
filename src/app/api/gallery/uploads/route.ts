@@ -3,6 +3,7 @@ import { after } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { analyzeAndStoreProductAssetVision } from "@/lib/product-vision";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { generateNumericSupportCode, logSupportError } from "@/lib/support-code";
 import { saveUploadedFile } from "@/lib/uploads";
 
@@ -18,6 +19,16 @@ export async function POST(request: Request) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "نشست کاربر معتبر نیست." }, { status: 401 });
+  }
+
+  const limited = await checkRateLimit({
+    scope: "gallery:upload",
+    identifier: session.userId,
+    limit: 20,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!limited.ok) {
+    return NextResponse.json({ error: limited.error }, { status: 429 });
   }
 
   const formData = await request.formData();

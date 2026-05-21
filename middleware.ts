@@ -7,6 +7,10 @@ export function middleware(request: NextRequest) {
   const hasSession = Boolean(request.cookies.get(COOKIE_NAME)?.value);
   const pathname = request.nextUrl.pathname;
 
+  if (pathname.startsWith("/uploads/")) {
+    return new Response("Not found", { status: 404 });
+  }
+
   const needsAuth =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/account") ||
@@ -23,5 +27,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/account/:path*", "/gallery/:path*", "/projects/:path*", "/admin/:path*"],
+  matcher: ["/dashboard/:path*", "/account/:path*", "/gallery/:path*", "/projects/:path*", "/admin/:path*", "/uploads/:path*"],
 };

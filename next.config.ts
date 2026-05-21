@@ -18,6 +18,14 @@ const remotePattern = s3RemotePattern();
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1", "localhost"],
+  turbopack: {
+    ignoreIssue: [
+      {
+        path: "**/next.config.ts",
+        title: "Encountered unexpected file in NFT list",
+      },
+    ],
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: "8mb",

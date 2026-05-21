@@ -25,7 +25,6 @@ Ovala is a mobile-first Farsi RTL web app for turning low-quality jewelry, gold,
    - `DATABASE_URL`
    - `AUTH_SECRET`
    - `LIARA_API_KEY`
-   - `ADMIN_EMAIL` optional initial admin marker
 4. Generate Prisma client:
    ```bash
    npm run db:generate
@@ -38,6 +37,10 @@ Ovala is a mobile-first Farsi RTL web app for turning low-quality jewelry, gold,
    ```bash
    npm run dev
    ```
+7. Bootstrap the first admin locally:
+   ```bash
+   npm run admin:bootstrap -- --email admin@example.com --password strong-password
+   ```
 
 ## Useful Scripts
 - `npm run dev`: generate Prisma client and start Next dev server.
@@ -47,6 +50,7 @@ Ovala is a mobile-first Farsi RTL web app for turning low-quality jewelry, gold,
 - `npm run check:mojibake`: detect common Persian mojibake.
 - `npm run db:generate`: generate Prisma client into `src/generated/prisma`.
 - `npm run db:start` / `npm run db:stop`: manage the isolated local MariaDB helper.
+- `npm run admin:bootstrap`: create or promote a local admin account from the terminal.
 - `npm run cleanup:archives`: hard-delete archived assets/projects after the retention window.
 
 ## Environment
@@ -58,9 +62,9 @@ Image generation defaults in docs should match `.env.example`:
 - `LIARA_IMAGE_SIZE` is the default provider size when no output preset overrides it.
 - `LIARA_IMAGE_QUALITY` is `2K`.
 
-For local/live VPS tests, keep `STORAGE_DRIVER="local"` and make sure `public/uploads` is writable. Switch to `STORAGE_DRIVER="s3"` only when persistent object storage is intentionally configured.
+For local/live VPS tests, keep `STORAGE_DRIVER="local"` and make sure `.local-storage/uploads` is writable. Switch to `STORAGE_DRIVER="s3"` only when persistent object storage is intentionally configured.
 
-When `STORAGE_DRIVER="local"`, uploaded files live under `public/uploads`. That directory is intentionally Git-ignored and should be copied separately between deploy folders or servers.
+When `STORAGE_DRIVER="local"`, uploaded files live under `.local-storage/uploads` and stream through `/api/storage/...` with authorization. Do not store uploaded user files in `public/uploads`.
 
 ## Routes
 User routes:

@@ -72,25 +72,37 @@ export async function reserveGenerationCredit({
   const now = new Date();
 
   return db.$transaction(async (tx) => {
-    const subscriptions = await tx.userSubscription.findMany({
-      where: {
-        userId,
-        status: "ACTIVE",
-        currentPeriodStart: { lte: now },
-        currentPeriodEnd: { gt: now },
-      },
-      orderBy: { currentPeriodEnd: "asc" },
-      take: 5,
-    });
-    const subscription = subscriptions.find(
-      (item) => item.creditsUsedThisPeriod + item.reservedCredits < item.creditsPerPeriod,
-    );
+    const subscriptions = await tx.$queryRaw<
+      Array<{
+        id: string;
+        creditsPerPeriod: number;
+        creditsUsedThisPeriod: number;
+        reservedCredits: number;
+      }>
+    >`
+      SELECT id, creditsPerPeriod, creditsUsedThisPeriod, reservedCredits
+      FROM \`UserSubscription\`
+      WHERE userId = ${userId}
+        AND status = 'ACTIVE'
+        AND currentPeriodStart <= ${now}
+        AND currentPeriodEnd > ${now}
+      ORDER BY currentPeriodEnd ASC
+      LIMIT 5
+      FOR UPDATE
+    `;
+    const subscription = subscriptions.find((item) => item.creditsUsedThisPeriod + item.reservedCredits < item.creditsPerPeriod);
 
     if (subscription) {
-      await tx.userSubscription.update({
-        where: { id: subscription.id },
+      const updatedSubscription = await tx.userSubscription.updateMany({
+        where: {
+          id: subscription.id,
+          reservedCredits: subscription.reservedCredits,
+        },
         data: { reservedCredits: { increment: 1 } },
       });
+      if (updatedSubscription.count === 0) {
+        return { ok: false as const, error: NO_CREDITS_ERROR };
+      }
       const reservation = await tx.generationCreditReservation.create({
         data: {
           userId,
@@ -104,19 +116,25 @@ export async function reserveGenerationCredit({
       return { ok: true as const, reservationId: reservation.id, source: "SUBSCRIPTION" as const };
     }
 
-    const user = await tx.user.findUnique({
-      where: { id: userId },
-      select: { credits: true, reservedCredits: true },
-    });
+    const [user] = await tx.$queryRaw<Array<{ id: string; credits: number; reservedCredits: number }>>`
+      SELECT id, credits, reservedCredits
+      FROM \`User\`
+      WHERE id = ${userId}
+      LIMIT 1
+      FOR UPDATE
+    `;
 
     if (!user || user.credits - user.reservedCredits < 1) {
       return { ok: false as const, error: NO_CREDITS_ERROR };
     }
 
-    await tx.user.update({
-      where: { id: userId },
+    const updatedUser = await tx.user.updateMany({
+      where: { id: userId, reservedCredits: user.reservedCredits },
       data: { reservedCredits: { increment: 1 } },
     });
+    if (updatedUser.count === 0) {
+      return { ok: false as const, error: NO_CREDITS_ERROR };
+    }
     const reservation = await tx.generationCreditReservation.create({
       data: {
         userId,

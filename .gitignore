@@ -50,3 +50,4 @@ raw-placeholders/
 *.heic
 /src/generated/prisma
 /public/uploads/
+/.local-storage/

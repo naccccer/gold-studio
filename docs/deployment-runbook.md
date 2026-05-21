@@ -63,7 +63,6 @@ Create `/var/www/gold-studio/.env`.
 ```env
 DATABASE_URL="mysql://gold_studio_user:CHANGE_THIS_DB_PASSWORD@127.0.0.1:3306/gold_studio"
 AUTH_SECRET="CHANGE_THIS_TO_A_LONG_RANDOM_SECRET"
-ADMIN_EMAIL="admin@example.com"
 ALLOW_INSECURE_COOKIES="false"
 
 LIARA_API_KEY="CHANGE_THIS"
@@ -91,8 +90,9 @@ Notes:
 - Rotate secrets immediately if they were pasted into chat, screenshots, or logs.
 - `ALLOW_INSECURE_COOKIES="true"` is only a temporary HTTP/live-IP workaround before HTTPS is ready.
 - After SSL is active, set `ALLOW_INSECURE_COOKIES="false"` or remove it.
-- Current VPS live tests should use `STORAGE_DRIVER="local"` with writable `public/uploads`.
-- `public/uploads` is intentionally Git-ignored and must be preserved separately when moving between deploy folders.
+- Current VPS live tests should use `STORAGE_DRIVER="local"` with writable `.local-storage/uploads`.
+- `.local-storage/uploads` is intentionally Git-ignored and must be preserved separately when moving between deploy folders.
+- Uploaded user files must live in configured private storage before beta; do not rely on `public/uploads`.
 - Switch to `STORAGE_DRIVER="s3"` only when persistent object storage is intentionally configured.
 
 ## First Deploy
@@ -102,6 +102,7 @@ npm install
 export DATABASE_URL="mysql://gold_studio_user:CHANGE_THIS_DB_PASSWORD@127.0.0.1:3306/gold_studio"
 npm run db:generate
 npx prisma migrate deploy
+npm run admin:bootstrap -- --email admin@example.com --password CHANGE_THIS_ADMIN_PASSWORD
 npm run build
 pm2 start npm --name gold-studio -- start
 pm2 save
@@ -203,8 +204,8 @@ If the previous live app was a zip deploy and you are moving to a fresh clone:
 
 ```bash
 cp /var/www/gold-studio/.env /var/www/gold-studio-git/.env
-mkdir -p /var/www/gold-studio-git/public
-cp -a /var/www/gold-studio/public/uploads /var/www/gold-studio-git/public/
+mkdir -p /var/www/gold-studio-git/.local-storage
+cp -a /var/www/gold-studio/.local-storage/uploads /var/www/gold-studio-git/.local-storage/
 ```
 
 Optional safety check before switching traffic:
@@ -264,8 +265,8 @@ Fix:
 cd /var/www
 git clone https://github.com/naccccer/gold-studio.git gold-studio-git
 cp /var/www/gold-studio/.env /var/www/gold-studio-git/.env
-mkdir -p /var/www/gold-studio-git/public
-cp -a /var/www/gold-studio/public/uploads /var/www/gold-studio-git/public/
+mkdir -p /var/www/gold-studio-git/.local-storage
+cp -a /var/www/gold-studio/.local-storage/uploads /var/www/gold-studio-git/.local-storage/
 ```
 
 Build and verify the clone, then switch PM2 to that directory.

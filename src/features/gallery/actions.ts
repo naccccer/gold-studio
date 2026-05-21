@@ -18,12 +18,23 @@ import { processGenerationBatch } from "@/lib/generation/jobs";
 import { getOutputPresetSpec, normalizeOutputPreset } from "@/lib/output-presets";
 import { analyzeAndStoreProductAssetVision, ensureProductAssetVision, pickVisionTitle } from "@/lib/product-vision";
 import { isProductType, normalizeProductType } from "@/lib/product-types";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { deleteStorageObject } from "@/lib/storage";
 import { getStyleForGeneration } from "@/lib/styles";
 import { saveUploadedFile } from "@/lib/uploads";
 
 export async function uploadGalleryAssetsAction(formData: FormData) {
   const session = await requireUserSession();
+  const limited = await checkRateLimit({
+    scope: "gallery:bulk-upload",
+    identifier: session.userId,
+    limit: 10,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!limited.ok) {
+    redirect(`/gallery?error=${encodeURIComponent(limited.error)}`);
+  }
+
   const files = formData
     .getAll("images")
     .filter((value): value is File => value instanceof File && value.size > 0);
@@ -58,6 +69,16 @@ export async function uploadGalleryAssetsAction(formData: FormData) {
 
 export async function createBatchFromGalleryAction(formData: FormData) {
   const session = await requireUserSession();
+  const limited = await checkRateLimit({
+    scope: "generation:batch",
+    identifier: session.userId,
+    limit: 6,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!limited.ok) {
+    redirect(`/gallery?error=${encodeURIComponent(limited.error)}`);
+  }
+
   const assetIds = Array.from(new Set(formData.getAll("assetIds").map(String).filter(Boolean)));
   const styleId = String(formData.get("styleId") ?? "");
   const outputPreset = normalizeOutputPreset(formData.get("outputPreset"));

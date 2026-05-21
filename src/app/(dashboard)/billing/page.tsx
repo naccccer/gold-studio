@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { BillingScreen } from "@/features/account/screens/billing-screen";
 import { requireUserSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { storageUrlFromKeyOrUrl } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +51,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
         amount: true,
         currency: true,
         receiptImageUrl: true,
+        receiptStorageKey: true,
         receiptSubmittedAt: true,
         updatedAt: true,
         package: { select: { title: true } },
@@ -65,7 +67,10 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   return (
     <BillingScreen
       packages={packages}
-      purchaseRequests={purchaseRequests}
+      purchaseRequests={purchaseRequests.map((request) => ({
+        ...request,
+        receiptImageUrl: storageUrlFromKeyOrUrl(request.receiptStorageKey, request.receiptImageUrl),
+      }))}
       paymentSettings={paymentSettings}
       activeTab={activeTab}
     />

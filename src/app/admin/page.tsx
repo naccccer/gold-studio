@@ -15,6 +15,7 @@ import { approvePurchaseRequestAction, rejectPurchaseRequestAction, retryAdminPr
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { requireAdminSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { storageUrlFromKeyOrUrl } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
@@ -120,8 +121,8 @@ export default async function AdminPage() {
                   <p className="text-xs text-muted">
                     {getUserDisplayName(request.user)} · {formatIrr(request.amount, request.currency)}
                   </p>
-                  {request.receiptImageUrl ? (
-                    <a href={request.receiptImageUrl} target="_blank" rel="noreferrer" className="mt-1 block text-xs font-medium text-accent-deep">
+                  {storageUrlFromKeyOrUrl(request.receiptStorageKey, request.receiptImageUrl) ? (
+                    <a href={storageUrlFromKeyOrUrl(request.receiptStorageKey, request.receiptImageUrl) ?? ""} target="_blank" rel="noreferrer" className="mt-1 block text-xs font-medium text-accent-deep">
                       مشاهده رسید
                     </a>
                   ) : (

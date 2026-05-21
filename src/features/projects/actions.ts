@@ -17,6 +17,7 @@ import { processImageProject, processTextProject } from "@/lib/generation/jobs";
 import { getOutputPresetSpec, normalizeOutputPreset } from "@/lib/output-presets";
 import { pickVisionTitle, retryProjectVisionTitle } from "@/lib/product-vision";
 import { isProductType } from "@/lib/product-types";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { readStorageObject } from "@/lib/storage";
 import { getStyleForGeneration, type StyleForGeneration } from "@/lib/styles";
 import { saveTextPromptSourceImage, saveUploadedFile } from "@/lib/uploads";
@@ -134,6 +135,15 @@ export async function createProjectAction(
   formData: FormData,
 ): Promise<ProjectFormState> {
   const session = await requireUserSession();
+  const limited = await checkRateLimit({
+    scope: "generation:create",
+    identifier: session.userId,
+    limit: 8,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!limited.ok) {
+    return { error: limited.error };
+  }
 
   const title = String(formData.get("title") ?? "").trim();
   const mode = String(formData.get("generationMode") ?? "image");
@@ -488,6 +498,16 @@ export async function restoreProjectAction(formData: FormData) {
 
 export async function retryProjectAction(formData: FormData) {
   const session = await requireUserSession();
+  const limited = await checkRateLimit({
+    scope: "generation:retry",
+    identifier: session.userId,
+    limit: 8,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!limited.ok) {
+    redirect(`/billing?error=${encodeURIComponent(limited.error)}`);
+  }
+
   const projectId = String(formData.get("projectId") ?? "").trim();
 
   if (!projectId) {

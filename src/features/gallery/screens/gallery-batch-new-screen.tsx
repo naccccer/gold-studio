@@ -298,6 +298,7 @@ export function GalleryBatchNewScreen({
                 alt={assetTitle(heroAsset)}
                 fill
                 priority
+                unoptimized
                 className="object-cover object-[46%_55%] opacity-64"
                 sizes="(max-width: 768px) 100vw, 760px"
               />

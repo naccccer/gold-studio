@@ -15,6 +15,7 @@ import { archiveAdminAssetAction } from "@/features/admin/actions";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { db } from "@/lib/db";
+import { storageUrlFromKeyOrUrl } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
@@ -83,7 +84,7 @@ export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageP
             <AdminRow key={asset.id}>
               <div className="flex min-w-0 items-center gap-3">
                 <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-surface-soft">
-                  <Image src={asset.fileUrl || uploadPreview.src} alt="" fill className="object-cover" sizes="56px" />
+                  <Image src={storageUrlFromKeyOrUrl(asset.storageKey, asset.fileUrl) || uploadPreview.src} alt="" fill unoptimized className="object-cover" sizes="56px" />
                 </div>
                 <div className="min-w-0">
                   <p className="truncate font-semibold text-foreground">{asset.title || asset.originalName || "تصویر بدون نام"}</p>

@@ -8,7 +8,8 @@
 - Signed cookie auth with role-based admin access.
 - Liara OpenAI-compatible image generation boundary.
 - Local filesystem storage by default, optional S3-compatible storage.
-- Local uploads under `public/uploads` are deployment data, not source, and are intentionally excluded from Git.
+- New local uploads live under `.local-storage/uploads`, stream through `/api/storage/...`, and are intentionally excluded from Git.
+- Uploaded user files should not live in `public/uploads`; move required launch data into configured private storage before beta.
 
 ## Product Boundaries
 - `ProductAsset`: uploaded source product photos owned by Gallery.
@@ -34,7 +35,7 @@
 - Owner-scoped reads/writes are required for user assets, batches, projects, purchases, and support.
 - Admin routes are separate from user routes and must not leak admin-only controls into normal user flows.
 - Prompt-heavy and text-to-image controls stay admin/internal.
-- Storage display should prefer storage-key-derived URLs when available.
+- Storage display should prefer storage-key-derived URLs when available, and private storage reads must be session/ownership checked.
 - S3-compatible storage is optional and should be enabled only as an intentional deployment change.
 
 ## UI Architecture

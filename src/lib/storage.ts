@@ -5,7 +5,6 @@ import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client, type
 
 const LOCAL_STORAGE_KIND = "local";
 const S3_STORAGE_KIND = "s3";
-const PUBLIC_UPLOADS_ROOT = path.join(/* turbopackIgnore: true */ process.cwd(), "public", "uploads");
 
 type StorageKind = typeof LOCAL_STORAGE_KIND | typeof S3_STORAGE_KIND;
 
@@ -49,7 +48,7 @@ function mimeTypeFromStorageKey(key: string) {
   return null;
 }
 
-function getLocalPublicPath(key: string) {
+function getRelativeUploadsPath(key: string) {
   const normalized = path.normalize(key);
   const uploadsRoot = `uploads${path.sep}`;
 
@@ -57,26 +56,29 @@ function getLocalPublicPath(key: string) {
     throw new Error("مسیر فایل معتبر نیست.");
   }
 
-  const relativeUploadsPath = normalized.slice(uploadsRoot.length);
-  return path.join(/* turbopackIgnore: true */ PUBLIC_UPLOADS_ROOT, relativeUploadsPath);
+  return normalized.slice(uploadsRoot.length);
+}
+
+function getLocalPrivatePath(key: string) {
+  return path.join(/*turbopackIgnore: true*/ process.cwd(), ".local-storage", "uploads", getRelativeUploadsPath(key));
 }
 
 const localStorageAdapter: StorageAdapter = {
   kind: LOCAL_STORAGE_KIND,
   getPublicUrl: getLocalPublicUrl,
   async readObject(key, fallbackMimeType) {
-    const buffer = await readFile(getLocalPublicPath(key));
+    const buffer = await readFile(getLocalPrivatePath(key));
     return { buffer, mimeType: mimeTypeFromStorageKey(key) || fallbackMimeType };
   },
   async saveObject({ buffer, key }) {
-    const targetPath = getLocalPublicPath(key);
+    const targetPath = getLocalPrivatePath(key);
     await mkdir(path.dirname(targetPath), { recursive: true });
     await writeFile(targetPath, buffer);
     return getLocalPublicUrl(key);
   },
   async deleteObject(key) {
     try {
-      await unlink(getLocalPublicPath(key));
+      await unlink(getLocalPrivatePath(key));
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
         throw error;
@@ -184,9 +186,25 @@ export function storagePublicUrl(key: string) {
   return getStorageAdapter().getPublicUrl(key);
 }
 
+export function storageUrlFromKeyOrUrl(storageKey?: string | null, currentUrl?: string | null) {
+  if (storageKey) {
+    return storagePublicUrl(storageKey);
+  }
+
+  if (currentUrl?.startsWith("/uploads/")) {
+    return null;
+  }
+
+  return currentUrl ?? null;
+}
+
 export function isAllowedStorageKey(key: string) {
   const normalized = normalizeKey(key);
   return normalized.startsWith("uploads/") && !normalized.includes("../") && !normalized.startsWith("/");
+}
+
+export function isPublicStorageKey(key: string) {
+  return normalizeKey(key).startsWith("uploads/style-previews/");
 }
 
 export async function saveStorageObject(input: SaveObjectInput) {

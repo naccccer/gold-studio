@@ -31,6 +31,7 @@ import {
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { getUserCreditSummary } from "@/lib/billing";
 import { db } from "@/lib/db";
+import { storageUrlFromKeyOrUrl } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
@@ -357,8 +358,8 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
                     <div>
                       <p className="font-semibold text-foreground">{request.package.title}</p>
                       <p className="text-xs text-muted">{formatIrr(request.amount, request.currency)} · {formatAdminDate(request.createdAt)}</p>
-                      {request.receiptImageUrl ? (
-                        <a href={request.receiptImageUrl} target="_blank" rel="noreferrer" className="mt-1 block text-xs font-medium text-accent-deep">
+                      {storageUrlFromKeyOrUrl(request.receiptStorageKey, request.receiptImageUrl) ? (
+                        <a href={storageUrlFromKeyOrUrl(request.receiptStorageKey, request.receiptImageUrl) ?? ""} target="_blank" rel="noreferrer" className="mt-1 block text-xs font-medium text-accent-deep">
                           مشاهده رسید پرداخت
                         </a>
                       ) : (

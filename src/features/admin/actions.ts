@@ -621,10 +621,14 @@ export async function rejectPurchaseRequestAction(formData: FormData) {
   const requestId = text(formData, "requestId");
   if (!requestId) return;
 
-  await db.purchaseRequest.update({
-    where: { id: requestId },
+  const updated = await db.purchaseRequest.updateMany({
+    where: { id: requestId, status: "PENDING" },
     data: { status: "REJECTED", adminNote: text(formData, "adminNote") || null },
   });
+  if (updated.count === 0) {
+    return;
+  }
+
   await logAdminAudit({
     actorAdminId: session.userId,
     action: "purchase.reject",

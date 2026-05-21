@@ -6,6 +6,7 @@ import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { clearSession, createSession } from "@/lib/auth/session";
 import { INITIAL_SIGNUP_CREDITS } from "@/lib/credits";
 import { db } from "@/lib/db";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { referralCodeFromUserId } from "@/lib/referrals";
 
 export type AuthFormState = {
@@ -28,6 +29,16 @@ export async function signupAction(
     return { error: INVALID_IDENTIFIER_ERROR };
   }
 
+  const limited = await checkRateLimit({
+    scope: "auth:signup",
+    identifier: identifier.value,
+    limit: 5,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!limited.ok) {
+    return { error: limited.error };
+  }
+
   if (password.length < PASSWORD_MIN_LENGTH) {
     return { error: "رمز عبور حداقل ۶ کاراکتر باشد." };
   }
@@ -39,7 +50,6 @@ export async function signupAction(
     return { error: DUPLICATE_ACCOUNT_ERROR };
   }
 
-  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
   const passwordHash = await hashPassword(password);
   const email = identifier.kind === "email" ? identifier.value : null;
   const phone = identifier.kind === "phone" ? identifier.value : null;
@@ -50,7 +60,7 @@ export async function signupAction(
         email,
         phone,
         passwordHash,
-        role: adminEmail && adminEmail === email ? "ADMIN" : "USER",
+        role: "USER",
         credits: INITIAL_SIGNUP_CREDITS,
       },
     });
@@ -87,6 +97,16 @@ export async function loginAction(
 
   if (!identifier) {
     return { error: BAD_LOGIN_ERROR };
+  }
+
+  const limited = await checkRateLimit({
+    scope: "auth:login",
+    identifier: identifier.value,
+    limit: 10,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!limited.ok) {
+    return { error: limited.error };
   }
 
   const user = await db.user.findFirst({

@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { normalizeLoginIdentifier } from "@/lib/auth/identifier";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { requireUserSession } from "@/lib/auth/session";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { saveReceiptFile } from "@/lib/uploads";
 
 function text(formData: FormData, key: string) {
@@ -64,6 +65,16 @@ export async function submitPurchaseReceiptAction(formData: FormData) {
   const receipt = formData.getAll("receipt").find((value): value is File => value instanceof File && value.size > 0);
 
   if (!requestId || !(receipt instanceof File)) {
+    return;
+  }
+
+  const limited = await checkRateLimit({
+    scope: "receipt:upload",
+    identifier: session.userId,
+    limit: 8,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!limited.ok) {
     return;
   }
 

@@ -16,6 +16,7 @@ import { archiveAdminProjectAction, retryAdminProjectAction } from "@/features/a
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { db } from "@/lib/db";
+import { storageUrlFromKeyOrUrl } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +53,7 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
       where,
       orderBy: { createdAt: "desc" },
       take: 80,
-      include: { user: true, style: { select: { id: true, name: true } } },
+      include: { user: true, style: { select: { id: true, name: true } }, sourceAsset: { select: { storageKey: true } } },
     }),
     db.creativeStyle.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], select: { id: true, name: true } }),
     Promise.all([
@@ -116,7 +117,18 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
               <AdminRow key={project.id}>
                 <div className="flex min-w-0 items-center gap-3">
                   <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-surface-soft">
-                    <Image src={project.resultImageUrl || project.sourceImageUrl || uploadPreview.src} alt="" fill className="object-cover" sizes="56px" />
+                    <Image
+                      src={
+                        storageUrlFromKeyOrUrl(project.resultStorageKey, project.resultImageUrl) ||
+                        storageUrlFromKeyOrUrl(project.sourceAsset?.storageKey, project.sourceImageUrl) ||
+                        uploadPreview.src
+                      }
+                      alt=""
+                      fill
+                      unoptimized
+                      className="object-cover"
+                      sizes="56px"
+                    />
                   </div>
                   <div className="min-w-0">
                     <Link href={`/admin/projects?projectId=${project.id}`} className="font-semibold text-foreground hover:underline">
@@ -144,13 +156,31 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
                 <div>
                   <p className="mb-2 text-xs text-muted">تصویر منبع</p>
                   <div className="relative aspect-square overflow-hidden rounded-[var(--radius-md)] bg-surface-soft">
-                    <Image src={selectedProject.sourceImageUrl || uploadPreview.src} alt="" fill className="object-cover" sizes="220px" />
+                    <Image
+                      src={storageUrlFromKeyOrUrl(selectedProject.sourceAsset?.storageKey, selectedProject.sourceImageUrl) || uploadPreview.src}
+                      alt=""
+                      fill
+                      unoptimized
+                      className="object-cover"
+                      sizes="220px"
+                    />
                   </div>
                 </div>
                 <div>
                   <p className="mb-2 text-xs text-muted">خروجی</p>
                   <div className="relative aspect-square overflow-hidden rounded-[var(--radius-md)] bg-surface-soft">
-                    <Image src={selectedProject.resultImageUrl || selectedProject.sourceImageUrl || uploadPreview.src} alt="" fill className="object-cover" sizes="220px" />
+                    <Image
+                      src={
+                        storageUrlFromKeyOrUrl(selectedProject.resultStorageKey, selectedProject.resultImageUrl) ||
+                        storageUrlFromKeyOrUrl(selectedProject.sourceAsset?.storageKey, selectedProject.sourceImageUrl) ||
+                        uploadPreview.src
+                      }
+                      alt=""
+                      fill
+                      unoptimized
+                      className="object-cover"
+                      sizes="220px"
+                    />
                   </div>
                 </div>
               </div>

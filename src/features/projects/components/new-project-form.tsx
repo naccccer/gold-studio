@@ -489,6 +489,7 @@ export function NewProjectForm({
               alt="تصویر انتخاب‌شده"
               fill
               priority
+              unoptimized
               className={`object-cover object-[46%_55%] ${currentImageSrc ? "" : "opacity-72"}`}
               sizes="(max-width: 768px) 100vw, 760px"
             />
@@ -616,6 +617,7 @@ export function NewProjectForm({
                 fallbackAlt={uploadPreview.alt}
                 fill
                 priority
+                unoptimized
                 className="object-cover object-[46%_55%] opacity-72"
                 sizes="(max-width: 768px) 100vw, 760px"
               />

@@ -41,6 +41,7 @@ import {
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { BILLING_PLAN_COLOR_PRESETS, normalizeBillingPlanColorPreset } from "@/lib/billing-plan-colors";
 import { db } from "@/lib/db";
+import { storageUrlFromKeyOrUrl } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
@@ -339,8 +340,8 @@ function PendingReceipts({ pendingPurchases, pendingCount }: { pendingPurchases:
               </div>
               <div className="text-xs text-muted">
                 <p>{formatIrr(request.amount, request.currency)} · {formatAdminDate(request.createdAt)}</p>
-                {request.receiptImageUrl ? (
-                  <a href={request.receiptImageUrl} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 font-semibold text-accent-deep">
+                {storageUrlFromKeyOrUrl(request.receiptStorageKey, request.receiptImageUrl) ? (
+                  <a href={storageUrlFromKeyOrUrl(request.receiptStorageKey, request.receiptImageUrl) ?? ""} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 font-semibold text-accent-deep">
                     <Gallery className="h-3.5 w-3.5" />
                     مشاهده رسید
                   </a>

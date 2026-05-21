@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 
@@ -27,6 +27,20 @@ const doran = localFont({
 export const metadata: Metadata = {
   title: "Ovala",
   description: "استودیوی هوشمند ساخت تصاویر حرفه‌ای محصول و جواهرات",
+  applicationName: "Ovala",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/brand/ovala-app-icon.svg", type: "image/svg+xml" },
+      { url: "/brand/ovala-app-icon.preview.png", type: "image/png" },
+    ],
+    shortcut: [{ url: "/brand/ovala-app-icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/brand/ovala-app-icon.preview.png", type: "image/png" }],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#14110d",
 };
 
 export default function RootLayout({
