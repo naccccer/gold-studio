@@ -359,9 +359,9 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
   const isActive = project.status === "QUEUED" || project.status === "PROCESSING";
   const resultImageSrc = project.resultImageUrl || resultHeroDark.src;
   const sourceImageSrc = project.sourceImageUrl || uploadPreview.src;
-  const newVersionHref = project.sourceAssetId ? `/projects/new?assetId=${project.sourceAssetId}` : "/projects/new";
+  const newVersionHref = project.sourceAssetId ? `/projects/new?assetId=${project.sourceAssetId}&step=size` : "/projects/new";
   const freeVariantHref = project.sourceAssetId
-    ? `/projects/new?assetId=${project.sourceAssetId}&freeVariantParentId=${project.id}`
+    ? `/projects/new?assetId=${project.sourceAssetId}&freeVariantParentId=${project.id}&step=size`
     : "/projects/new";
   const canCreateFreeVariant =
     project.status === "COMPLETED" &&
@@ -509,6 +509,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
 
           <ProcessingCanvas
             imageSrc={sourceImageSrc}
+            fallbackSrc={uploadPreview.src}
             imageAlt="در حال پردازش تصویر"
             title={status.label}
             styleLabel={project.style.name}
@@ -630,8 +631,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               <ConfirmAction
                 action={archiveProjectAction}
                 fields={[{ name: "projectId", value: project.id }]}
-                title="انتقال پروژه به آرشیو"
-                description="این پروژه از لیست پروژه‌ها خارج می‌شود و در آرشیو حساب قابل مشاهده و بازیابی خواهد بود."
+                title="آیا از انتقال پروژه به آرشیو مطمئنید؟"
                 confirmLabel="انتقال به آرشیو"
                 trigger={(open) => (
                   <button

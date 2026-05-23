@@ -13,6 +13,7 @@ type NewProjectScreenProps = {
   selectedAssetId?: string;
   freeVariantParentId?: string;
   defaultOutputPreset?: "post" | "story" | "banner";
+  initialStep?: "source" | "size" | "style";
 };
 
 export function NewProjectScreen({
@@ -22,6 +23,7 @@ export function NewProjectScreen({
   selectedAssetId,
   freeVariantParentId,
   defaultOutputPreset,
+  initialStep,
 }: NewProjectScreenProps) {
   return (
     <PageShell maxWidth="lg" minHeight={false} className="flex-1 space-y-5 overflow-hidden pb-0">
@@ -32,6 +34,7 @@ export function NewProjectScreen({
         selectedAssetId={selectedAssetId}
         freeVariantParentId={freeVariantParentId}
         defaultOutputPreset={defaultOutputPreset}
+        initialStep={initialStep}
       />
     </PageShell>
   );

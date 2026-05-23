@@ -8,7 +8,7 @@ import { getUserVisibleStyles } from "@/lib/styles";
 export default async function NewProjectPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ assetId?: string; freeVariantParentId?: string }>;
+  searchParams?: Promise<{ assetId?: string; freeVariantParentId?: string; step?: string }>;
 }) {
   const session = await requireUserSession();
   const params = await searchParams;
@@ -33,6 +33,9 @@ export default async function NewProjectPage({
   const defaultOutputPreset = ["post", "story", "banner"].includes(outputSettings?.defaultOutputPreset ?? "")
     ? (outputSettings?.defaultOutputPreset as "post" | "story" | "banner")
     : "post";
+  const initialStep = params?.step === "source" || params?.step === "size" || params?.step === "style"
+    ? params.step
+    : undefined;
 
   return (
     <NewProjectScreen
@@ -42,6 +45,7 @@ export default async function NewProjectPage({
       selectedAssetId={params?.assetId}
       freeVariantParentId={params?.freeVariantParentId}
       defaultOutputPreset={defaultOutputPreset}
+      initialStep={initialStep}
     />
   );
 }

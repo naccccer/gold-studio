@@ -226,8 +226,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                                 <ConfirmAction
                                   action={archiveProjectAction}
                                   fields={[{ name: "projectId", value: project.id }]}
-                                  title="انتقال پروژه به آرشیو"
-                                  description="این پروژه از لیست پروژه‌ها خارج می‌شود و در آرشیو حساب قابل مشاهده و بازیابی خواهد بود."
+                                  title="آیا از انتقال پروژه به آرشیو مطمئنید؟"
                                   confirmLabel="انتقال به آرشیو"
                                   trigger={(open) => (
                                     <button type="button" onClick={open} className={contextMenuDangerItemClasses}>
@@ -270,8 +269,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
               <ConfirmAction
                 action={archiveProjectAction}
                 fields={selectedIds.map((id) => ({ name: "projectId", value: id }))}
-                title="انتقال پروژه‌ها به آرشیو"
-                description="پروژه‌های انتخاب‌شده از لیست پروژه‌ها خارج می‌شوند و در آرشیو حساب قابل مشاهده و بازیابی خواهند بود."
+                title="آیا از انتقال پروژه‌ها به آرشیو مطمئنید؟"
                 confirmLabel="انتقال به آرشیو"
                 trigger={(open) => (
                   <IconButton type="button" onClick={open} label="حذف" variant="danger" className="h-11 w-11">

@@ -21,6 +21,7 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import type { ProjectFormState } from "@/features/projects/actions";
 import { StyleChoiceControl } from "@/features/projects/components/style-choice-control";
 import type { StyleControlOption, StyleOption } from "@/features/projects/presets";
+import { NO_CREDITS_ERROR } from "@/lib/credits";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { PRODUCT_TYPES } from "@/lib/product-types";
 
@@ -48,6 +49,7 @@ type NewProjectFormProps = {
   freeVariantParentId?: string;
   styles: StyleOption[];
   defaultOutputPreset?: OutputPresetId;
+  initialStep?: WizardStep;
 };
 
 type OutputPresetId = "post" | "story" | "banner";
@@ -251,6 +253,7 @@ export function NewProjectForm({
   freeVariantParentId,
   styles,
   defaultOutputPreset = "post",
+  initialStep,
 }: NewProjectFormProps) {
   const router = useRouter();
   const explicitSelectedAsset = selectedAssetId
@@ -258,7 +261,17 @@ export function NewProjectForm({
     : null;
   const defaultStyle = styles[0];
   const [state, formAction, pending] = useActionState(action, INITIAL_STATE);
-  const [step, setStep] = useState<WizardStep>(explicitSelectedAsset && !freeVariantParentId ? "size" : "source");
+  const [step, setStep] = useState<WizardStep>(() => {
+    if (initialStep === "size" && explicitSelectedAsset) {
+      return "size";
+    }
+
+    if (initialStep === "style" && explicitSelectedAsset) {
+      return "style";
+    }
+
+    return explicitSelectedAsset && !freeVariantParentId ? "size" : "source";
+  });
   const [selectedAsset, setSelectedAsset] = useState<GalleryAssetOption | null>(explicitSelectedAsset);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [outputPreset, setOutputPreset] = useState<OutputPresetId>(defaultOutputPreset);
@@ -299,6 +312,7 @@ export function NewProjectForm({
   const canContinue = hasSource && !sourcePreparing && !sourceError;
   const canSubmit = Boolean(selectedStyleData) && canContinue;
   const currentMeta = stepMeta[step];
+  const shouldShowBillingShortcut = state.error === NO_CREDITS_ERROR;
 
   function setPreview(file: File | null) {
     if (file) {
@@ -406,7 +420,7 @@ export function NewProjectForm({
 
   function handleTopBarBack() {
     if (step === "style") {
-      setStep("size");
+      router.push("/gallery");
       return;
     }
 
@@ -781,6 +795,12 @@ export function NewProjectForm({
               >
                 {sourceError || state.error}
               </p>
+              {shouldShowBillingShortcut ? (
+                <ButtonLink href="/billing" variant="ghost" className="mt-3 min-h-10 px-0 text-sm !text-danger hover:!text-danger/88">
+                  رفتن به صفحه اعتبار
+                  <ArrowLeft aria-hidden={true} className="h-4 w-4" />
+                </ButtonLink>
+              ) : null}
             </div>
           ) : null}
 

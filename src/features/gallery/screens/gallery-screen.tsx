@@ -3,8 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  ArrowRotateLeft,
   ArrowLeft,
   Camera,
   CloseCircle,
@@ -27,7 +28,7 @@ import {
 } from "@/components/ui/item-context-menu";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
-import { archiveAssetAction, renameAssetAction } from "@/features/gallery/actions";
+import { archiveAssetAction, renameAssetAction, restoreGalleryAssetsAction } from "@/features/gallery/actions";
 import {
   createPendingGalleryUpload,
   discardPendingGalleryUpload,
@@ -50,10 +51,12 @@ export type GalleryAssetItem = {
 type GalleryScreenProps = {
   assets: GalleryAssetItem[];
   styles: StyleOption[];
-  deleteNotice?: "deleted" | "partial" | "used";
+  deleteNotice?: "deleted" | "partial" | "archived" | "restored";
+  undoAssetIds?: string;
 };
 
 const MAX_BATCH_UPLOAD_FILES = 10;
+const DELETE_NOTICE_DURATION_MS = 4200;
 
 function scrollGalleryToTop() {
   requestAnimationFrame(() => {
@@ -62,7 +65,7 @@ function scrollGalleryToTop() {
   });
 }
 
-export function GalleryScreen({ assets, styles, deleteNotice }: GalleryScreenProps) {
+export function GalleryScreen({ assets, styles, deleteNotice, undoAssetIds }: GalleryScreenProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -71,11 +74,27 @@ export function GalleryScreen({ assets, styles, deleteNotice }: GalleryScreenPro
   const cropUploadId = searchParams.get("cropUploadId");
   const selectedCount = selectedIds.length;
   const batchHref = `/gallery/batches/new?assetIds=${encodeURIComponent(selectedIds.join(","))}`;
+  const undoIds = (undoAssetIds ?? "").split(",").map((id) => id.trim()).filter(Boolean);
   const cropQueueIndex = cropUploadId ? cropQueue.indexOf(cropUploadId) : -1;
   const cropProgressLabel =
     cropUploadId && cropQueueIndex >= 0 && cropQueue.length > 1
       ? `${(cropQueueIndex + 1).toLocaleString("fa-IR")}/${cropQueue.length.toLocaleString("fa-IR")}`
       : undefined;
+
+  useEffect(() => {
+    if (!deleteNotice) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.delete("deleteNotice");
+      const nextQuery = nextParams.toString();
+      router.replace(nextQuery ? `/gallery?${nextQuery}` : "/gallery", { scroll: false });
+    }, DELETE_NOTICE_DURATION_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [deleteNotice, router, searchParams]);
 
   function toggleAsset(assetId: string) {
     setSelectedIds((current) =>
@@ -167,13 +186,35 @@ export function GalleryScreen({ assets, styles, deleteNotice }: GalleryScreenPro
       <PageShell maxWidth="lg" className="space-y-5 pb-[12.5rem]">
         <div className="flex flex-col gap-5">
         {deleteNotice ? (
-          <p className="motion-state rounded-[1rem] border border-accent/24 bg-accent-wash/76 px-3 py-2 text-sm leading-6 text-accent-deep">
-            {deleteNotice === "deleted"
-              ? "عکس از گالری حذف شد."
-              : deleteNotice === "partial"
-                ? "عکس‌های آزاد حذف شدند. عکس‌هایی که در پروژه استفاده شده‌اند برای حفظ خروجی‌ها باقی ماندند."
-                : "این عکس در پروژه استفاده شده و برای حفظ خروجی‌ها حذف نشد."}
-          </p>
+          <div className="relative overflow-hidden rounded-[1rem] border border-accent/24 bg-accent-wash/76 px-3 py-2 text-sm leading-6 text-accent-deep animate-[ovalaNoticeSlot_4.2s_ease-in-out_forwards]">
+            <div className="flex items-center gap-3">
+              <p className="min-w-0 flex-1">
+                {deleteNotice === "deleted"
+                  ? "عکس از گالری حذف شد."
+                  : deleteNotice === "partial"
+                    ? "عکس‌های آزاد حذف شدند و عکس‌های استفاده‌شده از گالری برداشته شدند."
+                    : deleteNotice === "restored"
+                      ? "عکس به گالری برگشت."
+                      : "عکس از گالری برداشته شد و برای پروژه‌ها حفظ می‌شود."}
+              </p>
+              {undoIds.length > 0 ? (
+                <form action={restoreGalleryAssetsAction} className="shrink-0">
+                  {undoIds.map((id) => (
+                    <input key={id} type="hidden" name="assetId" value={id} />
+                  ))}
+                  <button
+                    type="submit"
+                    aria-label="برگرداندن عکس به گالری"
+                    className="motion-press inline-flex h-8 items-center gap-1.5 rounded-full border border-accent/24 bg-surface/72 px-2.5 text-[11px] font-bold text-accent-deep shadow-[0_10px_20px_-18px_rgba(17,16,14,0.55)] backdrop-blur"
+                  >
+                    <ArrowRotateLeft aria-hidden={true} className="h-3.5 w-3.5" />
+                    Undo
+                  </button>
+                </form>
+              ) : null}
+            </div>
+            <span className="absolute inset-x-0 bottom-0 h-0.5 origin-right animate-[ovalaNoticeProgress_4.2s_linear_forwards] bg-accent-bright/70" />
+          </div>
         ) : null}
 
         {pickerError ? (
@@ -276,8 +317,7 @@ export function GalleryScreen({ assets, styles, deleteNotice }: GalleryScreenPro
                       <ConfirmAction
                         action={archiveAssetAction}
                         fields={[{ name: "assetId", value: asset.id }]}
-                        title="حذف عکس از گالری"
-                        description="این عکس به‌صورت دائمی از گالری حذف می‌شود. اگر در پروژه‌ای استفاده شده باشد، برای حفظ خروجی‌ها حذف نخواهد شد."
+                        title="آیا از حذف عکس مطمئنید؟"
                         trigger={(open) => (
                           <button type="button" onClick={open} className={contextMenuDangerItemClasses}>
                             <Trash aria-hidden={true} className="h-3.5 w-3.5" />
@@ -316,12 +356,7 @@ export function GalleryScreen({ assets, styles, deleteNotice }: GalleryScreenPro
             <ConfirmAction
               action={archiveAssetAction}
               fields={selectedIds.map((id) => ({ name: "assetId", value: id }))}
-              title={selectedCount === 1 ? "حذف عکس از گالری" : "حذف عکس‌های انتخاب‌شده"}
-              description={
-                selectedCount === 1
-                  ? "این عکس به‌صورت دائمی از گالری حذف می‌شود. اگر در پروژه‌ای استفاده شده باشد، برای حفظ خروجی‌ها حذف نخواهد شد."
-                  : "عکس‌های انتخاب‌شده به‌صورت دائمی از گالری حذف می‌شوند. موارد استفاده‌شده در پروژه‌ها برای حفظ خروجی‌ها باقی می‌مانند."
-              }
+              title={selectedCount === 1 ? "آیا از حذف عکس مطمئنید؟" : "آیا از حذف عکس‌ها مطمئنید؟"}
               trigger={(open) => (
                 <IconButton type="button" onClick={open} label="حذف" variant="danger" className="h-11 w-11">
                   <Trash aria-hidden={true} className="h-4 w-4" />

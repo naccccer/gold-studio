@@ -9,10 +9,10 @@ import { requireUserSession } from "@/lib/auth/session";
 import {
   attachGenerationCreditReservation,
   getAvailableGenerationCredits,
-  NO_CREDITS_ERROR,
   releaseGenerationCreditReservation,
   reserveGenerationCredit,
 } from "@/lib/billing";
+import { NO_CREDITS_ERROR } from "@/lib/credits";
 import { db } from "@/lib/db";
 import { processGenerationBatch } from "@/lib/generation/jobs";
 import { getOutputPresetSpec, normalizeOutputPreset } from "@/lib/output-presets";
@@ -242,7 +242,7 @@ export async function archiveAssetAction(formData: FormData) {
   });
 
   const deletableAssets = assets.filter((asset) => asset._count.projects === 0 && asset._count.batchItems === 0);
-  const blockedCount = assets.length - deletableAssets.length;
+  const usedAssets = assets.filter((asset) => asset._count.projects > 0 || asset._count.batchItems > 0);
 
   if (deletableAssets.length > 0) {
     const deleted = await db.productAsset.deleteMany({
@@ -269,12 +269,57 @@ export async function archiveAssetAction(formData: FormData) {
     }
   }
 
+  if (usedAssets.length > 0) {
+    await db.productAsset.updateMany({
+      where: {
+        id: { in: usedAssets.map((asset) => asset.id) },
+        userId: session.userId,
+        status: "READY",
+        archivedAt: null,
+      },
+      data: {
+        status: "ARCHIVED",
+        archivedAt: new Date(),
+      },
+    });
+  }
+
   revalidatePath("/dashboard");
   revalidatePath("/gallery");
 
-  if (blockedCount > 0) {
-    redirect(`/gallery?deleteNotice=${deletableAssets.length > 0 ? "partial" : "used"}`);
+  if (usedAssets.length > 0) {
+    redirect(
+      `/gallery?deleteNotice=${deletableAssets.length > 0 ? "partial" : "archived"}&undoAssetIds=${encodeURIComponent(
+        usedAssets.map((asset) => asset.id).join(","),
+      )}`,
+    );
   }
 
   redirect("/gallery?deleteNotice=deleted");
+}
+
+export async function restoreGalleryAssetsAction(formData: FormData) {
+  const session = await requireUserSession();
+  const assetIds = formData.getAll("assetId").map(String).map((id) => id.trim()).filter(Boolean);
+
+  if (assetIds.length === 0) {
+    return;
+  }
+
+  await db.productAsset.updateMany({
+    where: {
+      id: { in: assetIds },
+      userId: session.userId,
+      status: "ARCHIVED",
+      archivedAt: { not: null },
+    },
+    data: {
+      status: "READY",
+      archivedAt: null,
+    },
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/gallery");
+  redirect("/gallery?deleteNotice=restored");
 }

@@ -1,7 +1,6 @@
 import type { Prisma } from "@/generated/prisma";
 import { db } from "@/lib/db";
-
-export const NO_CREDITS_ERROR = "اعتبار کافی برای ساخت خروجی ندارید. از بخش خرید اعتبار یا اشتراک، پلن جدید ثبت کنید.";
+import { NO_CREDITS_ERROR } from "@/lib/credits";
 
 export async function logAdminAudit({
   actorAdminId,

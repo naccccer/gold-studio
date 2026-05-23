@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import type { StaticImageData } from "next/image";
 import { I3DCubeScan } from "vuesax-icons-react";
+import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 
 type ProcessingCanvasProps = {
   imageSrc: string | StaticImageData;
+  fallbackSrc: string;
   imageAlt?: string;
   steps: string[];
   moments?: Array<{
@@ -22,6 +23,7 @@ type ProcessingCanvasProps = {
 
 export function ProcessingCanvas({
   imageSrc,
+  fallbackSrc,
   imageAlt = "",
   steps,
   moments,
@@ -71,11 +73,13 @@ export function ProcessingCanvas({
           frameClassName,
         ].filter(Boolean).join(" ")}
       >
-        <Image
+        <SafeJewelryImage
           src={imageSrc}
+          fallbackSrc={fallbackSrc}
+          fallbackAlt={imageAlt}
           alt={imageAlt}
           fill
-          className="scale-[1.04] object-cover object-[48%_54%] opacity-62 blur-[1.5px]"
+          className="scale-[1.08] object-cover object-[48%_54%] opacity-48 blur-[10px] saturate-75"
           sizes="(max-width: 640px) 100vw, 430px"
         />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(255,253,249,0.06)_0%,rgba(17,16,14,0.22)_54%,rgba(13,12,10,0.84)_100%)]" />

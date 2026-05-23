@@ -5,11 +5,11 @@ import { storagePublicUrl } from "@/lib/storage";
 import { getUserVisibleStyles } from "@/lib/styles";
 
 type GalleryPageProps = {
-  searchParams?: Promise<{ deleteNotice?: string }>;
+  searchParams?: Promise<{ deleteNotice?: string; undoAssetIds?: string }>;
 };
 
 function normalizeDeleteNotice(value?: string) {
-  return value === "deleted" || value === "partial" || value === "used" ? value : undefined;
+  return value === "deleted" || value === "partial" || value === "archived" || value === "restored" ? value : undefined;
 }
 
 export default async function GalleryPage({ searchParams }: GalleryPageProps) {
@@ -38,6 +38,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
       assets={displayAssets as GalleryAssetItem[]}
       styles={styles}
       deleteNotice={normalizeDeleteNotice(params?.deleteNotice)}
+      undoAssetIds={params?.undoAssetIds}
     />
   );
 }
