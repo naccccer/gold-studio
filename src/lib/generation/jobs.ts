@@ -63,6 +63,10 @@ function userErrorMessage(error: unknown, fallback: string) {
   }
 
   if (detail.includes("socket hang up") || detail.includes("provider_error") || detail.includes("status 400")) {
+    if (detail.includes("image") || detail.includes("reference") || detail.includes("multipart")) {
+      return "ارسال هم‌زمان عکس محصول و عکس نمونه برای provider کامل نشد. پروژه ناموفق شد و جزئیات خطای provider در پنل ادمین ثبت شده است.";
+    }
+
     return "درخواست تولید تصویر به Liara رسید، اما provider آن را کامل نکرد. مدل، سایز خروجی، اعتبار Liara و دسترسی شبکه را بررسی کنید.";
   }
 
@@ -140,6 +144,12 @@ export async function processImageProject(projectId: string) {
             mimeType: true,
           },
         },
+        referenceAsset: {
+          select: {
+            storageKey: true,
+            mimeType: true,
+          },
+        },
       },
     });
 
@@ -147,10 +157,19 @@ export async function processImageProject(projectId: string) {
       throw new Error("تصویر ورودی پروژه پیدا نشد.");
     }
 
+    if (project.styleId === "style_sample_reference" && !project.referenceAsset) {
+      throw new Error("برای سبک عکس نمونه، فایل نمونه پروژه پیدا نشد.");
+    }
+
     const source = await readStoredUpload(project.sourceAsset.storageKey, project.sourceAsset.mimeType);
+    const reference = project.referenceAsset
+      ? await readStoredUpload(project.referenceAsset.storageKey, project.referenceAsset.mimeType)
+      : null;
     const generatedImage = await generateStyledImageWithLiara({
       sourceBuffer: source.buffer,
       mimeType: source.mimeType,
+      referenceBuffer: reference?.buffer ?? null,
+      referenceMimeType: reference?.mimeType ?? null,
       stylePrompt: project.prompt,
       outputPreset: project.outputPreset,
     });
@@ -159,7 +178,7 @@ export async function processImageProject(projectId: string) {
       operation: "image.edit",
       status: "SUCCESS",
       model: liaraModel(),
-      statusDetail: `outputPreset=${project.outputPreset}`,
+      statusDetail: `outputPreset=${project.outputPreset}; reference=${project.referenceAsset ? "yes" : "no"}`,
     });
     const result = await saveGeneratedImage(generatedImage.imageBuffer, generatedImage.mimeType);
 

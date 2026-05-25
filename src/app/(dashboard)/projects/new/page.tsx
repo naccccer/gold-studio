@@ -12,7 +12,7 @@ export default async function NewProjectPage({
 }) {
   const session = await requireUserSession();
   const params = await searchParams;
-  const [galleryAssets, styles, outputSettings] = await Promise.all([
+  const [galleryAssets, styleReferences, styles, outputSettings] = await Promise.all([
     db.productAsset.findMany({
       where: { userId: session.userId, status: "READY", archivedAt: null },
       orderBy: { createdAt: "desc" },
@@ -24,6 +24,17 @@ export default async function NewProjectPage({
         title: true,
         originalName: true,
         productType: true,
+      },
+    }),
+    db.styleReferenceAsset.findMany({
+      where: { userId: session.userId, status: "READY", archivedAt: null },
+      orderBy: { createdAt: "desc" },
+      take: 12,
+      select: {
+        id: true,
+        storageKey: true,
+        title: true,
+        originalName: true,
       },
     }),
     getUserVisibleStyles(),
@@ -41,6 +52,7 @@ export default async function NewProjectPage({
     <NewProjectScreen
       action={createProjectAction}
       galleryAssets={galleryAssets.map((asset) => ({ ...asset, fileUrl: storagePublicUrl(asset.storageKey) }))}
+      styleReferences={styleReferences.map((asset) => ({ ...asset, fileUrl: storagePublicUrl(asset.storageKey) }))}
       styles={styles}
       selectedAssetId={params?.assetId}
       freeVariantParentId={params?.freeVariantParentId}

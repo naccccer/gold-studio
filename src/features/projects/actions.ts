@@ -20,7 +20,12 @@ import { normalizeProductType } from "@/lib/product-types";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { readStorageObject } from "@/lib/storage";
 import { getStyleForGeneration, type StyleForGeneration } from "@/lib/styles";
-import { saveTextPromptSourceImage, saveUploadedFile } from "@/lib/uploads";
+import {
+  saveStyleReferenceFile,
+  saveStyleReferenceFromStoredObject,
+  saveTextPromptSourceImage,
+  saveUploadedFile,
+} from "@/lib/uploads";
 
 export type ProjectFormState = {
   error?: string;
@@ -73,6 +78,27 @@ function getStyleCompositionInstruction(styleId: string) {
     "Always reserve text space for this social media style: the product should occupy roughly 18-30% of the frame, placed off-center on one side or lower corner, leaving the opposite side as clean designed negative space for text.",
     "Avoid filling most of the frame with the product, avoid edge-to-edge product crops, and avoid a plain centered packshot composition.",
   ].join("\n");
+}
+
+function getReferenceStyleInstruction(styleId: string) {
+  if (styleId !== "style_sample_reference") {
+    return "";
+  }
+
+  return [
+    "Reference sample transfer: use the second uploaded image only as the visual sample for arrangement, lighting, color palette, camera angle, surface, background, and overall mood.",
+    "Match the sample product angle and perspective as closely as possible: if the sample shows a top view, three-quarter view, low angle, side angle, tilted product, worn angle, or macro crop, render the user's product from that same visual angle while preserving its true identity.",
+    "Replace the sample subject/product with the user's product from the first image.",
+    "Do not change the user's product identity: preserve exact form, metal, stones, details, proportions, silhouette, engravings, and material finish.",
+  ].join("\n");
+}
+
+function getEditorialBackgroundDecorInstruction(styleId: string) {
+  if (styleId !== "style_soft_editorial") {
+    return "";
+  }
+
+  return "Editorial background decor: always include a restrained designed background decor element such as simple geometric volume, matte stone plane, soft fabric plane, plinth, or subtle editorial surface layering. Keep it premium, uncluttered, product-first, and avoid a plain empty catalog background.";
 }
 
 function getFineDetailInstruction(productType?: string | null) {
@@ -140,6 +166,16 @@ function buildPrompt(
     promptParts.push(styleCompositionInstruction);
   }
 
+  const referenceStyleInstruction = getReferenceStyleInstruction(style.id);
+  if (referenceStyleInstruction) {
+    promptParts.push(referenceStyleInstruction);
+  }
+
+  const editorialBackgroundDecorInstruction = getEditorialBackgroundDecorInstruction(style.id);
+  if (editorialBackgroundDecorInstruction) {
+    promptParts.push(editorialBackgroundDecorInstruction);
+  }
+
   promptParts.push(getCompositionInstruction(productType, vision?.visionAngle));
   promptParts.push(getFineDetailInstruction(productType));
 
@@ -148,6 +184,49 @@ function buildPrompt(
   }
 
   return promptParts.join("\n");
+}
+
+async function resolveReferenceAssetForStyle(styleId: string, formData: FormData, userId: string) {
+  if (styleId !== "style_sample_reference") {
+    return null;
+  }
+
+  const referenceAssetId = String(formData.get("referenceAssetId") ?? "").trim();
+  if (referenceAssetId) {
+    const referenceAsset = await db.styleReferenceAsset.findFirst({
+      where: { id: referenceAssetId, userId, status: "READY", archivedAt: null },
+      select: { id: true },
+    });
+
+    if (!referenceAsset) {
+      return { error: "عکس نمونه انتخاب‌شده پیدا نشد. دوباره از گالری نمونه‌ها انتخاب کنید." };
+    }
+
+    return { id: referenceAsset.id };
+  }
+
+  const referenceImage = formData
+    .getAll("referenceImage")
+    .find((value): value is File => value instanceof File && value.size > 0);
+
+  if (!referenceImage) {
+    return { error: "برای سبک عکس نمونه، انتخاب یا آپلود یک عکس نمونه لازم است." };
+  }
+
+  const uploaded = await saveStyleReferenceFile(referenceImage);
+  const referenceAsset = await db.styleReferenceAsset.create({
+    data: {
+      userId,
+      fileUrl: uploaded.publicUrl,
+      storageKey: uploaded.storageKey,
+      mimeType: uploaded.mimeType,
+      originalName: uploaded.originalName,
+      title: null,
+    },
+    select: { id: true },
+  });
+
+  return { id: referenceAsset.id };
 }
 
 export async function createProjectAction(
@@ -177,6 +256,11 @@ export async function createProjectAction(
 
   if (!style) {
     return { error: "سبک انتخاب‌شده معتبر نیست." };
+  }
+
+  const referenceAsset = await resolveReferenceAssetForStyle(style.id, formData, session.userId);
+  if (referenceAsset && "error" in referenceAsset) {
+    return { error: referenceAsset.error };
   }
 
   const readyUser = await getReadyUser(session.userId);
@@ -310,6 +394,7 @@ export async function createProjectAction(
               sourceImageUrl: asset.fileUrl,
               outputPreset,
               styleId: style.id,
+              referenceAssetId: referenceAsset?.id ?? null,
               prompt: projectPrompt,
               status: "QUEUED",
               variantParentId: parent.id,
@@ -347,6 +432,7 @@ export async function createProjectAction(
             sourceImageUrl: asset.fileUrl,
             outputPreset,
             styleId: style.id,
+            referenceAssetId: referenceAsset?.id ?? null,
             prompt: projectPrompt,
             status: "QUEUED",
           },
@@ -418,6 +504,7 @@ export async function createProjectAction(
         sourceImageUrl: uploaded.publicUrl,
         outputPreset,
         styleId: style.id,
+        referenceAssetId: referenceAsset?.id ?? null,
         prompt: projectPrompt,
         status: "QUEUED",
       },
@@ -452,6 +539,46 @@ export async function renameProjectAction(formData: FormData) {
 
   revalidatePath("/projects");
   revalidatePath(`/projects/${projectId}`);
+}
+
+export async function saveProjectResultAsStyleReferenceAction(formData: FormData) {
+  const session = await requireUserSession();
+  const projectId = String(formData.get("projectId") ?? "").trim();
+
+  if (!projectId) {
+    return;
+  }
+
+  const project = await db.project.findFirst({
+    where: { id: projectId, userId: session.userId, status: "COMPLETED", archivedAt: null },
+    select: {
+      title: true,
+      resultStorageKey: true,
+    },
+  });
+
+  if (!project?.resultStorageKey) {
+    return;
+  }
+
+  const copied = await saveStyleReferenceFromStoredObject({
+    storageKey: project.resultStorageKey,
+    mimeType: "image/png",
+    originalName: project.title ? `${project.title}.png` : "project-result.png",
+  });
+
+  await db.styleReferenceAsset.create({
+    data: {
+      userId: session.userId,
+      fileUrl: copied.publicUrl,
+      storageKey: copied.storageKey,
+      mimeType: copied.mimeType,
+      originalName: copied.originalName,
+      title: project.title,
+    },
+  });
+
+  revalidatePath("/account/style-references");
 }
 
 export async function updateProjectProductTypeAction(formData: FormData) {

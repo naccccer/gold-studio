@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowDown2, ArrowLeft, Magicpen, TickCircle } from "vuesax-icons-react";
+import { ArrowDown2, ArrowLeft, DocumentUpload, Image as ImageIcon, Magicpen, TickCircle } from "vuesax-icons-react";
 import { ActionDock } from "@/components/ui/action-dock";
 import { AppTopBar } from "@/components/ui/app-top-bar";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -24,8 +24,16 @@ export type BatchSourceAsset = {
   productType: string | null;
 };
 
+export type BatchStyleReference = {
+  id: string;
+  fileUrl: string;
+  title: string | null;
+  originalName: string | null;
+};
+
 type GalleryBatchNewScreenProps = {
   assets: BatchSourceAsset[];
+  styleReferences: BatchStyleReference[];
   styles: StyleOption[];
   availableCredits: number;
   error?: string | null;
@@ -103,6 +111,7 @@ function getInitialStyleControlValues(style?: StyleOption) {
 
 export function GalleryBatchNewScreen({
   assets,
+  styleReferences,
   styles,
   availableCredits,
   error,
@@ -113,6 +122,8 @@ export function GalleryBatchNewScreen({
   const [outputPreset, setOutputPreset] = useState<OutputPresetId>("post");
   const defaultStyle = styles[0];
   const [selectedStyle, setSelectedStyle] = useState(defaultStyle?.id ?? "");
+  const [selectedReference, setSelectedReference] = useState<BatchStyleReference | null>(null);
+  const [referenceUploadPreview, setReferenceUploadPreview] = useState<string | null>(null);
   const [styleControlValues, setStyleControlValues] = useState<Record<string, string>>(() => getInitialStyleControlValues(defaultStyle));
   const [productTypes, setProductTypes] = useState<Record<string, string>>(() =>
     Object.fromEntries(assets.map((asset) => [asset.id, normalizeProductType(asset.productType)])),
@@ -125,6 +136,7 @@ export function GalleryBatchNewScreen({
     [defaultStyle, selectedStyle, styles],
   );
   const styleControls = selectedStyleData?.controls ?? [];
+  const isSampleReferenceStyle = selectedStyleData?.id === "style_sample_reference";
   const currentMeta = stepMeta[step];
   const heroAsset = assets[0];
   const outputPresetItems = outputPresets.map((preset) => ({
@@ -136,6 +148,14 @@ export function GalleryBatchNewScreen({
       </span>
     ),
   }));
+
+  useEffect(() => {
+    return () => {
+      if (referenceUploadPreview) {
+        URL.revokeObjectURL(referenceUploadPreview);
+      }
+    };
+  }, [referenceUploadPreview]);
 
   function handleTopBarBack() {
     if (step === "style") {
@@ -154,6 +174,15 @@ export function GalleryBatchNewScreen({
   function selectStyle(style: StyleOption) {
     setSelectedStyle(style.id);
     setStyleControlValues(getInitialStyleControlValues(style));
+  }
+
+  function selectReference(reference: BatchStyleReference) {
+    const input = document.getElementById("batch-reference-file-input");
+    if (input instanceof HTMLInputElement) {
+      input.value = "";
+    }
+    setReferenceUploadPreview(null);
+    setSelectedReference(reference);
   }
 
   function setStyleControlValue(key: string, value: string) {
@@ -178,6 +207,25 @@ export function GalleryBatchNewScreen({
         {styleControls.map((control) => (
           <input key={control.key} type="hidden" name={`styleControl_${control.key}`} value={styleControlValues[control.key] ?? getControlDefaultValue(control)} />
         ))}
+        {selectedReference ? <input type="hidden" name="referenceAssetId" value={selectedReference.id} /> : null}
+        <input
+          id="batch-reference-file-input"
+          name="referenceImage"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="sr-only"
+          onChange={(event) => {
+            const file = event.currentTarget.files?.[0] ?? null;
+            setSelectedReference(null);
+            setReferenceUploadPreview((current) => {
+              if (current) {
+                URL.revokeObjectURL(current);
+              }
+
+              return file ? URL.createObjectURL(file) : null;
+            });
+          }}
+        />
 
         <header className="-mt-2 space-y-3">
           <div className="flex items-center justify-center">
@@ -428,6 +476,65 @@ export function GalleryBatchNewScreen({
               </section>
             ) : null}
 
+            {isSampleReferenceStyle ? (
+              <section className="space-y-3 rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-medium text-surface/72">عکس نمونه مشترک</p>
+                  <label htmlFor="batch-reference-file-input" className="inline-flex min-h-9 items-center gap-2 rounded-full border border-white/14 bg-white/[0.06] px-3 text-xs font-semibold text-surface">
+                    <DocumentUpload aria-hidden={true} className="h-3.5 w-3.5" />
+                    آپلود
+                  </label>
+                </div>
+                {styleReferences.length > 0 ? (
+                  <div className="grid grid-cols-4 gap-3">
+                    {styleReferences.slice(0, 8).map((reference) => {
+                      const checked = selectedReference?.id === reference.id;
+                      const title = reference.title || reference.originalName || "عکس نمونه";
+
+                      return (
+                        <button
+                          key={reference.id}
+                          type="button"
+                          onClick={() => selectReference(reference)}
+                          aria-label={`انتخاب ${title}`}
+                          className="text-right"
+                        >
+                          <JewelryImageFrame aspect="square" selected={checked} treatment="quiet" className="rounded-[1rem]">
+                            <SafeJewelryImage
+                              src={reference.fileUrl}
+                              fallbackSrc={uploadPreview.src}
+                              fallbackAlt={uploadPreview.alt}
+                              alt={title}
+                              fill
+                              className="object-cover"
+                              sizes="120px"
+                            />
+                            {checked ? (
+                              <span className="absolute left-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-surface">
+                                <TickCircle aria-hidden={true} className="h-3.5 w-3.5" />
+                              </span>
+                            ) : null}
+                          </JewelryImageFrame>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
+                {referenceUploadPreview ? (
+                  <div className="flex items-center gap-3 rounded-[0.9rem] border border-white/14 bg-white/[0.04] px-3 py-2">
+                    <JewelryImageFrame aspect="square" selected treatment="quiet" className="h-16 w-16 shrink-0 rounded-[0.9rem]">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={referenceUploadPreview} alt="پیش‌نمایش عکس نمونه" className="h-full w-full object-cover" />
+                    </JewelryImageFrame>
+                    <div className="flex min-w-0 items-center gap-2 text-xs text-surface/84">
+                      <ImageIcon aria-hidden={true} className="h-4 w-4 shrink-0 text-accent-bright" />
+                      <span>نمونه آپلودی</span>
+                    </div>
+                  </div>
+                ) : null}
+              </section>
+            ) : null}
+
             {!hasEnoughCredits || error ? (
               <div className="rounded-[1rem] border border-danger/24 bg-danger-soft/92 px-3 py-3 text-danger shadow-[0_18px_32px_-26px_rgba(152,59,52,0.42)]">
                 <p className="text-sm font-semibold">اعتبار کافی نیست</p>
@@ -442,7 +549,7 @@ export function GalleryBatchNewScreen({
                 بازگشت
               </Button>
               {hasEnoughCredits ? (
-                <Button type="submit" disabled={!selectedStyleData} variant="studio-primary" className="h-12 w-full">
+                <Button type="submit" disabled={!selectedStyleData || (isSampleReferenceStyle && !selectedReference && !referenceUploadPreview)} variant="studio-primary" className="h-12 w-full">
                   شروع گروهی
                   <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-studio-control/15 bg-studio-control/12 px-2 text-[11px] font-bold text-studio-control" aria-label={`${requiredCredits.toLocaleString("fa-IR")} اعتبار`}>
                     {requiredCredits.toLocaleString("fa-IR")}

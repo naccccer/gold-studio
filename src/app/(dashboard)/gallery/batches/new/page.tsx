@@ -1,6 +1,10 @@
 import { notFound } from "next/navigation";
 import { createBatchFromGalleryAction } from "@/features/gallery/actions";
-import { GalleryBatchNewScreen, type BatchSourceAsset } from "@/features/gallery/screens/gallery-batch-new-screen";
+import {
+  GalleryBatchNewScreen,
+  type BatchSourceAsset,
+  type BatchStyleReference,
+} from "@/features/gallery/screens/gallery-batch-new-screen";
 import { requireUserSession } from "@/lib/auth/session";
 import { getAvailableGenerationCredits } from "@/lib/billing";
 import { db } from "@/lib/db";
@@ -20,7 +24,7 @@ export default async function NewGalleryBatchPage({
     notFound();
   }
 
-  const [assets, styles, availableCredits] = await Promise.all([
+  const [assets, styleReferences, styles, availableCredits] = await Promise.all([
     db.productAsset.findMany({
       where: {
         id: { in: assetIds },
@@ -35,6 +39,17 @@ export default async function NewGalleryBatchPage({
         title: true,
         originalName: true,
         productType: true,
+      },
+    }),
+    db.styleReferenceAsset.findMany({
+      where: { userId: session.userId, status: "READY", archivedAt: null },
+      orderBy: { createdAt: "desc" },
+      take: 12,
+      select: {
+        id: true,
+        storageKey: true,
+        title: true,
+        originalName: true,
       },
     }),
     getUserVisibleStyles(),
@@ -52,10 +67,17 @@ export default async function NewGalleryBatchPage({
     originalName: asset.originalName,
     productType: asset.productType,
   }));
+  const displayStyleReferences: BatchStyleReference[] = styleReferences.map((asset) => ({
+    id: asset.id,
+    fileUrl: storagePublicUrl(asset.storageKey),
+    title: asset.title,
+    originalName: asset.originalName,
+  }));
 
   return (
     <GalleryBatchNewScreen
       assets={displayAssets}
+      styleReferences={displayStyleReferences}
       styles={styles}
       availableCredits={availableCredits}
       error={params?.error}

@@ -13,6 +13,7 @@ import {
   DocumentUpload,
   Edit2,
   Eye,
+  GalleryAdd,
   Magicpen,
   TickCircle,
   Trash,
@@ -28,7 +29,12 @@ import {
 } from "@/components/ui/item-context-menu";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
-import { archiveAssetAction, renameAssetAction, restoreGalleryAssetsAction } from "@/features/gallery/actions";
+import {
+  archiveAssetAction,
+  renameAssetAction,
+  restoreGalleryAssetsAction,
+  saveGalleryAssetAsStyleReferenceAction,
+} from "@/features/gallery/actions";
 import {
   createPendingGalleryUpload,
   discardPendingGalleryUpload,
@@ -283,6 +289,13 @@ export function GalleryScreen({ assets, styles, deleteNotice, undoAssetIds }: Ga
                         <DocumentDownload aria-hidden={true} className="h-3.5 w-3.5" />
                         دانلود عکس
                       </a>
+                      <form action={saveGalleryAssetAsStyleReferenceAction}>
+                        <input type="hidden" name="assetId" value={asset.id} />
+                        <button type="submit" className={contextMenuItemClasses}>
+                          <GalleryAdd aria-hidden={true} className="h-3.5 w-3.5" />
+                          ذخیره در نمونه‌ها
+                        </button>
+                      </form>
                       <form action={renameAssetAction} className="space-y-1.5 px-1 py-1.5">
                         <input type="hidden" name="assetId" value={asset.id} />
                         <label className="flex items-center gap-1.5 text-[11px] font-medium text-muted">

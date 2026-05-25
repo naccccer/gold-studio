@@ -7,6 +7,7 @@ const SOURCE_UPLOAD_DIR = path.join("uploads", "source");
 const RESULT_UPLOAD_DIR = path.join("uploads", "result");
 const RECEIPT_UPLOAD_DIR = path.join("uploads", "receipts");
 const STYLE_PREVIEW_UPLOAD_DIR = path.join("uploads", "style-previews");
+const STYLE_REFERENCE_UPLOAD_DIR = path.join("uploads", "style-references");
 const NORMALIZED_UPLOAD_MIME_TYPE = "image/jpeg";
 const NORMALIZED_UPLOAD_EXTENSION = "jpg";
 const MAX_SOURCE_INPUT_BYTES = 15 * 1024 * 1024;
@@ -273,6 +274,58 @@ export async function saveStylePreviewFile(file: File) {
   });
 
   return { publicUrl, storageKey };
+}
+
+export async function saveStyleReferenceFile(file: File): Promise<StoredUpload> {
+  const normalized = await normalizeUploadImage(file, {
+    maxInputBytes: MAX_SOURCE_INPUT_BYTES,
+    maxEdge: SOURCE_MAX_EDGE,
+    quality: SOURCE_JPEG_QUALITY,
+    invalidTypeMessage: "فرمت عکس نمونه باید JPG، PNG یا WEBP باشد.",
+    tooLargeMessage: "حجم عکس نمونه باید کمتر از ۱۵ مگابایت باشد.",
+    invalidImageMessage: "عکس نمونه معتبر نیست یا قابل پردازش نبود.",
+  });
+  const storageKey = buildStorageKey(STYLE_REFERENCE_UPLOAD_DIR, normalized.extension);
+  const publicUrl = await saveStorageObject({
+    buffer: normalized.buffer,
+    contentType: normalized.mimeType,
+    key: storageKey,
+  });
+
+  return {
+    buffer: normalized.buffer,
+    mimeType: normalized.mimeType,
+    publicUrl,
+    storageKey,
+    originalName: file.name || null,
+  };
+}
+
+export async function saveStyleReferenceFromStoredObject({
+  storageKey: sourceStorageKey,
+  mimeType,
+  originalName,
+}: {
+  storageKey: string;
+  mimeType: string;
+  originalName?: string | null;
+}): Promise<StoredUpload> {
+  const source = await readStorageObject(sourceStorageKey, mimeType);
+  const extension = extensionFromType(source.mimeType);
+  const storageKey = buildStorageKey(STYLE_REFERENCE_UPLOAD_DIR, extension);
+  const publicUrl = await saveStorageObject({
+    buffer: source.buffer,
+    contentType: source.mimeType,
+    key: storageKey,
+  });
+
+  return {
+    buffer: source.buffer,
+    mimeType: source.mimeType,
+    publicUrl,
+    storageKey,
+    originalName: originalName ?? null,
+  };
 }
 
 export async function saveTextPromptSourceImage(prompt: string) {

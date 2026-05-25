@@ -22,6 +22,7 @@ async function canReadStorageKey(storageKey: string) {
     const storageKeys = storageKeyLookupValues(storageKey);
     const knownObject = await Promise.all([
       db.productAsset.findFirst({ where: { storageKey: { in: storageKeys } }, select: { id: true } }),
+      db.styleReferenceAsset.findFirst({ where: { storageKey: { in: storageKeys } }, select: { id: true } }),
       db.project.findFirst({ where: { sourceImageUrl: storageUrl }, select: { id: true } }),
       db.project.findFirst({ where: { resultStorageKey: { in: storageKeys } }, select: { id: true } }),
       db.project.findFirst({ where: { resultImageUrl: storageUrl }, select: { id: true } }),
@@ -36,6 +37,7 @@ async function canReadStorageKey(storageKey: string) {
   const storageKeys = storageKeyLookupValues(storageKey);
   const ownedObject = await Promise.all([
     db.productAsset.findFirst({ where: { storageKey: { in: storageKeys }, userId: session.userId }, select: { id: true } }),
+    db.styleReferenceAsset.findFirst({ where: { storageKey: { in: storageKeys }, userId: session.userId }, select: { id: true } }),
     db.project.findFirst({ where: { sourceImageUrl: storageUrl, userId: session.userId }, select: { id: true } }),
     db.project.findFirst({ where: { resultStorageKey: { in: storageKeys }, userId: session.userId }, select: { id: true } }),
     db.project.findFirst({ where: { resultImageUrl: storageUrl, userId: session.userId }, select: { id: true } }),

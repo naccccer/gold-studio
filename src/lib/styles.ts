@@ -29,7 +29,7 @@ function toStyleOption(style: {
 
 export async function getUserVisibleStyles(): Promise<StyleOption[]> {
   const styles = await db.creativeStyle.findMany({
-    where: { isActive: true, isUserVisible: true },
+    where: { isActive: true, isUserVisible: true, id: { not: "style_warm_luxury" } },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     include: {
       controls: {

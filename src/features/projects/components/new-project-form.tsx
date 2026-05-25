@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useActionState, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
@@ -9,6 +9,7 @@ import {
   Camera,
   DocumentUpload,
   Gallery,
+  Image as ImageIcon,
   Magicpen,
   TickCircle,
 } from "vuesax-icons-react";
@@ -41,12 +42,20 @@ export type GalleryAssetOption = {
   productType: string | null;
 };
 
+export type StyleReferenceOption = {
+  id: string;
+  fileUrl: string;
+  title: string | null;
+  originalName: string | null;
+};
+
 type NewProjectFormProps = {
   action: (
     prevState: ProjectFormState,
     formData: FormData,
   ) => Promise<ProjectFormState>;
   galleryAssets: GalleryAssetOption[];
+  styleReferences: StyleReferenceOption[];
   selectedAssetId?: string;
   freeVariantParentId?: string;
   styles: StyleOption[];
@@ -158,6 +167,7 @@ function getInitialStyleControlValues(style?: StyleOption) {
 export function NewProjectForm({
   action,
   galleryAssets,
+  styleReferences,
   selectedAssetId,
   freeVariantParentId,
   styles,
@@ -185,6 +195,8 @@ export function NewProjectForm({
   const [cropUploadId, setCropUploadId] = useState<string | null>(null);
   const [outputPreset, setOutputPreset] = useState<OutputPresetId>(defaultOutputPreset);
   const [selectedStyle, setSelectedStyle] = useState(defaultStyle?.id ?? "");
+  const [selectedReference, setSelectedReference] = useState<StyleReferenceOption | null>(null);
+  const [referenceUploadPreview, setReferenceUploadPreview] = useState<string | null>(null);
   const [styleControlValues, setStyleControlValues] = useState<Record<string, string>>(() => getInitialStyleControlValues(defaultStyle));
   const [productType, setProductType] = useState(normalizeProductType(explicitSelectedAsset?.productType));
   const [sourcePreparing, setSourcePreparing] = useState(false);
@@ -197,6 +209,7 @@ export function NewProjectForm({
   );
 
   const styleControls = selectedStyleData?.controls ?? [];
+  const isSampleReferenceStyle = selectedStyleData?.id === "style_sample_reference";
   const outputPresetItems = outputPresets.map((preset) => ({
     value: preset.id,
     label: preset.label,
@@ -211,7 +224,16 @@ export function NewProjectForm({
   const hasSource = Boolean(currentImageSrc);
   const canContinue = hasSource && !sourcePreparing && !sourceError;
   const canSubmit = Boolean(selectedStyleData) && canContinue;
+  const canSubmitWithReference = canSubmit && (!isSampleReferenceStyle || Boolean(selectedReference || referenceUploadPreview));
   const shouldShowBillingShortcut = state.error === NO_CREDITS_ERROR;
+
+  useEffect(() => {
+    return () => {
+      if (referenceUploadPreview) {
+        URL.revokeObjectURL(referenceUploadPreview);
+      }
+    };
+  }, [referenceUploadPreview]);
 
   function beginGalleryUploadCrop(file: File, source: PendingUploadSource) {
     fileInputRequestRef.current += 1;
@@ -276,6 +298,15 @@ export function NewProjectForm({
     setStyleControlValues(getInitialStyleControlValues(style));
   }
 
+  function selectReference(reference: StyleReferenceOption) {
+    const input = document.getElementById("project-reference-file-input");
+    if (input instanceof HTMLInputElement) {
+      input.value = "";
+    }
+    setReferenceUploadPreview(null);
+    setSelectedReference(reference);
+  }
+
   function setStyleControlValue(key: string, value: string) {
     setStyleControlValues((current) => ({ ...current, [key]: value }));
   }
@@ -333,6 +364,7 @@ export function NewProjectForm({
       ))}
       {freeVariantParentId ? <input type="hidden" name="freeVariantParentId" value={freeVariantParentId} /> : null}
       {selectedAsset ? <input type="hidden" name="sourceAssetId" value={selectedAsset.id} /> : null}
+      {selectedReference ? <input type="hidden" name="referenceAssetId" value={selectedReference.id} /> : null}
       <input type="hidden" name="productType" value={productType} />
 
       <input
@@ -351,6 +383,24 @@ export function NewProjectForm({
         accept="image/jpeg,image/png,image/webp"
         className="sr-only"
         onChange={(event) => void handleImageInputChange(event, "project-camera-input")}
+      />
+      <input
+        id="project-reference-file-input"
+        name="referenceImage"
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="sr-only"
+        onChange={(event) => {
+          const file = event.currentTarget.files?.[0] ?? null;
+          setSelectedReference(null);
+          setReferenceUploadPreview((current) => {
+            if (current) {
+              URL.revokeObjectURL(current);
+            }
+
+            return file ? URL.createObjectURL(file) : null;
+          });
+        }}
       />
 
       {step === "source" ? (
@@ -582,6 +632,65 @@ export function NewProjectForm({
             </section>
           ) : null}
 
+          {isSampleReferenceStyle ? (
+            <section className="space-y-3 rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-medium text-surface/72">عکس نمونه</p>
+                <label htmlFor="project-reference-file-input" className={buttonClasses({ variant: "studio-secondary", className: "min-h-9 rounded-full px-3 text-xs" })}>
+                  <DocumentUpload aria-hidden={true} className="h-3.5 w-3.5" />
+                  آپلود
+                </label>
+              </div>
+              {styleReferences.length > 0 ? (
+                <div className="grid grid-cols-4 gap-3">
+                  {styleReferences.slice(0, 8).map((reference) => {
+                    const checked = selectedReference?.id === reference.id;
+                    const title = reference.title || reference.originalName || "عکس نمونه";
+
+                    return (
+                      <button
+                        key={reference.id}
+                        type="button"
+                        onClick={() => selectReference(reference)}
+                        aria-label={`انتخاب ${title}`}
+                        className="text-right"
+                      >
+                        <JewelryImageFrame aspect="square" selected={checked} treatment="quiet" className="rounded-[1rem]">
+                          <SafeJewelryImage
+                            src={reference.fileUrl}
+                            alt={title}
+                            fallbackSrc={uploadPreview.src}
+                            fallbackAlt={uploadPreview.alt}
+                            fill
+                            className="object-cover"
+                            sizes="120px"
+                          />
+                          {checked ? (
+                            <span className="absolute left-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-surface">
+                              <TickCircle aria-hidden={true} className="h-3.5 w-3.5" />
+                            </span>
+                          ) : null}
+                        </JewelryImageFrame>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+              {referenceUploadPreview ? (
+                <div className="flex items-center gap-3 rounded-[0.9rem] border border-white/14 bg-white/[0.04] px-3 py-2">
+                  <JewelryImageFrame aspect="square" selected treatment="quiet" className="h-16 w-16 shrink-0 rounded-[0.9rem]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={referenceUploadPreview} alt="پیش‌نمایش عکس نمونه" className="h-full w-full object-cover" />
+                  </JewelryImageFrame>
+                  <div className="flex min-w-0 items-center gap-2 text-xs text-surface/84">
+                    <ImageIcon aria-hidden={true} className="h-4 w-4 shrink-0 text-accent-bright" />
+                    <span>نمونه آپلودی</span>
+                  </div>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+
           {state.error || sourceError ? (
             <div className="rounded-[1rem] border border-danger/24 bg-danger-soft/92 px-3 py-3 text-danger shadow-[0_18px_32px_-26px_rgba(152,59,52,0.42)]">
               <p className="text-sm font-semibold">این مرحله کامل نشد</p>
@@ -604,7 +713,7 @@ export function NewProjectForm({
             <Button type="button" variant="studio-secondary" className="h-12 w-full" onClick={() => setStep("size")}>
               بازگشت
             </Button>
-            <Button type="submit" disabled={pending || !canSubmit} variant="studio-primary" className="h-12 w-full">
+            <Button type="submit" disabled={pending || !canSubmitWithReference} variant="studio-primary" className="h-12 w-full">
               {sourcePreparing ? "آماده‌سازی..." : pending ? "در حال ساخت..." : "شروع پردازش"}
               <Magicpen aria-hidden={true} className="h-4 w-4" />
             </Button>

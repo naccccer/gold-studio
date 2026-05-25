@@ -457,6 +457,7 @@ Screenshots: capture only if explicitly requested.
 
 ## Final UI Release Gate
 
+- 2026-05-25: Added the sample-reference style direction: warm luxury is hidden from user style selection, abstract decor was removed from user style controls, and the account-scoped sample gallery plus single/batch sample-reference selection were added.
 - Screenshot capture is not required unless explicitly requested.
 - No visible mojibake remains in user/admin UI.
 - User routes feel phone-native and intentionally centered on desktop.

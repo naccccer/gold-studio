@@ -26,6 +26,11 @@ enum ProductAssetStatus {
   ARCHIVED
 }
 
+enum StyleReferenceAssetStatus {
+  READY
+  ARCHIVED
+}
+
 enum GenerationBatchStatus {
   QUEUED
   PROCESSING
@@ -106,6 +111,7 @@ model User {
   reservedCredits       Int                @default(0)
   projects              Project[]
   assets                ProductAsset[]
+  styleReferenceAssets  StyleReferenceAsset[]
   collections           AssetCollection[]
   batches               GenerationBatch[]
   subscriptions         UserSubscription[] @relation("UserSubscriptions")
@@ -131,6 +137,8 @@ model Project {
   user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   sourceAssetId    String?
   sourceAsset      ProductAsset?         @relation(fields: [sourceAssetId], references: [id], onDelete: SetNull)
+  referenceAssetId String?
+  referenceAsset   StyleReferenceAsset?  @relation(fields: [referenceAssetId], references: [id], onDelete: SetNull)
   title            String?
   sourceImageUrl   String
   resultImageUrl   String?
@@ -154,6 +162,7 @@ model Project {
   @@index([userId, createdAt])
   @@index([userId, archivedAt])
   @@index([sourceAssetId])
+  @@index([referenceAssetId])
   @@index([styleId])
   @@index([freeVariantProjectId])
   @@index([variantParentId])
@@ -272,6 +281,27 @@ model ProductAsset {
   @@index([collectionId])
 }
 
+model StyleReferenceAsset {
+  id           String                    @id @default(cuid())
+  userId       String
+  user         User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileUrl      String
+  storageKey   String
+  mimeType     String
+  originalName String?
+  title        String?
+  notes        String?
+  status       StyleReferenceAssetStatus @default(READY)
+  archivedAt   DateTime?
+  projects     Project[]
+  batches      GenerationBatch[]
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([userId, archivedAt])
+}
+
 model GenerationBatch {
   id           String                @id @default(cuid())
   userId       String
@@ -279,6 +309,8 @@ model GenerationBatch {
   title        String?
   styleId      String
   style        CreativeStyle         @relation(fields: [styleId], references: [id], onDelete: Restrict)
+  referenceAssetId String?
+  referenceAsset   StyleReferenceAsset?  @relation(fields: [referenceAssetId], references: [id], onDelete: SetNull)
   outputPreset String
   status       GenerationBatchStatus @default(QUEUED)
   items        GenerationBatchItem[]
@@ -288,6 +320,7 @@ model GenerationBatch {
 
   @@index([userId, createdAt])
   @@index([styleId])
+  @@index([referenceAssetId])
 }
 
 model GenerationBatchItem {

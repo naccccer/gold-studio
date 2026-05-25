@@ -21,7 +21,69 @@ import { normalizeProductType } from "@/lib/product-types";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { deleteStorageObject } from "@/lib/storage";
 import { getStyleForGeneration } from "@/lib/styles";
-import { saveUploadedFile } from "@/lib/uploads";
+import { saveStyleReferenceFile, saveStyleReferenceFromStoredObject, saveUploadedFile } from "@/lib/uploads";
+
+function getReferenceStyleInstruction(styleId: string) {
+  if (styleId !== "style_sample_reference") {
+    return "";
+  }
+
+  return [
+    "Reference sample transfer: use the second uploaded image only as the visual sample for arrangement, lighting, color palette, camera angle, surface, background, and overall mood.",
+    "Match the sample product angle and perspective as closely as possible: if the sample shows a top view, three-quarter view, low angle, side angle, tilted product, worn angle, or macro crop, render the user's product from that same visual angle while preserving its true identity.",
+    "Replace the sample subject/product with the user's product from the first image.",
+    "Do not change the user's product identity: preserve exact form, metal, stones, details, proportions, silhouette, engravings, and material finish.",
+  ].join("\n");
+}
+
+function getEditorialBackgroundDecorInstruction(styleId: string) {
+  if (styleId !== "style_soft_editorial") {
+    return "";
+  }
+
+  return "Editorial background decor: always include a restrained designed background decor element such as simple geometric volume, matte stone plane, soft fabric plane, plinth, or subtle editorial surface layering. Keep it premium, uncluttered, product-first, and avoid a plain empty catalog background.";
+}
+
+async function resolveReferenceAssetForBatch(styleId: string, formData: FormData, userId: string) {
+  if (styleId !== "style_sample_reference") {
+    return null;
+  }
+
+  const referenceAssetId = String(formData.get("referenceAssetId") ?? "").trim();
+  if (referenceAssetId) {
+    const referenceAsset = await db.styleReferenceAsset.findFirst({
+      where: { id: referenceAssetId, userId, status: "READY", archivedAt: null },
+      select: { id: true },
+    });
+
+    if (!referenceAsset) {
+      throw new Error("عکس نمونه انتخاب‌شده پیدا نشد. دوباره از گالری نمونه‌ها انتخاب کنید.");
+    }
+
+    return { id: referenceAsset.id };
+  }
+
+  const referenceImage = formData
+    .getAll("referenceImage")
+    .find((value): value is File => value instanceof File && value.size > 0);
+
+  if (!referenceImage) {
+    throw new Error("برای سبک عکس نمونه، انتخاب یا آپلود یک عکس نمونه لازم است.");
+  }
+
+  const uploaded = await saveStyleReferenceFile(referenceImage);
+  return db.styleReferenceAsset.create({
+    data: {
+      userId,
+      fileUrl: uploaded.publicUrl,
+      storageKey: uploaded.storageKey,
+      mimeType: uploaded.mimeType,
+      originalName: uploaded.originalName,
+      title: null,
+    },
+    select: { id: true },
+  });
+}
 
 export async function uploadGalleryAssetsAction(formData: FormData) {
   const session = await requireUserSession();
@@ -102,6 +164,17 @@ export async function createBatchFromGalleryAction(formData: FormData) {
     redirect("/gallery");
   }
 
+  let referenceAsset: { id: string } | null = null;
+  try {
+    referenceAsset = await resolveReferenceAssetForBatch(style.id, formData, session.userId);
+  } catch (error) {
+    redirect(
+      `/gallery/batches/new?assetIds=${encodeURIComponent(assetIds.join(","))}&error=${encodeURIComponent(
+        error instanceof Error ? error.message : "انتخاب عکس نمونه کامل نشد.",
+      )}`,
+    );
+  }
+
   const availableCredits = await getAvailableGenerationCredits(session.userId);
   if (availableCredits < assets.length) {
     redirect(`/gallery/batches/new?assetIds=${encodeURIComponent(assetIds.join(","))}&error=${encodeURIComponent(NO_CREDITS_ERROR)}`);
@@ -114,6 +187,7 @@ export async function createBatchFromGalleryAction(formData: FormData) {
       userId: session.userId,
       title: `${assets.length} تصویر`,
       styleId: style.id,
+      referenceAssetId: referenceAsset?.id ?? null,
       outputPreset,
       status: "QUEUED",
     },
@@ -153,7 +227,15 @@ export async function createBatchFromGalleryAction(formData: FormData) {
           sourceImageUrl: asset.fileUrl,
           outputPreset,
           styleId: style.id,
-          prompt: [style.prompt, getOutputPresetSpec(outputPreset).instruction, styleControlPrompt, visionContext].filter(Boolean).join("\n"),
+          referenceAssetId: referenceAsset?.id ?? null,
+          prompt: [
+            style.prompt,
+            getOutputPresetSpec(outputPreset).instruction,
+            styleControlPrompt,
+            getReferenceStyleInstruction(style.id),
+            getEditorialBackgroundDecorInstruction(style.id),
+            visionContext,
+          ].filter(Boolean).join("\n"),
           status: "QUEUED",
         },
         select: { id: true },
@@ -202,6 +284,48 @@ export async function renameAssetAction(formData: FormData) {
   });
 
   revalidatePath("/gallery");
+}
+
+export async function saveGalleryAssetAsStyleReferenceAction(formData: FormData) {
+  const session = await requireUserSession();
+  const assetId = String(formData.get("assetId") ?? "").trim();
+
+  if (!assetId) {
+    return;
+  }
+
+  const asset = await db.productAsset.findFirst({
+    where: { id: assetId, userId: session.userId, status: "READY", archivedAt: null },
+    select: {
+      storageKey: true,
+      mimeType: true,
+      originalName: true,
+      title: true,
+    },
+  });
+
+  if (!asset) {
+    return;
+  }
+
+  const copied = await saveStyleReferenceFromStoredObject({
+    storageKey: asset.storageKey,
+    mimeType: asset.mimeType,
+    originalName: asset.originalName,
+  });
+
+  await db.styleReferenceAsset.create({
+    data: {
+      userId: session.userId,
+      fileUrl: copied.publicUrl,
+      storageKey: copied.storageKey,
+      mimeType: copied.mimeType,
+      originalName: copied.originalName,
+      title: asset.title,
+    },
+  });
+
+  revalidatePath("/account/style-references");
 }
 
 export async function updateAssetProductTypeAction(formData: FormData) {

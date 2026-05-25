@@ -122,6 +122,10 @@ function revalidateAdmin() {
   revalidatePath("/billing");
 }
 
+function isAvailableToUsers(formData: FormData) {
+  return formData.has("isAvailableToUsers") || (formData.has("isActive") && formData.has("isUserVisible"));
+}
+
 export async function updatePaymentSettingsAction(formData: FormData) {
   const session = await requireAdminSession();
   const cardholderName = text(formData, "cardholderName");
@@ -1057,6 +1061,8 @@ export async function updateCreativeStyleAction(formData: FormData) {
     select: { name: true, prompt: true, isUserVisible: true },
   });
 
+  const availableToUsers = isAvailableToUsers(formData);
+
   await db.creativeStyle.update({
     where: { id: styleId },
     data: {
@@ -1065,8 +1071,8 @@ export async function updateCreativeStyleAction(formData: FormData) {
       prompt,
       previewImageUrl,
       sortOrder,
-      isActive: formData.has("isActive"),
-      isUserVisible: formData.has("isUserVisible"),
+      isActive: availableToUsers,
+      isUserVisible: availableToUsers,
     },
   });
 
@@ -1080,7 +1086,7 @@ export async function updateCreativeStyleAction(formData: FormData) {
       previousName: previous?.name,
       promptChanged: previous?.prompt !== prompt,
       wasUserVisible: previous?.isUserVisible,
-      isUserVisible: formData.has("isUserVisible"),
+      isUserVisible: availableToUsers,
     },
   });
 
@@ -1100,6 +1106,8 @@ export async function createCreativeStyleAction(formData: FormData) {
     return;
   }
 
+  const availableToUsers = isAvailableToUsers(formData);
+
   const style = await db.creativeStyle.create({
     data: {
       name,
@@ -1107,8 +1115,8 @@ export async function createCreativeStyleAction(formData: FormData) {
       prompt,
       previewImageUrl,
       sortOrder: integer(formData, "sortOrder"),
-      isActive: formData.has("isActive"),
-      isUserVisible: formData.has("isUserVisible"),
+      isActive: availableToUsers,
+      isUserVisible: availableToUsers,
     },
   });
 
@@ -1213,6 +1221,34 @@ export async function createStyleControlAction(formData: FormData) {
     targetType: "StyleControl",
     targetId: control.id,
     summary: `کنترل ${label} ساخته شد.`,
+  });
+
+  revalidatePath("/admin/styles");
+  revalidatePath("/projects/new");
+  revalidatePath("/gallery");
+}
+
+export async function deleteStyleControlAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const controlId = text(formData, "controlId");
+  if (!controlId) return;
+
+  const control = await db.styleControl.findUnique({
+    where: { id: controlId },
+    select: { id: true, label: true, styleId: true },
+  });
+
+  if (!control) return;
+
+  await db.styleControl.delete({ where: { id: controlId } });
+
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: "style_control.delete",
+    targetType: "StyleControl",
+    targetId: control.id,
+    summary: `کنترل ${control.label} حذف شد.`,
+    metadata: { styleId: control.styleId },
   });
 
   revalidatePath("/admin/styles");

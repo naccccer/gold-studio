@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CloseCircle, DocumentDownload, Edit2, Eye, Refresh, TickCircle, Trash } from "vuesax-icons-react";
+import { CloseCircle, DocumentDownload, Edit2, Eye, GalleryAdd, Refresh, TickCircle, Trash } from "vuesax-icons-react";
 import { useRef, useState } from "react";
 import { ActionDock } from "@/components/ui/action-dock";
 import { Button, IconButton, buttonClasses } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/item-context-menu";
 import { PageShell } from "@/components/ui/page-shell";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
-import { archiveProjectAction, renameProjectAction } from "@/features/projects/actions";
+import { archiveProjectAction, renameProjectAction, saveProjectResultAsStyleReferenceAction } from "@/features/projects/actions";
 import { archiveItems, extras } from "@/lib/placeholders/jewelry-images";
 
 const galleryFallbacks = [...archiveItems, ...extras];
@@ -197,6 +197,15 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                                     <DocumentDownload aria-hidden={true} className="h-3.5 w-3.5" />
                                     دانلود خروجی
                                   </a>
+                                ) : null}
+                                {project.resultImageUrl ? (
+                                  <form action={saveProjectResultAsStyleReferenceAction}>
+                                    <input type="hidden" name="projectId" value={project.id} />
+                                    <button type="submit" className={contextMenuItemClasses}>
+                                      <GalleryAdd aria-hidden={true} className="h-3.5 w-3.5" />
+                                      ذخیره در نمونه‌ها
+                                    </button>
+                                  </form>
                                 ) : null}
                                 <Link
                                   href={project.sourceAssetId ? `/projects/new?assetId=${project.sourceAssetId}` : "/projects/new"}
