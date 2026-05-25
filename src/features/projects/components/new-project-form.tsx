@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useActionState, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
@@ -15,21 +15,23 @@ import {
 import { ActionDock } from "@/components/ui/action-dock";
 import { AppTopBar } from "@/components/ui/app-top-bar";
 import { Button, ButtonLink, buttonClasses } from "@/components/ui/button";
-import { ImageOverlayPill, JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
+import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import {
+  createPendingGalleryUpload,
+  startPendingGalleryUpload,
+  type PendingUploadSource,
+} from "@/features/gallery/client-upload-store";
+import { GalleryCropScreen } from "@/features/gallery/screens/gallery-crop-screen";
 import type { ProjectFormState } from "@/features/projects/actions";
 import { StyleChoiceControl } from "@/features/projects/components/style-choice-control";
 import type { StyleControlOption, StyleOption } from "@/features/projects/presets";
 import { NO_CREDITS_ERROR } from "@/lib/credits";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
-import { PRODUCT_TYPES } from "@/lib/product-types";
+import { DEFAULT_PRODUCT_TYPE, normalizeProductType, productTypeLabel, PRODUCT_TYPES } from "@/lib/product-types";
 
 const INITIAL_STATE: ProjectFormState = {};
-const MAX_PROJECT_UPLOAD_EDGE = 2400;
-const MAX_PROJECT_UPLOAD_BYTES = 4 * 1024 * 1024;
-const PROJECT_UPLOAD_JPEG_QUALITY = 0.86;
-const PROJECT_UPLOAD_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export type GalleryAssetOption = {
   id: string;
@@ -57,7 +59,7 @@ type WizardStep = "source" | "size" | "style";
 type StyleControl = NonNullable<StyleOption["controls"]>[number];
 
 const topBarTitles: Record<WizardStep, string> = {
-  source: "پروژه جدید",
+  source: "آپلود عکس محصول",
   size: "ابعاد و نوع محصول",
   style: "انتخاب سبک",
 };
@@ -76,61 +78,39 @@ const outputPresets: Array<{
   id: OutputPresetId;
   label: string;
   ratio: string;
-  className: string;
-  previewFrameClassName: string;
 }> = [
   {
     id: "post",
     label: "پست",
     ratio: "۱:۱",
-    className: "aspect-square",
-    previewFrameClassName: "h-[62%] aspect-square",
   },
   {
     id: "story",
     label: "استوری",
     ratio: "۹:۱۶",
-    className: "aspect-[9/16]",
-    previewFrameClassName: "h-[78%] aspect-[9/16]",
   },
   {
     id: "banner",
     label: "بنر",
     ratio: "۱۶:۹",
-    className: "aspect-video",
-    previewFrameClassName: "w-[82%] aspect-video",
   },
 ];
-
-const stepMeta: Record<WizardStep, { stepNumber: string; title: string; description: string }> = {
-  source: {
-    stepNumber: "مرحله ۱ از ۳",
-    title: "عکس محصول را انتخاب کنید",
-    description: "از گالری، آپلود، یا دوربین شروع کنید تا منبع اصلی پروژه مشخص شود.",
-  },
-  size: {
-    stepNumber: "مرحله ۲ از ۳",
-    title: "ابعاد خروجی را مشخص کنید",
-    description: "همان عکسی که انتخاب کرده‌اید در نسبت نهایی بازسازی می‌شود.",
-  },
-  style: {
-    stepNumber: "مرحله ۳ از ۳",
-    title: "انتخاب سبک",
-    description: "یک ظاهر آماده را انتخاب کنید تا پردازش استودیویی شروع شود.",
-  },
-};
 
 function SourceActionButton({
   children,
   htmlFor,
   href,
+  featured = false,
 }: {
   children: React.ReactNode;
   htmlFor?: string;
   href?: string;
+  featured?: boolean;
 }) {
   const className =
-    "h-12 w-full rounded-[1rem] border border-white/14 bg-white/[0.06] text-xs font-semibold !text-surface shadow-none hover:border-white/24 hover:bg-white/[0.1]";
+    featured
+      ? "h-12 w-full rounded-[1rem] border border-white bg-white text-xs font-semibold !text-[#171411] shadow-[0_18px_30px_-24px_rgba(255,255,255,0.82)] hover:bg-[#fff8ef]"
+      : "h-12 w-full rounded-[1rem] border border-white/14 bg-white/[0.06] text-xs font-semibold !text-surface shadow-none hover:border-white/24 hover:bg-white/[0.1]";
 
   if (href) {
     return (
@@ -141,7 +121,7 @@ function SourceActionButton({
   }
 
   return (
-    <label htmlFor={htmlFor} className={buttonClasses({ variant: "studio-secondary", className })}>
+    <label htmlFor={htmlFor} className={buttonClasses({ variant: featured ? "light" : "studio-secondary", className })}>
       {children}
     </label>
   );
@@ -175,77 +155,6 @@ function getInitialStyleControlValues(style?: StyleOption) {
   return Object.fromEntries((style?.controls ?? []).map((control) => [control.key, getControlDefaultValue(control)]));
 }
 
-function loadImageElement(file: File) {
-  const objectUrl = URL.createObjectURL(file);
-  const image = new window.Image();
-  image.decoding = "async";
-
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    image.onload = () => {
-      URL.revokeObjectURL(objectUrl);
-      resolve(image);
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(objectUrl);
-      reject(new Error("تصویر انتخاب‌شده قابل آماده‌سازی نیست. لطفا از گالری یک فایل JPG، PNG یا WEBP انتخاب کنید."));
-    };
-    image.src = objectUrl;
-  });
-}
-
-async function prepareProjectUploadFile(file: File) {
-  if (!file.type.startsWith("image/") || file.type === "image/svg+xml") {
-    return file;
-  }
-
-  const shouldNormalize = !PROJECT_UPLOAD_TYPES.has(file.type) || file.size > MAX_PROJECT_UPLOAD_BYTES;
-  if (!shouldNormalize) {
-    return file;
-  }
-
-  const image = await loadImageElement(file);
-  const longestEdge = Math.max(image.naturalWidth, image.naturalHeight);
-  const scale = Math.min(1, MAX_PROJECT_UPLOAD_EDGE / longestEdge);
-  const outputWidth = Math.max(1, Math.round(image.naturalWidth * scale));
-  const outputHeight = Math.max(1, Math.round(image.naturalHeight * scale));
-  const canvas = document.createElement("canvas");
-  canvas.width = outputWidth;
-  canvas.height = outputHeight;
-
-  const context = canvas.getContext("2d", { alpha: false });
-  if (!context) {
-    return file;
-  }
-
-  context.fillStyle = "#ffffff";
-  context.fillRect(0, 0, outputWidth, outputHeight);
-  context.drawImage(image, 0, 0, outputWidth, outputHeight);
-
-  const blob = await new Promise<Blob | null>((resolve) => {
-    canvas.toBlob(resolve, "image/jpeg", PROJECT_UPLOAD_JPEG_QUALITY);
-  });
-
-  if (!blob) {
-    return file;
-  }
-
-  const baseName = file.name.replace(/\.[^.]+$/, "") || "project-upload";
-  return new File([blob], `${baseName}-optimized.jpg`, {
-    type: "image/jpeg",
-    lastModified: file.lastModified,
-  });
-}
-
-function replaceInputFile(input: HTMLInputElement, file: File) {
-  if (typeof DataTransfer === "undefined") {
-    return;
-  }
-
-  const transfer = new DataTransfer();
-  transfer.items.add(file);
-  input.files = transfer.files;
-}
-
 export function NewProjectForm({
   action,
   galleryAssets,
@@ -273,29 +182,21 @@ export function NewProjectForm({
     return explicitSelectedAsset && !freeVariantParentId ? "size" : "source";
   });
   const [selectedAsset, setSelectedAsset] = useState<GalleryAssetOption | null>(explicitSelectedAsset);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [cropUploadId, setCropUploadId] = useState<string | null>(null);
   const [outputPreset, setOutputPreset] = useState<OutputPresetId>(defaultOutputPreset);
   const [selectedStyle, setSelectedStyle] = useState(defaultStyle?.id ?? "");
   const [styleControlValues, setStyleControlValues] = useState<Record<string, string>>(() => getInitialStyleControlValues(defaultStyle));
-  const [productType, setProductType] = useState(explicitSelectedAsset?.productType || "محصول");
+  const [productType, setProductType] = useState(normalizeProductType(explicitSelectedAsset?.productType));
   const [sourcePreparing, setSourcePreparing] = useState(false);
   const [sourceError, setSourceError] = useState<string | null>(null);
   const fileInputRequestRef = useRef(0);
-
-  useEffect(() => {
-    return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [previewUrl]);
 
   const selectedStyleData = useMemo(
     () => styles.find((preset) => preset.id === selectedStyle) ?? defaultStyle,
     [defaultStyle, selectedStyle, styles],
   );
 
-  const selectedPreset = outputPresets.find((preset) => preset.id === outputPreset) ?? outputPresets[0];
+  const styleControls = selectedStyleData?.controls ?? [];
   const outputPresetItems = outputPresets.map((preset) => ({
     value: preset.id,
     label: preset.label,
@@ -305,39 +206,31 @@ export function NewProjectForm({
       </span>
     ),
   }));
-  const styleControls = selectedStyleData?.controls ?? [];
   const visibleGalleryAssets = galleryAssets.slice(0, 4);
-  const currentImageSrc = previewUrl ?? selectedAsset?.fileUrl ?? null;
+  const currentImageSrc = selectedAsset?.fileUrl ?? null;
   const hasSource = Boolean(currentImageSrc);
   const canContinue = hasSource && !sourcePreparing && !sourceError;
   const canSubmit = Boolean(selectedStyleData) && canContinue;
-  const currentMeta = stepMeta[step];
   const shouldShowBillingShortcut = state.error === NO_CREDITS_ERROR;
 
-  function setPreview(file: File | null) {
-    if (file) {
-      setSelectedAsset(null);
-      setProductType("محصول");
-      setSourceError(null);
-    }
+  function beginGalleryUploadCrop(file: File, source: PendingUploadSource) {
+    fileInputRequestRef.current += 1;
+    setSourcePreparing(true);
+    setSourceError(null);
+    setSelectedAsset(null);
+    setProductType(DEFAULT_PRODUCT_TYPE);
 
-    setPreviewUrl((currentPreview) => {
-      if (currentPreview) {
-        URL.revokeObjectURL(currentPreview);
-      }
-      return file ? URL.createObjectURL(file) : null;
+    const pendingUpload = createPendingGalleryUpload(file, source);
+    setCropUploadId(pendingUpload.id);
+    void startPendingGalleryUpload(pendingUpload.id).catch((error) => {
+      setSourceError(error instanceof Error ? error.message : "آپلود تصویر کامل نشد. دوباره تلاش کنید.");
+      setSourcePreparing(false);
     });
-
-    if (file) {
-      setStep("size");
-    }
   }
 
-  async function handleImageInputChange(event: React.ChangeEvent<HTMLInputElement>, otherInputId: string) {
+  function handleImageInputChange(event: React.ChangeEvent<HTMLInputElement>, otherInputId: string) {
     const input = event.currentTarget;
     const file = input.files?.[0] ?? null;
-    const requestId = fileInputRequestRef.current + 1;
-    fileInputRequestRef.current = requestId;
     setSourceError(null);
 
     const otherInput = document.getElementById(otherInputId);
@@ -347,31 +240,11 @@ export function NewProjectForm({
 
     if (!file) {
       setSourcePreparing(false);
-      setPreview(null);
       return;
     }
 
-    setPreview(file);
-    setSourcePreparing(true);
-
-    try {
-      const preparedFile = await prepareProjectUploadFile(file);
-      if (fileInputRequestRef.current !== requestId) {
-        return;
-      }
-      replaceInputFile(input, preparedFile);
-    } catch (error) {
-      if (fileInputRequestRef.current !== requestId) {
-        return;
-      }
-      input.value = "";
-      setPreview(null);
-      setSourceError(error instanceof Error ? error.message : "آماده‌سازی تصویر کامل نشد. لطفا دوباره تلاش کنید.");
-    } finally {
-      if (fileInputRequestRef.current === requestId) {
-        setSourcePreparing(false);
-      }
-    }
+    input.value = "";
+    beginGalleryUploadCrop(file, input.id === "project-camera-input" ? "camera" : "files");
   }
 
   function selectAsset(asset: GalleryAssetOption) {
@@ -379,13 +252,7 @@ export function NewProjectForm({
     setSourcePreparing(false);
     setSourceError(null);
     setSelectedAsset(asset);
-    setProductType(asset.productType || "محصول");
-    setPreviewUrl((currentPreview) => {
-      if (currentPreview) {
-        URL.revokeObjectURL(currentPreview);
-      }
-      return null;
-    });
+    setProductType(normalizeProductType(asset.productType));
   }
 
   function clearSource() {
@@ -401,12 +268,7 @@ export function NewProjectForm({
       fileInput.value = "";
     }
     setSelectedAsset(null);
-    setPreviewUrl((currentPreview) => {
-      if (currentPreview) {
-        URL.revokeObjectURL(currentPreview);
-      }
-      return null;
-    });
+    setCropUploadId(null);
   }
 
   function selectStyle(style: StyleOption) {
@@ -432,10 +294,33 @@ export function NewProjectForm({
     router.push("/gallery");
   }
 
+  function handleCropClose(options?: { refresh?: boolean; selectedAssetId?: string; selectedAssetFileUrl?: string }) {
+    setCropUploadId(null);
+    setSourcePreparing(false);
+
+    if (options?.selectedAssetId && options.selectedAssetFileUrl) {
+      const uploadedAsset: GalleryAssetOption = {
+        id: options.selectedAssetId,
+        fileUrl: options.selectedAssetFileUrl,
+        title: null,
+        originalName: null,
+        productType,
+      };
+
+      selectAsset(uploadedAsset);
+      setStep("size");
+    }
+
+    if (options?.refresh) {
+      router.refresh();
+    }
+  }
+
   return (
+    <>
     <form action={formAction} className="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
       <AppTopBar
-        title={topBarTitles[step]}
+        title={step === "source" ? "آپلود عکس محصول" : topBarTitles[step]}
         onBack={handleTopBarBack}
         logoVariant="mark-light"
         tone="dark"
@@ -468,74 +353,16 @@ export function NewProjectForm({
         onChange={(event) => void handleImageInputChange(event, "project-camera-input")}
       />
 
-      <header className="-mt-2 space-y-3">
-        <div className="flex items-center justify-center">
-          <ImageOverlayPill tone="accent" className="w-fit">
-            {currentMeta.stepNumber}
-          </ImageOverlayPill>
-        </div>
-        <div className="flex items-center justify-center gap-2" aria-label="مراحل پروژه">
-          {(["source", "size", "style"] as WizardStep[]).map((item, index) => {
-            const isActive = step === item;
-            const isDone = ["source", "size", "style"].indexOf(step) > index;
-
-            return (
-              <span
-                key={item}
-                className={`h-1.5 rounded-full transition ${
-                  isActive ? "w-9 bg-accent-bright" : isDone ? "w-6 bg-accent/60" : "w-5 bg-white/18"
-                }`}
-              />
-            );
-          })}
-        </div>
-      </header>
-
       {step === "source" ? (
         <StepScrollPanel>
-          <JewelryImageFrame
-            aspect="portrait"
-            treatment="dark"
-            className="h-[min(284px,33svh)] min-h-[216px] w-full rounded-[1.45rem]"
-          >
-            <Image
-              src={currentImageSrc || uploadPreview.src}
-              alt="تصویر انتخاب‌شده"
-              fill
-              priority
-              unoptimized
-              className={`object-cover object-[46%_55%] ${currentImageSrc ? "" : "opacity-72"}`}
-              sizes="(max-width: 768px) 100vw, 760px"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/74 via-black/10 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 space-y-2 p-4">
-              <ImageOverlayPill tone="accent" className="w-fit">
-                {selectedAsset ? "از گالری" : previewUrl ? "آپلود جدید" : "شروع پروژه"}
-              </ImageOverlayPill>
-              <div className="space-y-1">
-                <p className="text-base font-semibold leading-7 text-surface">
-                  {selectedAsset?.title || selectedAsset?.originalName || (previewUrl ? "عکس آماده بررسی" : "یک عکس تمیز از محصول انتخاب کنید")}
-                </p>
-                <p
-                  className="text-[11px] leading-5 text-surface/72"
-                  style={{ textAlign: "justify", textAlignLast: "right" }}
-                >
-                  {hasSource
-                    ? "این عکس منبع اصلی ساخت خواهد بود."
-                    : "محصول را تا حد ممکن نزدیک و واضح بگیرید تا نتیجه نهایی دقیق‌تر شود."}
-                </p>
-              </div>
-            </div>
-          </JewelryImageFrame>
-
           <div className="grid grid-cols-3 gap-3">
+            <SourceActionButton htmlFor="project-file-input" featured>
+              <DocumentUpload aria-hidden={true} className="h-4 w-4" />
+              <span>آپلود</span>
+            </SourceActionButton>
             <SourceActionButton htmlFor="project-camera-input">
               <Camera aria-hidden={true} className="h-4 w-4" />
               <span>دوربین</span>
-            </SourceActionButton>
-            <SourceActionButton htmlFor="project-file-input">
-              <DocumentUpload aria-hidden={true} className="h-4 w-4" />
-              <span>آپلود</span>
             </SourceActionButton>
             <SourceActionButton href="/gallery">
               <Gallery aria-hidden={true} className="h-4 w-4" />
@@ -568,7 +395,7 @@ export function NewProjectForm({
               </div>
               <div className="grid grid-cols-4 gap-3">
                 {visibleGalleryAssets.map((asset) => {
-                  const isSelected = selectedAsset?.id === asset.id && !previewUrl;
+                  const isSelected = selectedAsset?.id === asset.id;
                   const title = asset.title || asset.originalName || "تصویر محصول";
 
                   return (
@@ -618,58 +445,27 @@ export function NewProjectForm({
 
       {step === "size" ? (
         <StepScrollPanel>
-          <JewelryImageFrame
-            aspect="portrait"
-            treatment="dark"
-            className="flex h-[min(288px,34svh)] min-h-[224px] items-center justify-center rounded-[1.45rem]"
-          >
-            {selectedAsset ? (
-              <SafeJewelryImage
-                src={selectedAsset.fileUrl}
-                alt={selectedAsset.title || selectedAsset.originalName || "تصویر محصول"}
-                fallbackSrc={uploadPreview.src}
-                fallbackAlt={uploadPreview.alt}
-                fill
-                priority
-                unoptimized
-                className="object-cover object-[46%_55%] opacity-72"
-                sizes="(max-width: 768px) 100vw, 760px"
-              />
-            ) : (
-              <Image
-                src={currentImageSrc || uploadPreview.src}
-                alt="تصویر انتخاب‌شده"
-                fill
-                priority
-                className="object-cover object-[46%_55%] opacity-72"
-                sizes="(max-width: 768px) 100vw, 760px"
-              />
-            )}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(255,253,249,0.10)_0%,rgba(17,16,14,0.20)_54%,rgba(17,16,14,0.58)_100%)]" />
-            <div className="absolute inset-0 flex items-center justify-center p-5">
-              <div className={`rounded-[1.25rem] border border-white/55 bg-white/10 shadow-[0_18px_36px_-28px_rgba(0,0,0,0.72)] backdrop-blur-sm ${selectedPreset.previewFrameClassName}`} />
-            </div>
-          </JewelryImageFrame>
-
-          <fieldset className="space-y-3">
-            <legend className="sr-only">انتخاب سایز خروجی</legend>
+          <section className="rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-3">
+            <p className="mb-2 block text-xs font-medium text-surface/72">
+              ابعاد خروجی
+            </p>
             <SegmentedControl items={outputPresetItems} value={outputPreset} onChange={setOutputPreset} label="انتخاب سایز خروجی" />
-          </fieldset>
+          </section>
 
           <section className="rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-3">
             <label htmlFor="new-project-product-type" className="mb-2 block text-xs font-medium text-surface/72">
-              نوع محصول
+              نوع محصول (در صورت مغایرت تغییر دهید)
             </label>
             <div className="relative">
               <select
                 id="new-project-product-type"
                 value={productType}
-                onChange={(event) => setProductType(event.target.value)}
+                onChange={(event) => setProductType(normalizeProductType(event.target.value))}
                 className="min-h-10 w-full appearance-none rounded-full border border-white/12 bg-white/[0.08] py-0 pr-3 pl-10 text-sm font-semibold text-surface outline-none transition focus:border-white/28"
               >
                 {PRODUCT_TYPES.map((item) => (
                   <option key={item} value={item} className="bg-[#171411] text-white">
-                    {item}
+                    {productTypeLabel(item)}
                   </option>
                 ))}
               </select>
@@ -816,5 +612,10 @@ export function NewProjectForm({
         </StepScrollPanel>
       ) : null}
     </form>
+    {cropUploadId ? <GalleryCropScreen uploadId={cropUploadId} onClose={handleCropClose} /> : null}
+    </>
   );
 }
+
+
+

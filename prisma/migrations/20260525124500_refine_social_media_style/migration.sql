@@ -1,0 +1,6 @@
+UPDATE `CreativeStyle`
+SET
+  `description` = 'خروجی چشم‌گیر و فروش‌محور برای پست و استوری، با پس‌زمینه ادیتوریال نه سفید کاتالوگی.',
+  `prompt` = 'Act as a senior commercial art director for premium social commerce jewelry campaigns. Create a polished, high-impact social media product image for posts and stories, clearly distinct from a white catalog photo. Use a designed tonal editorial background such as champagne, blush nude, soft graphite, muted sage, deep navy, burgundy, or warm neutral, with refined lighting, subtle depth, tasteful shadow, and clean negative space for optional text. The background must not be plain white, pure white, empty catalog white, or a generic e-commerce cutout unless the user explicitly selected a white-background style. Keep the composition modern, sales-ready, and visually engaging, but still minimal and premium. Preserve the exact product from the input: shape, proportions, color, metal finish, stones, chain or clasp, watch face, engravings, and small details. Make it eye-catching without looking synthetic. No AI gloss, no fake sparkle, no over-saturated color, no distracting props, no perfume/fragrance styling, no redesign, no altered materials.',
+  `updatedAt` = NOW(3)
+WHERE `id` = 'style_social_media';

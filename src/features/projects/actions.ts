@@ -16,7 +16,7 @@ import {
 import { processImageProject, processTextProject } from "@/lib/generation/jobs";
 import { getOutputPresetSpec, normalizeOutputPreset } from "@/lib/output-presets";
 import { pickVisionTitle, retryProjectVisionTitle } from "@/lib/product-vision";
-import { isProductType } from "@/lib/product-types";
+import { normalizeProductType } from "@/lib/product-types";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { readStorageObject } from "@/lib/storage";
 import { getStyleForGeneration, type StyleForGeneration } from "@/lib/styles";
@@ -61,6 +61,18 @@ function getCompositionInstruction(productType?: string | null, visionAngle?: st
   }
 
   return instructions.join("\n");
+}
+
+function getStyleCompositionInstruction(styleId: string) {
+  if (styleId !== "style_social_media") {
+    return "";
+  }
+
+  return [
+    "Social media composition: do not make the product a huge centered close-up. Keep it premium, readable, and intentionally smaller than a catalog hero shot.",
+    "Always reserve text space for this social media style: the product should occupy roughly 18-30% of the frame, placed off-center on one side or lower corner, leaving the opposite side as clean designed negative space for text.",
+    "Avoid filling most of the frame with the product, avoid edge-to-edge product crops, and avoid a plain centered packshot composition.",
+  ].join("\n");
 }
 
 function getFineDetailInstruction(productType?: string | null) {
@@ -112,12 +124,20 @@ function buildPrompt(
       "Model age and casting: if a human model appears, use a believable young adult model, generally 25 to 35 years old. Avoid elderly, childlike, teen, overly aged, tired, or heavily wrinkled faces and hands.",
     );
     promptParts.push(
+      "Female hand modeling: when the selected model is a woman and the product is shown on hands or wrists, use elegant professional jewelry hand-model hands: slender natural fingers, graceful relaxed posing, neat short-to-medium natural nails, clean cuticles, refined proportions, and no rough, swollen, masculine, aged, dry, cracked, or work-worn hands.",
+    );
+    promptParts.push(
       "Human realism: preserve natural skin texture, visible pores, subtle fine lines, realistic hands, neck, ears, and skin tone variation. Avoid waxy, porcelain, airbrushed, plastic, doll-like, or AI-smoothed skin.",
     );
   }
 
   if (styleControlPrompt) {
     promptParts.push(styleControlPrompt);
+  }
+
+  const styleCompositionInstruction = getStyleCompositionInstruction(style.id);
+  if (styleCompositionInstruction) {
+    promptParts.push(styleCompositionInstruction);
   }
 
   promptParts.push(getCompositionInstruction(productType, vision?.visionAngle));
@@ -150,7 +170,7 @@ export async function createProjectAction(
   const sourceAssetId = String(formData.get("sourceAssetId") ?? "").trim();
   const freeVariantParentId = String(formData.get("freeVariantParentId") ?? "").trim();
   const submittedProductType = String(formData.get("productType") ?? "").trim();
-  const selectedProductType = isProductType(submittedProductType) ? submittedProductType : "محصول";
+  const selectedProductType = normalizeProductType(submittedProductType);
   const outputPreset = normalizeOutputPreset(formData.get("outputPreset"));
   const styleId = String(formData.get("styleId") ?? "");
   const style = await getStyleForGeneration(styleId);
@@ -437,9 +457,9 @@ export async function renameProjectAction(formData: FormData) {
 export async function updateProjectProductTypeAction(formData: FormData) {
   const session = await requireUserSession();
   const projectId = String(formData.get("projectId") ?? "").trim();
-  const productType = String(formData.get("productType") ?? "").trim();
+  const productType = normalizeProductType(formData.get("productType"));
 
-  if (!projectId || !isProductType(productType)) {
+  if (!projectId) {
     return;
   }
 

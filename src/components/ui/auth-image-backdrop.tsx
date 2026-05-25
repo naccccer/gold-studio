@@ -23,6 +23,7 @@ export function AuthImageBackdrop({
         alt={alt}
         fill
         priority={priority}
+        quality={94}
         sizes="(max-width: 640px) 100vw, 420px"
         className={["object-cover", imageClassName].filter(Boolean).join(" ")}
       />

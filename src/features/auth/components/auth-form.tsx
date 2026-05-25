@@ -19,6 +19,7 @@ type AuthFormProps = {
 };
 
 const INITIAL_STATE: AuthFormState = {};
+const PASSWORD_MIN_LENGTH = 6;
 const authHeroImage = "/images/placeholders/jewelry/auth-hero-ring-01.webp";
 
 type AuthFieldProps = {
@@ -66,7 +67,7 @@ export function AuthForm({
     <main className="flex min-h-svh justify-center overflow-hidden bg-[#efe6d8] text-right text-foreground md:bg-[radial-gradient(circle_at_top,#fffaf0_0%,#f6f1e8_42%,#e8dece_100%)] md:py-6">
       <section className="relative flex h-svh w-full max-w-[393px] flex-col overflow-hidden bg-[#11100e] px-5 pb-5 pt-5 md:h-[calc(100svh-3rem)] md:max-w-[430px] md:rounded-[2rem] md:border md:border-white/80 md:shadow-[0_30px_80px_-52px_rgba(23,20,17,0.65)]">
         <AuthImageBackdrop src={authHeroImage} priority imageClassName="object-[50%_38%]" />
-        <div className="relative z-10 flex h-[78px] items-center justify-center">
+        <div className="relative z-10 flex h-[86px] items-center justify-center pt-10">
           <BrandLogo variant="primary" priority />
         </div>
 
@@ -101,7 +102,7 @@ export function AuthForm({
               <input
                 required
                 name="password"
-                minLength={6}
+                minLength={PASSWORD_MIN_LENGTH}
                 type={showPassword ? "text" : "password"}
                 autoComplete={isSignup ? "new-password" : "current-password"}
                 dir="ltr"
@@ -134,7 +135,7 @@ export function AuthForm({
           ) : (
             <div className="space-y-2 pt-1">
               <p className="text-center text-[11px] leading-5 text-surface/78">
-                با ادامه، قوانین نگهداری امن تصاویر محصول را می‌پذیری.
+                رمز عبور باید حداقل ۶ کاراکتر باشد.
               </p>
               <p className="text-center text-xs font-medium text-surface/82">
                 {secondaryPrefix}{" "}

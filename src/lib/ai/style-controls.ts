@@ -15,7 +15,7 @@ type StyleControlOption = {
 
 const controlInstructions: Record<string, Record<string, string>> = {
   modelGender: {
-    woman: "Use an elegant adult woman model, generally 25 to 35 years old, when a human model is needed.",
+    woman: "Use an elegant adult woman model, generally 25 to 35 years old, when a human model is needed. If hands or wrists are visible, they must look like professional jewelry hand-model hands: slender natural fingers, graceful relaxed pose, neat natural nails, clean cuticles, refined feminine proportions, realistic skin texture, and no rough, swollen, masculine, aged, dry, cracked, or work-worn hands.",
     man: "Use an elegant adult man model, generally 25 to 35 years old, when a human model is needed.",
   },
   decorSurface: {
@@ -46,6 +46,16 @@ const controlInstructions: Record<string, Record<string, string>> = {
     calm: "Editorial mood: calm, quiet, refined magazine styling.",
     luxury: "Editorial mood: more luxurious and polished, while staying understated.",
     bold: "Editorial mood: slightly bolder composition with confident magazine energy, still product-first.",
+  },
+  socialBackgroundTone: {
+    light: "Social background tone: use a light tonal editorial background such as champagne, blush nude, pale sage, ivory-warm neutral, or soft light gray. It must feel designed and premium, not plain white catalog.",
+    dark: "Social background tone: use a dark tonal editorial background such as deep navy, charcoal, burgundy, forest green, or espresso. Keep jewelry detail readable with controlled highlights and refined contrast.",
+  },
+  socialTextPlacement: {
+    right: "Social text placement: reserve the right side of the image as clean readable negative space for Persian text; place the product on the left side or lower-left area.",
+    left: "Social text placement: reserve the left side of the image as clean readable negative space for text; place the product on the right side or lower-right area.",
+    top: "Social text placement: reserve the upper area of the image as clean readable negative space for text; place the product lower in the frame.",
+    bottom: "Social text placement: reserve the lower area of the image as clean readable negative space for text; place the product higher in the frame.",
   },
 };
 
@@ -108,7 +118,7 @@ function booleanInstruction(key: string, enabled: boolean) {
       "Avoid mirror-like surface reflections; keep the surface clean and matte.",
     ],
     textSpace: [
-      "Leave clean negative space suitable for adding short social media text later.",
+      "Leave clean negative space suitable for adding short social media text later: place the product clearly off-center toward one side or lower corner, keep it modest in scale rather than a large centered close-up, and leave the opposite side open and uncluttered as a readable text area. Keep the scene visually designed with a tonal editorial background rather than a plain white catalog backdrop.",
       "No extra reserved text area is needed; prioritize product-filled composition.",
     ],
     darkBackground: [
@@ -127,7 +137,7 @@ function rangeInstruction(key: string, value: number) {
   const map: Record<string, string> = {
     softShadow: `Soft shadow strength: ${level}; keep shadows natural and catalog-clean.`,
     decorIntensity: `Decor intensity: ${level}; keep decorative elements secondary to the product.`,
-    visualEnergy: `Visual energy: ${level}; make it commercially attractive without over-saturation or clutter.`,
+    visualEnergy: `Visual energy: ${level}; make it commercially attractive with social-campaign styling, tonal color, and controlled contrast, without over-saturation, clutter, or plain white catalog staging.`,
     depthOfField: `Depth of field: ${level}; keep product details crisp and do not hide craftsmanship in blur.`,
     contrastIntensity: `Contrast intensity: ${level}; avoid crushed blacks and keep details readable.`,
   };

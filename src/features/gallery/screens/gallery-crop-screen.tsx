@@ -14,7 +14,7 @@ import {
 
 type GalleryCropScreenProps = {
   uploadId: string;
-  onClose: (options?: { refresh?: boolean; selectedAssetId?: string }) => void;
+  onClose: (options?: { refresh?: boolean; selectedAssetId?: string; selectedAssetFileUrl?: string }) => void;
   progressLabel?: string;
 };
 
@@ -274,7 +274,7 @@ export function GalleryCropScreen({ uploadId, onClose, progressLabel }: GalleryC
     ? normalizeCropRect(cropRect, frameSize)
     : getInitialCropRect(frameSize, displayedImageBounds);
 
-  function closeModal(options?: { refresh?: boolean; discard?: boolean; selectedAssetId?: string }) {
+  function closeModal(options?: { refresh?: boolean; discard?: boolean; selectedAssetId?: string; selectedAssetFileUrl?: string }) {
     const shouldDiscard = options?.discard ?? true;
     if (upload) {
       if (shouldDiscard) {
@@ -284,7 +284,11 @@ export function GalleryCropScreen({ uploadId, onClose, progressLabel }: GalleryC
       }
     }
 
-    onClose({ refresh: options?.refresh, selectedAssetId: options?.selectedAssetId });
+    onClose({
+      refresh: options?.refresh,
+      selectedAssetId: options?.selectedAssetId,
+      selectedAssetFileUrl: options?.selectedAssetFileUrl,
+    });
   }
 
   function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
@@ -400,7 +404,12 @@ export function GalleryCropScreen({ uploadId, onClose, progressLabel }: GalleryC
     try {
       const confirmed = await confirmPendingGalleryUpload(upload.id);
       clearPendingGalleryUpload(upload.id);
-      closeModal({ refresh: true, discard: false, selectedAssetId: confirmed.assetId });
+      closeModal({
+        refresh: true,
+        discard: false,
+        selectedAssetId: confirmed.assetId,
+        selectedAssetFileUrl: confirmed.fileUrl,
+      });
     } catch (error) {
       setLocalError(error instanceof Error ? error.message : "بازگشت به گالری بدون کراپ انجام نشد.");
       setSubmitting(null);
@@ -430,7 +439,12 @@ export function GalleryCropScreen({ uploadId, onClose, progressLabel }: GalleryC
 
       const cropped = await applyCropToPendingUpload(upload.id, croppedFile);
       clearPendingGalleryUpload(upload.id);
-      closeModal({ refresh: true, discard: false, selectedAssetId: cropped.assetId });
+      closeModal({
+        refresh: true,
+        discard: false,
+        selectedAssetId: cropped.assetId,
+        selectedAssetFileUrl: cropped.fileUrl,
+      });
     } catch (error) {
       setLocalError(error instanceof Error ? error.message : "ذخیره کراپ انجام نشد.");
       setSubmitting(null);

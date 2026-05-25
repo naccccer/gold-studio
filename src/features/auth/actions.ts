@@ -15,7 +15,7 @@ export type AuthFormState = {
 
 const PASSWORD_MIN_LENGTH = 6;
 const INVALID_IDENTIFIER_ERROR = "ایمیل یا موبایل را درست وارد کنید.";
-const DUPLICATE_ACCOUNT_ERROR = "این حساب قبلا ساخته شده.";
+const DUPLICATE_ACCOUNT_ERROR = "این حساب قبلا ساخته شده است.";
 const BAD_LOGIN_ERROR = "اطلاعات ورود درست نیست.";
 
 export async function signupAction(
@@ -127,5 +127,5 @@ export async function loginAction(
 
 export async function logoutAction() {
   await clearSession();
-  redirect("/");
+  redirect("/login");
 }

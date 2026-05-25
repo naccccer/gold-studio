@@ -1,8 +1,8 @@
 "use client";
 
-import { Gift, Store, UserRoundCheck } from "lucide-react";
+import { ChevronDown, Store, UserRoundCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { completeOnboardingNameAction, type OnboardingNameState } from "@/features/account/actions";
 
@@ -11,6 +11,7 @@ const INITIAL_STATE: OnboardingNameState = {};
 export function OnboardingNameModal() {
   const router = useRouter();
   const [state, formAction, pending] = useActionState(completeOnboardingNameAction, INITIAL_STATE);
+  const [showReferralCode, setShowReferralCode] = useState(false);
 
   useEffect(() => {
     if (state.success) {
@@ -19,23 +20,19 @@ export function OnboardingNameModal() {
   }, [router, state.success]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#11100e]/62 px-4 py-5 backdrop-blur-sm sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#11100e]/62 px-4 py-[calc(env(safe-area-inset-bottom)+1.25rem)] backdrop-blur-sm">
       <form
         action={formAction}
         className="w-full max-w-[393px] rounded-[1.35rem] border border-white/78 bg-surface p-4 text-right shadow-[0_26px_70px_-36px_rgba(17,16,14,0.75)]"
       >
         <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-medium text-muted">تکمیل حساب</p>
-            <h2 className="text-lg font-semibold text-foreground">نام یا نام فروشگاه</h2>
-          </div>
+          <h2 className="pt-1 text-lg font-semibold text-foreground">نام شما/فروشگاه</h2>
           <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-surface-soft text-[#7b5d31]">
             <Store aria-hidden="true" className="h-5 w-5" />
           </span>
         </div>
 
         <label className="block">
-          <span className="mb-1.5 block text-xs font-medium text-muted">نام نمایشی</span>
           <input
             required
             name="name"
@@ -46,19 +43,31 @@ export function OnboardingNameModal() {
           />
         </label>
 
-        <label className="mt-3 block">
-          <span className="mb-1.5 flex items-center justify-between text-xs font-medium text-muted">
-            <span>کد معرف</span>
-            <Gift aria-hidden="true" className="h-4 w-4" strokeWidth={1.6} />
-          </span>
-          <input
-            name="referralCode"
-            autoComplete="off"
-            placeholder="GS..."
-            dir="ltr"
-            className="h-12 w-full rounded-[var(--radius-md)] border border-border bg-surface-soft px-3 text-left text-sm font-medium text-foreground outline-none focus:border-border-strong"
-          />
-        </label>
+        <div className="mt-2">
+          <button
+            type="button"
+            aria-expanded={showReferralCode}
+            onClick={() => setShowReferralCode((value) => !value)}
+            className="inline-flex items-center gap-1.5 px-1 py-1 text-[11px] font-medium text-muted transition hover:text-foreground"
+          >
+            کد معرف دارم
+            <ChevronDown
+              aria-hidden="true"
+              className={`h-3.5 w-3.5 transition ${showReferralCode ? "rotate-180" : ""}`}
+              strokeWidth={1.8}
+            />
+          </button>
+
+          {showReferralCode ? (
+            <input
+              name="referralCode"
+              autoComplete="off"
+              placeholder="OVALA..."
+              dir="ltr"
+              className="mt-2 h-11 w-full rounded-[var(--radius-md)] border border-border bg-surface-soft px-3 text-left text-sm font-medium text-foreground outline-none focus:border-border-strong"
+            />
+          ) : null}
+        </div>
 
         {state.error ? <p className="mt-3 rounded-[var(--radius-md)] bg-danger-soft px-3 py-2 text-sm text-danger">{state.error}</p> : null}
 

@@ -3,6 +3,10 @@ import { getSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { isAllowedStorageKey, isPublicStorageKey, readStorageObject } from "@/lib/storage";
 
+function storageKeyLookupValues(storageKey: string) {
+  return Array.from(new Set([storageKey, storageKey.replace(/\//g, "\\")]));
+}
+
 async function canReadStorageKey(storageKey: string) {
   if (isPublicStorageKey(storageKey)) {
     return true;
@@ -15,12 +19,13 @@ async function canReadStorageKey(storageKey: string) {
 
   if (session.role === "ADMIN") {
     const storageUrl = `/api/storage/${storageKey}`;
+    const storageKeys = storageKeyLookupValues(storageKey);
     const knownObject = await Promise.all([
-      db.productAsset.findFirst({ where: { storageKey }, select: { id: true } }),
+      db.productAsset.findFirst({ where: { storageKey: { in: storageKeys } }, select: { id: true } }),
       db.project.findFirst({ where: { sourceImageUrl: storageUrl }, select: { id: true } }),
-      db.project.findFirst({ where: { resultStorageKey: storageKey }, select: { id: true } }),
+      db.project.findFirst({ where: { resultStorageKey: { in: storageKeys } }, select: { id: true } }),
       db.project.findFirst({ where: { resultImageUrl: storageUrl }, select: { id: true } }),
-      db.purchaseRequest.findFirst({ where: { receiptStorageKey: storageKey }, select: { id: true } }),
+      db.purchaseRequest.findFirst({ where: { receiptStorageKey: { in: storageKeys } }, select: { id: true } }),
       db.purchaseRequest.findFirst({ where: { receiptImageUrl: storageUrl }, select: { id: true } }),
     ]);
 
@@ -28,12 +33,13 @@ async function canReadStorageKey(storageKey: string) {
   }
 
   const storageUrl = `/api/storage/${storageKey}`;
+  const storageKeys = storageKeyLookupValues(storageKey);
   const ownedObject = await Promise.all([
-    db.productAsset.findFirst({ where: { storageKey, userId: session.userId }, select: { id: true } }),
+    db.productAsset.findFirst({ where: { storageKey: { in: storageKeys }, userId: session.userId }, select: { id: true } }),
     db.project.findFirst({ where: { sourceImageUrl: storageUrl, userId: session.userId }, select: { id: true } }),
-    db.project.findFirst({ where: { resultStorageKey: storageKey, userId: session.userId }, select: { id: true } }),
+    db.project.findFirst({ where: { resultStorageKey: { in: storageKeys }, userId: session.userId }, select: { id: true } }),
     db.project.findFirst({ where: { resultImageUrl: storageUrl, userId: session.userId }, select: { id: true } }),
-    db.purchaseRequest.findFirst({ where: { receiptStorageKey: storageKey, userId: session.userId }, select: { id: true } }),
+    db.purchaseRequest.findFirst({ where: { receiptStorageKey: { in: storageKeys }, userId: session.userId }, select: { id: true } }),
     db.purchaseRequest.findFirst({ where: { receiptImageUrl: storageUrl, userId: session.userId }, select: { id: true } }),
   ]);
 

@@ -14,7 +14,7 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import { StyleChoiceControl } from "@/features/projects/components/style-choice-control";
 import type { StyleControlOption, StyleOption } from "@/features/projects/presets";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
-import { normalizeProductType, PRODUCT_TYPES } from "@/lib/product-types";
+import { DEFAULT_PRODUCT_TYPE, normalizeProductType, productTypeLabel, PRODUCT_TYPES } from "@/lib/product-types";
 
 export type BatchSourceAsset = {
   id: string;
@@ -254,7 +254,7 @@ export function GalleryBatchNewScreen({
                     <div className="relative mt-1">
                       <select
                         name={`productType_${asset.id}`}
-                        value={productTypes[asset.id] ?? "محصول"}
+                        value={normalizeProductType(productTypes[asset.id] ?? DEFAULT_PRODUCT_TYPE)}
                         onChange={(event) =>
                           setProductTypes((current) => ({ ...current, [asset.id]: event.target.value }))
                         }
@@ -263,7 +263,7 @@ export function GalleryBatchNewScreen({
                       >
                         {PRODUCT_TYPES.map((item) => (
                           <option key={item} value={item} className="bg-[#171411] text-white">
-                            {item}
+                            {productTypeLabel(item)}
                           </option>
                         ))}
                       </select>

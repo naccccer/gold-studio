@@ -1,7 +1,7 @@
 "use client";
 
 import { updateAssetProductTypeAction } from "@/features/gallery/actions";
-import { normalizeProductType, PRODUCT_TYPES } from "@/lib/product-types";
+import { normalizeProductType, productTypeLabel, PRODUCT_TYPES } from "@/lib/product-types";
 
 type AssetProductTypeFormProps = {
   assetId: string;
@@ -24,7 +24,7 @@ export function AssetProductTypeForm({ assetId, productType }: AssetProductTypeF
       >
         {PRODUCT_TYPES.map((item) => (
           <option key={item} value={item}>
-            {item}
+            {productTypeLabel(item)}
           </option>
         ))}
       </select>

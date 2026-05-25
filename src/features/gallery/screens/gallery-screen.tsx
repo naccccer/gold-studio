@@ -189,13 +189,7 @@ export function GalleryScreen({ assets, styles, deleteNotice, undoAssetIds }: Ga
           <div className="relative overflow-hidden rounded-[1rem] border border-accent/24 bg-accent-wash/76 px-3 py-2 text-sm leading-6 text-accent-deep animate-[ovalaNoticeSlot_4.2s_ease-in-out_forwards]">
             <div className="flex items-center gap-3">
               <p className="min-w-0 flex-1">
-                {deleteNotice === "deleted"
-                  ? "عکس از گالری حذف شد."
-                  : deleteNotice === "partial"
-                    ? "عکس‌های آزاد حذف شدند و عکس‌های استفاده‌شده از گالری برداشته شدند."
-                    : deleteNotice === "restored"
-                      ? "عکس به گالری برگشت."
-                      : "عکس از گالری برداشته شد و برای پروژه‌ها حفظ می‌شود."}
+                {deleteNotice === "restored" ? "عکس به گالری برگشت." : "عکس از گالری حذف شد."}
               </p>
               {undoIds.length > 0 ? (
                 <form action={restoreGalleryAssetsAction} className="shrink-0">
@@ -205,10 +199,9 @@ export function GalleryScreen({ assets, styles, deleteNotice, undoAssetIds }: Ga
                   <button
                     type="submit"
                     aria-label="برگرداندن عکس به گالری"
-                    className="motion-press inline-flex h-8 items-center gap-1.5 rounded-full border border-accent/24 bg-surface/72 px-2.5 text-[11px] font-bold text-accent-deep shadow-[0_10px_20px_-18px_rgba(17,16,14,0.55)] backdrop-blur"
+                    className="motion-press inline-flex h-8 w-8 items-center justify-center rounded-full border border-accent/24 bg-surface/72 text-accent-deep shadow-[0_10px_20px_-18px_rgba(17,16,14,0.55)] backdrop-blur"
                   >
                     <ArrowRotateLeft aria-hidden={true} className="h-3.5 w-3.5" />
-                    Undo
                   </button>
                 </form>
               ) : null}

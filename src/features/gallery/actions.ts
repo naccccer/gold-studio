@@ -17,7 +17,7 @@ import { db } from "@/lib/db";
 import { processGenerationBatch } from "@/lib/generation/jobs";
 import { getOutputPresetSpec, normalizeOutputPreset } from "@/lib/output-presets";
 import { analyzeAndStoreProductAssetVision, ensureProductAssetVision, pickVisionTitle } from "@/lib/product-vision";
-import { isProductType, normalizeProductType } from "@/lib/product-types";
+import { normalizeProductType } from "@/lib/product-types";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { deleteStorageObject } from "@/lib/storage";
 import { getStyleForGeneration } from "@/lib/styles";
@@ -207,9 +207,9 @@ export async function renameAssetAction(formData: FormData) {
 export async function updateAssetProductTypeAction(formData: FormData) {
   const session = await requireUserSession();
   const assetId = String(formData.get("assetId") ?? "").trim();
-  const productType = String(formData.get("productType") ?? "").trim();
+  const productType = normalizeProductType(formData.get("productType"));
 
-  if (!assetId || !isProductType(productType)) {
+  if (!assetId) {
     return;
   }
 

@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Add, MagicStar } from "vuesax-icons-react";
 import { ButtonLink } from "@/components/ui/button";
@@ -30,23 +29,29 @@ export function DashboardHomeScreen({ recentProjects }: DashboardHomeScreenProps
     <PageShell maxWidth="lg" minHeight={false} className="space-y-4 pb-3">
       <section className="space-y-4">
         <div className="group relative h-[min(430px,50svh)] min-h-[350px] overflow-hidden rounded-[1.45rem] border border-white/80 bg-[#e9dfcf] shadow-[0_28px_58px_-46px_rgba(17,16,14,0.7)]">
-          <Image
+          <SafeJewelryImage
             src={homeHero.src}
+            fallbackSrc={styleSamples[0].src}
+            fallbackAlt={styleSamples[0].alt}
             alt={homeHero.alt}
             fill
             priority
             className="animate-[ovalaHeroSlideA_12s_ease-in-out_infinite] object-cover object-[52%_58%]"
             sizes="(max-width: 768px) 100vw, 920px"
           />
-          <Image
+          <SafeJewelryImage
             src={styleSamples[0].src}
+            fallbackSrc={archiveItems[0].src}
+            fallbackAlt={archiveItems[0].alt}
             alt=""
             fill
             className="animate-[ovalaHeroSlideB_12s_ease-in-out_infinite] object-cover object-[50%_55%]"
             sizes="(max-width: 768px) 100vw, 920px"
           />
-          <Image
+          <SafeJewelryImage
             src={styleSamples[2].src}
+            fallbackSrc={archiveItems[1].src}
+            fallbackAlt={archiveItems[1].alt}
             alt=""
             fill
             className="animate-[ovalaHeroSlideC_12s_ease-in-out_infinite] object-cover object-[50%_52%]"

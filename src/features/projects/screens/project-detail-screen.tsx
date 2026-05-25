@@ -173,6 +173,12 @@ function extractStyleSettings(prompt?: string | null) {
     ["Editorial mood: calm", "حال‌وهوا: آرام"],
     ["Editorial mood: more luxurious", "حال‌وهوا: لوکس"],
     ["Editorial mood: slightly bolder", "حال‌وهوا: جسور"],
+    ["Social background tone: use a light tonal", "پس‌زمینه: روشن"],
+    ["Social background tone: use a dark tonal", "پس‌زمینه: تیره"],
+    ["Social text placement: reserve the right side", "جای متن: راست"],
+    ["Social text placement: reserve the left side", "جای متن: چپ"],
+    ["Social text placement: reserve the upper area", "جای متن: بالا"],
+    ["Social text placement: reserve the lower area", "جای متن: پایین"],
   ];
 
   for (const [needle, label] of exactMatches) {
@@ -189,7 +195,6 @@ function extractStyleSettings(prompt?: string | null) {
   const rangeMatches: Array<[RegExp, string]> = [
     [/Soft shadow strength: (low|moderate|high)/, "سایه"],
     [/Decor intensity: (low|moderate|high)/, "شدت دکور"],
-    [/Visual energy: (low|moderate|high)/, "انرژی"],
     [/Depth of field: (low|moderate|high)/, "عمق میدان"],
     [/Contrast intensity: (low|moderate|high)/, "کنتراست"],
   ];
