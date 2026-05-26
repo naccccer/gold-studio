@@ -6,7 +6,6 @@ import {
   CloseCircle,
   Copy,
   DocumentDownload,
-  Edit2,
   Gallery,
   Maximize4,
   Refresh,
@@ -296,20 +295,19 @@ function DetailMeta({
             </form>
           ) : (
             <div className="flex items-center gap-2">
-              <p className="truncate text-sm font-semibold text-surface">{title}</p>
+              <button
+                type="button"
+                onClick={() => setEditingTitle(true)}
+                className="min-w-0 truncate text-right text-sm font-semibold text-surface transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft"
+                aria-label="ویرایش نام پروژه"
+              >
+                {title}
+              </button>
               {variantLabel ? (
                 <span className="shrink-0 rounded-full border border-white/10 bg-white/[0.07] px-2 py-0.5 text-sm font-semibold leading-5 text-surface">
                   {variantLabel}
                 </span>
               ) : null}
-              <button
-                type="button"
-                onClick={() => setEditingTitle(true)}
-                aria-label="ویرایش نام پروژه"
-                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-surface/72 transition hover:bg-white/[0.12]"
-              >
-                <Edit2 aria-hidden={true} className="h-3.5 w-3.5" />
-              </button>
             </div>
           )}
         </div>
@@ -517,7 +515,6 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
             fallbackSrc={uploadPreview.src}
             imageAlt="در حال پردازش تصویر"
             title={status.label}
-            styleLabel={project.style.name}
             caption="می‌توانید از این صفحه خارج شوید و نتیجه را در تب پروژه‌ها ببینید."
             steps={["تشخیص محصول", "پاک‌سازی زمینه", "ساخت خروجی نهایی"]}
             moments={processingMoments}

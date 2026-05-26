@@ -86,15 +86,15 @@ export function ProcessingCanvas({
         <div className="absolute inset-x-10 top-8 h-px animate-[ovalaProcessingScan_3s_ease-in-out_infinite] bg-gradient-to-l from-transparent via-[#fff7e7]/85 to-transparent" />
         <div className="absolute inset-x-8 bottom-8 top-8 rounded-[1.25rem] border border-white/18" />
 
-        <div className="absolute inset-x-0 top-0 p-4">
+        <div className="absolute inset-x-0 top-0 p-4 text-center">
           {styleLabel ? (
             <span className="absolute left-4 top-4 rounded-full border border-white/14 bg-black/26 px-3 py-1 text-[10px] font-semibold text-surface/82 backdrop-blur">
               {styleLabel}
             </span>
           ) : null}
-          <div className="ml-auto max-w-[calc(100%-7.5rem)] space-y-2 text-right">
+          <div className="mx-auto max-w-[18rem] space-y-2 text-center">
             <p className="text-base font-semibold text-surface">{title}</p>
-            <p className="text-right text-xs leading-6 text-surface/72">
+            <p className="text-sm font-medium leading-7 text-surface/88 drop-shadow-[0_1px_10px_rgba(0,0,0,0.75)]">
               {caption}
             </p>
           </div>
