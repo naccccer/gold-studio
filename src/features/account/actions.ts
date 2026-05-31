@@ -7,6 +7,7 @@ import { normalizeLoginIdentifier } from "@/lib/auth/identifier";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { requireUserSession } from "@/lib/auth/session";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { applyReferralOrSalesCodeForUser } from "@/lib/referrals";
 import { saveReceiptFile } from "@/lib/uploads";
 
 function text(formData: FormData, key: string) {
@@ -186,7 +187,8 @@ export async function completeOnboardingNameAction(
 ): Promise<OnboardingNameState> {
   const session = await requireUserSession();
   const name = text(formData, "name");
-  const referralCode = text(formData, "referralCode").toUpperCase();
+  const enteredReferralCode = text(formData, "referralCode");
+  const referralCode = "";
 
   if (name.length < 2) {
     return { error: "نام باید حداقل ۲ کاراکتر باشد." };
@@ -194,6 +196,23 @@ export async function completeOnboardingNameAction(
 
   if (name.length > 80) {
     return { error: "نام باید حداکثر ۸۰ کاراکتر باشد." };
+  }
+
+  const codeResult = await db.$transaction(async (tx) =>
+    enteredReferralCode
+      ? applyReferralOrSalesCodeForUser(tx, {
+          userId: session.userId,
+          rawCode: enteredReferralCode,
+        })
+      : { status: "empty" as const },
+  );
+
+  if (codeResult.status === "invalid") {
+    return { error: "کد واردشده معتبر نیست." };
+  }
+
+  if (codeResult.status === "sales_code_redeemed") {
+    return { error: "این کد قبلا استفاده شده است." };
   }
 
   await db.$transaction(async (tx) => {

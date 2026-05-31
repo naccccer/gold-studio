@@ -27,7 +27,9 @@ Mobile user navigation:
 - Storage supports local filesystem uploads by default and optional S3-compatible storage when intentionally enabled.
 - Image generation uses the Liara-compatible provider boundary in `src/lib/ai`.
 - Output preset is persisted per project so ratio-specific generation settings do not collapse into one global square default.
-- New users start with 5 tracked signup credits and can consume active subscription credit before standalone wallet credit.
+- New users start with 1 tracked signup credit and can consume active subscription credit before standalone wallet credit.
+- Referral codes now record the invite at onboarding, then grant 5 credits to both sides only after the invited user's first approved purchase.
+- Admins can create 5-code batches of one-time sales test codes; each redeemed code immediately grants 5 wallet credits.
 - Manual card-to-card purchase requests, receipt upload, admin approval, package/subscription groundwork, credit events, support tickets, FAQ, and provider event logging are present.
 - Soft archive behavior now applies to projects; Gallery deletes unused source assets permanently while preserving assets that are still referenced by projects or batches.
 - UI Phase 2 through Phase 8 are implemented across shared primitives, guided creation, result review, account/billing/support, admin operations, and calm motion utilities.

@@ -10,7 +10,11 @@ import { getSubscriptionPeriod, logAdminAudit } from "@/lib/billing";
 import { normalizeBillingPlanColorPreset } from "@/lib/billing-plan-colors";
 import { INITIAL_SIGNUP_CREDITS } from "@/lib/credits";
 import { processImageProject } from "@/lib/generation/jobs";
-import { referralCodeFromUserId } from "@/lib/referrals";
+import {
+  createSalesReferralCodeBatch,
+  grantReferralRewardAfterFirstPurchase,
+  referralCodeFromUserId,
+} from "@/lib/referrals";
 import { saveStylePreviewFile } from "@/lib/uploads";
 
 function text(formData: FormData, key: string) {
@@ -118,6 +122,7 @@ function revalidateAdmin() {
   revalidatePath("/admin/support");
   revalidatePath("/admin/projects");
   revalidatePath("/admin/styles");
+  revalidatePath("/admin/referrals");
   revalidatePath("/account");
   revalidatePath("/billing");
 }
@@ -362,6 +367,29 @@ export async function adjustUserCreditsAction(formData: FormData) {
   revalidateAdmin();
 }
 
+export async function createSalesReferralCodesAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const salespersonName = text(formData, "salespersonName");
+  const note = text(formData, "note");
+
+  const batch = await createSalesReferralCodeBatch({
+    createdByAdminId: session.userId,
+    salespersonName,
+    note,
+  });
+
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: "sales_referral_codes.create_batch",
+    targetType: "SalesReferralCode",
+    targetId: batch.batchKey,
+    summary: `۵ کد تست فروش ساخته شد.`,
+    metadata: { batchKey: batch.batchKey, codes: batch.codes, salespersonName, note },
+  });
+
+  revalidatePath("/admin/referrals");
+}
+
 export async function updateUserCreditsAction(formData: FormData) {
   await requireAdminSession();
   const userId = text(formData, "userId");
@@ -604,6 +632,11 @@ export async function approvePurchaseRequestAction(formData: FormData) {
         },
       });
     }
+
+    await grantReferralRewardAfterFirstPurchase(tx, {
+      userId: request.userId,
+      purchaseRequestId: request.id,
+    });
 
     return request;
   });

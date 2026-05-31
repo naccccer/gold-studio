@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight2, Box, Card, Category, Gallery, Home2, Image, Lifebuoy, Profile2User } from "vuesax-icons-react";
+import { ArrowRight2, Box, Card, Category, Gallery, Gift, Home2, Image, Lifebuoy, Profile2User } from "vuesax-icons-react";
 import { ButtonLink } from "@/components/ui/button";
 import { requireAdminSession } from "@/lib/auth/session";
 
@@ -13,6 +13,8 @@ const adminNav = [
   { href: "/admin/styles", label: "سبک‌ها", icon: Category },
   { href: "/admin/provider", label: "عملیات AI", icon: Box },
 ];
+
+adminNav.splice(4, 0, { href: "/admin/referrals", label: "کدهای معرف", icon: Gift });
 
 export default async function AdminLayout({
   children,
