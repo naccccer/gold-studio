@@ -188,7 +188,6 @@ export async function completeOnboardingNameAction(
   const session = await requireUserSession();
   const name = text(formData, "name");
   const enteredReferralCode = text(formData, "referralCode");
-  const referralCode = "";
 
   if (name.length < 2) {
     return { error: "نام باید حداقل ۲ کاراکتر باشد." };
@@ -215,68 +214,9 @@ export async function completeOnboardingNameAction(
     return { error: "این کد قبلا استفاده شده است." };
   }
 
-  await db.$transaction(async (tx) => {
-    const currentUser = await tx.user.update({
-      where: { id: session.userId },
-      data: { name },
-      select: { id: true, credits: true },
-    });
-
-    if (!referralCode) {
-      return;
-    }
-
-    const existingReferral = await tx.referral.findUnique({
-      where: { inviteeId: session.userId },
-      select: { id: true },
-    });
-    if (existingReferral) {
-      return;
-    }
-
-    const inviter = await tx.user.findFirst({
-      where: { referralCode, id: { not: session.userId } },
-      select: { id: true, credits: true },
-    });
-    if (!inviter) {
-      return;
-    }
-
-    const rewardCredits = 2;
-    const referral = await tx.referral.create({
-      data: {
-        inviterId: inviter.id,
-        inviteeId: session.userId,
-        codeUsed: referralCode,
-        rewardCredits,
-      },
-    });
-
-    await tx.user.update({ where: { id: inviter.id }, data: { credits: { increment: rewardCredits } } });
-    await tx.creditEvent.create({
-      data: {
-        userId: inviter.id,
-        delta: rewardCredits,
-        balanceBefore: inviter.credits,
-        balanceAfter: inviter.credits + rewardCredits,
-        reason: "پاداش معرفی کاربر جدید",
-        source: "REFERRAL",
-        referralId: referral.id,
-      },
-    });
-
-    await tx.user.update({ where: { id: currentUser.id }, data: { credits: { increment: rewardCredits } } });
-    await tx.creditEvent.create({
-      data: {
-        userId: currentUser.id,
-        delta: rewardCredits,
-        balanceBefore: currentUser.credits,
-        balanceAfter: currentUser.credits + rewardCredits,
-        reason: "هدیه ثبت‌نام با کد معرف",
-        source: "REFERRAL",
-        referralId: referral.id,
-      },
-    });
+  await db.user.update({
+    where: { id: session.userId },
+    data: { name },
   });
 
   revalidatePath("/dashboard");
@@ -337,7 +277,7 @@ export async function changePasswordAction(formData: FormData) {
     data: { passwordHash: await hashPassword(newPassword) },
   });
 
-  revalidatePath("/account/security");
+  revalidatePath("/account/profile");
 }
 
 export async function createSupportTicketAction(formData: FormData) {

@@ -37,7 +37,8 @@ Mobile user navigation:
 - Gallery selection controls now keep cancel beside the sticky selected-item actions instead of inside the upload panel.
 - Generation result storage now normalizes the actual output image format before saving, validates saved bytes, and surfaces missing files as explicit project errors.
 - Local upload/result URLs now stream through authorized `/api/storage/...`; local files are written under `.local-storage/uploads`, and uploaded user files are not served from `public/uploads`.
-- Beta hardening removed public `/design/*` prototypes, removed `ADMIN_EMAIL` signup promotion, added a local admin bootstrap script, added MVP in-memory throttling, and made purchase rejection pending-only.
+- Launch hardening now verifies admin storage access against the database role, uses DB-backed rate limits, and makes credit/purchase approval paths concurrency-safe.
+- Beta hardening removed public `/design/*` prototypes, removed `ADMIN_EMAIL` signup promotion, added a local admin bootstrap script, added shared DB-backed throttling, and made purchase rejection pending-only.
 - Admin user management now separates direct credit-pack assignment from subscription assignment, so credit packs increase wallet credits instead of creating a subscription.
 - User-visible styles are curated to six directions: `با مدل`, `پس‌زمینه`, `دکور انتزاعی`, `شبکه اجتماعی`, `ادیتوریال`, and `سینماتیک`; the model style targets young adult models, generally 25 to 35.
 - Admin styles now support editable card `previewImageUrl` values and simple per-style controls (`CHOICE`, `RANGE`, `BOOLEAN`) that render in the user new-project flow and feed concise AI prompt instructions.

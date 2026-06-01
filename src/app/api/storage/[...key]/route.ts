@@ -17,9 +17,18 @@ async function canReadStorageKey(storageKey: string) {
     return false;
   }
 
-  if (session.role === "ADMIN") {
-    const storageUrl = `/api/storage/${storageKey}`;
-    const storageKeys = storageKeyLookupValues(storageKey);
+  const currentUser = await db.user.findUnique({
+    where: { id: session.userId },
+    select: { role: true },
+  });
+  if (!currentUser) {
+    return false;
+  }
+
+  const storageUrl = `/api/storage/${storageKey}`;
+  const storageKeys = storageKeyLookupValues(storageKey);
+
+  if (currentUser.role === "ADMIN") {
     const knownObject = await Promise.all([
       db.productAsset.findFirst({ where: { storageKey: { in: storageKeys } }, select: { id: true } }),
       db.styleReferenceAsset.findFirst({ where: { storageKey: { in: storageKeys } }, select: { id: true } }),
@@ -33,8 +42,6 @@ async function canReadStorageKey(storageKey: string) {
     return knownObject.some(Boolean);
   }
 
-  const storageUrl = `/api/storage/${storageKey}`;
-  const storageKeys = storageKeyLookupValues(storageKey);
   const ownedObject = await Promise.all([
     db.productAsset.findFirst({ where: { storageKey: { in: storageKeys }, userId: session.userId }, select: { id: true } }),
     db.styleReferenceAsset.findFirst({ where: { storageKey: { in: storageKeys }, userId: session.userId }, select: { id: true } }),

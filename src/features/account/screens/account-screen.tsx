@@ -8,7 +8,6 @@ import {
   Gallery,
   Gift,
   Lifebuoy,
-  Lock,
   MessageQuestion,
   ReceiptText,
   ShieldSecurity,
@@ -48,11 +47,10 @@ type AccountRowItem = {
 };
 
 const rowItems: AccountRowItem[] = [
-  { title: "مشخصات حساب", href: "/account/profile", icon: UserEdit },
+  { title: "حساب کاربری", href: "/account/profile", icon: UserEdit },
   { title: "گالری نمونه‌ها", href: "/account/style-references", icon: Gallery },
   { title: "آرشیو", href: "/account/archive", icon: ArchiveBook },
   { title: "کد معرفی", href: "/account/referral", icon: Gift },
-  { title: "امنیت حساب", href: "/account/security", icon: Lock },
 ];
 
 const planBadgeSkins = {

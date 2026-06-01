@@ -615,3 +615,12 @@ model ProviderEvent {
   @@index([projectId, createdAt])
   @@index([provider, status, createdAt])
 }
+
+model RateLimitBucket {
+  key       String   @id
+  count     Int
+  resetAt   DateTime
+  updatedAt DateTime @updatedAt
+
+  @@index([resetAt])
+}
