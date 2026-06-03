@@ -43,20 +43,24 @@ function uniqueModels(models: string[]) {
   return Array.from(new Set(models.filter(isSupportedImageModel)));
 }
 
+function fallbackModelsFor(activeModel: SupportedImageModel) {
+  return SUPPORTED_IMAGE_MODELS.filter((model) => model !== activeModel);
+}
+
 function parseFallbackModels(value: string | null | undefined, activeModel: SupportedImageModel) {
   if (!value) {
-    return DEFAULT_FALLBACK_MODELS.filter((model) => model !== activeModel);
+    return [];
   }
 
   try {
     const parsed = JSON.parse(value) as unknown;
     if (!Array.isArray(parsed)) {
-      return DEFAULT_FALLBACK_MODELS.filter((model) => model !== activeModel);
+      return [];
     }
 
     return uniqueModels(parsed.map(String)).filter((model) => model !== activeModel);
   } catch {
-    return DEFAULT_FALLBACK_MODELS.filter((model) => model !== activeModel);
+    return [];
   }
 }
 
@@ -70,12 +74,14 @@ export function normalizeProviderSettings({
   autoFallback?: boolean | null;
 }): ProviderSettings {
   const safeActiveModel = activeModel && isSupportedImageModel(activeModel) ? activeModel : envImageModel();
-  const safeFallbackModels = uniqueModels(fallbackModels ?? DEFAULT_FALLBACK_MODELS).filter((model) => model !== safeActiveModel);
+  const normalizedFallbackModels = uniqueModels(fallbackModels ?? DEFAULT_FALLBACK_MODELS).filter((model) => model !== safeActiveModel);
+  const wantsAutoFallback = autoFallback ?? true;
+  const safeFallbackModels = wantsAutoFallback && normalizedFallbackModels.length === 0 ? fallbackModelsFor(safeActiveModel) : normalizedFallbackModels;
 
   return {
     activeModel: safeActiveModel,
     fallbackModels: safeFallbackModels,
-    autoFallback: autoFallback ?? true,
+    autoFallback: wantsAutoFallback,
   };
 }
 
