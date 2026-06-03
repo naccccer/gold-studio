@@ -7,6 +7,7 @@ const DEFAULT_IMAGE_SIZE = "1024x1024";
 const DEFAULT_IMAGE_QUALITY = "2K";
 const SUPPORTED_IMAGE_QUALITIES = new Set(["1K", "2K", "4K"]);
 const TRANSIENT_RETRY_DELAYS_MS = [1500, 4000, 9000];
+const DEFAULT_REQUEST_TIMEOUT_MS = 120000;
 const RETRYABLE_HTTP_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 const RETRYABLE_NETWORK_PATTERNS = [
   "client network socket disconnected before secure tls connection was established",
@@ -21,11 +22,14 @@ const RETRYABLE_NETWORK_PATTERNS = [
   "socket hang up",
   "fetch failed",
   "tls connection",
+  "aborterror",
+  "the operation was aborted",
 ];
 const GENERATION_PROMPT_SUFFIX = [
   "Return one final premium studio product image based on the input product photo.",
   "The input product is the strict identity reference. Preserve the exact product shape, proportions, silhouette, metal color, gemstone count and placement, chain or clasp design, watch face, engravings, material finish, and all visible jewelry details.",
   "Do not redesign, simplify, add, remove, replace, resize, recolor, or hallucinate product parts.",
+  "Do not default every output to a tight close-up. Prefer balanced studio framing with clean negative space around the product, while allowing closer detail framing when it clearly benefits the product or selected style.",
   "Make the image look like a real high-end studio photograph with natural optics, believable lighting, realistic reflections, and true material texture.",
   "Avoid AI-looking gloss, CGI, 3D render, plastic surfaces, over-smoothing, over-sharpening, artificial sparkle, surreal lighting, distorted geometry, and fake luxury effects.",
 ].join("\n");
@@ -37,17 +41,20 @@ type GenerateImageInput = {
   referenceMimeType?: string | null;
   stylePrompt: string;
   outputPreset?: string | null;
+  model?: string | null;
 };
 
 type GenerateTextImageInput = {
   prompt: string;
   stylePrompt: string;
   outputPreset?: string | null;
+  model?: string | null;
 };
 
 export type LiaraImageResult = {
   imageBuffer: Buffer;
   mimeType: string;
+  model: string;
 };
 
 class LiaraGenerationError extends Error {
@@ -106,6 +113,11 @@ function getImageQuality(quality: string) {
 
 function getImageSize(outputPreset: string | null | undefined, configuredSize: string) {
   return outputPreset ? getOutputPresetSpec(outputPreset).providerSize : configuredSize;
+}
+
+function getRequestTimeoutMs() {
+  const configured = Number.parseInt(process.env.LIARA_IMAGE_TIMEOUT_MS ?? "", 10);
+  return Number.isFinite(configured) && configured >= 10000 ? configured : DEFAULT_REQUEST_TIMEOUT_MS;
 }
 
 function extensionFromMimeType(mimeType: string) {
@@ -203,7 +215,9 @@ async function withTransientRetry<T>(operation: () => Promise<T>): Promise<T> {
 }
 
 async function fetchGeneratedImage(url: string) {
-  const response = await fetch(url);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), getRequestTimeoutMs());
+  const response = await fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timeout));
   if (!response.ok) {
     throw new LiaraGenerationError(`Liara image download failed with status ${response.status}.`);
   }
@@ -242,6 +256,8 @@ async function postLiaraJson<T>({
   path: string;
   body: unknown;
 }) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), getRequestTimeoutMs());
   const response = await fetch(`${baseURL.replace(/\/$/, "")}${path}`, {
     method: "POST",
     headers: {
@@ -249,7 +265,8 @@ async function postLiaraJson<T>({
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
-  });
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timeout));
 
   if (!response.ok) {
     let detail = "";
@@ -276,13 +293,16 @@ async function postLiaraForm<T>({
   path: string;
   body: FormData;
 }) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), getRequestTimeoutMs());
   const response = await fetch(`${baseURL.replace(/\/$/, "")}${path}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
     },
     body,
-  });
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timeout));
 
   if (!response.ok) {
     let detail = "";
@@ -330,14 +350,16 @@ export async function generateStyledImageWithLiara({
   referenceMimeType,
   stylePrompt,
   outputPreset,
+  model: selectedModel,
 }: GenerateImageInput): Promise<LiaraImageResult> {
   const { apiKey, baseURL, model, quality, size } = getLiaraConfig();
+  const imageModel = selectedModel?.trim() || model;
   const imageSize = getImageSize(outputPreset, size);
 
   try {
     return await withTransientRetry(async () => {
       const form = new FormData();
-      form.append("model", model);
+      form.append("model", imageModel);
       form.append("prompt", `${stylePrompt}\n\n${GENERATION_PROMPT_SUFFIX}`);
       form.append("size", imageSize);
       form.append("quality", getImageQuality(quality));
@@ -350,7 +372,7 @@ export async function generateStyledImageWithLiara({
         );
       }
 
-      return extractGeneratedImage(
+      const generated = await extractGeneratedImage(
         await postLiaraForm<ImagesResponse>({
           baseURL,
           apiKey,
@@ -358,6 +380,7 @@ export async function generateStyledImageWithLiara({
           body: form,
         }),
       );
+      return { ...generated, model: imageModel };
     });
   } catch (error) {
     if (isRetryableProviderError(error)) {
@@ -382,19 +405,21 @@ export async function generateTextImageWithLiara({
   prompt,
   stylePrompt,
   outputPreset,
+  model: selectedModel,
 }: GenerateTextImageInput): Promise<LiaraImageResult> {
   const { apiKey, baseURL, model, quality, size } = getLiaraConfig();
+  const imageModel = selectedModel?.trim() || model;
   const imageSize = getImageSize(outputPreset, size);
 
   try {
     return await withTransientRetry(async () => {
-      return extractGeneratedImage(
+      const generated = await extractGeneratedImage(
         await postLiaraJson<ImagesResponse>({
           baseURL,
           apiKey,
           path: "/images/generations",
           body: {
-            model,
+            model: imageModel,
             prompt: `${prompt}\n\n${stylePrompt}\n\nReturn one final premium studio product image suitable for e-commerce.`,
             size: imageSize,
             quality: getImageQuality(quality),
@@ -402,6 +427,7 @@ export async function generateTextImageWithLiara({
           },
         }),
       );
+      return { ...generated, model: imageModel };
     });
   } catch (error) {
     if (isRetryableProviderError(error)) {

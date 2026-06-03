@@ -1,4 +1,5 @@
-import { generateStyledImageWithLiara, generateTextImageWithLiara, liaraModel } from "@/lib/ai/liara";
+import { generateStyledImageWithLiara, generateTextImageWithLiara, type LiaraImageResult } from "@/lib/ai/liara";
+import { getImageModelAttemptOrder, getProviderSettings } from "@/lib/ai/provider-settings";
 import { captureGenerationCreditReservation, logProviderEvent, releaseGenerationCreditReservation } from "@/lib/billing";
 import { db } from "@/lib/db";
 import { readStoredUpload, saveGeneratedImage } from "@/lib/uploads";
@@ -79,6 +80,125 @@ function userErrorMessage(error: unknown, fallback: string) {
   }
 
   return fallback;
+}
+
+async function modelAttemptOrder() {
+  return getImageModelAttemptOrder(await getProviderSettings());
+}
+
+function allModelsFailedError(errors: Array<{ model: string; error: unknown }>) {
+  const details = errors
+    .map(({ model, error }) => `${model}: ${technicalErrorMessage(error, "generation failed")}`)
+    .join(" || ");
+
+  return new Error(`All configured image models failed.${details ? ` ${details}` : ""}`);
+}
+
+async function generateImageWithModelFallback({
+  projectId,
+  sourceBuffer,
+  mimeType,
+  referenceBuffer,
+  referenceMimeType,
+  stylePrompt,
+  outputPreset,
+  referenceUsed,
+}: {
+  projectId: string;
+  sourceBuffer: Buffer;
+  mimeType: string;
+  referenceBuffer?: Buffer | null;
+  referenceMimeType?: string | null;
+  stylePrompt: string;
+  outputPreset?: string | null;
+  referenceUsed: boolean;
+}): Promise<LiaraImageResult> {
+  const errors: Array<{ model: string; error: unknown }> = [];
+  const models = await modelAttemptOrder();
+
+  for (const [index, model] of models.entries()) {
+    try {
+      const generatedImage = await generateStyledImageWithLiara({
+        sourceBuffer,
+        mimeType,
+        referenceBuffer,
+        referenceMimeType,
+        stylePrompt,
+        outputPreset,
+        model,
+      });
+      await logProviderEvent({
+        projectId,
+        operation: "image.edit",
+        status: "SUCCESS",
+        model: generatedImage.model,
+        retryCount: index,
+        statusDetail: `outputPreset=${outputPreset}; reference=${referenceUsed ? "yes" : "no"}; fallbackAttempt=${index + 1}/${models.length}`,
+      });
+      return generatedImage;
+    } catch (error) {
+      errors.push({ model, error });
+      await logProviderEvent({
+        projectId,
+        operation: "image.edit",
+        status: "FAILED",
+        model,
+        retryCount: index,
+        statusDetail: `fallbackAttempt=${index + 1}/${models.length}; next=${index < models.length - 1 ? models[index + 1] : "none"}`,
+        errorMessage: technicalErrorMessage(error, "خطا در تولید تصویر رخ داد."),
+      });
+    }
+  }
+
+  throw allModelsFailedError(errors);
+}
+
+async function generateTextImageWithModelFallback({
+  projectId,
+  prompt,
+  stylePrompt,
+  outputPreset,
+}: {
+  projectId: string;
+  prompt: string;
+  stylePrompt: string;
+  outputPreset: string;
+}): Promise<LiaraImageResult> {
+  const errors: Array<{ model: string; error: unknown }> = [];
+  const models = await modelAttemptOrder();
+
+  for (const [index, model] of models.entries()) {
+    try {
+      const generatedImage = await generateTextImageWithLiara({
+        prompt,
+        stylePrompt,
+        outputPreset,
+        model,
+      });
+      await logProviderEvent({
+        projectId,
+        operation: "image.generate",
+        status: "SUCCESS",
+        model: generatedImage.model,
+        retryCount: index,
+        statusDetail: `fallbackAttempt=${index + 1}/${models.length}`,
+      });
+      return generatedImage;
+    } catch (error) {
+      errors.push({ model, error });
+      await logProviderEvent({
+        projectId,
+        operation: "image.generate",
+        status: "FAILED",
+        model,
+        retryCount: index,
+        statusDetail: `fallbackAttempt=${index + 1}/${models.length}; next=${index < models.length - 1 ? models[index + 1] : "none"}`,
+        errorMessage: technicalErrorMessage(error, "خطا در تست متن به تصویر رخ داد."),
+      });
+    }
+  }
+
+  throw allModelsFailedError(errors);
 }
 
 async function claimQueuedProject(projectId: string) {
@@ -165,20 +285,15 @@ export async function processImageProject(projectId: string) {
     const reference = project.referenceAsset
       ? await readStoredUpload(project.referenceAsset.storageKey, project.referenceAsset.mimeType)
       : null;
-    const generatedImage = await generateStyledImageWithLiara({
+    const generatedImage = await generateImageWithModelFallback({
+      projectId,
       sourceBuffer: source.buffer,
       mimeType: source.mimeType,
       referenceBuffer: reference?.buffer ?? null,
       referenceMimeType: reference?.mimeType ?? null,
       stylePrompt: project.prompt,
       outputPreset: project.outputPreset,
-    });
-    await logProviderEvent({
-      projectId,
-      operation: "image.edit",
-      status: "SUCCESS",
-      model: liaraModel(),
-      statusDetail: `outputPreset=${project.outputPreset}; reference=${project.referenceAsset ? "yes" : "no"}`,
+      referenceUsed: Boolean(project.referenceAsset),
     });
     const result = await saveGeneratedImage(generatedImage.imageBuffer, generatedImage.mimeType);
 
@@ -196,13 +311,6 @@ export async function processImageProject(projectId: string) {
     await refreshGenerationBatchesForProject(projectId);
   } catch (error) {
     await releaseGenerationCreditReservation({ projectId });
-    await logProviderEvent({
-      projectId,
-      operation: "image.edit",
-      status: "FAILED",
-      model: liaraModel(),
-      errorMessage: technicalErrorMessage(error, "خطا در تولید تصویر رخ داد."),
-    });
     await db.project.update({
       where: { id: projectId },
       data: {
@@ -239,16 +347,11 @@ export async function processTextProject({
   }
 
   try {
-    const generatedImage = await generateTextImageWithLiara({
+    const generatedImage = await generateTextImageWithModelFallback({
+      projectId,
       prompt: textPrompt,
       stylePrompt,
       outputPreset: "post",
-    });
-    await logProviderEvent({
-      projectId,
-      operation: "image.generate",
-      status: "SUCCESS",
-      model: liaraModel(),
     });
     const result = await saveGeneratedImage(generatedImage.imageBuffer, generatedImage.mimeType);
 
@@ -260,13 +363,6 @@ export async function processTextProject({
     await refreshGenerationBatchesForProject(projectId);
   } catch (error) {
     await releaseGenerationCreditReservation({ projectId });
-    await logProviderEvent({
-      projectId,
-      operation: "image.generate",
-      status: "FAILED",
-      model: liaraModel(),
-      errorMessage: technicalErrorMessage(error, "خطا در تست متن به تصویر رخ داد."),
-    });
     await db.project.update({
       where: { id: projectId },
       data: {

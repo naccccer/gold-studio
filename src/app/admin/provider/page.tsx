@@ -1,5 +1,17 @@
 import { Danger, TickCircle } from "vuesax-icons-react";
-import { AdminMetric, AdminRow, AdminSection, AdminStatus, EmptyAdminState, formatAdminDate } from "@/features/admin/components/admin-ui";
+import {
+  adminInputClass,
+  adminLabelClass,
+  adminPrimaryActionClass,
+  AdminMetric,
+  AdminRow,
+  AdminSection,
+  AdminStatus,
+  EmptyAdminState,
+  formatAdminDate,
+} from "@/features/admin/components/admin-ui";
+import { updateProviderSettingsAction } from "@/features/admin/actions";
+import { getImageModelAttemptOrder, getProviderSettings, SUPPORTED_IMAGE_MODELS } from "@/lib/ai/provider-settings";
 import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +24,7 @@ export default async function AdminProviderPage() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const [events, failedToday, successToday, groupedFailures] = await Promise.all([
+  const [events, failedToday, successToday, groupedFailures, providerSettings] = await Promise.all([
     db.providerEvent.findMany({
       orderBy: { createdAt: "desc" },
       take: 40,
@@ -27,9 +39,11 @@ export default async function AdminProviderPage() {
       orderBy: [{ operation: "asc" }, { model: "asc" }],
       take: 8,
     }),
+    getProviderSettings(),
   ]);
 
-  const model = process.env.LIARA_IMAGE_MODEL?.trim() || process.env.GAPGPT_IMAGE_MODEL?.trim() || "پیش‌فرض برنامه";
+  const model = providerSettings.activeModel;
+  const modelOrder = getImageModelAttemptOrder(providerSettings);
   const quality = process.env.LIARA_IMAGE_QUALITY?.trim() || process.env.GAPGPT_IMAGE_QUALITY?.trim() || "پیش‌فرض برنامه";
 
   return (
@@ -60,6 +74,48 @@ export default async function AdminProviderPage() {
             </div>
           ))}
         </div>
+      </AdminSection>
+
+      <AdminSection title="تنظیم مدل تولید تصویر" eyebrow="سوییچ زنده بدون تغییر env و بدون restart">
+        <form action={updateProviderSettingsAction} className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto] lg:items-end">
+          <label className={adminLabelClass}>
+            مدل اصلی
+            <select name="activeModel" defaultValue={providerSettings.activeModel} className={adminInputClass} dir="ltr">
+              {SUPPORTED_IMAGE_MODELS.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="grid gap-2">
+            <p className="text-xs font-medium text-muted">Fallback بعد از خطا</p>
+            <div className="grid gap-2 rounded-[var(--radius-md)] border border-border/70 bg-surface-soft/45 p-3 md:grid-cols-3">
+              {SUPPORTED_IMAGE_MODELS.map((item) => (
+                <label key={item} className="flex items-center gap-2 text-xs text-foreground" dir="ltr">
+                  <input
+                    type="checkbox"
+                    name="fallbackModels"
+                    value={item}
+                    defaultChecked={providerSettings.fallbackModels.includes(item)}
+                    className="h-4 w-4 accent-[var(--color-accent)]"
+                  />
+                  <span className="min-w-0 truncate">{item}</span>
+                </label>
+              ))}
+            </div>
+            <label className="inline-flex items-center gap-2 text-xs font-medium text-foreground">
+              <input type="checkbox" name="autoFallback" defaultChecked={providerSettings.autoFallback} className="h-4 w-4 accent-[var(--color-accent)]" />
+              fallback خودکار روشن باشد
+            </label>
+            <p className="text-[11px] text-muted" dir="ltr">
+              Order: {modelOrder.join(" -> ")}
+            </p>
+          </div>
+
+          <button className={adminPrimaryActionClass}>ذخیره تنظیمات</button>
+        </form>
       </AdminSection>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">

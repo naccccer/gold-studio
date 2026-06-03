@@ -5,6 +5,7 @@ import { after } from "next/server";
 import type { Prisma } from "@/generated/prisma";
 import { db } from "@/lib/db";
 import { requireAdminSession } from "@/lib/auth/session";
+import { normalizeProviderSettings, SUPPORTED_IMAGE_MODELS, updateProviderSettings } from "@/lib/ai/provider-settings";
 import { normalizeLoginIdentifier } from "@/lib/auth/identifier";
 import { hashPassword } from "@/lib/auth/password";
 import { getSubscriptionPeriod, logAdminAudit } from "@/lib/billing";
@@ -122,10 +123,41 @@ function revalidateAdmin() {
   revalidatePath("/admin/packages");
   revalidatePath("/admin/support");
   revalidatePath("/admin/projects");
+  revalidatePath("/admin/provider");
   revalidatePath("/admin/styles");
   revalidatePath("/admin/referrals");
   revalidatePath("/account");
   revalidatePath("/billing");
+}
+
+export async function updateProviderSettingsAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const activeModel = text(formData, "activeModel");
+  const fallbackModels = formData.getAll("fallbackModels").map(String);
+  const settings = normalizeProviderSettings({
+    activeModel,
+    fallbackModels,
+    autoFallback: formData.has("autoFallback"),
+  });
+
+  if (!SUPPORTED_IMAGE_MODELS.includes(settings.activeModel)) {
+    return;
+  }
+
+  await updateProviderSettings(settings);
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: "provider_settings.update",
+    targetType: "ProviderSettings",
+    targetId: "default",
+    summary: "تنظیمات مدل تولید تصویر به‌روزرسانی شد.",
+    metadata: {
+      activeModel: settings.activeModel,
+      fallbackModels: settings.fallbackModels,
+      autoFallback: settings.autoFallback,
+    },
+  });
+  revalidatePath("/admin/provider");
 }
 
 function isAvailableToUsers(formData: FormData) {
@@ -1063,7 +1095,7 @@ export async function retryAdminProjectAction(formData: FormData) {
   if (!projectId) return;
 
   const updated = await db.project.updateMany({
-    where: { id: projectId, status: "FAILED", archivedAt: null, sourceAssetId: { not: null } },
+    where: { id: projectId, status: { in: ["FAILED", "PROCESSING", "QUEUED"] }, archivedAt: null, sourceAssetId: { not: null } },
     data: { status: "QUEUED", errorMessage: null, resultImageUrl: null, resultStorageKey: null },
   });
 
@@ -1073,7 +1105,7 @@ export async function retryAdminProjectAction(formData: FormData) {
       action: "project.retry",
       targetType: "Project",
       targetId: projectId,
-      summary: "پروژه ناموفق دوباره وارد صف شد.",
+      summary: "پروژه از پنل ادمین دوباره وارد صف شد.",
     });
     after(() => processImageProject(projectId));
   }

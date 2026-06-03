@@ -48,6 +48,8 @@ Mobile user navigation:
 - Batch generation now uses a guided confirmation step from Gallery, creates one project per selected source photo, and reserves generation credit until each output succeeds.
 - Batch creation and batch detail now use the mobile studio pattern; creation includes selected assets, per-image product type, output size, style controls, and credit confirmation.
 - Liara generation now sends the selected output preset provider size (`1:1`, `9:16`, or `16:9`) instead of collapsing every request to the global square default.
+- Generation prompts now ask for more varied product framing with breathing room, so catalog and studio outputs do not default every style to oversized close-ups.
+- Admin provider settings now control the active Liara image model and automatic fallback order across Gemini and OpenAI-compatible image models.
 - هر پروژه موفق یک بار «نسخه دیگر» رایگان می‌دهد؛ دکمه نتیجه بج کوچک «رایگان» دارد، کاربر را به جریان سه‌مرحله‌ای پروژه جدید برمی‌گرداند، فرصت رایگان فقط بعد از خروجی موفق مصرف می‌شود، و شکست تولید آن را برمی‌گرداند.
 - Added a local Liara direct-access check for diagnosing v2rayN/TUN bypass issues before testing generation.
 

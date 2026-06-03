@@ -51,3 +51,4 @@ raw-placeholders/
 /src/generated/prisma
 /public/uploads/
 /.local-storage/
+/.local-mariadb/

@@ -427,6 +427,14 @@ model PaymentSettings {
   updatedAt      DateTime @updatedAt
 }
 
+model ProviderSettings {
+  id             String   @id @default("default")
+  activeModel    String
+  fallbackModels String   @db.Text
+  autoFallback   Boolean  @default(true)
+  updatedAt      DateTime @updatedAt
+}
+
 model CreditEvent {
   id             String            @id @default(cuid())
   userId         String
