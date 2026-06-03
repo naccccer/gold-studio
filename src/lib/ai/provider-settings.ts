@@ -17,6 +17,19 @@ export type ProviderSettings = {
 const DEFAULT_ACTIVE_MODEL: SupportedImageModel = "google/gemini-3-pro-image-preview";
 const DEFAULT_FALLBACK_MODELS: SupportedImageModel[] = ["openai/gpt-image-2", "google/gemini-2.5-flash-image"];
 
+async function ensureProviderSettingsTable() {
+  await db.$executeRaw`
+    CREATE TABLE IF NOT EXISTS ProviderSettings (
+      id VARCHAR(191) NOT NULL,
+      activeModel VARCHAR(191) NOT NULL,
+      fallbackModels TEXT NOT NULL,
+      autoFallback BOOLEAN NOT NULL DEFAULT true,
+      updatedAt DATETIME(3) NOT NULL,
+      PRIMARY KEY (id)
+    ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+  `;
+}
+
 function isSupportedImageModel(value: string): value is SupportedImageModel {
   return (SUPPORTED_IMAGE_MODELS as readonly string[]).includes(value);
 }
@@ -74,6 +87,7 @@ export async function getProviderSettings(): Promise<ProviderSettings> {
   };
 
   try {
+    await ensureProviderSettingsTable();
     const rows = await db.$queryRaw<Row[]>`
       SELECT activeModel, fallbackModels, autoFallback
       FROM ProviderSettings
@@ -97,6 +111,7 @@ export async function getProviderSettings(): Promise<ProviderSettings> {
 }
 
 export async function updateProviderSettings(settings: ProviderSettings) {
+  await ensureProviderSettingsTable();
   await db.$executeRaw`
     INSERT INTO ProviderSettings (id, activeModel, fallbackModels, autoFallback, updatedAt)
     VALUES ('default', ${settings.activeModel}, ${JSON.stringify(settings.fallbackModels)}, ${settings.autoFallback}, NOW(3))

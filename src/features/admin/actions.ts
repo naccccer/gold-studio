@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { after } from "next/server";
 import type { Prisma } from "@/generated/prisma";
 import { db } from "@/lib/db";
@@ -158,6 +159,7 @@ export async function updateProviderSettingsAction(formData: FormData) {
     },
   });
   revalidatePath("/admin/provider");
+  redirect("/admin/provider");
 }
 
 function isAvailableToUsers(formData: FormData) {
