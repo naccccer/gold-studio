@@ -6,6 +6,7 @@ const DEFAULT_LIARA_IMAGE_MODEL = "google/gemini-3-pro-image-preview";
 const DEFAULT_IMAGE_SIZE = "1024x1024";
 const DEFAULT_IMAGE_QUALITY = "2K";
 const SUPPORTED_IMAGE_QUALITIES = new Set(["1K", "2K", "4K"]);
+const SUPPORTED_OPENAI_IMAGE_QUALITIES = new Set(["auto", "low", "medium", "high"]);
 const TRANSIENT_RETRY_DELAYS_MS = [1500, 4000, 9000];
 const DEFAULT_REQUEST_TIMEOUT_MS = 120000;
 const RETRYABLE_HTTP_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
@@ -103,16 +104,30 @@ export function liaraModel() {
   return process.env.LIARA_IMAGE_MODEL?.trim() || process.env.GAPGPT_IMAGE_MODEL?.trim() || DEFAULT_LIARA_IMAGE_MODEL;
 }
 
-function getImageQuality(quality: string) {
+function isOpenAIImageModel(model: string) {
+  return model.startsWith("openai/");
+}
+
+function getOpenAIImageQuality(quality: string) {
+  if (SUPPORTED_OPENAI_IMAGE_QUALITIES.has(quality)) {
+    return quality;
+  }
+
+  if (quality === "1K") return "medium";
+  if (quality === "2K" || quality === "4K") return "high";
+  return "auto";
+}
+
+function getImageQuality(quality: string, model: string) {
+  if (isOpenAIImageModel(model)) {
+    return getOpenAIImageQuality(quality);
+  }
+
   if (SUPPORTED_IMAGE_QUALITIES.has(quality)) {
     return quality;
   }
 
   return DEFAULT_IMAGE_QUALITY;
-}
-
-function isOpenAIImageModel(model: string) {
-  return model.startsWith("openai/");
 }
 
 function openAIImageSizeForPreset(outputPreset: string | null | undefined, configuredSize: string) {
@@ -384,7 +399,7 @@ export async function generateStyledImageWithLiara({
       form.append("model", imageModel);
       form.append("prompt", `${stylePrompt}\n\n${GENERATION_PROMPT_SUFFIX}`);
       form.append("size", imageSize);
-      form.append("quality", getImageQuality(quality));
+      form.append("quality", getImageQuality(quality, imageModel));
       form.append("image", new Blob([new Uint8Array(sourceBuffer)], { type: mimeType }), `source.${extensionFromMimeType(mimeType)}`);
       if (referenceBuffer) {
         form.append(
@@ -444,7 +459,7 @@ export async function generateTextImageWithLiara({
             model: imageModel,
             prompt: `${prompt}\n\n${stylePrompt}\n\nReturn one final premium studio product image suitable for e-commerce.`,
             size: imageSize,
-            quality: getImageQuality(quality),
+            quality: getImageQuality(quality, imageModel),
             n: 1,
           },
         }),
