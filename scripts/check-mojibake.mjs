@@ -18,6 +18,8 @@ const textExtensions = new Set([
   ".json",
   ".md",
   ".mjs",
+  ".ps1",
+  ".sql",
   ".ts",
   ".tsx",
 ]);
@@ -67,6 +69,8 @@ async function main() {
   const scanTargets = [
     ...await collectFiles(path.join(root, "src")),
     ...await collectFiles(path.join(root, "docs")),
+    ...await collectFiles(path.join(root, "scripts")),
+    ...await collectFiles(path.join(root, "prisma")),
     ...rootMarkdownFiles.map((file) => path.join(root, file)),
   ];
 

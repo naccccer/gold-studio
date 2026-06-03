@@ -52,6 +52,7 @@ Mobile user navigation:
 - Admin provider settings now control the active Liara image model and automatic fallback order across Gemini and OpenAI-compatible image models.
 - هر پروژه موفق یک بار «نسخه دیگر» رایگان می‌دهد؛ دکمه نتیجه بج کوچک «رایگان» دارد، کاربر را به جریان سه‌مرحله‌ای پروژه جدید برمی‌گرداند، فرصت رایگان فقط بعد از خروجی موفق مصرف می‌شود، و شکست تولید آن را برمی‌گرداند.
 - Added a local Liara direct-access check for diagnosing v2rayN/TUN bypass issues before testing generation.
+- Added a safe local DB export script and clean VPS rebuild path so admin-managed styles, packages, provider settings, support settings, and FAQ can be restored from the local database without PowerShell dump encoding issues.
 
 ## Next Priorities
 - Production hardening: verify real Liara generation, retry behavior, storage display URLs, and failed-state recovery on the deployment target.

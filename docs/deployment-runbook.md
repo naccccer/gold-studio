@@ -219,6 +219,86 @@ curl -I http://127.0.0.1:3001/login
 
 Then stop the temporary `3001` process, switch PM2 to the clone, and keep Nginx pointing at port `3000`.
 
+## Clean Rebuild From Local Database
+Use this when the VPS has mixed manual SQL, partial imports, or a zip deploy that should be replaced by a clean Git clone.
+
+On local Windows, export the current local database with the project script. Do not use PowerShell `>` redirection for MySQL dumps; it can write UTF-16 and break import on Linux.
+
+```powershell
+cd C:\xampp\htdocs\gold-studio
+npm run db:export-local
+scp "$env:USERPROFILE\Desktop\gold_studio_local.sql" root@SERVER_IP:/root/gold_studio_local.sql
+```
+
+On the VPS, preserve the current app folder and make a clean clone:
+
+```bash
+cd /var/www
+pm2 stop gold-studio || true
+OLD_DIR="gold-studio-broken-$(date +%Y%m%d%H%M%S)"
+mv gold-studio "$OLD_DIR"
+git clone https://github.com/naccccer/gold-studio.git gold-studio
+cd gold-studio
+cp "../$OLD_DIR/.env" .env
+mkdir -p .local-storage
+if [ -d "../$OLD_DIR/.local-storage/uploads" ]; then
+  cp -a "../$OLD_DIR/.local-storage/uploads" .local-storage/
+fi
+npm install
+```
+
+Replace the VPS database with the local dump:
+
+```bash
+sudo mysql
+```
+
+```sql
+DROP DATABASE IF EXISTS gold_studio;
+CREATE DATABASE gold_studio CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+GRANT ALL PRIVILEGES ON gold_studio.* TO 'gold_studio_user'@'127.0.0.1';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+```bash
+mysql -h 127.0.0.1 -u gold_studio_user -p gold_studio < /root/gold_studio_local.sql
+```
+
+If `npx prisma migrate deploy` reports `P3005` after restoring a full local dump, baseline the migration history once:
+
+```bash
+for d in prisma/migrations/[0-9]*; do
+  npx prisma migrate resolve --applied "$(basename "$d")"
+done
+```
+
+Then build and restart:
+
+```bash
+npx prisma migrate deploy
+npm run build
+pm2 delete gold-studio || true
+pm2 start npm --name gold-studio -- start
+pm2 save
+```
+
+Sanity-check the admin data:
+
+```bash
+mysql -h 127.0.0.1 -u gold_studio_user -p gold_studio -e "
+SELECT 'StyleCategory' table_name, COUNT(*) count FROM StyleCategory
+UNION ALL SELECT 'CreativeStyle', COUNT(*) FROM CreativeStyle
+UNION ALL SELECT 'StyleControl', COUNT(*) FROM StyleControl
+UNION ALL SELECT 'BillingPackage', COUNT(*) FROM BillingPackage
+UNION ALL SELECT 'PaymentSettings', COUNT(*) FROM PaymentSettings
+UNION ALL SELECT 'ProviderSettings', COUNT(*) FROM ProviderSettings
+UNION ALL SELECT 'SupportSettings', COUNT(*) FROM SupportSettings
+UNION ALL SELECT 'FaqItem', COUNT(*) FROM FaqItem
+UNION ALL SELECT 'User', COUNT(*) FROM User;
+"
+```
+
 ## Health Checks
 ```bash
 pm2 status
