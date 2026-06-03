@@ -111,7 +111,29 @@ function getImageQuality(quality: string) {
   return DEFAULT_IMAGE_QUALITY;
 }
 
-function getImageSize(outputPreset: string | null | undefined, configuredSize: string) {
+function isOpenAIImageModel(model: string) {
+  return model.startsWith("openai/");
+}
+
+function openAIImageSizeForPreset(outputPreset: string | null | undefined, configuredSize: string) {
+  if (outputPreset === "story") return "1024x1536";
+  if (outputPreset === "banner") return "1536x1024";
+  if (outputPreset === "post") return "1024x1024";
+
+  if (configuredSize === "auto" || configuredSize === "1024x1024" || configuredSize === "1536x1024" || configuredSize === "1024x1536") {
+    return configuredSize;
+  }
+
+  if (configuredSize === "9:16") return "1024x1536";
+  if (configuredSize === "16:9") return "1536x1024";
+  return "1024x1024";
+}
+
+function getImageSize(outputPreset: string | null | undefined, configuredSize: string, model: string) {
+  if (isOpenAIImageModel(model)) {
+    return openAIImageSizeForPreset(outputPreset, configuredSize);
+  }
+
   return outputPreset ? getOutputPresetSpec(outputPreset).providerSize : configuredSize;
 }
 
@@ -354,7 +376,7 @@ export async function generateStyledImageWithLiara({
 }: GenerateImageInput): Promise<LiaraImageResult> {
   const { apiKey, baseURL, model, quality, size } = getLiaraConfig();
   const imageModel = selectedModel?.trim() || model;
-  const imageSize = getImageSize(outputPreset, size);
+  const imageSize = getImageSize(outputPreset, size, imageModel);
 
   try {
     return await withTransientRetry(async () => {
@@ -409,7 +431,7 @@ export async function generateTextImageWithLiara({
 }: GenerateTextImageInput): Promise<LiaraImageResult> {
   const { apiKey, baseURL, model, quality, size } = getLiaraConfig();
   const imageModel = selectedModel?.trim() || model;
-  const imageSize = getImageSize(outputPreset, size);
+  const imageSize = getImageSize(outputPreset, size, imageModel);
 
   try {
     return await withTransientRetry(async () => {
