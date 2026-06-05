@@ -225,7 +225,44 @@ pm2 status
 pm2 logs gold-studio --lines 100
 systemctl status nginx --no-pager
 curl -I http://127.0.0.1:3000
+curl -fsS http://127.0.0.1:3000/api/health
 curl -I http://127.0.0.1
+```
+
+## Health Monitor
+After deploying a version that includes `/api/health`, add a cron watchdog:
+
+```bash
+cat >/usr/local/bin/gold-studio-healthcheck.sh <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP_NAME="gold-studio"
+URL="http://127.0.0.1:3000/api/health"
+LOG_FILE="/var/log/gold-studio-healthcheck.log"
+
+if curl -fsS --max-time 8 "$URL" >/dev/null; then
+  exit 0
+fi
+
+sleep 5
+
+if curl -fsS --max-time 8 "$URL" >/dev/null; then
+  exit 0
+fi
+
+echo "$(date -Is) health check failed; restarting ${APP_NAME}" >>"$LOG_FILE"
+pm2 restart "$APP_NAME" --update-env >>"$LOG_FILE" 2>&1
+EOF
+
+chmod +x /usr/local/bin/gold-studio-healthcheck.sh
+(crontab -l 2>/dev/null | grep -v 'gold-studio-healthcheck.sh'; echo '*/2 * * * * /usr/local/bin/gold-studio-healthcheck.sh') | crontab -
+```
+
+Check monitor logs:
+
+```bash
+tail -n 50 /var/log/gold-studio-healthcheck.log
 ```
 
 ## Common Problems
