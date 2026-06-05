@@ -1,4 +1,5 @@
 import type { ImagesResponse } from "openai/resources/images";
+import sharp from "sharp";
 import { getOutputPresetSpec } from "@/lib/output-presets";
 
 const DEFAULT_LIARA_BASE_URL = "https://ai.liara.ir/api/69fe30c50bb427e049d327f6/v1";
@@ -6,7 +7,11 @@ const DEFAULT_LIARA_IMAGE_MODEL = "google/gemini-3-pro-image-preview";
 const DEFAULT_IMAGE_SIZE = "1024x1024";
 const DEFAULT_IMAGE_QUALITY = "2K";
 const SUPPORTED_IMAGE_QUALITIES = new Set(["1K", "2K", "4K"]);
+const SUPPORTED_OPENAI_IMAGE_QUALITIES = new Set(["auto", "low", "medium", "high"]);
 const TRANSIENT_RETRY_DELAYS_MS = [1500, 4000, 9000];
+const DEFAULT_REQUEST_TIMEOUT_MS = 180000;
+const OPENAI_EDIT_MAX_EDGE = 1024;
+const OPENAI_EDIT_JPEG_QUALITY = 88;
 const RETRYABLE_HTTP_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 const RETRYABLE_NETWORK_PATTERNS = [
   "client network socket disconnected before secure tls connection was established",
@@ -26,6 +31,7 @@ const GENERATION_PROMPT_SUFFIX = [
   "Return one final premium studio product image based on the input product photo.",
   "The input product is the strict identity reference. Preserve the exact product shape, proportions, silhouette, metal color, gemstone count and placement, chain or clasp design, watch face, engravings, material finish, and all visible jewelry details.",
   "Do not redesign, simplify, add, remove, replace, resize, recolor, or hallucinate product parts.",
+  "Do not default every output to a tight close-up. Prefer balanced studio framing with clean negative space around the product, while allowing closer detail framing when it clearly benefits the product or selected style.",
   "Make the image look like a real high-end studio photograph with natural optics, believable lighting, realistic reflections, and true material texture.",
   "Avoid AI-looking gloss, CGI, 3D render, plastic surfaces, over-smoothing, over-sharpening, artificial sparkle, surreal lighting, distorted geometry, and fake luxury effects.",
 ].join("\n");
@@ -37,17 +43,25 @@ type GenerateImageInput = {
   referenceMimeType?: string | null;
   stylePrompt: string;
   outputPreset?: string | null;
+  model?: string | null;
 };
 
 type GenerateTextImageInput = {
   prompt: string;
   stylePrompt: string;
   outputPreset?: string | null;
+  model?: string | null;
+};
+
+type PreparedFormImage = {
+  buffer: Buffer;
+  mimeType: string;
 };
 
 export type LiaraImageResult = {
   imageBuffer: Buffer;
   mimeType: string;
+  model: string;
 };
 
 class LiaraGenerationError extends Error {
@@ -96,7 +110,25 @@ export function liaraModel() {
   return process.env.LIARA_IMAGE_MODEL?.trim() || process.env.GAPGPT_IMAGE_MODEL?.trim() || DEFAULT_LIARA_IMAGE_MODEL;
 }
 
-function getImageQuality(quality: string) {
+function isOpenAIImageModel(model: string) {
+  return model.startsWith("openai/");
+}
+
+function getOpenAIImageQuality(quality: string) {
+  if (SUPPORTED_OPENAI_IMAGE_QUALITIES.has(quality)) {
+    return quality;
+  }
+
+  if (quality === "1K" || quality === "2K") return "medium";
+  if (quality === "4K") return "high";
+  return "auto";
+}
+
+function getImageQuality(quality: string, model: string) {
+  if (isOpenAIImageModel(model)) {
+    return getOpenAIImageQuality(quality);
+  }
+
   if (SUPPORTED_IMAGE_QUALITIES.has(quality)) {
     return quality;
   }
@@ -104,14 +136,69 @@ function getImageQuality(quality: string) {
   return DEFAULT_IMAGE_QUALITY;
 }
 
-function getImageSize(outputPreset: string | null | undefined, configuredSize: string) {
+function openAIImageSizeForPreset(outputPreset: string | null | undefined, configuredSize: string) {
+  if (outputPreset === "story") return "1024x1536";
+  if (outputPreset === "banner") return "1536x1024";
+  if (outputPreset === "post") return "1024x1024";
+
+  if (configuredSize === "auto" || configuredSize === "1024x1024" || configuredSize === "1536x1024" || configuredSize === "1024x1536") {
+    return configuredSize;
+  }
+
+  if (configuredSize === "9:16") return "1024x1536";
+  if (configuredSize === "16:9") return "1536x1024";
+  return "1024x1024";
+}
+
+function getImageSize(outputPreset: string | null | undefined, configuredSize: string, model: string) {
+  if (isOpenAIImageModel(model)) {
+    return openAIImageSizeForPreset(outputPreset, configuredSize);
+  }
+
   return outputPreset ? getOutputPresetSpec(outputPreset).providerSize : configuredSize;
+}
+
+function getRequestTimeoutMs() {
+  const configured = Number.parseInt(process.env.LIARA_IMAGE_TIMEOUT_MS ?? "", 10);
+  return Number.isFinite(configured) && configured >= 10000 ? configured : DEFAULT_REQUEST_TIMEOUT_MS;
+}
+
+function getOpenAIEditMaxEdge() {
+  const configured = Number.parseInt(process.env.LIARA_OPENAI_EDIT_MAX_EDGE ?? "", 10);
+  return Number.isFinite(configured) && configured >= 256 && configured <= 2048 ? configured : OPENAI_EDIT_MAX_EDGE;
 }
 
 function extensionFromMimeType(mimeType: string) {
   if (mimeType === "image/png") return "png";
   if (mimeType === "image/webp") return "webp";
   return "jpg";
+}
+
+async function prepareEditImageForModel(buffer: Buffer, mimeType: string, model: string): Promise<PreparedFormImage> {
+  if (!isOpenAIImageModel(model)) {
+    return { buffer, mimeType };
+  }
+
+  const maxEdge = getOpenAIEditMaxEdge();
+  const normalizedBuffer = await sharp(buffer, { failOn: "none" })
+    .rotate()
+    .resize({
+      width: maxEdge,
+      height: maxEdge,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .flatten({ background: "#ffffff" })
+    .jpeg({
+      quality: OPENAI_EDIT_JPEG_QUALITY,
+      mozjpeg: true,
+    })
+    .toBuffer();
+
+  return {
+    buffer: normalizedBuffer,
+    mimeType: "image/jpeg",
+  };
 }
 
 function retryDelay(attemptIndex: number) {
@@ -123,6 +210,29 @@ function wait(ms: number) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
+}
+
+async function withRequestTimeout<T>(label: string, operation: (signal: AbortSignal) => Promise<T>) {
+  const timeoutMs = getRequestTimeoutMs();
+  const controller = new AbortController();
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  const operationPromise = operation(controller.signal);
+  operationPromise.catch(() => {});
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeout = setTimeout(() => {
+      controller.abort();
+      reject(new LiaraGenerationError(`${label} timed out after ${timeoutMs}ms.`));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([operationPromise, timeoutPromise]);
+  } finally {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+  }
 }
 
 function collectErrorText(error: unknown, depth = 0): string {
@@ -203,7 +313,7 @@ async function withTransientRetry<T>(operation: () => Promise<T>): Promise<T> {
 }
 
 async function fetchGeneratedImage(url: string) {
-  const response = await fetch(url);
+  const response = await withRequestTimeout("Liara image download", (signal) => fetch(url, { signal }));
   if (!response.ok) {
     throw new LiaraGenerationError(`Liara image download failed with status ${response.status}.`);
   }
@@ -242,14 +352,17 @@ async function postLiaraJson<T>({
   path: string;
   body: unknown;
 }) {
-  const response = await fetch(`${baseURL.replace(/\/$/, "")}${path}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
+  const response = await withRequestTimeout("Liara JSON request", (signal) =>
+    fetch(`${baseURL.replace(/\/$/, "")}${path}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      signal,
+    }),
+  );
 
   if (!response.ok) {
     let detail = "";
@@ -276,13 +389,16 @@ async function postLiaraForm<T>({
   path: string;
   body: FormData;
 }) {
-  const response = await fetch(`${baseURL.replace(/\/$/, "")}${path}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body,
-  });
+  const response = await withRequestTimeout("Liara multipart request", (signal) =>
+    fetch(`${baseURL.replace(/\/$/, "")}${path}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body,
+      signal,
+    }),
+  );
 
   if (!response.ok) {
     let detail = "";
@@ -330,27 +446,37 @@ export async function generateStyledImageWithLiara({
   referenceMimeType,
   stylePrompt,
   outputPreset,
+  model: selectedModel,
 }: GenerateImageInput): Promise<LiaraImageResult> {
   const { apiKey, baseURL, model, quality, size } = getLiaraConfig();
-  const imageSize = getImageSize(outputPreset, size);
+  const imageModel = selectedModel?.trim() || model;
+  const imageSize = getImageSize(outputPreset, size, imageModel);
 
   try {
     return await withTransientRetry(async () => {
+      const sourceImage = await prepareEditImageForModel(sourceBuffer, mimeType, imageModel);
+      const referenceImage = referenceBuffer
+        ? await prepareEditImageForModel(referenceBuffer, referenceMimeType || "image/jpeg", imageModel)
+        : null;
       const form = new FormData();
-      form.append("model", model);
+      form.append("model", imageModel);
       form.append("prompt", `${stylePrompt}\n\n${GENERATION_PROMPT_SUFFIX}`);
       form.append("size", imageSize);
-      form.append("quality", getImageQuality(quality));
-      form.append("image", new Blob([new Uint8Array(sourceBuffer)], { type: mimeType }), `source.${extensionFromMimeType(mimeType)}`);
-      if (referenceBuffer) {
+      form.append("quality", getImageQuality(quality, imageModel));
+      form.append(
+        "image",
+        new Blob([new Uint8Array(sourceImage.buffer)], { type: sourceImage.mimeType }),
+        `source.${extensionFromMimeType(sourceImage.mimeType)}`,
+      );
+      if (referenceImage) {
         form.append(
           "image",
-          new Blob([new Uint8Array(referenceBuffer)], { type: referenceMimeType || "image/jpeg" }),
-          `reference.${extensionFromMimeType(referenceMimeType || "image/jpeg")}`,
+          new Blob([new Uint8Array(referenceImage.buffer)], { type: referenceImage.mimeType }),
+          `reference.${extensionFromMimeType(referenceImage.mimeType)}`,
         );
       }
 
-      return extractGeneratedImage(
+      const generated = await extractGeneratedImage(
         await postLiaraForm<ImagesResponse>({
           baseURL,
           apiKey,
@@ -358,6 +484,7 @@ export async function generateStyledImageWithLiara({
           body: form,
         }),
       );
+      return { ...generated, model: imageModel };
     });
   } catch (error) {
     if (isRetryableProviderError(error)) {
@@ -382,26 +509,29 @@ export async function generateTextImageWithLiara({
   prompt,
   stylePrompt,
   outputPreset,
+  model: selectedModel,
 }: GenerateTextImageInput): Promise<LiaraImageResult> {
   const { apiKey, baseURL, model, quality, size } = getLiaraConfig();
-  const imageSize = getImageSize(outputPreset, size);
+  const imageModel = selectedModel?.trim() || model;
+  const imageSize = getImageSize(outputPreset, size, imageModel);
 
   try {
     return await withTransientRetry(async () => {
-      return extractGeneratedImage(
+      const generated = await extractGeneratedImage(
         await postLiaraJson<ImagesResponse>({
           baseURL,
           apiKey,
           path: "/images/generations",
           body: {
-            model,
+            model: imageModel,
             prompt: `${prompt}\n\n${stylePrompt}\n\nReturn one final premium studio product image suitable for e-commerce.`,
             size: imageSize,
-            quality: getImageQuality(quality),
+            quality: getImageQuality(quality, imageModel),
             n: 1,
           },
         }),
       );
+      return { ...generated, model: imageModel };
     });
   } catch (error) {
     if (isRetryableProviderError(error)) {

@@ -1,16 +1,23 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { after } from "next/server";
+import type { Prisma } from "@/generated/prisma";
 import { db } from "@/lib/db";
 import { requireAdminSession } from "@/lib/auth/session";
+import { normalizeProviderSettings, SUPPORTED_IMAGE_MODELS, updateProviderSettings } from "@/lib/ai/provider-settings";
 import { normalizeLoginIdentifier } from "@/lib/auth/identifier";
 import { hashPassword } from "@/lib/auth/password";
 import { getSubscriptionPeriod, logAdminAudit } from "@/lib/billing";
 import { normalizeBillingPlanColorPreset } from "@/lib/billing-plan-colors";
 import { INITIAL_SIGNUP_CREDITS } from "@/lib/credits";
 import { processImageProject } from "@/lib/generation/jobs";
-import { referralCodeFromUserId } from "@/lib/referrals";
+import {
+  createSalesReferralCodeBatch,
+  grantReferralRewardAfterFirstPurchase,
+  referralCodeFromUserId,
+} from "@/lib/referrals";
 import { saveStylePreviewFile } from "@/lib/uploads";
 
 function text(formData: FormData, key: string) {
@@ -117,13 +124,58 @@ function revalidateAdmin() {
   revalidatePath("/admin/packages");
   revalidatePath("/admin/support");
   revalidatePath("/admin/projects");
+  revalidatePath("/admin/provider");
   revalidatePath("/admin/styles");
+  revalidatePath("/admin/referrals");
   revalidatePath("/account");
   revalidatePath("/billing");
 }
 
+export async function updateProviderSettingsAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const activeModel = text(formData, "activeModel");
+  const fallbackModels = formData.getAll("fallbackModels").map(String);
+  const settings = normalizeProviderSettings({
+    activeModel,
+    fallbackModels,
+    autoFallback: formData.has("autoFallback"),
+  });
+
+  if (!SUPPORTED_IMAGE_MODELS.includes(settings.activeModel)) {
+    return;
+  }
+
+  await updateProviderSettings(settings);
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: "provider_settings.update",
+    targetType: "ProviderSettings",
+    targetId: "default",
+    summary: "تنظیمات مدل تولید تصویر به‌روزرسانی شد.",
+    metadata: {
+      activeModel: settings.activeModel,
+      fallbackModels: settings.fallbackModels,
+      autoFallback: settings.autoFallback,
+    },
+  });
+  revalidatePath("/admin/provider");
+  redirect("/admin/provider");
+}
+
 function isAvailableToUsers(formData: FormData) {
   return formData.has("isAvailableToUsers") || (formData.has("isActive") && formData.has("isUserVisible"));
+}
+
+async function lockUserCredits(tx: Prisma.TransactionClient, userId: string) {
+  const [user] = await tx.$queryRaw<Array<{ id: string; credits: number }>>`
+    SELECT id, credits
+    FROM \`User\`
+    WHERE id = ${userId}
+    LIMIT 1
+    FOR UPDATE
+  `;
+
+  return user ?? null;
 }
 
 export async function updatePaymentSettingsAction(formData: FormData) {
@@ -327,7 +379,7 @@ export async function adjustUserCreditsAction(formData: FormData) {
   }
 
   const updated = await db.$transaction(async (tx) => {
-    const user = await tx.user.findUnique({ where: { id: userId }, select: { credits: true } });
+    const user = await lockUserCredits(tx, userId);
     if (!user) return null;
 
     const nextCredits = user.credits + delta;
@@ -362,20 +414,70 @@ export async function adjustUserCreditsAction(formData: FormData) {
   revalidateAdmin();
 }
 
+export async function createSalesReferralCodesAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const salespersonName = text(formData, "salespersonName");
+  const note = text(formData, "note");
+
+  const batch = await createSalesReferralCodeBatch({
+    createdByAdminId: session.userId,
+    salespersonName,
+    note,
+  });
+
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: "sales_referral_codes.create_batch",
+    targetType: "SalesReferralCode",
+    targetId: batch.batchKey,
+    summary: `۵ کد تست فروش ساخته شد.`,
+    metadata: { batchKey: batch.batchKey, codes: batch.codes, salespersonName, note },
+  });
+
+  revalidatePath("/admin/referrals");
+}
+
 export async function updateUserCreditsAction(formData: FormData) {
-  await requireAdminSession();
+  const session = await requireAdminSession();
   const userId = text(formData, "userId");
   const credits = integer(formData, "credits");
   if (!userId || credits < 0) return;
 
-  const current = await db.user.findUnique({ where: { id: userId }, select: { credits: true } });
-  if (!current) return;
+  const reason = "تنظیم مستقیم اعتبار از فرم قدیمی ادمین";
+  const updated = await db.$transaction(async (tx) => {
+    const user = await lockUserCredits(tx, userId);
+    if (!user) return null;
 
-  const nextForm = new FormData();
-  nextForm.set("userId", userId);
-  nextForm.set("delta", String(credits - current.credits));
-  nextForm.set("reason", "تنظیم مستقیم اعتبار از فرم قدیمی ادمین");
-  await adjustUserCreditsAction(nextForm);
+    const delta = credits - user.credits;
+    if (delta === 0) return credits;
+
+    await tx.user.update({ where: { id: userId }, data: { credits } });
+    await tx.creditEvent.create({
+      data: {
+        userId,
+        actorAdminId: session.userId,
+        delta,
+        balanceBefore: user.credits,
+        balanceAfter: credits,
+        reason,
+        source: "ADMIN",
+      },
+    });
+    return credits;
+  });
+
+  if (updated !== null) {
+    await logAdminAudit({
+      actorAdminId: session.userId,
+      action: "credits.adjust",
+      targetType: "User",
+      targetId: userId,
+      summary: "اعتبار کاربر تنظیم شد.",
+      metadata: { targetCredits: credits, reason },
+    });
+  }
+
+  revalidateAdmin();
 }
 
 export async function updateUserRoleAction(formData: FormData) {
@@ -544,17 +646,19 @@ export async function approvePurchaseRequestAction(formData: FormData) {
   const requestId = text(formData, "requestId");
   if (!requestId) return;
 
+  const adminNote = text(formData, "adminNote") || null;
   const result = await db.$transaction(async (tx) => {
+    const claimed = await tx.purchaseRequest.updateMany({
+      where: { id: requestId, status: "PENDING" },
+      data: { status: "APPROVED", adminNote },
+    });
+    if (claimed.count === 0) return null;
+
     const request = await tx.purchaseRequest.findUnique({
       where: { id: requestId },
-      include: { package: true, user: { select: { credits: true } } },
+      include: { package: true },
     });
-    if (!request || request.status !== "PENDING") return null;
-
-    await tx.purchaseRequest.update({
-      where: { id: request.id },
-      data: { status: "APPROVED", adminNote: text(formData, "adminNote") || null },
-    });
+    if (!request) return null;
 
     if (request.package.type === "CREDIT_PACK") {
       const existingCreditEvent = await tx.creditEvent.findUnique({
@@ -563,17 +667,20 @@ export async function approvePurchaseRequestAction(formData: FormData) {
       });
       if (existingCreditEvent) return request;
 
-      const balanceAfter = request.user.credits + request.package.credits;
+      const user = await lockUserCredits(tx, request.userId);
+      if (!user) return request;
+
+      const balanceAfter = user.credits + request.package.credits;
       await tx.user.update({
         where: { id: request.userId },
-        data: { credits: balanceAfter },
+        data: { credits: { increment: request.package.credits } },
       });
       await tx.creditEvent.create({
         data: {
           userId: request.userId,
           actorAdminId: session.userId,
           delta: request.package.credits,
-          balanceBefore: request.user.credits,
+          balanceBefore: user.credits,
           balanceAfter,
           reason: `تایید خرید ${request.package.title}`,
           source: "PACKAGE",
@@ -604,6 +711,11 @@ export async function approvePurchaseRequestAction(formData: FormData) {
         },
       });
     }
+
+    await grantReferralRewardAfterFirstPurchase(tx, {
+      userId: request.userId,
+      purchaseRequestId: request.id,
+    });
 
     return request;
   });
@@ -686,13 +798,11 @@ export async function assignCreditPackAction(formData: FormData) {
   const notes = text(formData, "notes");
 
   const result = await db.$transaction(async (tx) => {
-    const [user, billingPackage] = await Promise.all([
-      tx.user.findUnique({ where: { id: userId }, select: { credits: true } }),
-      tx.billingPackage.findFirst({
-        where: { id: packageId, type: "CREDIT_PACK", archivedAt: null },
-        select: { id: true, title: true, credits: true },
-      }),
-    ]);
+    const user = await lockUserCredits(tx, userId);
+    const billingPackage = await tx.billingPackage.findFirst({
+      where: { id: packageId, type: "CREDIT_PACK", archivedAt: null },
+      select: { id: true, title: true, credits: true },
+    });
 
     if (!user || !billingPackage || billingPackage.credits <= 0) {
       return null;
@@ -701,7 +811,7 @@ export async function assignCreditPackAction(formData: FormData) {
     const balanceAfter = user.credits + billingPackage.credits;
     await tx.user.update({
       where: { id: userId },
-      data: { credits: balanceAfter },
+      data: { credits: { increment: billingPackage.credits } },
     });
 
     const event = await tx.creditEvent.create({
@@ -987,7 +1097,7 @@ export async function retryAdminProjectAction(formData: FormData) {
   if (!projectId) return;
 
   const updated = await db.project.updateMany({
-    where: { id: projectId, status: "FAILED", archivedAt: null, sourceAssetId: { not: null } },
+    where: { id: projectId, status: { in: ["FAILED", "PROCESSING", "QUEUED"] }, archivedAt: null, sourceAssetId: { not: null } },
     data: { status: "QUEUED", errorMessage: null, resultImageUrl: null, resultStorageKey: null },
   });
 
@@ -997,7 +1107,7 @@ export async function retryAdminProjectAction(formData: FormData) {
       action: "project.retry",
       targetType: "Project",
       targetId: projectId,
-      summary: "پروژه ناموفق دوباره وارد صف شد.",
+      summary: "پروژه از پنل ادمین دوباره وارد صف شد.",
     });
     after(() => processImageProject(projectId));
   }

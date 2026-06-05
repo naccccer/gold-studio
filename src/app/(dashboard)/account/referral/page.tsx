@@ -5,25 +5,15 @@ import {
   accountMutedCardClass,
 } from "@/features/account/components/account-subpage";
 import { requireUserSession } from "@/lib/auth/session";
+import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { db } from "@/lib/db";
 import { ensureUserReferralCode } from "@/lib/referrals";
 
 export const dynamic = "force-dynamic";
 
-function toLatinDigits(value: string) {
-  return value.replace(/[۰-۹٠-٩]/g, (digit) => {
-    const persianIndex = "۰۱۲۳۴۵۶۷۸۹".indexOf(digit);
-    if (persianIndex >= 0) return String(persianIndex);
-
-    const arabicIndex = "٠١٢٣٤٥٦٧٨٩".indexOf(digit);
-    return arabicIndex >= 0 ? String(arabicIndex) : digit;
-  });
-}
-
 export default async function AccountReferralPage() {
   const session = await requireUserSession();
   const referralCode = await ensureUserReferralCode(session.userId);
-  const displayReferralCode = toLatinDigits(referralCode).toLowerCase();
   const [referrals, rewardEvents] = await Promise.all([
     db.referral.findMany({
       where: { inviterId: session.userId },
@@ -45,14 +35,17 @@ export default async function AccountReferralPage() {
           <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-wash text-accent-deep">
             <Gift aria-hidden={true} className="h-4.5 w-4.5" />
           </span>
-          <h2 className="text-sm font-semibold text-foreground">کد شما</h2>
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">کد شما</h2>
+            <p className="mt-1 text-xs leading-6 text-muted">پاداش کد معرف بعد از اولین خرید تاییدشده فعال می‌شود.</p>
+          </div>
         </div>
         <p
           className="rounded-[0.95rem] bg-white px-3 py-3 font-mono text-xl font-semibold tracking-[0.18em] text-foreground"
           dir="ltr"
           lang="en"
         >
-          {displayReferralCode}
+          {referralCode}
         </p>
       </section>
 
@@ -63,8 +56,15 @@ export default async function AccountReferralPage() {
         ) : (
           referrals.map((referral) => (
             <div key={referral.id} className={accountMutedCardClass}>
-              <p className="text-sm font-semibold text-foreground">{referral.invitee.name || referral.invitee.email || referral.invitee.phone || "کاربر جدید"}</p>
-              <p className="mt-1 text-[11px] text-muted">{referral.rewardCredits.toLocaleString("fa-IR")} اعتبار هدیه</p>
+              <p className="text-sm font-semibold text-foreground">{getUserDisplayName(referral.invitee)}</p>
+              <p className="mt-1 text-[11px] text-muted" dir="ltr">
+                {getUserIdentifier(referral.invitee)}
+              </p>
+              <p className="mt-2 text-[11px] font-medium text-muted">
+                {referral.rewardGrantedAt
+                  ? `${referral.rewardCredits.toLocaleString("fa-IR")} اعتبار پرداخت شد`
+                  : "در انتظار اولین خرید تاییدشده"}
+              </p>
             </div>
           ))
         )}

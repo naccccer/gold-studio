@@ -13,6 +13,7 @@
     "db:start": "powershell -ExecutionPolicy Bypass -File scripts/db-start.ps1",
     "db:stop": "powershell -ExecutionPolicy Bypass -File scripts/db-stop.ps1",
     "db:repair-access": "powershell -ExecutionPolicy Bypass -File scripts/db-repair-access.ps1",
+    "db:export-local": "powershell -ExecutionPolicy Bypass -File scripts/export-local-db.ps1",
     "admin:bootstrap": "npm run db:generate && node scripts/bootstrap-admin.mjs",
     "check:liara": "node scripts/check-liara-direct.mjs",
     "cleanup:archives": "node scripts/cleanup-archives.mjs",
@@ -26,6 +27,7 @@
     "lucide-react": "^1.14.0",
     "mariadb": "^3.5.2",
     "next": "16.2.4",
+    "node-addon-api": "^8.8.0",
     "openai": "^6.34.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
@@ -39,7 +41,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "prisma": "^6.19.3",
-    "sharp": "^0.34.5",
+    "sharp": "^0.32.6",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

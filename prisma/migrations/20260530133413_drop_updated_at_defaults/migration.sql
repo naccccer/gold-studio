@@ -1,0 +1,7 @@
+ALTER TABLE `BillingPackage` ALTER COLUMN `updatedAt` DROP DEFAULT;
+
+ALTER TABLE `PaymentSettings` ALTER COLUMN `updatedAt` DROP DEFAULT;
+
+ALTER TABLE `PurchaseRequest` ALTER COLUMN `updatedAt` DROP DEFAULT;
+
+ALTER TABLE `UserSubscription` ALTER COLUMN `updatedAt` DROP DEFAULT;

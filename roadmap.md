@@ -27,7 +27,9 @@ Mobile user navigation:
 - Storage supports local filesystem uploads by default and optional S3-compatible storage when intentionally enabled.
 - Image generation uses the Liara-compatible provider boundary in `src/lib/ai`.
 - Output preset is persisted per project so ratio-specific generation settings do not collapse into one global square default.
-- New users start with 5 tracked signup credits and can consume active subscription credit before standalone wallet credit.
+- New users start with 1 tracked signup credit and can consume active subscription credit before standalone wallet credit.
+- Referral codes now record the invite at onboarding, then grant 5 credits to both sides only after the invited user's first approved purchase.
+- Admins can create 5-code batches of one-time sales test codes; each redeemed code immediately grants 5 wallet credits.
 - Manual card-to-card purchase requests, receipt upload, admin approval, package/subscription groundwork, credit events, support tickets, FAQ, and provider event logging are present.
 - Soft archive behavior now applies to projects; Gallery deletes unused source assets permanently while preserving assets that are still referenced by projects or batches.
 - UI Phase 2 through Phase 8 are implemented across shared primitives, guided creation, result review, account/billing/support, admin operations, and calm motion utilities.
@@ -35,7 +37,8 @@ Mobile user navigation:
 - Gallery selection controls now keep cancel beside the sticky selected-item actions instead of inside the upload panel.
 - Generation result storage now normalizes the actual output image format before saving, validates saved bytes, and surfaces missing files as explicit project errors.
 - Local upload/result URLs now stream through authorized `/api/storage/...`; local files are written under `.local-storage/uploads`, and uploaded user files are not served from `public/uploads`.
-- Beta hardening removed public `/design/*` prototypes, removed `ADMIN_EMAIL` signup promotion, added a local admin bootstrap script, added MVP in-memory throttling, and made purchase rejection pending-only.
+- Launch hardening now verifies admin storage access against the database role, uses DB-backed rate limits, and makes credit/purchase approval paths concurrency-safe.
+- Beta hardening removed public `/design/*` prototypes, removed `ADMIN_EMAIL` signup promotion, added a local admin bootstrap script, added shared DB-backed throttling, and made purchase rejection pending-only.
 - Admin user management now separates direct credit-pack assignment from subscription assignment, so credit packs increase wallet credits instead of creating a subscription.
 - User-visible styles are curated to six directions: `با مدل`, `پس‌زمینه`, `دکور انتزاعی`, `شبکه اجتماعی`, `ادیتوریال`, and `سینماتیک`; the model style targets young adult models, generally 25 to 35.
 - Admin styles now support editable card `previewImageUrl` values and simple per-style controls (`CHOICE`, `RANGE`, `BOOLEAN`) that render in the user new-project flow and feed concise AI prompt instructions.
@@ -45,8 +48,11 @@ Mobile user navigation:
 - Batch generation now uses a guided confirmation step from Gallery, creates one project per selected source photo, and reserves generation credit until each output succeeds.
 - Batch creation and batch detail now use the mobile studio pattern; creation includes selected assets, per-image product type, output size, style controls, and credit confirmation.
 - Liara generation now sends the selected output preset provider size (`1:1`, `9:16`, or `16:9`) instead of collapsing every request to the global square default.
+- Generation prompts now ask for more varied product framing with breathing room, so catalog and studio outputs do not default every style to oversized close-ups.
+- Admin provider settings now control the active Liara image model and automatic fallback order across Gemini and OpenAI-compatible image models.
 - هر پروژه موفق یک بار «نسخه دیگر» رایگان می‌دهد؛ دکمه نتیجه بج کوچک «رایگان» دارد، کاربر را به جریان سه‌مرحله‌ای پروژه جدید برمی‌گرداند، فرصت رایگان فقط بعد از خروجی موفق مصرف می‌شود، و شکست تولید آن را برمی‌گرداند.
 - Added a local Liara direct-access check for diagnosing v2rayN/TUN bypass issues before testing generation.
+- Added a safe local DB export script and clean VPS rebuild path so admin-managed styles, packages, provider settings, support settings, and FAQ can be restored from the local database without PowerShell dump encoding issues.
 
 ## Next Priorities
 - Production hardening: verify real Liara generation, retry behavior, storage display URLs, and failed-state recovery on the deployment target.

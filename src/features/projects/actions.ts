@@ -54,14 +54,15 @@ function getCompositionInstruction(productType?: string | null, visionAngle?: st
   const isWorn = visionAngle === "worn";
 
   const instructions = [
-    "Composition: keep the product clearly prominent and easy to inspect in frame.",
-    "Favor a balanced close composition where the product usually occupies roughly one-third to three-fifths of the frame.",
-    "Do not use an extreme tight crop, and do not leave the product as a small secondary element inside wide empty space.",
+    "Composition: keep the product clearly readable but not oversized in frame.",
+    "Do not default every result to a close-up. Vary the framing toward a slightly pulled-back premium product-photo composition where the full product has clean breathing room on every side.",
+    "For normal catalog and studio outputs, the product should often occupy roughly one-quarter to two-fifths of the frame, while tighter close-up framing may be used only when it clearly serves detail, style, or reference direction.",
+    "Avoid making most outputs extreme tight crops, edge-to-edge product crops, macro-only crops, or huge centered close-ups.",
   ];
 
   if (isWatch && isWorn) {
     instructions.push(
-      "For a worn watch, keep a natural amount of wrist and skin visible, but frame closely enough that the watch remains the obvious hero of the image.",
+      "For a worn watch, keep a natural amount of wrist and skin visible, with enough surrounding context that the watch is not always an oversized crop while still remaining the obvious hero.",
     );
   }
 
@@ -87,7 +88,8 @@ function getReferenceStyleInstruction(styleId: string) {
 
   return [
     "Reference sample transfer: use the second uploaded image only as the visual sample for arrangement, lighting, color palette, camera angle, surface, background, and overall mood.",
-    "Match the sample product angle and perspective as closely as possible: if the sample shows a top view, three-quarter view, low angle, side angle, tilted product, worn angle, or macro crop, render the user's product from that same visual angle while preserving its true identity.",
+    "Match the sample product angle and perspective as closely as possible: if the sample shows a top view, three-quarter view, low angle, side angle, tilted product, worn angle, or macro view, render the user's product from that same visual angle while preserving its true identity.",
+    "If the sample is a tight macro or close-up, keep the angle and mood, but do not make every reference-based result equally tight; include enough breathing room unless the close-up is essential to the selected sample style.",
     "Replace the sample subject/product with the user's product from the first image.",
     "Do not change the user's product identity: preserve exact form, metal, stones, details, proportions, silhouette, engravings, and material finish.",
   ].join("\n");

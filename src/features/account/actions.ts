@@ -7,6 +7,7 @@ import { normalizeLoginIdentifier } from "@/lib/auth/identifier";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { requireUserSession } from "@/lib/auth/session";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { applyReferralOrSalesCodeForUser } from "@/lib/referrals";
 import { saveReceiptFile } from "@/lib/uploads";
 
 function text(formData: FormData, key: string) {
@@ -186,7 +187,7 @@ export async function completeOnboardingNameAction(
 ): Promise<OnboardingNameState> {
   const session = await requireUserSession();
   const name = text(formData, "name");
-  const referralCode = text(formData, "referralCode").toUpperCase();
+  const enteredReferralCode = text(formData, "referralCode");
 
   if (name.length < 2) {
     return { error: "نام باید حداقل ۲ کاراکتر باشد." };
@@ -196,68 +197,26 @@ export async function completeOnboardingNameAction(
     return { error: "نام باید حداکثر ۸۰ کاراکتر باشد." };
   }
 
-  await db.$transaction(async (tx) => {
-    const currentUser = await tx.user.update({
-      where: { id: session.userId },
-      data: { name },
-      select: { id: true, credits: true },
-    });
+  const codeResult = await db.$transaction(async (tx) =>
+    enteredReferralCode
+      ? applyReferralOrSalesCodeForUser(tx, {
+          userId: session.userId,
+          rawCode: enteredReferralCode,
+        })
+      : { status: "empty" as const },
+  );
 
-    if (!referralCode) {
-      return;
-    }
+  if (codeResult.status === "invalid") {
+    return { error: "کد واردشده معتبر نیست." };
+  }
 
-    const existingReferral = await tx.referral.findUnique({
-      where: { inviteeId: session.userId },
-      select: { id: true },
-    });
-    if (existingReferral) {
-      return;
-    }
+  if (codeResult.status === "sales_code_redeemed") {
+    return { error: "این کد قبلا استفاده شده است." };
+  }
 
-    const inviter = await tx.user.findFirst({
-      where: { referralCode, id: { not: session.userId } },
-      select: { id: true, credits: true },
-    });
-    if (!inviter) {
-      return;
-    }
-
-    const rewardCredits = 2;
-    const referral = await tx.referral.create({
-      data: {
-        inviterId: inviter.id,
-        inviteeId: session.userId,
-        codeUsed: referralCode,
-        rewardCredits,
-      },
-    });
-
-    await tx.user.update({ where: { id: inviter.id }, data: { credits: { increment: rewardCredits } } });
-    await tx.creditEvent.create({
-      data: {
-        userId: inviter.id,
-        delta: rewardCredits,
-        balanceBefore: inviter.credits,
-        balanceAfter: inviter.credits + rewardCredits,
-        reason: "پاداش معرفی کاربر جدید",
-        source: "REFERRAL",
-        referralId: referral.id,
-      },
-    });
-
-    await tx.user.update({ where: { id: currentUser.id }, data: { credits: { increment: rewardCredits } } });
-    await tx.creditEvent.create({
-      data: {
-        userId: currentUser.id,
-        delta: rewardCredits,
-        balanceBefore: currentUser.credits,
-        balanceAfter: currentUser.credits + rewardCredits,
-        reason: "هدیه ثبت‌نام با کد معرف",
-        source: "REFERRAL",
-        referralId: referral.id,
-      },
-    });
+  await db.user.update({
+    where: { id: session.userId },
+    data: { name },
   });
 
   revalidatePath("/dashboard");
@@ -318,7 +277,7 @@ export async function changePasswordAction(formData: FormData) {
     data: { passwordHash: await hashPassword(newPassword) },
   });
 
-  revalidatePath("/account/security");
+  revalidatePath("/account/profile");
 }
 
 export async function createSupportTicketAction(formData: FormData) {

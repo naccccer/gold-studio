@@ -70,6 +70,7 @@ enum CreditEventSource {
   SUBSCRIPTION
   GENERATION
   REFERRAL
+  SALES_CODE
 }
 
 enum GenerationCreditReservationSource {
@@ -107,7 +108,7 @@ model User {
   referralCode          String?            @unique
   passwordHash          String
   role                  UserRole           @default(USER)
-  credits               Int                @default(5)
+  credits               Int                @default(1)
   reservedCredits       Int                @default(0)
   projects              Project[]
   assets                ProductAsset[]
@@ -127,6 +128,8 @@ model User {
   supportMessages       SupportTicketMessage[] @relation("UserSupportMessages")
   adminSupportMessages  SupportTicketMessage[] @relation("AdminSupportMessages")
   auditEvents           AdminAuditEvent[]  @relation("AdminAuditActor")
+  createdSalesReferralCodes SalesReferralCode[] @relation("SalesReferralCodeAdmin")
+  redeemedSalesReferralCodes SalesReferralCode[] @relation("SalesReferralCodeRedeemer")
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
 }
@@ -406,6 +409,7 @@ model PurchaseRequest {
   adminNote          String?               @db.Text
   subscription       UserSubscription?
   creditEvent        CreditEvent?
+  referralReward     Referral?             @relation("ReferralRewardPurchase")
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
 
@@ -420,6 +424,14 @@ model PaymentSettings {
   cardNumber     String
   instructions   String?  @db.Text
   isActive       Boolean  @default(true)
+  updatedAt      DateTime @updatedAt
+}
+
+model ProviderSettings {
+  id             String   @id @default("default")
+  activeModel    String
+  fallbackModels String   @db.Text
+  autoFallback   Boolean  @default(true)
   updatedAt      DateTime @updatedAt
 }
 
@@ -482,12 +494,36 @@ model Referral {
   inviteeId     String        @unique
   invitee       User          @relation("InviteeReferral", fields: [inviteeId], references: [id], onDelete: Cascade)
   codeUsed      String
-  rewardCredits Int           @default(2)
+  rewardCredits Int           @default(5)
+  rewardGrantedAt DateTime?
+  rewardPurchaseRequestId String? @unique
+  rewardPurchaseRequest PurchaseRequest? @relation("ReferralRewardPurchase", fields: [rewardPurchaseRequestId], references: [id], onDelete: SetNull)
   creditEvents  CreditEvent[]
   createdAt     DateTime      @default(now())
 
   @@index([inviterId, createdAt])
   @@index([codeUsed])
+  @@index([rewardGrantedAt])
+}
+
+model SalesReferralCode {
+  id               String   @id @default(cuid())
+  code             String   @unique
+  creditAmount     Int      @default(5)
+  batchKey         String
+  salespersonName  String?
+  note             String?  @db.Text
+  createdByAdminId String
+  createdByAdmin   User     @relation("SalesReferralCodeAdmin", fields: [createdByAdminId], references: [id], onDelete: Restrict)
+  redeemedByUserId String?
+  redeemedByUser   User?    @relation("SalesReferralCodeRedeemer", fields: [redeemedByUserId], references: [id], onDelete: SetNull)
+  redeemedAt       DateTime?
+  createdAt        DateTime @default(now())
+
+  @@index([batchKey, createdAt])
+  @@index([redeemedAt, createdAt])
+  @@index([createdByAdminId, createdAt])
+  @@index([redeemedByUserId])
 }
 
 model UserOutputSettings {
@@ -586,4 +622,13 @@ model ProviderEvent {
 
   @@index([projectId, createdAt])
   @@index([provider, status, createdAt])
+}
+
+model RateLimitBucket {
+  key       String   @id
+  count     Int
+  resetAt   DateTime
+  updatedAt DateTime @updatedAt
+
+  @@index([resetAt])
 }

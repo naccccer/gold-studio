@@ -1,4 +1,6 @@
+import { createHash } from "node:crypto";
 import { headers } from "next/headers";
+import { db } from "@/lib/db";
 
 const RATE_LIMIT_EXCEEDED_ERROR = "درخواست‌ها بیش از حد مجاز است. چند دقیقه بعد دوباره تلاش کنید.";
 
@@ -9,12 +11,11 @@ type RateLimitOptions = {
   windowMs: number;
 };
 
-type RateLimitBucket = {
+type RateLimitBucketRow = {
+  key: string;
   count: number;
-  resetAt: number;
+  resetAt: Date;
 };
-
-const buckets = new Map<string, RateLimitBucket>();
 
 function cleanIdentifier(value?: string | null) {
   return value?.trim().toLowerCase().replace(/\s+/g, "") || "anonymous";
@@ -31,38 +32,53 @@ function getClientIp(headerList: Headers) {
   );
 }
 
-function pruneExpiredBuckets(now: number) {
-  if (buckets.size < 1000) return;
-
-  for (const [key, bucket] of buckets) {
-    if (bucket.resetAt <= now) {
-      buckets.delete(key);
-    }
-  }
+function rateLimitKey(parts: string[]) {
+  return createHash("sha256").update(parts.join(":")).digest("hex");
 }
 
 export async function checkRateLimit(options: RateLimitOptions) {
   const headerList = await headers();
-  const now = Date.now();
-  const key = [options.scope, cleanIdentifier(options.identifier), getClientIp(headerList)].join(":");
-  const bucket = buckets.get(key);
+  const now = new Date();
+  const resetAt = new Date(now.getTime() + options.windowMs);
+  const key = rateLimitKey([options.scope, cleanIdentifier(options.identifier), getClientIp(headerList)]);
 
-  pruneExpiredBuckets(now);
+  return db.$transaction(async (tx) => {
+    await tx.$executeRaw`
+      INSERT INTO \`RateLimitBucket\` (\`key\`, \`count\`, \`resetAt\`, \`updatedAt\`)
+      VALUES (${key}, 0, ${new Date(0)}, NOW(3))
+      ON DUPLICATE KEY UPDATE \`key\` = \`key\`
+    `;
 
-  if (!bucket || bucket.resetAt <= now) {
-    buckets.set(key, { count: 1, resetAt: now + options.windowMs });
+    const [bucket] = await tx.$queryRaw<RateLimitBucketRow[]>`
+      SELECT \`key\`, \`count\`, \`resetAt\`
+      FROM \`RateLimitBucket\`
+      WHERE \`key\` = ${key}
+      LIMIT 1
+      FOR UPDATE
+    `;
+
+    if (!bucket || bucket.resetAt.getTime() <= now.getTime()) {
+      await tx.$executeRaw`
+        UPDATE \`RateLimitBucket\`
+        SET \`count\` = 1, \`resetAt\` = ${resetAt}, \`updatedAt\` = NOW(3)
+        WHERE \`key\` = ${key}
+      `;
+      return { ok: true as const };
+    }
+
+    if (bucket.count >= options.limit) {
+      return {
+        ok: false as const,
+        error: RATE_LIMIT_EXCEEDED_ERROR,
+        retryAfterSeconds: Math.max(1, Math.ceil((bucket.resetAt.getTime() - now.getTime()) / 1000)),
+      };
+    }
+
+    await tx.$executeRaw`
+      UPDATE \`RateLimitBucket\`
+      SET \`count\` = \`count\` + 1, \`updatedAt\` = NOW(3)
+      WHERE \`key\` = ${key}
+    `;
     return { ok: true as const };
-  }
-
-  if (bucket.count >= options.limit) {
-    return {
-      ok: false as const,
-      error: RATE_LIMIT_EXCEEDED_ERROR,
-      retryAfterSeconds: Math.max(1, Math.ceil((bucket.resetAt - now) / 1000)),
-    };
-  }
-
-  bucket.count += 1;
-  return { ok: true as const };
+  });
 }
-
