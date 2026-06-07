@@ -1,21 +1,30 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { RotateCcw, ChevronLeft, Camera, XCircle, Download, Upload, Pencil, Eye, ImagePlus, Wand2, CheckCircle, Trash2 } from "lucide-react";
+import {
+  Camera,
+  Upload,
+  Trash2,
+  Eye,
+  Download,
+  ImagePlus,
+  Pencil,
+  Sparkles,
+  CheckCircle2,
+  ImageOff,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
 import { Button, ButtonLink, IconButton, buttonClasses } from "@/components/ui/button";
 import { ConfirmAction } from "@/components/ui/confirm-action";
 import { EmptyState } from "@/components/ui/empty-state";
 import { fieldControlClassName } from "@/components/ui/field";
-import {
-  contextMenuDangerItemClasses,
-  contextMenuItemClasses,
-  ItemContextMenu,
-} from "@/components/ui/item-context-menu";
-import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
+import { ImageFrame } from "@/components/ui/image-frame";
 import { PageShell } from "@/components/ui/page-shell";
+import { ItemContextMenu, ContextMenuItem, ContextMenuSeparator } from "@/components/ui/item-context-menu";
+import { GalleryCropScreen } from "@/features/gallery/screens/gallery-crop-screen";
 import {
   archiveAssetAction,
   renameAssetAction,
@@ -28,9 +37,7 @@ import {
   startPendingGalleryUpload,
   waitForPendingGalleryUpload,
 } from "@/features/gallery/client-upload-store";
-import { GalleryCropScreen } from "@/features/gallery/screens/gallery-crop-screen";
 import type { StyleOption } from "@/features/projects/presets";
-import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 
 export type GalleryAssetItem = {
   id: string;
@@ -49,14 +56,6 @@ type GalleryScreenProps = {
 };
 
 const MAX_BATCH_UPLOAD_FILES = 10;
-const DELETE_NOTICE_DURATION_MS = 4200;
-
-function scrollGalleryToTop() {
-  requestAnimationFrame(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    document.querySelector("[data-ovala-phone-frame]")?.scrollTo({ top: 0, behavior: "smooth" });
-  });
-}
 
 export function GalleryScreen({ assets, styles, deleteNotice, undoAssetIds }: GalleryScreenProps) {
   const router = useRouter();
@@ -75,19 +74,26 @@ export function GalleryScreen({ assets, styles, deleteNotice, undoAssetIds }: Ga
       : undefined;
 
   useEffect(() => {
-    if (!deleteNotice) {
-      return;
-    }
-
-    const timeout = window.setTimeout(() => {
-      const nextParams = new URLSearchParams(searchParams.toString());
-      nextParams.delete("deleteNotice");
-      const nextQuery = nextParams.toString();
-      router.replace(nextQuery ? `/gallery?${nextQuery}` : "/gallery", { scroll: false });
-    }, DELETE_NOTICE_DURATION_MS);
-
-    return () => window.clearTimeout(timeout);
-  }, [deleteNotice, router, searchParams]);
+    if (!deleteNotice) return;
+    const messages: Record<typeof deleteNotice, string> = {
+      deleted: "عکس از گالری حذف شد.",
+      partial: "برخی عکس‌ها حذف شدند.",
+      archived: "به آرشیو منتقل شد.",
+      restored: "عکس به گالری برگشت.",
+    };
+    toast(messages[deleteNotice], {
+      action: undoIds.length > 0
+        ? {
+            label: "برگرداندن",
+            onClick: () => {
+              const form = new FormData();
+              undoIds.forEach((id) => form.append("assetId", id));
+              void restoreGalleryAssetsAction(form);
+            },
+          }
+        : undefined,
+    });
+  }, [deleteNotice, undoIds]);
 
   function toggleAsset(assetId: string) {
     setSelectedIds((current) =>
@@ -96,16 +102,13 @@ export function GalleryScreen({ assets, styles, deleteNotice, undoAssetIds }: Ga
   }
 
   function beginCropFlow(files: File[], source: "camera" | "files") {
-    if (files.length === 0) {
-      return;
-    }
-
+    if (files.length === 0) return;
     setPickerError(null);
-
     try {
       const uploadFiles = files.slice(0, MAX_BATCH_UPLOAD_FILES);
       if (files.length > MAX_BATCH_UPLOAD_FILES) {
-        setPickerError(`حداکثر ${MAX_BATCH_UPLOAD_FILES.toLocaleString("fa-IR")} عکس در هر نوبت آپلود می‌شود. ${MAX_BATCH_UPLOAD_FILES.toLocaleString("fa-IR")} عکس اول وارد صف شد.`);
+        setPickerError(`حداکثر ${MAX_BATCH_UPLOAD_FILES.toLocaleString("fa-IR")} عکس در هر نوبت آپلود می‌شود.`);
+        toast.warning(`فقط ${MAX_BATCH_UPLOAD_FILES.toLocaleString("fa-IR")} عکس اول وارد صف شد.`);
       }
       const pendingUploads = uploadFiles.map((file) => createPendingGalleryUpload(file, source));
       pendingUploads.forEach((pendingUpload) => {
@@ -154,139 +157,127 @@ export function GalleryScreen({ assets, styles, deleteNotice, undoAssetIds }: Ga
     setCropQueue([]);
     const nextQuery = nextParams.toString();
     router.replace(nextQuery ? `/gallery?${nextQuery}` : "/gallery", { scroll: false });
-    scrollGalleryToTop();
+    window.scrollTo({ top: 0, behavior: "smooth" });
 
     if (uploadId) {
       void waitForPendingGalleryUpload(uploadId)
         .then((upload) => {
-          if (upload.assetId) {
-              selectUploadedAsset(upload.assetId);
-            }
-            router.refresh();
-            scrollGalleryToTop();
-          })
-          .catch(() => undefined);
+          if (upload.assetId) selectUploadedAsset(upload.assetId);
+          router.refresh();
+        })
+        .catch(() => undefined);
     }
 
     if (options?.refresh) {
       router.refresh();
-      scrollGalleryToTop();
     }
   }
 
   return (
     <>
-      <PageShell maxWidth="lg" className="space-y-5 pb-[12.5rem]">
-        <div className="flex flex-col gap-5">
-        {deleteNotice ? (
-          <div className="relative overflow-hidden rounded-[1rem] border border-accent/24 bg-accent-wash/76 px-3 py-2 text-sm leading-6 text-accent-deep animate-[ovalaNoticeSlot_4.2s_ease-in-out_forwards]">
-            <div className="flex items-center gap-3">
-              <p className="min-w-0 flex-1">
-                {deleteNotice === "restored" ? "عکس به گالری برگشت." : "عکس از گالری حذف شد."}
-              </p>
-              {undoIds.length > 0 ? (
-                <form action={restoreGalleryAssetsAction} className="shrink-0">
-                  {undoIds.map((id) => (
-                    <input key={id} type="hidden" name="assetId" value={id} />
-                  ))}
-                  <button
-                    type="submit"
-                    aria-label="برگرداندن عکس به گالری"
-                    className="motion-press inline-flex h-8 w-8 items-center justify-center rounded-full border border-accent/24 bg-surface/72 text-accent-deep shadow-[0_10px_20px_-18px_rgba(17,16,14,0.55)] backdrop-blur"
-                  >
-                    <RotateCcw aria-hidden={true} className="h-3.5 w-3.5" />
-                  </button>
-                </form>
-              ) : null}
-            </div>
-            <span className="absolute inset-x-0 bottom-0 h-0.5 origin-right animate-[ovalaNoticeProgress_4.2s_linear_forwards] bg-accent-bright/70" />
-          </div>
-        ) : null}
-
+      <PageShell maxWidth="phone" className="space-y-4 pb-[8.5rem]">
         {pickerError ? (
-          <p className="motion-state rounded-[1rem] border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
+          <div className="rounded-[var(--r-md)] border border-danger/20 bg-danger-soft px-3 py-2 text-[13px] text-danger">
             {pickerError}
-          </p>
+          </div>
         ) : null}
 
         {assets.length === 0 ? (
           <EmptyState
-            title="هنوز عکسی در گالری ندارید."
-            className="pt-2"
-            media={
-              <Image
-                src={uploadPreview.src}
-                alt={uploadPreview.alt}
-                fill
-                priority
-                className="object-cover object-[46%_55%]"
-                sizes="(max-width: 768px) 100vw, 680px"
-              />
+            icon={<ImageOff className="h-6 w-6" strokeWidth={1.8} />}
+            title="گالری شما خالی است"
+            description="برای شروع، عکس محصول را از گالری گوشی یا دوربین اضافه کنید."
+            action={
+              <div className="grid w-full grid-cols-2 gap-2">
+                <label htmlFor="gallery-file-input" className={buttonClasses({ size: "md", className: "h-12" })}>
+                  <Upload aria-hidden className="h-4 w-4" strokeWidth={2.2} />
+                  آپلود عکس
+                </label>
+                <label htmlFor="gallery-camera-input" className={buttonClasses({ variant: "secondary", size: "md", className: "h-12" })}>
+                  <Camera aria-hidden className="h-4 w-4" strokeWidth={2.2} />
+                  دوربین
+                </label>
+              </div>
             }
+            className="py-12"
           />
         ) : (
           <section className="grid grid-cols-2 gap-3">
             {assets.map((asset) => {
               const selected = selectedIds.includes(asset.id);
               const title = asset.title || asset.originalName || "تصویر محصول";
-
+              const projectsCount = asset.projects.length;
               return (
                 <article key={asset.id} className="relative">
                   <button
                     type="button"
                     onClick={() => toggleAsset(asset.id)}
                     aria-label={`انتخاب ${title}`}
-                    className="block w-full text-right"
+                    aria-pressed={selected}
+                    className="group block w-full text-right"
                   >
-                    <JewelryImageFrame aspect="gallery" selected={selected} className="rounded-[var(--radius-lg)]">
+                    <ImageFrame
+                      aspect="gallery"
+                      tone="photo"
+                      selected={selected}
+                      radius="lg"
+                      className="border-0"
+                    >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={asset.fileUrl} alt={title} className="h-full w-full object-cover" />
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/68 via-black/24 via-38% to-transparent px-2.5 pb-1.5 pt-5">
-                        <div
-                          className="absolute inset-x-0 bottom-0 z-0 h-14 bg-black/12 backdrop-blur-[2px] [mask-image:linear-gradient(to_top,black_0%,rgba(0,0,0,0.72)_34%,transparent_100%)]"
-                          aria-hidden={true}
-                        />
-                        <p className="relative z-10 flex min-h-11 items-center truncate pl-12 text-xs font-semibold text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)]">
-                          {title}
-                        </p>
-                        <p className="hidden">
-                          {asset.projects.length > 0
-                            ? `${asset.projects.length.toLocaleString("fa-IR")} پروژه`
+                      <img
+                        src={asset.fileUrl}
+                        alt={title}
+                        className="h-full w-full object-cover transition-transform duration-[var(--d-slow)] group-hover:scale-[1.02]"
+                      />
+                      {selected ? (
+                        <span className="absolute left-2.5 top-2.5 inline-flex h-7 w-7 items-center justify-center rounded-[var(--r-pill)] bg-ink-1 text-surface shadow-[var(--shadow-md)]">
+                          <CheckCircle2 aria-hidden className="h-4 w-4" strokeWidth={2.2} />
+                        </span>
+                      ) : null}
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink-1/68 to-transparent p-2.5 pt-6">
+                        <p className="truncate text-[12px] font-semibold text-surface">{title}</p>
+                        <p className="mt-0.5 text-[10px] text-surface/72">
+                          {projectsCount > 0
+                            ? `${projectsCount.toLocaleString("fa-IR")} پروژه`
                             : "آماده برای ساخت"}
                         </p>
                       </div>
-                      {selected ? (
-                        <span className="motion-reveal-soft absolute left-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full bg-foreground text-surface">
-                          <CheckCircle aria-hidden={true} className="h-4 w-4" />
-                        </span>
-                      ) : null}
-                    </JewelryImageFrame>
+                    </ImageFrame>
                   </button>
-                  <div className="absolute bottom-1.5 left-1.5">
-                    <ItemContextMenu label={`منوی ${title}`} align="right">
-                      <Link href={`/gallery/${asset.id}`} className={contextMenuItemClasses}>
-                        <Eye aria-hidden={true} className="h-3.5 w-3.5" />
-                        مشاهده جزئیات
-                      </Link>
-                      <Link href={`/projects/new?assetId=${asset.id}`} className={contextMenuItemClasses}>
-                        <Wand2 aria-hidden={true} className="h-3.5 w-3.5" />
-                        ساخت پروژه
-                      </Link>
-                      <a href={asset.fileUrl} download className={contextMenuItemClasses}>
-                        <Download aria-hidden={true} className="h-3.5 w-3.5" />
-                        دانلود عکس
-                      </a>
+                  <div className="absolute bottom-2 left-2">
+                    <ItemContextMenu label={`منوی ${title}`} align="end" size="sm">
+                      <ContextMenuItem>
+                        <Link href={`/gallery/${asset.id}`} className="flex w-full items-center gap-2">
+                          <Eye aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
+                          مشاهده جزئیات
+                        </Link>
+                      </ContextMenuItem>
+                      <ContextMenuItem>
+                        <Link href={`/projects/new?assetId=${asset.id}`} className="flex w-full items-center gap-2">
+                          <Sparkles aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
+                          ساخت پروژه
+                        </Link>
+                      </ContextMenuItem>
+                      <ContextMenuItem>
+                        <a href={asset.fileUrl} download className="flex w-full items-center gap-2">
+                          <Download aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
+                          دانلود عکس
+                        </a>
+                      </ContextMenuItem>
                       <form action={saveGalleryAssetAsStyleReferenceAction}>
                         <input type="hidden" name="assetId" value={asset.id} />
-                        <button type="submit" className={contextMenuItemClasses}>
-                          <ImagePlus aria-hidden={true} className="h-3.5 w-3.5" />
-                          ذخیره در نمونه‌ها
-                        </button>
+                        <ContextMenuItem>
+                          <span className="flex w-full items-center gap-2">
+                            <ImagePlus aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
+                            ذخیره در نمونه‌ها
+                          </span>
+                        </ContextMenuItem>
                       </form>
-                      <form action={renameAssetAction} className="space-y-1.5 px-1 py-1.5">
+                      <ContextMenuSeparator />
+                      <form action={renameAssetAction} className="space-y-1.5 p-1.5">
                         <input type="hidden" name="assetId" value={asset.id} />
-                        <label className="flex items-center gap-1.5 text-[11px] font-medium text-muted">
-                          <Pencil aria-hidden={true} className="h-3.5 w-3.5" />
+                        <label className="flex items-center gap-1.5 text-[11px] font-medium text-ink-3">
+                          <Pencil aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
                           تغییر نام
                         </label>
                         <div className="flex gap-1.5">
@@ -294,29 +285,27 @@ export function GalleryScreen({ assets, styles, deleteNotice, undoAssetIds }: Ga
                             name="title"
                             defaultValue={title}
                             maxLength={80}
-                            className={`${fieldControlClassName} min-h-9 flex-1 px-2 text-xs`}
+                            className={`${fieldControlClassName} h-9 flex-1 px-2 text-xs`}
                           />
                           <button
                             type="submit"
-                            className={buttonClasses({
-                              size: "sm",
-                              className: "min-h-9 rounded-[var(--radius-sm)] px-2.5 text-xs",
-                            })}
+                            className={buttonClasses({ size: "sm", className: "h-9 rounded-[var(--r-sm)] px-2.5 text-xs" })}
                           >
                             ثبت
                           </button>
                         </div>
                       </form>
+                      <ContextMenuSeparator />
                       <ConfirmAction
                         action={archiveAssetAction}
                         fields={[{ name: "assetId", value: asset.id }]}
                         title="آیا از حذف عکس مطمئنید؟"
-                        trigger={(open) => (
-                          <button type="button" onClick={open} className={contextMenuDangerItemClasses}>
-                            <Trash2 aria-hidden={true} className="h-3.5 w-3.5" />
+                        trigger={
+                          <button type="button" className="flex w-full items-center gap-2 rounded-[var(--r-sm)] px-3 py-2 text-[13px] font-semibold text-danger hover:bg-danger-soft">
+                            <Trash2 aria-hidden className="h-3.5 w-3.5" strokeWidth={2} />
                             حذف
                           </button>
-                        )}
+                        }
                       />
                     </ItemContextMenu>
                   </div>
@@ -325,63 +314,58 @@ export function GalleryScreen({ assets, styles, deleteNotice, undoAssetIds }: Ga
             })}
           </section>
         )}
-
-        </div>
       </PageShell>
 
-      <section className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+4.85rem)] z-30 mx-auto w-full max-w-[393px] px-4 md:max-w-[425px]">
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+4.85rem)] z-30 mx-auto w-full max-w-[420px] px-[var(--page-x)]">
         {selectedCount === 0 ? (
-          <div className="pointer-events-auto grid grid-cols-2 gap-3 rounded-[1.25rem] border border-dashed border-accent/58 bg-surface/95 p-3 shadow-[0_18px_42px_-30px_rgba(17,16,14,0.32)] backdrop-blur">
-            <label htmlFor="gallery-file-input" className={buttonClasses({ className: "h-12 w-full rounded-[1rem]" })}>
-              <Upload aria-hidden={true} className="h-4 w-4" />
+          <div className="pointer-events-auto grid grid-cols-2 gap-2 rounded-[var(--r-xl)] border border-border-hairline bg-surface/90 p-2 shadow-[var(--shadow-lg)] backdrop-blur-xl">
+            <label htmlFor="gallery-file-input" className={buttonClasses({ size: "md", className: "h-12 rounded-[var(--r-lg)]" })}>
+              <Upload aria-hidden className="h-4 w-4" strokeWidth={2.2} />
               آپلود عکس
             </label>
-            <label
-              htmlFor="gallery-camera-input"
-              className={buttonClasses({ variant: "secondary", className: "h-12 w-full rounded-[1rem]" })}
-            >
-              <Camera aria-hidden={true} className="h-4 w-4" />
+            <label htmlFor="gallery-camera-input" className={buttonClasses({ variant: "secondary", size: "md", className: "h-12 rounded-[var(--r-lg)]" })}>
+              <Camera aria-hidden className="h-4 w-4" strokeWidth={2.2} />
               دوربین
             </label>
           </div>
         ) : (
-          <div className="pointer-events-auto grid grid-cols-[2.75rem_4rem_minmax(0,1fr)] items-center gap-3 rounded-[1.25rem] border border-border/65 bg-surface/96 p-3 shadow-[0_18px_42px_-30px_rgba(17,16,14,0.42)] backdrop-blur">
+          <div className="pointer-events-auto flex items-center gap-2 rounded-[var(--r-xl)] border border-border-hairline bg-surface/95 p-2 shadow-[var(--shadow-lg)] backdrop-blur-xl">
             <ConfirmAction
               action={archiveAssetAction}
               fields={selectedIds.map((id) => ({ name: "assetId", value: id }))}
               title={selectedCount === 1 ? "آیا از حذف عکس مطمئنید؟" : "آیا از حذف عکس‌ها مطمئنید؟"}
-              trigger={(open) => (
-                <IconButton type="button" onClick={open} label="حذف" variant="danger" className="h-11 w-11">
-                  <Trash2 aria-hidden={true} className="h-4 w-4" />
+              trigger={
+                <IconButton label="حذف" variant="danger" className="h-12 w-12 rounded-[var(--r-lg)]">
+                  <Trash2 aria-hidden className="h-4 w-4" strokeWidth={2.2} />
                 </IconButton>
-              )}
+              }
             />
             <Button
               type="button"
               variant="ghost"
               onClick={() => setSelectedIds([])}
-              className="h-11 w-full rounded-full border border-foreground/18 bg-surface text-xs font-bold text-foreground shadow-[0_12px_24px_-20px_rgba(17,16,14,0.68)] hover:bg-surface-soft"
+              className="h-12 flex-1 rounded-[var(--r-lg)] border border-border bg-surface text-[13px] font-semibold text-ink-1 hover:bg-surface-soft"
             >
-              <XCircle aria-hidden={true} className="h-4 w-4" />
+              <X aria-hidden className="h-4 w-4" strokeWidth={2.2} />
               لغو
             </Button>
-            <ButtonLink href={selectedCount === 1 ? `/projects/new?assetId=${selectedIds[0]}` : styles.length > 0 ? batchHref : "/gallery"} className="h-12 w-full rounded-[1rem]">
+            <ButtonLink
+              href={selectedCount === 1 ? `/projects/new?assetId=${selectedIds[0]}` : styles.length > 0 ? batchHref : "/gallery"}
+              className="h-12 flex-1 rounded-[var(--r-lg)]"
+            >
               {selectedCount === 1 ? (
-                <>
-                  ادامه
-                  <ChevronLeft aria-hidden={true} className="h-4 w-4" />
-                </>
+                <>ادامه</>
               ) : (
                 <>
                   <span className="sr-only">{selectedCount.toLocaleString("fa-IR")} تصویر انتخاب شده</span>
-                  <Wand2 aria-hidden={true} className="h-4 w-4" />
+                  <Sparkles aria-hidden className="h-4 w-4" strokeWidth={2.2} />
                   ساخت گروهی
                 </>
               )}
             </ButtonLink>
           </div>
         )}
-      </section>
+      </div>
 
       <input
         id="gallery-camera-input"

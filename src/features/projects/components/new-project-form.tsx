@@ -7,7 +7,7 @@ import { ChevronsDown, ChevronLeft, Camera, Upload, Images, Image as ImageIcon, 
 import { ActionDock } from "@/components/ui/action-dock";
 import { AppTopBar } from "@/components/ui/app-top-bar";
 import { Button, ButtonLink, buttonClasses } from "@/components/ui/button";
-import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
+
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
@@ -345,7 +345,7 @@ export function NewProjectForm({
         title={step === "source" ? "آپلود عکس محصول" : topBarTitles[step]}
         onBack={handleTopBarBack}
         logoVariant="mark-light"
-        tone="dark"
+        tone="ink"
         className="mb-0 min-h-12 px-0"
       />
       <input type="hidden" name="generationMode" value="image" />
@@ -447,7 +447,7 @@ export function NewProjectForm({
                       aria-label={`انتخاب ${title}`}
                       className="text-right"
                     >
-                      <JewelryImageFrame aspect="square" selected={isSelected} treatment="quiet" className="rounded-[1rem]">
+                      <ImageFrame aspect="square" selected={isSelected} tone="muted" className="rounded-[1rem]">
                         <SafeJewelryImage
                           src={asset.fileUrl}
                           alt={title}
@@ -462,7 +462,7 @@ export function NewProjectForm({
                             <CheckCircle aria-hidden={true} className="h-3.5 w-3.5" />
                           </span>
                         ) : null}
-                      </JewelryImageFrame>
+                      </ImageFrame>
                     </button>
                   );
                 })}
@@ -546,7 +546,7 @@ export function NewProjectForm({
                       onChange={() => selectStyle(preset)}
                       className="sr-only"
                     />
-                    <JewelryImageFrame aspect="square" treatment="quiet" className="rounded-none border-0 bg-transparent shadow-none">
+                    <ImageFrame aspect="square" tone="muted" className="rounded-none border-0 bg-transparent shadow-none">
                       <Image
                         src={preset.previewImageUrl}
                         alt={preset.label}
@@ -554,7 +554,7 @@ export function NewProjectForm({
                         className="object-cover"
                         sizes="(max-width: 768px) 24vw, 140px"
                       />
-                    </JewelryImageFrame>
+                    </ImageFrame>
                     <div className="px-2 py-1.5">
                       <p className="truncate text-[10px] font-semibold leading-4 text-surface">{preset.label}</p>
                     </div>
@@ -646,7 +646,7 @@ export function NewProjectForm({
                         aria-label={`انتخاب ${title}`}
                         className="text-right"
                       >
-                        <JewelryImageFrame aspect="square" selected={checked} treatment="quiet" className="rounded-[1rem]">
+                        <ImageFrame aspect="square" selected={checked} tone="muted" className="rounded-[1rem]">
                           <SafeJewelryImage
                             src={reference.fileUrl}
                             alt={title}
@@ -661,7 +661,7 @@ export function NewProjectForm({
                               <CheckCircle aria-hidden={true} className="h-3.5 w-3.5" />
                             </span>
                           ) : null}
-                        </JewelryImageFrame>
+                        </ImageFrame>
                       </button>
                     );
                   })}
@@ -669,10 +669,10 @@ export function NewProjectForm({
               ) : null}
               {referenceUploadPreview ? (
                 <div className="flex items-center gap-3 rounded-[0.9rem] border border-white/14 bg-white/[0.04] px-3 py-2">
-                  <JewelryImageFrame aspect="square" selected treatment="quiet" className="h-16 w-16 shrink-0 rounded-[0.9rem]">
+                  <ImageFrame aspect="square" selected tone="muted" className="h-16 w-16 shrink-0 rounded-[0.9rem]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={referenceUploadPreview} alt="پیش‌نمایش عکس نمونه" className="h-full w-full object-cover" />
-                  </JewelryImageFrame>
+                  </ImageFrame>
                   <div className="flex min-w-0 items-center gap-2 text-xs text-surface/84">
                     <ImageIcon aria-hidden={true} className="h-4 w-4 shrink-0 text-accent-bright" />
                     <span>نمونه آپلودی</span>

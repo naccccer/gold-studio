@@ -10,7 +10,7 @@ import {
   contextMenuDangerItemClasses,
   ItemContextMenu,
 } from "@/components/ui/item-context-menu";
-import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
+
 import { PageShell } from "@/components/ui/page-shell";
 import {
   archiveStyleReferenceAction,
@@ -85,7 +85,7 @@ export function StyleReferenceGalleryScreen({ assets, error }: StyleReferenceGal
                     aria-label={`انتخاب ${title}`}
                     className="block w-full text-right"
                   >
-                    <JewelryImageFrame aspect="gallery" selected={selected} className="rounded-[var(--radius-lg)]">
+                    <ImageFrame aspect="gallery" selected={selected} className="rounded-[var(--radius-lg)]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={asset.fileUrl} alt={title} className="h-full w-full object-cover" />
                       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/68 via-black/24 via-38% to-transparent px-2.5 pb-1.5 pt-5">
@@ -98,7 +98,7 @@ export function StyleReferenceGalleryScreen({ assets, error }: StyleReferenceGal
                           <CheckCircle aria-hidden={true} className="h-4 w-4" />
                         </span>
                       ) : null}
-                    </JewelryImageFrame>
+                    </ImageFrame>
                   </button>
                   <div className="absolute bottom-1.5 left-1.5">
                     <ItemContextMenu label={`منوی ${title}`} align="right">

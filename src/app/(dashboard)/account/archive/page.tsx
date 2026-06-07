@@ -1,7 +1,8 @@
 import { Archive, RefreshCw } from "lucide-react";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
+import { ImageFrame } from "@/components/ui/image-frame";
+
 import { PageShell } from "@/components/ui/page-shell";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 import { accountCardClass } from "@/features/account/components/account-subpage";
@@ -59,7 +60,7 @@ export default async function AccountArchivePage() {
 
             return (
               <article key={project.id} className="relative">
-                <JewelryImageFrame aspect="gallery" className="rounded-[var(--radius-lg)]">
+                <ImageFrame aspect="gallery" className="rounded-[var(--radius-lg)]">
                   <SafeJewelryImage
                     src={imageSrc}
                     fallbackSrc={fallback.src}
@@ -78,7 +79,7 @@ export default async function AccountArchivePage() {
                       <p className="truncate text-xs font-semibold leading-5 text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)]">{title}</p>
                     </div>
                   </div>
-                </JewelryImageFrame>
+                </ImageFrame>
                 <form action={restoreProjectAction} className="absolute left-2 top-2 z-20">
                   <input type="hidden" name="projectId" value={project.id} />
                   <button

@@ -7,8 +7,10 @@ import { ChevronsDown, ChevronLeft, Upload, Image as ImageIcon, Wand2, CheckCirc
 import { ActionDock } from "@/components/ui/action-dock";
 import { AppTopBar } from "@/components/ui/app-top-bar";
 import { Button, ButtonLink } from "@/components/ui/button";
-import { ImageOverlayPill, JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
+
 import { PageShell } from "@/components/ui/page-shell";
+import { Pill } from "@/components/ui/pill";
+import { ImageFrame } from "@/components/ui/image-frame";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { StyleChoiceControl } from "@/features/projects/components/style-choice-control";
@@ -229,9 +231,9 @@ export function GalleryBatchNewScreen({
 
         <header className="-mt-2 space-y-3">
           <div className="flex items-center justify-center">
-            <ImageOverlayPill tone="accent" className="w-fit">
+            <Pill tone="champagne" className="w-fit">
               {currentMeta.stepNumber}
-            </ImageOverlayPill>
+            </Pill>
           </div>
           <div className="flex items-center justify-center gap-2" aria-label="مراحل ساخت گروهی">
             {(["assets", "size", "style"] as WizardStep[]).map((item, index) => {
@@ -254,7 +256,7 @@ export function GalleryBatchNewScreen({
           <StepScrollPanel>
             <div className="grid grid-cols-4 gap-3">
               {assets.map((asset) => (
-                <JewelryImageFrame key={asset.id} aspect="square" treatment="quiet" className="rounded-[1rem]">
+                <ImageFrame key={asset.id} aspect="square" tone="muted" className="rounded-[1rem]">
                   <SafeJewelryImage
                     src={asset.fileUrl}
                     fallbackSrc={uploadPreview.src}
@@ -264,7 +266,7 @@ export function GalleryBatchNewScreen({
                     className="object-cover"
                     sizes="120px"
                   />
-                </JewelryImageFrame>
+                </ImageFrame>
               ))}
             </div>
 
@@ -286,7 +288,7 @@ export function GalleryBatchNewScreen({
             <section className="space-y-2">
               {assets.map((asset) => (
                 <div key={asset.id} className="flex items-center gap-3 rounded-[1rem] border border-white/12 bg-white/[0.04] px-3 py-2">
-                  <JewelryImageFrame aspect="square" treatment="quiet" className="h-11 w-11 shrink-0 rounded-[0.8rem]">
+                  <ImageFrame aspect="square" tone="muted" className="h-11 w-11 shrink-0 rounded-[0.8rem]">
                     <SafeJewelryImage
                       src={asset.fileUrl}
                       fallbackSrc={uploadPreview.src}
@@ -296,7 +298,7 @@ export function GalleryBatchNewScreen({
                       className="object-cover"
                       sizes="44px"
                     />
-                  </JewelryImageFrame>
+                  </ImageFrame>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-semibold text-surface">{assetTitle(asset)}</p>
                     <div className="relative mt-1">
@@ -336,9 +338,9 @@ export function GalleryBatchNewScreen({
 
         {step === "size" ? (
           <StepScrollPanel>
-            <JewelryImageFrame
+            <ImageFrame
               aspect="portrait"
-              treatment="dark"
+              tone="dark"
               className="flex h-[min(288px,34svh)] min-h-[224px] items-center justify-center rounded-[1.45rem]"
             >
               <Image
@@ -354,7 +356,7 @@ export function GalleryBatchNewScreen({
               <div className="absolute inset-0 flex items-center justify-center p-5">
                 <div className={`rounded-[1.25rem] border border-white/55 bg-white/10 shadow-[0_18px_36px_-28px_rgba(0,0,0,0.72)] backdrop-blur-sm ${selectedPreset.previewFrameClassName}`} />
               </div>
-            </JewelryImageFrame>
+            </ImageFrame>
 
             <fieldset className="space-y-3">
               <legend className="sr-only">انتخاب ابعاد خروجی</legend>
@@ -399,7 +401,7 @@ export function GalleryBatchNewScreen({
                       onChange={() => selectStyle(style)}
                       className="sr-only"
                     />
-                    <JewelryImageFrame aspect="square" treatment="quiet" className="rounded-none border-0 bg-transparent shadow-none">
+                    <ImageFrame aspect="square" tone="muted" className="rounded-none border-0 bg-transparent shadow-none">
                       <Image
                         src={style.previewImageUrl}
                         alt={style.label}
@@ -407,7 +409,7 @@ export function GalleryBatchNewScreen({
                         className="object-cover"
                         sizes="(max-width: 768px) 24vw, 140px"
                       />
-                    </JewelryImageFrame>
+                    </ImageFrame>
                     <div className="px-2 py-1.5">
                       <p className="truncate text-[10px] font-semibold leading-4 text-surface">{style.label}</p>
                     </div>
@@ -499,7 +501,7 @@ export function GalleryBatchNewScreen({
                           aria-label={`انتخاب ${title}`}
                           className="text-right"
                         >
-                          <JewelryImageFrame aspect="square" selected={checked} treatment="quiet" className="rounded-[1rem]">
+                          <ImageFrame aspect="square" selected={checked} tone="muted" className="rounded-[1rem]">
                             <SafeJewelryImage
                               src={reference.fileUrl}
                               fallbackSrc={uploadPreview.src}
@@ -514,7 +516,7 @@ export function GalleryBatchNewScreen({
                                 <CheckCircle aria-hidden={true} className="h-3.5 w-3.5" />
                               </span>
                             ) : null}
-                          </JewelryImageFrame>
+                          </ImageFrame>
                         </button>
                       );
                     })}
@@ -522,10 +524,10 @@ export function GalleryBatchNewScreen({
                 ) : null}
                 {referenceUploadPreview ? (
                   <div className="flex items-center gap-3 rounded-[0.9rem] border border-white/14 bg-white/[0.04] px-3 py-2">
-                    <JewelryImageFrame aspect="square" selected treatment="quiet" className="h-16 w-16 shrink-0 rounded-[0.9rem]">
+                    <ImageFrame aspect="square" selected tone="muted" className="h-16 w-16 shrink-0 rounded-[0.9rem]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={referenceUploadPreview} alt="پیش‌نمایش عکس نمونه" className="h-full w-full object-cover" />
-                    </JewelryImageFrame>
+                    </ImageFrame>
                     <div className="flex min-w-0 items-center gap-2 text-xs text-surface/84">
                       <ImageIcon aria-hidden={true} className="h-4 w-4 shrink-0 text-accent-bright" />
                       <span>نمونه آپلودی</span>

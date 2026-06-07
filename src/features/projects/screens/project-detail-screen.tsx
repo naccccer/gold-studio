@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Plus, XCircle, Copy, Download, Images, Maximize2, RefreshCw, Scan, CheckCircle, Trash2 } from "lucide-react";
-import { ActionDock } from "@/components/ui/action-dock";
+import { Plus, XCircle, Copy, Download, Images, Maximize2, RefreshCw, Scan, CheckCircle, Trash2, Wand2 } from "lucide-react";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { ConfirmAction } from "@/components/ui/confirm-action";
 import { fieldControlClassName } from "@/components/ui/field";
-import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
+import { ImageFrame } from "@/components/ui/image-frame";
 import { PageShell } from "@/components/ui/page-shell";
+import { Pill } from "@/components/ui/pill";
 import { ProcessingCanvas } from "@/components/ui/processing-canvas";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 import { archiveProjectAction, renameProjectAction, retryProjectAction } from "@/features/projects/actions";
@@ -15,23 +15,11 @@ import { ProjectStatusRefresh } from "@/features/projects/components/project-sta
 import { resultHeroDark, uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { generateNumericSupportCode } from "@/lib/support-code";
 
-const statusConfig: Record<string, { label: string; supportCopy: string }> = {
-  QUEUED: {
-    label: "در صف",
-    supportCopy: "پروژه ثبت شده و به زودی وارد پردازش می‌شود.",
-  },
-  PROCESSING: {
-    label: "در حال تولید",
-    supportCopy: "خروجی در حال آماده‌سازی است.",
-  },
-  COMPLETED: {
-    label: "آماده",
-    supportCopy: "خروجی نهایی آماده دانلود است.",
-  },
-  FAILED: {
-    label: "ناموفق",
-    supportCopy: "تولید کامل نشد. دوباره تلاش کنید.",
-  },
+const statusConfig: Record<string, { label: string; supportCopy: string; tone: "info" | "champagne" | "success" | "danger" }> = {
+  QUEUED: { label: "در صف", supportCopy: "پروژه ثبت شده و به زودی وارد پردازش می‌شود.", tone: "info" },
+  PROCESSING: { label: "در حال تولید", supportCopy: "خروجی در حال آماده‌سازی است.", tone: "champagne" },
+  COMPLETED: { label: "آماده", supportCopy: "خروجی نهایی آماده دانلود است.", tone: "success" },
+  FAILED: { label: "ناموفق", supportCopy: "تولید کامل نشد. دوباره تلاش کنید.", tone: "danger" },
 };
 
 function formatProjectError(project: ProjectDetail) {
@@ -337,10 +325,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
   const [fullscreenZoom, setFullscreenZoom] = useState(1);
   const [fullscreenPan, setFullscreenPan] = useState({ x: 0, y: 0 });
   const [fullscreenViewport, setFullscreenViewport] = useState({ width: 0, height: 0 });
-  const status = statusConfig[project.status] ?? {
-    label: "ثبت شده",
-    supportCopy: "وضعیت پروژه ثبت شد.",
-  };
+  const status = statusConfig[project.status] ?? { label: "ثبت شده", supportCopy: "وضعیت پروژه ثبت شد.", tone: "info" as const };
   const hasResult = Boolean(project.resultImageUrl);
   const resultImageError =
     project.resultImageError ??
@@ -511,7 +496,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
             frameClassName="h-full min-h-0"
           />
 
-          <ActionDock columns={2} className="shrink-0 pb-0">
+          <div className="grid shrink-0 grid-cols-2 gap-2 pb-0">
             <ButtonLink href="/projects" className="h-12 w-full rounded-[1rem] text-sm">
               <Images aria-hidden={true} className="h-4 w-4" />
               پروژه‌ها
@@ -520,7 +505,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               <Plus aria-hidden={true} className="h-4 w-4" />
               پروژه جدید
             </ButtonLink>
-          </ActionDock>
+          </div>
         </section>
       </PageShell>
     );
@@ -553,7 +538,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               }
             }}
           >
-            <JewelryImageFrame aspect="portrait" treatment="dark" className="h-full w-full aspect-auto rounded-[1.45rem] bg-white">
+            <ImageFrame aspect="portrait" tone="ink" className="h-full w-full aspect-auto rounded-[1.45rem] bg-white">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={resultImageSrc}
@@ -614,10 +599,10 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
                   {showBefore ? "نمایش خروجی" : "دیدن عکس خام"}
                 </button>
               </div>
-            </JewelryImageFrame>
+            </ImageFrame>
           </div>
 
-          <ActionDock className="shrink-0 pb-1" columns={2}>
+          <div className="shrink-0 pb-1" columns={2}>
             <div className="grid grid-cols-[3rem_minmax(0,1fr)] gap-2">
               <ConfirmAction
                 action={archiveProjectAction}
@@ -665,7 +650,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
                 نسخه دیگر
               </ButtonLink>
             )}
-          </ActionDock>
+          </div>
         </section>
 
         {fullscreen ? (
@@ -828,7 +813,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
           styleSettings={styleSettings}
         />
 
-        <JewelryImageFrame aspect="portrait" treatment="dark" className="min-h-0 flex-1 rounded-[1.45rem]">
+        <ImageFrame aspect="portrait" tone="ink" className="min-h-0 flex-1 rounded-[1.45rem]">
           <SafeJewelryImage
             src={sourceImageSrc}
             fallbackSrc={uploadPreview.src}
@@ -868,9 +853,9 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               </div>
             </div>
           </div>
-        </JewelryImageFrame>
+        </ImageFrame>
 
-        <ActionDock className="shrink-0 pb-1">
+        <div className="shrink-0 pb-1">
           <form action={retryProjectAction}>
             <input type="hidden" name="projectId" value={project.id} />
             <button
@@ -885,7 +870,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
             <Images aria-hidden={true} className="h-4 w-4" />
             پروژه‌ها
           </ButtonLink>
-        </ActionDock>
+        </div>
       </section>
     </PageShell>
   );

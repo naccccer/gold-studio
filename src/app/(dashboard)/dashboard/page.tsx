@@ -2,11 +2,12 @@ import { DashboardHomeScreen } from "@/features/dashboard/screens/dashboard-home
 import { db } from "@/lib/db";
 import { requireUserSession } from "@/lib/auth/session";
 import { storagePublicUrl } from "@/lib/storage";
+import { getUserCreditSummary } from "@/lib/billing";
 
 export default async function DashboardPage() {
   const session = await requireUserSession();
 
-  const [user, projectCount, completedCount, recentProjects] = await Promise.all([
+  const [user, projectCount, completedCount, recentProjects, creditSummary] = await Promise.all([
     db.user.findUnique({ where: { id: session.userId } }),
     db.project.count({ where: { userId: session.userId, archivedAt: null } }),
     db.project.count({ where: { userId: session.userId, status: "COMPLETED", archivedAt: null } }),
@@ -18,18 +19,15 @@ export default async function DashboardPage() {
         id: true,
         title: true,
         status: true,
-        style: {
-          select: { name: true },
-        },
+        style: { select: { name: true } },
         sourceImageUrl: true,
         resultImageUrl: true,
         resultStorageKey: true,
-        sourceAsset: {
-          select: { storageKey: true },
-        },
+        sourceAsset: { select: { storageKey: true } },
         createdAt: true,
       },
     }),
+    getUserCreditSummary(session.userId),
   ]);
 
   return (
@@ -37,6 +35,7 @@ export default async function DashboardPage() {
       userName={user?.name}
       projectCount={projectCount}
       completedCount={completedCount}
+      remainingCredits={creditSummary.totalAvailableCredits}
       recentProjects={recentProjects.map((project) => ({
         ...project,
         sourceImageUrl: project.sourceAsset?.storageKey ? storagePublicUrl(project.sourceAsset.storageKey) : project.sourceImageUrl,

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Images } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button";
-import { ImageOverlayPill, JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
+
 import { PageShell } from "@/components/ui/page-shell";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 import { StatusPill } from "@/components/ui/status-pill";
@@ -64,7 +64,7 @@ export function GalleryBatchScreen({ batch }: GalleryBatchScreenProps) {
           <p className="min-w-0 flex-1 truncate text-sm font-semibold leading-7 text-surface/82">
             {batch.items.length.toLocaleString("fa-IR")} تصویر با سبک {batch.style.name}
           </p>
-          <ImageOverlayPill tone="accent">{statusLabelMap[batch.status] ?? batch.status}</ImageOverlayPill>
+          <Pill tone="champagne">{statusLabelMap[batch.status] ?? batch.status}</Pill>
         </div>
 
         <div className="grid grid-cols-3 gap-2 text-center">
@@ -89,7 +89,7 @@ export function GalleryBatchScreen({ batch }: GalleryBatchScreenProps) {
           const status = item.project?.status ?? "FAILED";
           const content = (
             <>
-              <JewelryImageFrame aspect="square" className="h-16 w-16 shrink-0 rounded-[1rem]">
+              <ImageFrame aspect="square" className="h-16 w-16 shrink-0 rounded-[1rem]">
                 <SafeJewelryImage
                   src={item.asset.fileUrl}
                   fallbackSrc={uploadPreview.src}
@@ -99,7 +99,7 @@ export function GalleryBatchScreen({ batch }: GalleryBatchScreenProps) {
                   className="object-cover"
                   sizes="64px"
                 />
-              </JewelryImageFrame>
+              </ImageFrame>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-surface">{title}</p>
                 <p className="mt-1 text-xs text-surface/62">یک پروژه جدا برای این عکس ساخته شده است</p>

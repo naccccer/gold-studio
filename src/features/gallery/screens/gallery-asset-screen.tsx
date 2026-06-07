@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button";
-import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
+import { ImageFrame } from "@/components/ui/image-frame";
+
 import { PageShell } from "@/components/ui/page-shell";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 import { AssetProductTypeForm } from "@/features/gallery/components/asset-product-type-form";
@@ -42,7 +43,7 @@ export function GalleryAssetScreen({ asset }: GalleryAssetScreenProps) {
 
   return (
     <PageShell maxWidth="lg" className="space-y-5 pb-4">
-      <JewelryImageFrame aspect="portrait" className="rounded-[1.25rem] bg-surface-soft shadow-none">
+      <ImageFrame aspect="portrait" className="rounded-[1.25rem] bg-surface-soft shadow-none">
         <SafeJewelryImage
           src={asset.fileUrl}
           alt={title}
@@ -53,7 +54,7 @@ export function GalleryAssetScreen({ asset }: GalleryAssetScreenProps) {
           className="object-cover"
           sizes="(max-width: 768px) 100vw, 760px"
         />
-      </JewelryImageFrame>
+      </ImageFrame>
 
       <section className="space-y-3 rounded-[1.25rem] border border-border/70 bg-surface px-4 py-4">
         <div className="flex items-start justify-between gap-3">
