@@ -82,6 +82,19 @@ If `build` fails only due to the known PrismaClient issue in `src/lib/db.ts`, re
 - Update `roadmap.md` whenever scope, progress, or active priorities change.
 - Keep `docs/` short and current — no implementation diaries, phase histories, or stale warnings.
 
+## Token & request efficiency
+The user pays per request on the API (unlimited tokens, capped request count). A single user message can fan out into many internal round-trips (subagents, parallel tool calls, follow-up reads, retries). Treat request count as the scarce resource.
+
+- **Minimize back-and-forth.** Plan the full set of file reads/edits before invoking tools; batch independent reads in one message.
+- **Prefer one decisive turn over multiple confirmations.** If a task is clear, do it. Don't split "look at the file" and "edit the file" into separate turns when both can happen now.
+- **Skip subagents unless they save more than they cost.** A subagent that returns a few lines rarely beats reading the file directly. Reserve agents for genuinely parallel, multi-file, or open-ended work.
+- **Avoid `verify`/`run` style re-reads** of files you just edited — trust the edit and move on.
+- **Don't re-Read a file to confirm a change** — the Edit/Write tool errors on failure.
+- **Don't sleep/poll.** Use `run_in_background` for long commands and react to the notification.
+- **Combine short answers.** Multiple small questions in one user message → one response with all answers, not a chain of single-question replies.
+- **No verbose recaps.** End-of-turn summaries are one or two sentences max. No "what I did" essay.
+- **No re-explaining the codebase** to the user on every turn — they know it.
+
 ## Persian/encoding
 - Source and docs are UTF-8. Keep Persian as direct UTF-8 in TSX/TS/MD, not escaped Unicode.
 - Never paste mojibake. If text looks corrupted, stop and repair the source before editing.
