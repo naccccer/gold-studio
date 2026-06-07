@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Add, MagicStar } from "vuesax-icons-react";
+import { Plus, Sparkles } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button";
 import { PageShell } from "@/components/ui/page-shell";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
@@ -60,7 +60,7 @@ export function DashboardHomeScreen({ recentProjects }: DashboardHomeScreenProps
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/66 via-black/12 to-transparent p-4 text-surface">
             <div className="flex items-end justify-between gap-3">
               <p className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/25 px-2.5 py-1 text-[10px] text-[#fff7e7]">
-                <MagicStar aria-hidden="true" className="h-3 w-3" />
+                <Sparkles aria-hidden="true" className="h-3 w-3" />
                 پیشنهاد هفته
               </p>
               <div className="flex items-center gap-1.5">
@@ -73,7 +73,7 @@ export function DashboardHomeScreen({ recentProjects }: DashboardHomeScreenProps
         </div>
 
         <ButtonLink href="/projects/new" size="full" className="h-12 rounded-[1rem] text-sm">
-          <Add aria-hidden="true" className="h-4 w-4" />
+          <Plus aria-hidden="true" className="h-4 w-4" />
           پروژه جدید
         </ButtonLink>
 

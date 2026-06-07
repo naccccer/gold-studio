@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, TickCircle } from "vuesax-icons-react";
+import { Copy, CheckCircle } from "lucide-react";
 
 export function CopyCardNumberButton({ cardNumber }: { cardNumber: string }) {
   const [copied, setCopied] = useState(false);
@@ -20,7 +20,7 @@ export function CopyCardNumberButton({ cardNumber }: { cardNumber: string }) {
       aria-label={copied ? "شماره کارت کپی شد" : "کپی شماره کارت"}
       title={copied ? "کپی شد" : "کپی شماره کارت"}
     >
-      {copied ? <TickCircle aria-hidden={true} className="h-4 w-4" /> : <Copy aria-hidden={true} className="h-4 w-4" />}
+      {copied ? <CheckCircle aria-hidden={true} className="h-4 w-4" /> : <Copy aria-hidden={true} className="h-4 w-4" />}
     </button>
   );
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bank, Card, DocumentUpload, Layer, ReceiptText, TickCircle, Trash, Wallet, type Icon } from "vuesax-icons-react";
+import { Landmark, CreditCard, Upload, Layers, Receipt, CheckCircle, Trash2, Wallet, ReceiptText, type LucideIcon } from "lucide-react";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { fieldControlClassName } from "@/components/ui/field";
 import { PageShell } from "@/components/ui/page-shell";
@@ -49,10 +49,10 @@ type BillingScreenProps = {
 
 type BillingTab = "packages" | "credits" | "payment" | "receipts";
 
-const tabs: { id: BillingTab; label: string; icon: Icon }[] = [
-  { id: "packages", label: "پلن‌ها", icon: Layer },
+const tabs: { id: BillingTab; label: string; icon: LucideIcon }[] = [
+  { id: "packages", label: "پلن‌ها", icon: Layers },
   { id: "credits", label: "اعتبار", icon: Wallet },
-  { id: "payment", label: "کارت", icon: Bank },
+  { id: "payment", label: "کارت", icon: Landmark },
   { id: "receipts", label: "رسید", icon: ReceiptText },
 ];
 
@@ -192,11 +192,11 @@ function PackageCard({
         <div className="relative mt-3 grid gap-2">
           <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.5rem] gap-2">
             <ButtonLink href="/billing?tab=payment" variant={isSubscription ? "studio-secondary" : "primary"} size="full" className="h-10 rounded-[0.9rem] px-2 text-xs">
-              <Bank aria-hidden={true} className="h-4 w-4" />
+              <Landmark aria-hidden={true} className="h-4 w-4" />
               اطلاعات پرداخت
             </ButtonLink>
             <ButtonLink href="/billing?tab=receipts" variant={isSubscription ? "studio-secondary" : "secondary"} size="full" className="h-10 rounded-[0.9rem] px-2 text-xs">
-              <DocumentUpload aria-hidden={true} className="h-4 w-4" />
+              <Upload aria-hidden={true} className="h-4 w-4" />
               بارگذاری رسید
             </ButtonLink>
             <button
@@ -211,7 +211,7 @@ function PackageCard({
               aria-label="حذف درخواست خرید"
               title="حذف درخواست"
             >
-              <Trash aria-hidden={true} className="h-4 w-4" />
+              <Trash2 aria-hidden={true} className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -230,7 +230,7 @@ function PackageCard({
                 })
           }
         >
-          <Card aria-hidden={true} className="h-4 w-4" />
+          <CreditCard aria-hidden={true} className="h-4 w-4" />
           {isSubscription ? "انتخاب اشتراک" : "خرید اعتبار"}
         </button>
       )}
@@ -273,7 +273,7 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
 
       {activeTab === "packages" ? (
         <section className="space-y-2.5">
-          <AccountSectionHeader icon={Layer} title="پلن‌های ماهانه" />
+          <AccountSectionHeader icon={Layers} title="پلن‌های ماهانه" />
           {subscriptionPackages.length > 0 ? (
             subscriptionPackages.map((billingPackage) => (
               <PackageCard
@@ -309,7 +309,7 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
 
       {activeTab === "payment" ? (
         <section className={`${accountCardClass} space-y-3`}>
-          <AccountSectionHeader icon={Bank} title="اطلاعات کارت‌به‌کارت" />
+          <AccountSectionHeader icon={Landmark} title="اطلاعات کارت‌به‌کارت" />
           {paymentSettings?.isActive ? (
             <>
               <div className="motion-state rounded-[1rem] bg-white/62 p-3">
@@ -328,7 +328,7 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
                 </div>
               </div>
               <ButtonLink href="/billing?tab=receipts" variant="primary" size="full" className="h-11 rounded-[0.95rem] px-2 text-xs">
-                <DocumentUpload aria-hidden={true} className="h-4 w-4" />
+                <Upload aria-hidden={true} className="h-4 w-4" />
                 رفتن به ارسال رسید
               </ButtonLink>
             </>
@@ -378,7 +378,7 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
                   <div className="flex shrink-0 items-center gap-2">
                     <StatusPill variant={status.variant} className="text-[10px]">
                       {request.status === "APPROVED" ? (
-                        <TickCircle aria-hidden={true} className="h-3 w-3" />
+                        <CheckCircle aria-hidden={true} className="h-3 w-3" />
                       ) : (
                         <ReceiptText aria-hidden={true} className="h-3 w-3" />
                       )}
@@ -392,7 +392,7 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
                         aria-label="حذف از لیست"
                         title="حذف"
                       >
-                        <Trash aria-hidden={true} className="h-4 w-4" />
+                        <Trash2 aria-hidden={true} className="h-4 w-4" />
                       </button>
                     ) : null}
                   </div>
@@ -439,7 +439,7 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
                           : buttonClasses({ size: "full", variant: "primary", className: "h-10 rounded-[0.9rem] text-xs" })
                       }
                     >
-                      <DocumentUpload aria-hidden={true} className="h-4 w-4" />
+                      <Upload aria-hidden={true} className="h-4 w-4" />
                       {request.receiptSubmittedAt ? "ارسال دوباره رسید" : "ارسال رسید"}
                     </button>
                   </>

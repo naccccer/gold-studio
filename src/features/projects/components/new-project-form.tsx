@@ -3,16 +3,7 @@
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import {
-  ArrowDown2,
-  ArrowLeft,
-  Camera,
-  DocumentUpload,
-  Gallery,
-  Image as ImageIcon,
-  Magicpen,
-  TickCircle,
-} from "vuesax-icons-react";
+import { ChevronsDown, ChevronLeft, Camera, Upload, Images, Image as ImageIcon, Wand2, CheckCircle } from "lucide-react";
 import { ActionDock } from "@/components/ui/action-dock";
 import { AppTopBar } from "@/components/ui/app-top-bar";
 import { Button, ButtonLink, buttonClasses } from "@/components/ui/button";
@@ -407,7 +398,7 @@ export function NewProjectForm({
         <StepScrollPanel>
           <div className="grid grid-cols-3 gap-3">
             <SourceActionButton htmlFor="project-file-input" featured>
-              <DocumentUpload aria-hidden={true} className="h-4 w-4" />
+              <Upload aria-hidden={true} className="h-4 w-4" />
               <span>آپلود</span>
             </SourceActionButton>
             <SourceActionButton htmlFor="project-camera-input">
@@ -415,7 +406,7 @@ export function NewProjectForm({
               <span>دوربین</span>
             </SourceActionButton>
             <SourceActionButton href="/gallery">
-              <Gallery aria-hidden={true} className="h-4 w-4" />
+              <Images aria-hidden={true} className="h-4 w-4" />
               <span>گالری</span>
             </SourceActionButton>
           </div>
@@ -468,7 +459,7 @@ export function NewProjectForm({
                         />
                         {isSelected ? (
                           <span className="absolute left-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-surface">
-                            <TickCircle aria-hidden={true} className="h-3.5 w-3.5" />
+                            <CheckCircle aria-hidden={true} className="h-3.5 w-3.5" />
                           </span>
                         ) : null}
                       </JewelryImageFrame>
@@ -487,7 +478,7 @@ export function NewProjectForm({
             ) : null}
             <Button type="button" variant="studio-primary" className="h-12 w-full" onClick={() => setStep("size")} disabled={!canContinue}>
               {sourcePreparing ? "آماده‌سازی..." : "ادامه"}
-              <ArrowLeft aria-hidden={true} className="h-4 w-4" />
+              <ChevronLeft aria-hidden={true} className="h-4 w-4" />
             </Button>
           </ActionDock>
         </StepScrollPanel>
@@ -519,7 +510,7 @@ export function NewProjectForm({
                   </option>
                 ))}
               </select>
-              <ArrowDown2 aria-hidden={true} className="pointer-events-none absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-surface/72" />
+              <ChevronsDown aria-hidden={true} className="pointer-events-none absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-surface/72" />
             </div>
           </section>
 
@@ -529,7 +520,7 @@ export function NewProjectForm({
             </Button>
             <Button type="button" variant="studio-primary" className="h-12 w-full" onClick={() => setStep("style")} disabled={!canContinue}>
               {sourcePreparing ? "آماده‌سازی..." : "ادامه"}
-              <ArrowLeft aria-hidden={true} className="h-4 w-4" />
+              <ChevronLeft aria-hidden={true} className="h-4 w-4" />
             </Button>
           </ActionDock>
         </StepScrollPanel>
@@ -569,7 +560,7 @@ export function NewProjectForm({
                     </div>
                     {checked ? (
                       <span className="absolute left-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-surface">
-                        <TickCircle aria-hidden={true} className="h-3 w-3" />
+                        <CheckCircle aria-hidden={true} className="h-3 w-3" />
                       </span>
                     ) : null}
                   </label>
@@ -637,7 +628,7 @@ export function NewProjectForm({
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs font-medium text-surface/72">عکس نمونه</p>
                 <label htmlFor="project-reference-file-input" className={buttonClasses({ variant: "studio-secondary", className: "min-h-9 rounded-full px-3 text-xs" })}>
-                  <DocumentUpload aria-hidden={true} className="h-3.5 w-3.5" />
+                  <Upload aria-hidden={true} className="h-3.5 w-3.5" />
                   آپلود
                 </label>
               </div>
@@ -667,7 +658,7 @@ export function NewProjectForm({
                           />
                           {checked ? (
                             <span className="absolute left-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-surface">
-                              <TickCircle aria-hidden={true} className="h-3.5 w-3.5" />
+                              <CheckCircle aria-hidden={true} className="h-3.5 w-3.5" />
                             </span>
                           ) : null}
                         </JewelryImageFrame>
@@ -703,7 +694,7 @@ export function NewProjectForm({
               {shouldShowBillingShortcut ? (
                 <ButtonLink href="/billing" variant="ghost" className="mt-3 min-h-10 px-0 text-sm !text-danger hover:!text-danger/88">
                   رفتن به صفحه اعتبار
-                  <ArrowLeft aria-hidden={true} className="h-4 w-4" />
+                  <ChevronLeft aria-hidden={true} className="h-4 w-4" />
                 </ButtonLink>
               ) : null}
             </div>
@@ -715,7 +706,7 @@ export function NewProjectForm({
             </Button>
             <Button type="submit" disabled={pending || !canSubmitWithReference} variant="studio-primary" className="h-12 w-full">
               {sourcePreparing ? "آماده‌سازی..." : pending ? "در حال ساخت..." : "شروع پردازش"}
-              <Magicpen aria-hidden={true} className="h-4 w-4" />
+              <Wand2 aria-hidden={true} className="h-4 w-4" />
             </Button>
           </ActionDock>
         </StepScrollPanel>

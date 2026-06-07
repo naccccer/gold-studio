@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Archive, Refresh } from "vuesax-icons-react";
+import { Archive, RefreshCw } from "lucide-react";
 import {
   adminDangerActionClass,
   adminInputClass,
@@ -195,7 +195,7 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
                 <form action={retryAdminProjectAction}>
                   <input type="hidden" name="projectId" value={selectedProject.id} />
                   <button className={adminPrimaryActionClass}>
-                    <Refresh className="h-4 w-4" />
+                    <RefreshCw className="h-4 w-4" />
                     تلاش دوباره
                   </button>
                 </form>

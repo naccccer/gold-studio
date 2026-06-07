@@ -1,4 +1,4 @@
-import { ArchiveBook, Refresh } from "vuesax-icons-react";
+import { Archive, RefreshCw } from "lucide-react";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
@@ -33,7 +33,7 @@ export default async function AccountArchivePage() {
       <header className="flex items-center gap-3 px-1">
         <div className="flex min-w-0 items-center gap-3">
           <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-wash text-accent-deep">
-            <ArchiveBook aria-hidden={true} className="h-4.5 w-4.5" />
+            <Archive aria-hidden={true} className="h-4.5 w-4.5" />
           </span>
           <h1 className="truncate text-base font-semibold text-foreground">آرشیو</h1>
         </div>
@@ -89,7 +89,7 @@ export default async function AccountArchivePage() {
                       className: "!h-7 !min-h-7 rounded-full border border-white/32 bg-surface/88 px-2 text-[10px] leading-none shadow-[0_12px_24px_-18px_rgba(0,0,0,0.65)] backdrop-blur",
                     })}
                   >
-                    <Refresh aria-hidden={true} className="h-3 w-3" />
+                    <RefreshCw aria-hidden={true} className="h-3 w-3" />
                     بازگردانی
                   </button>
                 </form>

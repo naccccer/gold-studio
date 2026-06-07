@@ -1,4 +1,4 @@
-import { Setting2 } from "vuesax-icons-react";
+import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AccountSubpage, accountCardClass, accountInputClass } from "@/features/account/components/account-subpage";
 import { updateOutputSettingsAction } from "@/features/account/actions";
@@ -16,7 +16,7 @@ export default async function OutputSettingsPage() {
       <form action={updateOutputSettingsAction} className={`${accountCardClass} space-y-3`}>
         <div className="flex items-center gap-3">
           <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-wash text-accent-deep">
-            <Setting2 aria-hidden={true} className="h-4.5 w-4.5" />
+            <Settings aria-hidden={true} className="h-4.5 w-4.5" />
           </span>
           <h2 className="text-sm font-semibold text-foreground">پیش‌فرض‌های ساخت</h2>
         </div>

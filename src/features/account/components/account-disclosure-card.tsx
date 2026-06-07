@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { ArrowDown2, Lock, ProfileCircle } from "vuesax-icons-react";
+import { ChevronsDown, Lock, User, UserRound } from "lucide-react";
 import { accountCardClass } from "@/features/account/components/account-subpage";
 
 type AccountDisclosureCardProps = {
@@ -11,7 +11,7 @@ type AccountDisclosureCardProps = {
 };
 
 const icons = {
-  profile: ProfileCircle,
+  profile: UserRound,
   lock: Lock,
 };
 
@@ -33,7 +33,7 @@ export function AccountDisclosureCard({ title, icon, children }: AccountDisclosu
           </span>
           <span className="truncate text-sm font-semibold text-foreground">{title}</span>
         </span>
-        <ArrowDown2
+        <ChevronsDown
           aria-hidden={true}
           className={`h-4 w-4 shrink-0 text-muted transition ${isOpen ? "rotate-180" : ""}`}
         />

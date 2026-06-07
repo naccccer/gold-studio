@@ -1,17 +1,6 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
-import {
-  Add,
-  DocumentUpload,
-  Eye,
-  EyeSlash,
-  Gallery,
-  InfoCircle,
-  Save2,
-  Setting4,
-  TickCircle,
-  Trash,
-} from "vuesax-icons-react";
+import { Plus, Upload, Eye, EyeOff, Images, Info, Save, Settings, CheckCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmAction } from "@/components/ui/confirm-action";
 import { AdminModal } from "@/features/admin/components/admin-modal";
@@ -97,7 +86,7 @@ function ControlTypeSelect({ defaultValue }: { defaultValue: ControlType }) {
 function PreviewUpload() {
   return (
     <label className="inline-flex h-9 w-fit cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-xs font-medium text-foreground transition hover:border-border-strong hover:bg-surface-soft">
-      <DocumentUpload className="h-4 w-4" aria-hidden={true} />
+      <Upload className="h-4 w-4" aria-hidden={true} />
       آپلود عکس کارت
       <input name="previewImage" type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" />
     </label>
@@ -116,7 +105,7 @@ function AvailabilityToggle({ defaultChecked = true }: { defaultChecked?: boolea
 function VisibilityPill({ visible }: { visible: boolean }) {
   return (
     <span className={pillClass}>
-      {visible ? <Eye className="h-3.5 w-3.5" aria-hidden={true} /> : <EyeSlash className="h-3.5 w-3.5" aria-hidden={true} />}
+      {visible ? <Eye className="h-3.5 w-3.5" aria-hidden={true} /> : <EyeOff className="h-3.5 w-3.5" aria-hidden={true} />}
       {visible ? "نمایان در فرم کاربر" : "پنهان از کاربر"}
     </span>
   );
@@ -145,7 +134,7 @@ export default async function AdminStylesPage() {
         <div className="grid gap-2 text-sm leading-7 text-muted md:grid-cols-3">
           <div className="rounded-[var(--radius-md)] border border-border bg-surface px-3 py-3">
             <p className="inline-flex items-center gap-2 font-semibold text-foreground">
-              <InfoCircle className="h-4 w-4" aria-hidden={true} />
+              <Info className="h-4 w-4" aria-hidden={true} />
               انتزاعی مستقل
             </p>
             <p className="mt-1 text-xs leading-6">
@@ -154,7 +143,7 @@ export default async function AdminStylesPage() {
           </div>
           <div className="rounded-[var(--radius-md)] border border-border bg-surface px-3 py-3">
             <p className="inline-flex items-center gap-2 font-semibold text-foreground">
-              <InfoCircle className="h-4 w-4" aria-hidden={true} />
+              <Info className="h-4 w-4" aria-hidden={true} />
               ادیتوریال
             </p>
             <p className="mt-1 text-xs leading-6">
@@ -163,7 +152,7 @@ export default async function AdminStylesPage() {
           </div>
           <div className="rounded-[var(--radius-md)] border border-border bg-surface px-3 py-3">
             <p className="inline-flex items-center gap-2 font-semibold text-foreground">
-              <InfoCircle className="h-4 w-4" aria-hidden={true} />
+              <Info className="h-4 w-4" aria-hidden={true} />
               عکس نمونه
             </p>
             <p className="mt-1 text-xs leading-6">
@@ -196,7 +185,7 @@ export default async function AdminStylesPage() {
             <div className="flex w-full flex-wrap items-center justify-between gap-2">
               <AvailabilityToggle />
               <Button type="submit" size="sm">
-                <Add className="h-4 w-4" />
+                <Plus className="h-4 w-4" />
                 ساخت سبک
               </Button>
             </div>
@@ -229,11 +218,11 @@ export default async function AdminStylesPage() {
                         <h3 className="truncate text-sm font-semibold leading-6 text-foreground">{style.name}</h3>
                         <div className="mt-1 flex flex-wrap gap-1.5">
                           <span className={pillClass}>
-                            <Gallery className="h-3.5 w-3.5" aria-hidden={true} />
+                            <Images className="h-3.5 w-3.5" aria-hidden={true} />
                             {style._count.projects.toLocaleString("fa-IR")} پروژه
                           </span>
                           <span className={pillClass}>
-                            <Setting4 className="h-3.5 w-3.5" aria-hidden={true} />
+                            <Settings className="h-3.5 w-3.5" aria-hidden={true} />
                             {style.controls.length.toLocaleString("fa-IR")} کنترل
                           </span>
                           <span className={pillClass}>{style.category?.name ?? "بدون دسته"}</span>
@@ -249,7 +238,7 @@ export default async function AdminStylesPage() {
                         title={`تنظیمات ${style.name}`}
                         trigger={
                           <span className="inline-flex h-9 w-fit items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-xs font-medium text-foreground transition hover:border-border-strong hover:bg-surface-soft">
-                            <Setting4 className="h-4 w-4" aria-hidden={true} />
+                            <Settings className="h-4 w-4" aria-hidden={true} />
                             تنظیمات
                           </span>
                         }
@@ -276,7 +265,7 @@ export default async function AdminStylesPage() {
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <span className={pillClass}>
-                                      {control.isActive ? <TickCircle className="h-3.5 w-3.5" aria-hidden={true} /> : <EyeSlash className="h-3.5 w-3.5" aria-hidden={true} />}
+                                      {control.isActive ? <CheckCircle className="h-3.5 w-3.5" aria-hidden={true} /> : <EyeOff className="h-3.5 w-3.5" aria-hidden={true} />}
                                       {control.isActive ? "فعال" : "غیرفعال"}
                                     </span>
                                     <ConfirmAction
@@ -292,7 +281,7 @@ export default async function AdminStylesPage() {
                                           aria-label="حذف کنترل"
                                           className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-danger/30 bg-danger-soft text-danger transition hover:border-danger"
                                         >
-                                          <Trash className="h-3.5 w-3.5" aria-hidden={true} />
+                                          <Trash2 className="h-3.5 w-3.5" aria-hidden={true} />
                                         </button>
                                       )}
                                     />
@@ -337,7 +326,7 @@ export default async function AdminStylesPage() {
                                       فعال
                                     </label>
                                     <Button type="submit" size="sm" className="h-8 min-h-0 rounded-[var(--radius-sm)] px-3 text-xs">
-                                      <Save2 className="h-3.5 w-3.5" />
+                                      <Save className="h-3.5 w-3.5" />
                                       ذخیره کنترل
                                     </Button>
                                   </div>
@@ -349,7 +338,7 @@ export default async function AdminStylesPage() {
                           <form action={createStyleControlAction} className="rounded-[var(--radius-md)] border border-dashed border-border bg-surface/70 p-3">
                             <input type="hidden" name="styleId" value={style.id} />
                             <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-foreground">
-                              <Add className="h-4 w-4" aria-hidden={true} />
+                              <Plus className="h-4 w-4" aria-hidden={true} />
                               کنترل جدید
                             </div>
                             <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(130px,180px)_120px_90px]">
@@ -388,7 +377,7 @@ export default async function AdminStylesPage() {
                                 فعال
                               </label>
                               <Button type="submit" size="sm" className="h-8 min-h-0 rounded-[var(--radius-sm)] px-3 text-xs">
-                                <Add className="h-3.5 w-3.5" />
+                                <Plus className="h-3.5 w-3.5" />
                                 افزودن کنترل
                               </Button>
                             </div>
@@ -417,7 +406,7 @@ export default async function AdminStylesPage() {
                     <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3">
                       <AvailabilityToggle defaultChecked={isAvailableChecked(style)} />
                       <Button type="submit" size="sm">
-                        <Save2 className="h-4 w-4" />
+                        <Save className="h-4 w-4" />
                         ذخیره سبک
                       </Button>
                     </div>

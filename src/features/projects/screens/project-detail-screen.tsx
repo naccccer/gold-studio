@@ -1,18 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  Add,
-  CloseCircle,
-  Copy,
-  DocumentDownload,
-  Gallery,
-  Maximize4,
-  Refresh,
-  Scan,
-  TickCircle,
-  Trash,
-} from "vuesax-icons-react";
+import { Plus, XCircle, Copy, Download, Images, Maximize2, RefreshCw, Scan, CheckCircle, Trash2 } from "lucide-react";
 import { ActionDock } from "@/components/ui/action-dock";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { ConfirmAction } from "@/components/ui/confirm-action";
@@ -282,7 +271,7 @@ function DetailMeta({
                 aria-label="تایید نام پروژه"
                 className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-accent-soft bg-accent-wash/92 text-accent-deep transition hover:bg-accent-wash"
               >
-                <TickCircle aria-hidden={true} className="h-4 w-4" />
+                <CheckCircle aria-hidden={true} className="h-4 w-4" />
               </button>
               <button
                 type="button"
@@ -290,7 +279,7 @@ function DetailMeta({
                 aria-label="انصراف از ویرایش نام پروژه"
                 className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.08] text-surface/72 transition hover:bg-white/[0.12]"
               >
-                <CloseCircle aria-hidden={true} className="h-4 w-4" />
+                <XCircle aria-hidden={true} className="h-4 w-4" />
               </button>
             </form>
           ) : (
@@ -524,11 +513,11 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
 
           <ActionDock columns={2} className="shrink-0 pb-0">
             <ButtonLink href="/projects" className="h-12 w-full rounded-[1rem] text-sm">
-              <Gallery aria-hidden={true} className="h-4 w-4" />
+              <Images aria-hidden={true} className="h-4 w-4" />
               پروژه‌ها
             </ButtonLink>
             <ButtonLink href={newVersionHref} variant="secondary" className="h-12 w-full rounded-[1rem] text-sm">
-              <Add aria-hidden={true} className="h-4 w-4" />
+              <Plus aria-hidden={true} className="h-4 w-4" />
               پروژه جدید
             </ButtonLink>
           </ActionDock>
@@ -600,7 +589,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
                   aria-label="نمایش تمام صفحه خروجی"
                   className="relative z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-black/28 text-surface backdrop-blur"
                 >
-                  <Maximize4 aria-hidden={true} className="h-4.5 w-4.5" />
+                  <Maximize2 aria-hidden={true} className="h-4.5 w-4.5" />
                 </button>
               </div>
 
@@ -647,7 +636,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
                       className: "h-12 w-12 rounded-[1rem]",
                     })}
                   >
-                    <Trash aria-hidden={true} className="h-4 w-4" />
+                    <Trash2 aria-hidden={true} className="h-4 w-4" />
                   </button>
                 )}
               />
@@ -658,13 +647,13 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
                   className: "h-12 min-w-0 flex-1 rounded-[1rem]",
                 })}
               >
-                <DocumentDownload aria-hidden={true} className="h-4 w-4" />
+                <Download aria-hidden={true} className="h-4 w-4" />
                 دانلود
               </a>
             </div>
             {canCreateFreeVariant ? (
               <ButtonLink href={freeVariantHref} variant="secondary" className="h-12 w-full rounded-[1rem] text-sm">
-                <Refresh aria-hidden={true} className="h-4 w-4" />
+                <RefreshCw aria-hidden={true} className="h-4 w-4" />
                 نسخه دیگر
                 <span className="inline-flex min-h-5 items-center rounded-full border border-accent-soft bg-accent-wash px-2 text-[10px] font-bold leading-none text-accent-deep">
                   رایگان
@@ -672,7 +661,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               </ButtonLink>
             ) : (
               <ButtonLink href={newVersionHref} variant="secondary" className="h-12 w-full rounded-[1rem] text-sm">
-                <Refresh aria-hidden={true} className="h-4 w-4" />
+                <RefreshCw aria-hidden={true} className="h-4 w-4" />
                 نسخه دیگر
               </ButtonLink>
             )}
@@ -698,7 +687,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               aria-label="بستن نمایش تمام صفحه"
               className="absolute left-4 top-[calc(env(safe-area-inset-top)+1rem)] z-20 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/16 bg-white/10 text-white backdrop-blur"
             >
-              <CloseCircle aria-hidden={true} className="h-5 w-5" />
+              <XCircle aria-hidden={true} className="h-5 w-5" />
             </button>
             <div className="pointer-events-none absolute inset-x-4 top-[calc(env(safe-area-inset-top)+1rem)] z-20 flex justify-center px-16">
               <div className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/42 px-2 py-2 text-white/88 backdrop-blur">
@@ -870,7 +859,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
                   aria-label={copiedError ? "خطا کپی شد" : "کپی خطا"}
                   className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/14 bg-white/10 text-surface/82 transition hover:bg-white/16"
                 >
-                  {copiedError ? <TickCircle aria-hidden={true} className="h-4 w-4" /> : <Copy aria-hidden={true} className="h-4 w-4" />}
+                  {copiedError ? <CheckCircle aria-hidden={true} className="h-4 w-4" /> : <Copy aria-hidden={true} className="h-4 w-4" />}
                 </button>
               </div>
               <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-white/10 pt-2 text-[10px] text-surface/72">
@@ -888,12 +877,12 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               type="submit"
               className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[1rem] bg-foreground text-sm font-medium text-surface shadow-[0_20px_34px_-28px_rgba(17,16,14,0.85)] transition hover:bg-[#27231f]"
             >
-              <Refresh aria-hidden={true} className="h-4 w-4" />
+              <RefreshCw aria-hidden={true} className="h-4 w-4" />
               تلاش دوباره
             </button>
           </form>
           <ButtonLink href="/projects" variant="secondary" className="h-11 w-full rounded-[1rem] text-sm">
-            <Gallery aria-hidden={true} className="h-4 w-4" />
+            <Images aria-hidden={true} className="h-4 w-4" />
             پروژه‌ها
           </ButtonLink>
         </ActionDock>

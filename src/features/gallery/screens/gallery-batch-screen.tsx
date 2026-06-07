@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Gallery } from "vuesax-icons-react";
+import { Images } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button";
 import { ImageOverlayPill, JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
@@ -54,7 +54,7 @@ export function GalleryBatchScreen({ batch }: GalleryBatchScreenProps) {
           گالری
         </ButtonLink>
         <ButtonLink href="/projects" variant="studio-secondary" size="sm" className="w-fit rounded-full border border-white/12 bg-white/[0.06] shadow-none">
-          <Gallery aria-hidden={true} className="h-4 w-4" />
+          <Images aria-hidden={true} className="h-4 w-4" />
           پروژه‌ها
         </ButtonLink>
       </div>

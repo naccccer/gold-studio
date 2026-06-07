@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Card, Clock, Danger, ProfileCircle, TickCircle } from "vuesax-icons-react";
+import { CreditCard, Clock, AlertTriangle, User, CheckCircle, UserRound } from "lucide-react";
 import {
   adminDangerActionClass,
   adminPrimaryActionClass,
@@ -82,7 +82,7 @@ export default async function AdminPage() {
       </section>
 
       <div className="grid items-stretch gap-3 xl:grid-cols-2">
-        <AdminSection title="شکست‌های اخیر" eyebrow="نیازمند رسیدگی" action={<Danger className="h-4 w-4 text-danger" />}>
+        <AdminSection title="شکست‌های اخیر" eyebrow="نیازمند رسیدگی" action={<AlertTriangle className="h-4 w-4 text-danger" />}>
           {recentFailures.length === 0 ? (
             <EmptyAdminState>فعلا پروژه ناموفق فعالی وجود ندارد.</EmptyAdminState>
           ) : (
@@ -110,7 +110,7 @@ export default async function AdminPage() {
           )}
         </AdminSection>
 
-        <AdminSection title="درخواست‌های خرید" eyebrow="بسته و اشتراک" action={<Card className="h-4 w-4 text-accent" />}>
+        <AdminSection title="درخواست‌های خرید" eyebrow="بسته و اشتراک" action={<CreditCard className="h-4 w-4 text-accent" />}>
           {pendingPurchases.length === 0 ? (
             <EmptyAdminState>درخواست خرید در انتظار تایید نیست.</EmptyAdminState>
           ) : (
@@ -133,7 +133,7 @@ export default async function AdminPage() {
                   <form action={approvePurchaseRequestAction}>
                     <input type="hidden" name="requestId" value={request.id} />
                     <button className={adminPrimaryActionClass}>
-                      <TickCircle className="h-3.5 w-3.5" />
+                      <CheckCircle className="h-3.5 w-3.5" />
                       تایید
                     </button>
                   </form>
@@ -181,7 +181,7 @@ export default async function AdminPage() {
                 <p className="text-xs text-muted">
                   {user.credits.toLocaleString("fa-IR")} اعتبار · {user._count.projects.toLocaleString("fa-IR")} پروژه
                 </p>
-                <ProfileCircle className="h-4 w-4 text-muted" />
+                <UserRound className="h-4 w-4 text-muted" />
               </AdminRow>
             ))
           )}

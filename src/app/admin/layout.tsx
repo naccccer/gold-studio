@@ -1,16 +1,16 @@
 import Link from "next/link";
-import { ArrowRight2, Box, Card, Category, Gallery, Gift, Home2, Image, Lifebuoy, Profile2User } from "vuesax-icons-react";
+import { ChevronRight, Box, CreditCard, LayoutGrid, Images, Gift, House, Image, LifeBuoy, User, ChevronLeft } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button";
 import { requireAdminSession } from "@/lib/auth/session";
 
 const adminNav = [
-  { href: "/admin", label: "نمای کلی", icon: Home2 },
-  { href: "/admin/projects", label: "پروژه‌ها", icon: Gallery },
+  { href: "/admin", label: "نمای کلی", icon: House },
+  { href: "/admin/projects", label: "پروژه‌ها", icon: Images },
   { href: "/admin/assets", label: "دارایی‌ها", icon: Image },
-  { href: "/admin/users", label: "کاربران", icon: Profile2User },
-  { href: "/admin/packages", label: "پکیج و اعتبار", icon: Card },
-  { href: "/admin/support", label: "پشتیبانی", icon: Lifebuoy },
-  { href: "/admin/styles", label: "سبک‌ها", icon: Category },
+  { href: "/admin/users", label: "کاربران", icon: User },
+  { href: "/admin/packages", label: "پکیج و اعتبار", icon: CreditCard },
+  { href: "/admin/support", label: "پشتیبانی", icon: LifeBuoy },
+  { href: "/admin/styles", label: "سبک‌ها", icon: LayoutGrid },
   { href: "/admin/provider", label: "عملیات AI", icon: Box },
 ];
 
@@ -34,7 +34,7 @@ export default async function AdminLayout({
               <p className="mt-1 max-w-48 text-xs leading-6 text-muted">عملیات، پرداخت، دسترسی و کیفیت تولید</p>
             </div>
             <ButtonLink href="/account" variant="secondary" size="sm" className="shrink-0 lg:mt-4 lg:w-full">
-              <ArrowRight2 aria-hidden="true" className="h-4 w-4" />
+              <ChevronRight aria-hidden="true" className="h-4 w-4" />
               حساب
             </ButtonLink>
           </div>

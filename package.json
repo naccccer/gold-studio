@@ -24,14 +24,19 @@
     "@aws-sdk/client-s3": "^3.1041.0",
     "@prisma/adapter-mariadb": "^6.19.3",
     "@prisma/client": "^6.19.3",
+    "@radix-ui/react-dialog": "^1.1.16",
+    "@radix-ui/react-popover": "^1.1.16",
+    "clsx": "^2.1.1",
     "lucide-react": "^1.14.0",
     "mariadb": "^3.5.2",
+    "motion": "^12.40.0",
     "next": "16.2.4",
     "node-addon-api": "^8.8.0",
     "openai": "^6.34.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "vuesax-icons-react": "^1.0.2"
+    "sonner": "^2.0.7",
+    "vaul": "^1.1.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

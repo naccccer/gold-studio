@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { StaticImageData } from "next/image";
-import { I3DCubeScan } from "vuesax-icons-react";
+import { Loader } from "lucide-react";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 
 type ProcessingCanvasProps = {
@@ -105,7 +105,7 @@ export function ProcessingCanvas({
             <span className="absolute -inset-4 animate-[ovalaLoadingPulse_2.4s_ease-in-out_infinite] rounded-full border border-white/12" />
             <span className="absolute -inset-8 animate-[ovalaLoadingPulse_2.4s_ease-in-out_infinite_600ms] rounded-full border border-accent/18" />
             <span className="absolute inset-2 animate-spin rounded-full border border-white/16 border-t-white/78" />
-            <I3DCubeScan aria-hidden={true} className="h-7 w-7" />
+            <Loader aria-hidden={true} className="h-7 w-7" />
           </span>
         </div>
 

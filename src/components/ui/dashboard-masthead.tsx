@@ -2,37 +2,39 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Coin } from "vuesax-icons-react";
+import { Coins } from "lucide-react";
 import { AppTopBar } from "@/components/ui/app-top-bar";
 import { MobileTabBar } from "@/components/ui/mobile-tab-bar";
+import { cn } from "@/lib/utils/cn";
 
 type DashboardMastheadProps = {
   userLabel: string;
   remainingCredits: number;
 };
 
-const titles: Array<{ match: (pathname: string) => boolean; title: string; parent?: string }> = [
-  { match: (pathname) => pathname === "/projects/new", title: "ابعاد و نوع محصول", parent: "/gallery" },
-  { match: (pathname) => pathname.startsWith("/gallery/batches/"), title: "دسته تولید", parent: "/gallery" },
-  { match: (pathname) => pathname === "/gallery/crop", title: "کراپ", parent: "/gallery" },
-  { match: (pathname) => /^\/gallery\/[^/]+$/.test(pathname), title: "تصویر خام", parent: "/gallery" },
-  { match: (pathname) => pathname.startsWith("/gallery"), title: "گالری" },
-  { match: (pathname) => /^\/projects\/[^/]+$/.test(pathname), title: "نتیجه", parent: "/projects" },
-  { match: (pathname) => pathname === "/projects", title: "پروژه‌ها" },
-  { match: (pathname) => pathname === "/account/profile", title: "حساب کاربری", parent: "/account" },
-  { match: (pathname) => pathname === "/account/referral", title: "کد معرفی", parent: "/account" },
-  { match: (pathname) => pathname === "/account/security", title: "حساب کاربری", parent: "/account" },
-  { match: (pathname) => pathname === "/account/support", title: "پشتیبانی", parent: "/account" },
-  { match: (pathname) => pathname === "/account/faq", title: "سوالات پرتکرار", parent: "/account" },
-  { match: (pathname) => pathname === "/account/output-settings", title: "تنظیمات خروجی", parent: "/account" },
-  { match: (pathname) => pathname === "/account/archive", title: "آرشیو", parent: "/account" },
-  { match: (pathname) => pathname === "/account", title: "حساب" },
-  { match: (pathname) => pathname === "/billing", title: "پلن‌ها", parent: "/account" },
+const ROUTE_TITLES: Array<{ match: (pathname: string) => boolean; title: string; parent?: string }> = [
+  { match: (p) => p === "/projects/new", title: "پروژه جدید", parent: "/gallery" },
+  { match: (p) => p.startsWith("/gallery/batches/"), title: "دسته تولید", parent: "/gallery" },
+  { match: (p) => p === "/gallery/crop", title: "کراپ تصویر", parent: "/gallery" },
+  { match: (p) => /^\/gallery\/[^/]+$/.test(p), title: "تصویر", parent: "/gallery" },
+  { match: (p) => p.startsWith("/gallery"), title: "گالری" },
+  { match: (p) => /^\/projects\/[^/]+$/.test(p), title: "نتیجه", parent: "/projects" },
+  { match: (p) => p === "/projects", title: "پروژه‌ها" },
+  { match: (p) => p === "/account/profile", title: "پروفایل", parent: "/account" },
+  { match: (p) => p === "/account/referral", title: "کد معرفی", parent: "/account" },
+  { match: (p) => p === "/account/security", title: "امنیت", parent: "/account" },
+  { match: (p) => p === "/account/support", title: "پشتیبانی", parent: "/account" },
+  { match: (p) => p === "/account/faq", title: "سوالات پرتکرار", parent: "/account" },
+  { match: (p) => p === "/account/output-settings", title: "تنظیمات خروجی", parent: "/account" },
+  { match: (p) => p === "/account/archive", title: "آرشیو", parent: "/account" },
+  { match: (p) => p === "/account/style-references", title: "نمونه‌ها", parent: "/account" },
+  { match: (p) => p === "/account", title: "حساب" },
+  { match: (p) => p === "/billing", title: "پلن‌ها", parent: "/account" },
   { match: () => true, title: "خانه" },
 ];
 
-function pageContext(pathname: string) {
-  return titles.find((item) => item.match(pathname)) ?? titles[titles.length - 1];
+function resolvePageContext(pathname: string) {
+  return ROUTE_TITLES.find((entry) => entry.match(pathname)) ?? ROUTE_TITLES[ROUTE_TITLES.length - 1];
 }
 
 function CreditBadge({ credits }: { credits: number }) {
@@ -40,10 +42,14 @@ function CreditBadge({ credits }: { credits: number }) {
     <Link
       href="/billing"
       aria-label={`اعتبار باقی‌مانده: ${credits.toLocaleString("fa-IR")}`}
-      className="inline-flex h-10 shrink-0 items-center rounded-full border border-border bg-surface/70 px-3 text-xs font-semibold text-foreground shadow-[var(--shadow-soft)] transition hover:bg-surface focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+      className={cn(
+        "ov-press inline-flex h-9 items-center gap-1.5 rounded-[var(--r-pill)]",
+        "bg-surface border border-border px-3 text-[12px] font-bold text-ink-1",
+        "shadow-[var(--shadow-xs)]",
+      )}
     >
-      <span className="leading-none">{credits.toLocaleString("fa-IR")}</span>
-      <Coin aria-hidden={true} className="mr-1.5 h-3.5 w-3.5 text-muted" />
+      <span className="text-mono">{credits.toLocaleString("fa-IR")}</span>
+      <Coins aria-hidden className="h-3.5 w-3.5 text-champagne-500" strokeWidth={2.2} />
     </Link>
   );
 }
@@ -51,30 +57,27 @@ function CreditBadge({ credits }: { credits: number }) {
 export function DashboardMasthead({ userLabel, remainingCredits }: DashboardMastheadProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const context = pageContext(pathname);
+  const context = resolvePageContext(pathname);
   const isHome = pathname === "/dashboard";
-  const isStudioWizard = pathname === "/projects/new" || pathname === "/gallery/batches/new";
-  const isProjectDarkSurface = isStudioWizard || pathname.startsWith("/gallery/batches/") || /^\/projects\/[^/]+$/.test(pathname);
-  const showBottomNav = !isProjectDarkSurface;
+  const isStudioWizard = pathname === "/projects/new";
+  const isProjectDetail = /^\/projects\/[^/]+$/.test(pathname);
+  const showBottomNav = !isStudioWizard && !pathname.startsWith("/gallery/batches/") && !isProjectDetail;
   const fromBatch = searchParams.get("fromBatch");
-  const backHref = fromBatch && /^\/projects\/[^/]+$/.test(pathname) ? `/gallery/batches/${fromBatch}` : context.parent;
+  const backHref =
+    fromBatch && isProjectDetail ? `/gallery/batches/${fromBatch}` : context.parent;
 
   return (
     <>
       {!isStudioWizard ? (
         <AppTopBar
-          title={undefined}
+          title={isHome ? undefined : context.title}
           backHref={backHref}
           centeredLogo={isHome}
-          framed={!isHome}
-          logoVariant={isHome ? "primary" : isProjectDarkSurface ? "mark-light" : "logo"}
-          tone={isProjectDarkSurface ? "dark" : "light"}
-          action={!isHome && !isProjectDarkSurface ? <CreditBadge credits={remainingCredits} /> : undefined}
-          className={isHome ? "mb-4 px-4" : isProjectDarkSurface ? "mx-4 mb-3" : "mx-4 mb-4"}
+          logoVariant={isHome ? "primary" : "wordmark"}
+          action={!isHome ? <CreditBadge credits={remainingCredits} /> : undefined}
+          className="px-[var(--page-x)]"
         />
       ) : null}
-
-      <span className="sr-only">{userLabel}</span>
 
       {showBottomNav ? (
         <MobileTabBar

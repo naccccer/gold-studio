@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { CloseCircle } from "vuesax-icons-react";
+import { XCircle } from "lucide-react";
 
 type AdminModalProps = {
   title: string;
@@ -56,7 +56,7 @@ export function AdminModal({ title, trigger, children }: AdminModalProps) {
                     aria-label="بستن"
                     className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface-soft text-muted transition hover:text-foreground"
                   >
-                    <CloseCircle className="h-4 w-4" aria-hidden={true} />
+                    <XCircle className="h-4 w-4" aria-hidden={true} />
                   </button>
                 </div>
                 <div className="max-h-[min(78svh,720px)] overflow-y-auto p-4">{children}</div>

@@ -1,4 +1,4 @@
-import { MessageQuestion } from "vuesax-icons-react";
+import { HelpCircle } from "lucide-react";
 import { AccountSubpage, accountCardClass } from "@/features/account/components/account-subpage";
 import { db } from "@/lib/db";
 
@@ -15,7 +15,7 @@ export default async function AccountFaqPage() {
       <section className="space-y-2.5">
         <div className="flex items-center gap-3 px-1">
           <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-wash text-accent-deep">
-            <MessageQuestion aria-hidden={true} className="h-4.5 w-4.5" />
+            <HelpCircle aria-hidden={true} className="h-4.5 w-4.5" />
           </span>
           <h2 className="text-sm font-semibold text-foreground">راهنما</h2>
         </div>

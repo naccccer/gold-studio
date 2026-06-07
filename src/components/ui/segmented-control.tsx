@@ -1,25 +1,33 @@
-import type { ReactNode } from "react";
+"use client";
 
-export type SegmentedControlItem<T extends string> = {
+import type { ReactNode } from "react";
+import { cn } from "@/lib/utils/cn";
+
+export type SegmentedItem<T extends string> = {
   value: T;
   label: ReactNode;
   icon?: ReactNode;
+  description?: ReactNode;
   badge?: ReactNode;
 };
 
 type SegmentedControlProps<T extends string> = {
-  items: SegmentedControlItem<T>[];
+  items: SegmentedItem<T>[];
   value: T;
   onChange: (value: T) => void;
-  columns?: 2 | 3 | 4;
+  columns?: 1 | 2 | 3 | 4 | 5;
   label?: string;
+  ariaLabel?: string;
   className?: string;
+  compact?: boolean;
 };
 
-const columnClasses = {
+const columnClasses: Record<1 | 2 | 3 | 4 | 5, string> = {
+  1: "grid-cols-1",
   2: "grid-cols-2",
   3: "grid-cols-3",
   4: "grid-cols-4",
+  5: "grid-cols-5",
 };
 
 export function SegmentedControl<T extends string>({
@@ -27,14 +35,18 @@ export function SegmentedControl<T extends string>({
   value,
   onChange,
   columns = 3,
-  label,
-  className = "",
+  ariaLabel,
+  className,
+  compact = false,
 }: SegmentedControlProps<T>) {
   return (
-    <div className={["grid gap-2", columnClasses[columns], className].filter(Boolean).join(" ")} role="radiogroup" aria-label={label}>
+    <div
+      role="radiogroup"
+      aria-label={ariaLabel}
+      className={cn("grid gap-2", columnClasses[columns], className)}
+    >
       {items.map((item) => {
         const selected = item.value === value;
-
         return (
           <button
             key={item.value}
@@ -42,16 +54,38 @@ export function SegmentedControl<T extends string>({
             role="radio"
             aria-checked={selected}
             onClick={() => onChange(item.value)}
-            className={[
-              "motion-press inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[var(--radius-lg)] border px-2 text-xs font-semibold focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+            className={cn(
+              "ov-press relative flex w-full flex-col items-start gap-1 rounded-[var(--r-md)]",
+              "border bg-surface text-right",
+              compact ? "min-h-12 px-3 py-2" : "min-h-14 px-3.5 py-3",
               selected
-                ? "border-accent-bright bg-surface text-foreground shadow-[0_14px_26px_-24px_rgba(17,16,14,0.62)]"
-                : "border-white/72 bg-surface/58 text-muted hover:border-border-strong hover:text-foreground",
-            ].join(" ")}
+                ? "border-champagne-400 shadow-[var(--shadow-sm)]"
+                : "border-border hover:border-border-strong",
+            )}
           >
-            {item.icon}
-            <span className="truncate">{item.label}</span>
+            <span
+              className={cn(
+                "flex w-full items-center gap-2",
+                compact ? "text-[12px]" : "text-[13px]",
+                "font-semibold",
+                selected ? "text-ink-1" : "text-ink-2",
+              )}
+            >
+              {item.icon}
+              <span className="truncate">{item.label}</span>
+            </span>
+            {item.description ? (
+              <span className="text-[11px] leading-5 text-ink-3">
+                {item.description}
+              </span>
+            ) : null}
             {item.badge}
+            {selected ? (
+              <span
+                aria-hidden
+                className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-champagne-500"
+              />
+            ) : null}
           </button>
         );
       })}

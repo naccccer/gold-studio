@@ -1,130 +1,102 @@
 "use client";
 
-import { More } from "vuesax-icons-react";
+import * as Popover from "@radix-ui/react-popover";
+import { MoreHorizontal } from "lucide-react";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { cn } from "@/lib/utils/cn";
 
 type ItemContextMenuProps = {
   label: string;
   children: ReactNode;
-  align?: "left" | "right";
-  tone?: "light" | "dark";
-  size?: "md" | "sm";
+  align?: "start" | "end" | "left" | "right";
+  size?: "sm" | "md";
 };
 
-export function ItemContextMenu({ label, children, align = "left", tone = "dark", size = "md" }: ItemContextMenuProps) {
-  const [open, setOpen] = useState(false);
-  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-
-  const updateMenuPosition = useCallback(() => {
-    const rect = buttonRef.current?.getBoundingClientRect();
-    if (!rect) {
-      return;
-    }
-
-    const menuWidth = 208;
-    const gap = 8;
-    const viewportPadding = 12;
-    const frame = buttonRef.current?.closest("[data-ovala-phone-frame]")?.getBoundingClientRect();
-    const horizontalMin = frame ? frame.left + viewportPadding : viewportPadding;
-    const horizontalMax = frame ? frame.right - viewportPadding : window.innerWidth - viewportPadding;
-    const menuHeight = menuRef.current?.offsetHeight ?? 260;
-    const preferredLeft = align === "left" ? rect.left : rect.right - menuWidth;
-    const left = Math.min(Math.max(preferredLeft, horizontalMin), horizontalMax - menuWidth);
-    const preferredTop = rect.bottom + gap;
-    const top =
-      preferredTop + menuHeight > window.innerHeight - viewportPadding
-        ? Math.max(viewportPadding, rect.top - menuHeight - gap)
-        : preferredTop;
-
-    setMenuPosition({ top, left });
-  }, [align]);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    updateMenuPosition();
-
-    function closeOnOutside(event: PointerEvent) {
-      const target = event.target as Node;
-      if (!wrapperRef.current?.contains(target) && !menuRef.current?.contains(target)) {
-        setOpen(false);
-      }
-    }
-
-    function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener("pointerdown", closeOnOutside);
-    document.addEventListener("keydown", closeOnEscape);
-    window.addEventListener("resize", updateMenuPosition);
-    window.addEventListener("scroll", updateMenuPosition, true);
-    return () => {
-      document.removeEventListener("pointerdown", closeOnOutside);
-      document.removeEventListener("keydown", closeOnEscape);
-      window.removeEventListener("resize", updateMenuPosition);
-      window.removeEventListener("scroll", updateMenuPosition, true);
-    };
-  }, [open, updateMenuPosition]);
-
-  const buttonTone =
-    tone === "dark"
-      ? "border-white/22 bg-black/42 text-surface backdrop-blur hover:bg-black/58"
-      : "border-border bg-surface/92 text-foreground shadow-[var(--shadow-soft)] backdrop-blur hover:bg-surface";
+export function ItemContextMenu({ label, children, align = "end", size = "md" }: ItemContextMenuProps) {
+  const buttonSize = size === "sm" ? "h-8 w-8" : "h-10 w-10";
+  const iconSize = size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4";
+  const popoverAlign = align === "left" ? "start" : align === "right" ? "end" : align;
 
   return (
-    <div
-      ref={wrapperRef}
-      className="relative z-20"
-      dir="rtl"
-      onClick={(event) => event.stopPropagation()}
-      onPointerDown={(event) => event.stopPropagation()}
-    >
-      <button
-        ref={buttonRef}
-        type="button"
-        aria-label={label}
-        aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
-        className={[
-          "motion-press inline-flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
-          size === "sm" ? "h-8 w-8" : "h-11 w-11",
-        ].join(" ")}
-      >
-        <span className={`motion-state inline-flex ${size === "sm" ? "h-7 w-7" : "h-7 w-7"} items-center justify-center rounded-full border ${buttonTone}`}>
-          <More aria-hidden={true} className="h-3 w-3" />
-        </span>
-      </button>
-      {open && menuPosition ? createPortal(
-        <div
-          ref={menuRef}
+    <Popover.Root>
+      <Popover.Trigger asChild>
+        <button
+          type="button"
+          aria-label={label}
+          className={cn(
+            "ov-press inline-flex items-center justify-center rounded-[var(--r-pill)]",
+            "bg-surface/80 backdrop-blur border border-border-hairline",
+            "text-ink-2 hover:text-ink-1 hover:bg-surface",
+            "shadow-[var(--shadow-xs)]",
+            buttonSize,
+          )}
+        >
+          <MoreHorizontal aria-hidden className={iconSize} strokeWidth={2.2} />
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          align={popoverAlign}
+          sideOffset={6}
           dir="rtl"
-          onClick={(event) => event.stopPropagation()}
-          onPointerDown={(event) => event.stopPropagation()}
-          style={{ top: menuPosition.top, left: menuPosition.left }}
-          className={[
-            "motion-menu fixed z-50 w-52 overflow-hidden rounded-[var(--radius-lg)] border border-border/70 bg-surface p-1.5 text-right text-xs text-foreground shadow-[var(--shadow-menu)]",
-          ].join(" ")}
+          className={cn(
+            "z-50 min-w-[12rem] rounded-[var(--r-md)] border border-border bg-surface p-1.5",
+            "shadow-[var(--shadow-lg)]",
+            "data-[state=open]:animate-[ov-fade-in_var(--d-base)_var(--ease-out)]",
+          )}
         >
           {children}
-        </div>,
-        document.body,
-      ) : null}
-    </div>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }
 
-export const contextMenuItemClasses =
-  "motion-state flex min-h-11 w-full items-center justify-start gap-2 rounded-[var(--radius-md)] px-2.5 py-2 text-right text-xs font-semibold text-foreground hover:bg-surface-soft focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
+export function ContextMenuItem({
+  children,
+  onSelect,
+  danger = false,
+  className,
+}: {
+  children: ReactNode;
+  onSelect?: () => void;
+  danger?: boolean;
+  className?: string;
+}) {
+  return (
+    <Popover.Close asChild>
+      <button
+        type="button"
+        onClick={onSelect}
+        className={cn(
+          "ov-press flex w-full items-center justify-start gap-2 rounded-[var(--r-sm)]",
+          "min-h-10 px-3 text-right text-[13px] font-semibold",
+          danger
+            ? "text-danger hover:bg-danger-soft"
+            : "text-ink-1 hover:bg-surface-soft",
+          "focus-visible:outline-none focus-visible:[box-shadow:var(--focus-ring)]",
+          className,
+        )}
+      >
+        {children}
+      </button>
+    </Popover.Close>
+  );
+}
 
-export const contextMenuDangerItemClasses =
-  "motion-state flex min-h-11 w-full items-center justify-start gap-2 rounded-[var(--radius-md)] px-2.5 py-2 text-right text-xs font-semibold text-danger hover:bg-danger-soft focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
+export function ContextMenuSeparator() {
+  return <div className="my-1 h-px bg-border-hairline" role="separator" />;
+}
+
+// Backward-compat: legacy classnames for screens still using the old API
+export const contextMenuItemClasses = cn(
+  "ov-press flex w-full items-center justify-start gap-2 rounded-[var(--r-sm)]",
+  "min-h-10 px-3 text-right text-[13px] font-semibold",
+  "text-ink-1 hover:bg-surface-soft",
+  "focus-visible:outline-none focus-visible:[box-shadow:var(--focus-ring)]",
+);
+
+export const contextMenuDangerItemClasses = cn(
+  contextMenuItemClasses,
+  "text-danger hover:bg-danger-soft",
+);

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CloseCircle, DocumentDownload, Edit2, Eye, GalleryAdd, Refresh, TickCircle, Trash } from "vuesax-icons-react";
+import { XCircle, Download, Pencil, Eye, ImagePlus, RefreshCw, CheckCircle, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { ActionDock } from "@/components/ui/action-dock";
 import { Button, IconButton, buttonClasses } from "@/components/ui/button";
@@ -132,7 +132,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                       </Link>
                       {selected ? (
                           <span className="motion-reveal-soft absolute right-2.5 top-2.5 z-20 inline-flex h-7 w-7 items-center justify-center rounded-full bg-foreground text-surface">
-                          <TickCircle aria-hidden={true} className="h-4 w-4" />
+                          <CheckCircle aria-hidden={true} className="h-4 w-4" />
                         </span>
                       ) : null}
                       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/58 via-black/18 via-34% to-transparent px-3 pb-2.5 pt-5">
@@ -165,7 +165,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                               aria-label="تایید نام پروژه"
                               className="motion-press inline-flex h-5 w-5 items-center justify-center rounded-full text-accent-bright"
                             >
-                              <TickCircle aria-hidden={true} className="h-4 w-4" />
+                              <CheckCircle aria-hidden={true} className="h-4 w-4" />
                             </button>
                             <button
                               type="button"
@@ -173,7 +173,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                               aria-label="انصراف از ویرایش نام پروژه"
                               className="motion-press inline-flex h-5 w-5 items-center justify-center rounded-full text-surface/72"
                             >
-                              <CloseCircle aria-hidden={true} className="h-4 w-4" />
+                              <XCircle aria-hidden={true} className="h-4 w-4" />
                             </button>
                           </form>
                         ) : (
@@ -194,7 +194,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                                 </Link>
                                 {project.resultImageUrl ? (
                                   <a href={project.resultImageUrl} download className={contextMenuItemClasses}>
-                                    <DocumentDownload aria-hidden={true} className="h-3.5 w-3.5" />
+                                    <Download aria-hidden={true} className="h-3.5 w-3.5" />
                                     دانلود خروجی
                                   </a>
                                 ) : null}
@@ -202,7 +202,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                                   <form action={saveProjectResultAsStyleReferenceAction}>
                                     <input type="hidden" name="projectId" value={project.id} />
                                     <button type="submit" className={contextMenuItemClasses}>
-                                      <GalleryAdd aria-hidden={true} className="h-3.5 w-3.5" />
+                                      <ImagePlus aria-hidden={true} className="h-3.5 w-3.5" />
                                       ذخیره در نمونه‌ها
                                     </button>
                                   </form>
@@ -211,13 +211,13 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                                   href={project.sourceAssetId ? `/projects/new?assetId=${project.sourceAssetId}` : "/projects/new"}
                                   className={contextMenuItemClasses}
                                 >
-                                  <Refresh aria-hidden={true} className="h-3.5 w-3.5" />
+                                  <RefreshCw aria-hidden={true} className="h-3.5 w-3.5" />
                                   نسخه جدید
                                 </Link>
                                 <form action={renameProjectAction} className="space-y-1.5 px-1 py-1.5">
                                   <input type="hidden" name="projectId" value={project.id} />
                                   <label className="flex items-center gap-1.5 text-[11px] font-medium text-muted">
-                                    <Edit2 aria-hidden={true} className="h-3.5 w-3.5" />
+                                    <Pencil aria-hidden={true} className="h-3.5 w-3.5" />
                                     تغییر نام
                                   </label>
                                   <div className="flex gap-1.5">
@@ -239,7 +239,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                                   confirmLabel="انتقال به آرشیو"
                                   trigger={(open) => (
                                     <button type="button" onClick={open} className={contextMenuDangerItemClasses}>
-                                      <Trash aria-hidden={true} className="h-3.5 w-3.5" />
+                                      <Trash2 aria-hidden={true} className="h-3.5 w-3.5" />
                                       حذف
                                     </button>
                                   )}
@@ -262,7 +262,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                           className: "absolute left-3 top-3 z-20 h-6 w-6 rounded-full bg-surface/82 p-0 text-accent-deep backdrop-blur shadow-[0_10px_20px_-16px_rgba(17,16,14,0.75)]",
                         })}
                       >
-                        <Refresh aria-hidden={true} className="h-3.5 w-3.5" />
+                        <RefreshCw aria-hidden={true} className="h-3.5 w-3.5" />
                       </Link>
                     ) : null}
                   </div>
@@ -282,12 +282,12 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                 confirmLabel="انتقال به آرشیو"
                 trigger={(open) => (
                   <IconButton type="button" onClick={open} label="حذف" variant="danger" className="h-11 w-11">
-                    <Trash aria-hidden={true} className="h-4 w-4" />
+                    <Trash2 aria-hidden={true} className="h-4 w-4" />
                   </IconButton>
                 )}
               />
               <Button type="button" variant="secondary" className="h-12 w-full rounded-[1rem]" onClick={() => setSelectedIds([])}>
-                <CloseCircle aria-hidden={true} className="h-4 w-4" />
+                <XCircle aria-hidden={true} className="h-4 w-4" />
                 لغو
               </Button>
             </>

@@ -1,4 +1,4 @@
-import { Lifebuoy, MessageQuestion } from "vuesax-icons-react";
+import { LifeBuoy, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AccountSubpage,
@@ -43,7 +43,7 @@ export default async function AccountSupportPage({ searchParams }: SupportPagePr
         <section className={`${accountCardClass} space-y-3`}>
           <div className="flex items-center gap-3">
             <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-wash text-accent-deep">
-              <Lifebuoy aria-hidden={true} className="h-4.5 w-4.5" />
+              <LifeBuoy aria-hidden={true} className="h-4.5 w-4.5" />
             </span>
             <h2 className="text-sm font-semibold text-foreground">راه ارتباط سریع</h2>
           </div>
@@ -59,7 +59,7 @@ export default async function AccountSupportPage({ searchParams }: SupportPagePr
       <form action={createSupportTicketAction} className={`${accountCardClass} space-y-3`}>
         <div className="flex items-center gap-3">
           <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-wash text-accent-deep">
-            <MessageQuestion aria-hidden={true} className="h-4.5 w-4.5" />
+            <HelpCircle aria-hidden={true} className="h-4.5 w-4.5" />
           </span>
           <h2 className="text-sm font-semibold text-foreground">تیکت جدید</h2>
         </div>

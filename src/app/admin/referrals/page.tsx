@@ -1,4 +1,4 @@
-import { Gift, Ticket } from "vuesax-icons-react";
+import { Gift, Ticket } from "lucide-react";
 import {
   adminInputClass,
   adminLabelClass,

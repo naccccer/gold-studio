@@ -1,4 +1,4 @@
-import { Save2 } from "vuesax-icons-react";
+import { Save } from "lucide-react";
 import { updateUserCreditsAction } from "@/features/admin/actions";
 import { adminInputClass, adminPrimaryActionClass } from "@/features/admin/components/admin-ui";
 
@@ -23,7 +23,7 @@ export function CreditsForm({ userId, credits }: CreditsFormProps) {
         type="submit"
         className={adminPrimaryActionClass}
       >
-        <Save2 aria-hidden="true" className="h-3.5 w-3.5" />
+        <Save aria-hidden="true" className="h-3.5 w-3.5" />
         ذخیره
       </button>
     </form>

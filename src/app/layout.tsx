@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
 const vazirmatn = localFont({
@@ -50,7 +51,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fa" dir="rtl" className={`${vazirmatn.variable} ${doran.variable} h-full`} suppressHydrationWarning>
-      <body className="min-h-screen bg-background text-foreground antialiased">{children}</body>
+      <body className="min-h-screen bg-bg text-ink-1 antialiased">
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }

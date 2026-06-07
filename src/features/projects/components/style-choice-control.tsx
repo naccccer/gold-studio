@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown2 } from "vuesax-icons-react";
+import { ChevronsDown } from "lucide-react";
 import type { StyleControlOption } from "@/features/projects/presets";
 
 const optionSwatches: Record<string, string> = {
@@ -49,7 +49,7 @@ export function StyleChoiceControl({ controlKey, label, options, value, onChange
             <OptionSwatch value={selected?.value ?? ""} />
             <span className="truncate">{selected?.label}</span>
           </span>
-          <ArrowDown2 aria-hidden={true} className="h-3.5 w-3.5 shrink-0 text-surface/72 transition group-open:rotate-180" />
+          <ChevronsDown aria-hidden={true} className="h-3.5 w-3.5 shrink-0 text-surface/72 transition group-open:rotate-180" />
         </summary>
         <div className="absolute inset-x-0 top-[calc(100%+0.35rem)] z-30 max-h-64 overflow-auto rounded-[0.9rem] border border-white/14 bg-[#171411] p-1.5 shadow-[0_22px_44px_-28px_rgba(0,0,0,0.85)]">
           {options.map((item) => (

@@ -1,4 +1,4 @@
-import { Danger, TickCircle } from "vuesax-icons-react";
+import { AlertTriangle, CheckCircle } from "lucide-react";
 import {
   adminInputClass,
   adminLabelClass,
@@ -68,7 +68,7 @@ export default async function AdminProviderPage() {
                 {label}
               </p>
               <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-foreground">
-                {value === "تنظیم نشده" ? <Danger className="h-4 w-4 text-danger" /> : <TickCircle className="h-4 w-4 text-accent" />}
+                {value === "تنظیم نشده" ? <AlertTriangle className="h-4 w-4 text-danger" /> : <CheckCircle className="h-4 w-4 text-accent" />}
                 {value}
               </p>
             </div>

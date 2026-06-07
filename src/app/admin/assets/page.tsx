@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Archive } from "vuesax-icons-react";
+import { Archive } from "lucide-react";
 import {
   adminDangerActionClass,
   adminInputClass,

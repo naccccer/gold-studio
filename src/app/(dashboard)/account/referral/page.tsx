@@ -1,4 +1,4 @@
-import { Gift } from "vuesax-icons-react";
+import { Gift } from "lucide-react";
 import {
   AccountSubpage,
   accountCardClass,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Camera, CloseCircle, DocumentUpload, Edit2, TickCircle, Trash } from "vuesax-icons-react";
+import { Camera, XCircle, Upload, Pencil, CheckCircle, Trash2 } from "lucide-react";
 import { buttonClasses, Button, IconButton } from "@/components/ui/button";
 import { ConfirmAction } from "@/components/ui/confirm-action";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -95,7 +95,7 @@ export function StyleReferenceGalleryScreen({ assets, error }: StyleReferenceGal
                       </div>
                       {selected ? (
                         <span className="absolute left-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full bg-foreground text-surface">
-                          <TickCircle aria-hidden={true} className="h-4 w-4" />
+                          <CheckCircle aria-hidden={true} className="h-4 w-4" />
                         </span>
                       ) : null}
                     </JewelryImageFrame>
@@ -105,7 +105,7 @@ export function StyleReferenceGalleryScreen({ assets, error }: StyleReferenceGal
                       <form action={renameStyleReferenceAction} className="space-y-1.5 px-1 py-1.5">
                         <input type="hidden" name="assetId" value={asset.id} />
                         <label className="flex items-center gap-1.5 text-[11px] font-medium text-muted">
-                          <Edit2 aria-hidden={true} className="h-3.5 w-3.5" />
+                          <Pencil aria-hidden={true} className="h-3.5 w-3.5" />
                           تغییر نام
                         </label>
                         <div className="flex gap-1.5">
@@ -132,7 +132,7 @@ export function StyleReferenceGalleryScreen({ assets, error }: StyleReferenceGal
                         title="آیا از حذف عکس نمونه مطمئنید؟"
                         trigger={(open) => (
                           <button type="button" onClick={open} className={contextMenuDangerItemClasses}>
-                            <Trash aria-hidden={true} className="h-3.5 w-3.5" />
+                            <Trash2 aria-hidden={true} className="h-3.5 w-3.5" />
                             حذف
                           </button>
                         )}
@@ -150,7 +150,7 @@ export function StyleReferenceGalleryScreen({ assets, error }: StyleReferenceGal
         {selectedCount === 0 ? (
           <div className="pointer-events-auto grid grid-cols-2 gap-3 rounded-[1.25rem] border border-dashed border-accent/58 bg-surface/95 p-3 shadow-[0_18px_42px_-30px_rgba(17,16,14,0.32)] backdrop-blur">
             <label htmlFor="style-reference-file-input" className={buttonClasses({ className: "h-12 w-full rounded-[1rem]" })}>
-              <DocumentUpload aria-hidden={true} className="h-4 w-4" />
+              <Upload aria-hidden={true} className="h-4 w-4" />
               آپلود نمونه
             </label>
             <label
@@ -169,7 +169,7 @@ export function StyleReferenceGalleryScreen({ assets, error }: StyleReferenceGal
               title={selectedCount === 1 ? "آیا از حذف عکس نمونه مطمئنید؟" : "آیا از حذف عکس‌های نمونه مطمئنید؟"}
               trigger={(open) => (
                 <IconButton type="button" onClick={open} label="حذف" variant="danger" className="h-11 w-11">
-                  <Trash aria-hidden={true} className="h-4 w-4" />
+                  <Trash2 aria-hidden={true} className="h-4 w-4" />
                 </IconButton>
               )}
             />
@@ -179,7 +179,7 @@ export function StyleReferenceGalleryScreen({ assets, error }: StyleReferenceGal
               onClick={() => setSelectedIds([])}
               className="h-11 w-full rounded-full border border-foreground/18 bg-surface text-xs font-bold text-foreground shadow-[0_12px_24px_-20px_rgba(17,16,14,0.68)] hover:bg-surface-soft"
             >
-              <CloseCircle aria-hidden={true} className="h-4 w-4" />
+              <XCircle aria-hidden={true} className="h-4 w-4" />
               لغو
             </Button>
           </div>

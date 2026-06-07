@@ -1,20 +1,5 @@
 import Link from "next/link";
-import {
-  Copy,
-  Eye,
-  EyeSlash,
-  Gallery,
-  Add,
-  BoxAdd,
-  Card,
-  Layer,
-  ReceiptText,
-  Save2,
-  ShieldTick,
-  TickCircle,
-  Trash,
-  Wallet,
-} from "vuesax-icons-react";
+import { Copy, Eye, EyeOff, Images, Plus, PackagePlus, CreditCard, Layers, Receipt, Save, ShieldCheck, CheckCircle, Trash2, Wallet, ReceiptText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   adminCompactInputClass,
@@ -116,7 +101,7 @@ function SectionHeader({
   title,
   eyebrow,
 }: {
-  icon: typeof Layer;
+  icon: typeof Layers;
   title: string;
   eyebrow: string;
 }) {
@@ -149,7 +134,7 @@ function PackageCreateForm({
       <input type="hidden" name="sortOrder" value={defaultSortOrder} />
 
       <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
-        <Add aria-hidden="true" className="h-4 w-4 text-accent-deep" />
+        <Plus aria-hidden="true" className="h-4 w-4 text-accent-deep" />
         {isSubscription ? "افزودن پکیج ماهانه" : "افزودن اعتبار جداگانه"}
       </div>
 
@@ -183,7 +168,7 @@ function PackageCreateForm({
         </label>
         <ColorPresetPicker />
         <Button type="submit" size="sm" className="h-9 rounded-[var(--radius-sm)]">
-          <BoxAdd className="h-4 w-4" />
+          <PackagePlus className="h-4 w-4" />
           ساخت
         </Button>
       </div>
@@ -204,7 +189,7 @@ function PackageRecord({
 }) {
   const isSubscription = billingPackage.type === "SUBSCRIPTION";
   const activeLabel = billingPackage.isActive ? "فعال" : "پنهان";
-  const ActiveIcon = billingPackage.isActive ? Eye : EyeSlash;
+  const ActiveIcon = billingPackage.isActive ? Eye : EyeOff;
   const usageCount = isSubscription ? billingPackage._count.subscriptions : billingPackage._count.creditEvents;
 
   return (
@@ -280,7 +265,7 @@ function PackageRecord({
         <div className="grid gap-2 border-t border-border/60 pt-2.5 sm:grid-cols-4 xl:flex xl:flex-col xl:border-r xl:border-t-0 xl:pr-2.5 xl:pt-0">
           <ToggleLine defaultChecked={billingPackage.isActive} label="فعال" />
           <Button type="submit" size="sm" className="h-9 rounded-[var(--radius-sm)] xl:w-full">
-            <Save2 className="h-4 w-4" />
+            <Save className="h-4 w-4" />
             ذخیره
           </Button>
           <button
@@ -294,7 +279,7 @@ function PackageRecord({
             formAction={deleteBillingPackageAction}
             className={`${adminDangerActionClass} xl:mt-auto xl:w-full`}
           >
-            <Trash className="h-3.5 w-3.5" />
+            <Trash2 className="h-3.5 w-3.5" />
             حذف
           </button>
         </div>
@@ -342,7 +327,7 @@ function PendingReceipts({ pendingPurchases, pendingCount }: { pendingPurchases:
                 <p>{formatIrr(request.amount, request.currency)} · {formatAdminDate(request.createdAt)}</p>
                 {storageUrlFromKeyOrUrl(request.receiptStorageKey, request.receiptImageUrl) ? (
                   <a href={storageUrlFromKeyOrUrl(request.receiptStorageKey, request.receiptImageUrl) ?? ""} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 font-semibold text-accent-deep">
-                    <Gallery className="h-3.5 w-3.5" />
+                    <Images className="h-3.5 w-3.5" />
                     مشاهده رسید
                   </a>
                 ) : (
@@ -353,7 +338,7 @@ function PendingReceipts({ pendingPurchases, pendingCount }: { pendingPurchases:
                 <form action={approvePurchaseRequestAction}>
                   <input type="hidden" name="requestId" value={request.id} />
                   <button className={adminPrimaryActionClass}>
-                    <TickCircle className="h-3.5 w-3.5" />
+                    <CheckCircle className="h-3.5 w-3.5" />
                     تایید
                   </button>
                 </form>
@@ -440,7 +425,7 @@ export default async function AdminPackagesPage() {
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-start gap-3">
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] bg-foreground text-accent-bright">
-              <Card aria-hidden="true" className="h-4 w-4" />
+              <CreditCard aria-hidden="true" className="h-4 w-4" />
             </span>
             <div>
               <p className="text-[11px] font-semibold text-accent-deep">تنظیمات مالی قابل نمایش به کاربر</p>
@@ -468,7 +453,7 @@ export default async function AdminPackagesPage() {
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-3 lg:col-span-2">
             <ToggleLine defaultChecked={paymentSettings?.isActive ?? true} label="نمایش کارت‌به‌کارت به کاربر" />
             <Button type="submit" size="sm" className="h-9 rounded-[var(--radius-sm)]">
-              <ShieldTick className="h-4 w-4" />
+              <ShieldCheck className="h-4 w-4" />
               ذخیره اطلاعات پرداخت
             </Button>
           </div>
@@ -478,7 +463,7 @@ export default async function AdminPackagesPage() {
       <PendingReceipts pendingPurchases={pendingPurchases} pendingCount={pendingCount} />
 
       <section className="rounded-[var(--radius-lg)] border border-border/80 bg-surface p-4 shadow-[var(--shadow-soft)]">
-        <SectionHeader icon={Layer} title="پکیج‌ها" eyebrow="اشتراک ماهانه با خروجی هر دوره" />
+        <SectionHeader icon={Layers} title="پکیج‌ها" eyebrow="اشتراک ماهانه با خروجی هر دوره" />
         <div className="mt-4 space-y-3">
           {subscriptions.length === 0 ? (
             <EmptyAdminState>پکیجی ثبت نشده است.</EmptyAdminState>
@@ -492,7 +477,7 @@ export default async function AdminPackagesPage() {
       <section className="rounded-[var(--radius-lg)] border border-dashed border-border-strong bg-surface-soft p-4">
         <SectionHeader icon={Wallet} title="اعتبارهای جداگانه" eyebrow="افزایش موجودی؛ جدا از اشتراک ماهانه" />
         <div className="mt-3 flex items-start gap-2 rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2 text-xs leading-6 text-muted">
-          <ShieldTick aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-accent-deep" />
+          <ShieldCheck aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-accent-deep" />
           این موارد اشتراک ماهانه نیستند؛ بعد از تایید رسید، فقط به موجودی اعتبار کاربر اضافه می‌شوند.
         </div>
         <div className="mt-4 space-y-3">

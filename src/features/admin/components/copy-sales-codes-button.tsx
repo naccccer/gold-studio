@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Copy, TickCircle } from "vuesax-icons-react";
+import { Copy, CheckCircle } from "lucide-react";
 import { adminSecondaryActionClass } from "@/features/admin/components/admin-ui";
 
 export function CopySalesCodesButton({ codes }: { codes: string[] }) {
@@ -24,7 +24,7 @@ export function CopySalesCodesButton({ codes }: { codes: string[] }) {
       className={`${adminSecondaryActionClass} disabled:cursor-not-allowed disabled:opacity-50`}
       aria-label={copied ? "کدها کپی شد" : "کپی کدهای مصرف‌نشده"}
     >
-      {copied ? <TickCircle aria-hidden="true" className="h-3.5 w-3.5" /> : <Copy aria-hidden="true" className="h-3.5 w-3.5" />}
+      {copied ? <CheckCircle aria-hidden="true" className="h-3.5 w-3.5" /> : <Copy aria-hidden="true" className="h-3.5 w-3.5" />}
       {copied ? "کپی شد" : "کپی همه"}
     </button>
   );

@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
-import { ArrowLeft, Eye, EyeSlash, LoginCurve, UserAdd, UserSearch, type Icon } from "vuesax-icons-react";
+import { useActionState, useState, type ComponentType } from "react";
+import { ChevronLeft, Eye, EyeOff, LogIn, UserPlus, UserSearch, type LucideIcon } from "lucide-react";
 import { AuthImageBackdrop } from "@/components/ui/auth-image-backdrop";
 import { BrandLogo } from "@/components/ui/brand-logo";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ type AuthFieldProps = {
   autoComplete: string;
   placeholder?: string;
   dir?: "rtl" | "ltr";
-  icon: Icon;
+  icon: LucideIcon;
 };
 
 function AuthField({ label, icon: Icon, dir = "rtl", ...props }: AuthFieldProps) {
@@ -39,7 +39,7 @@ function AuthField({ label, icon: Icon, dir = "rtl", ...props }: AuthFieldProps)
         {label}
       </span>
       <span className="flex h-7 items-center gap-2" dir="ltr">
-        <Icon aria-hidden="true" size={16} color="#9a8f80" variant="Linear" className="shrink-0" />
+        <Icon aria-hidden="true" className="shrink-0" />
         <input
           {...props}
           dir={dir}
@@ -61,7 +61,7 @@ export function AuthForm({
   const [state, formAction, pending] = useActionState(action, INITIAL_STATE);
   const [showPassword, setShowPassword] = useState(false);
   const isSignup = mode === "signup";
-  const SubmitIcon = isSignup ? UserAdd : LoginCurve;
+  const SubmitIcon = isSignup ? UserPlus : LogIn;
 
   return (
     <main className="flex min-h-svh justify-center overflow-hidden bg-[#efe6d8] text-right text-foreground md:bg-[radial-gradient(circle_at_top,#fffaf0_0%,#f6f1e8_42%,#e8dece_100%)] md:py-6">
@@ -94,9 +94,9 @@ export function AuthForm({
                 className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#8b8173] transition hover:bg-[#eee7dc] hover:text-[#24201b]"
               >
                 {showPassword ? (
-                  <EyeSlash aria-hidden="true" size={16} color="currentColor" variant="Linear" />
+                  <EyeOff aria-hidden="true" />
                 ) : (
-                  <Eye aria-hidden="true" size={16} color="currentColor" variant="Linear" />
+                  <Eye aria-hidden="true" />
                 )}
               </button>
               <input
@@ -120,7 +120,7 @@ export function AuthForm({
           <div className="pt-1">
             <Button type="submit" disabled={pending} size="full" className="h-12 rounded-[1rem]">
               {pending ? "چند لحظه..." : submitLabel}
-              <SubmitIcon aria-hidden="true" size={16} color="currentColor" variant="Linear" />
+              <SubmitIcon aria-hidden="true" />
             </Button>
           </div>
 
@@ -128,7 +128,7 @@ export function AuthForm({
             <div className="flex items-center justify-between px-1 text-xs font-medium text-surface/78">
               <Link href={secondaryHref} className="inline-flex items-center gap-1 text-surface transition hover:text-surface/82">
                 <span>{secondaryLabel}</span>
-                <ArrowLeft aria-hidden="true" size={14} color="currentColor" variant="Linear" />
+                <ChevronLeft aria-hidden="true" />
               </Link>
               <span className="text-surface/72">فراموشی رمز</span>
             </div>
@@ -141,7 +141,7 @@ export function AuthForm({
                 {secondaryPrefix}{" "}
                 <Link href={secondaryHref} className="inline-flex items-center gap-1 text-surface">
                   {secondaryLabel}
-                  <ArrowLeft aria-hidden="true" size={14} color="currentColor" variant="Linear" />
+                  <ChevronLeft aria-hidden="true" />
                 </Link>
               </p>
             </div>

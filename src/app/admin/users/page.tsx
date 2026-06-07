@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Add, Key, Refresh, Save2, SearchNormal1, ShieldTick, TickCircle, UserEdit, Wallet } from "vuesax-icons-react";
+import { Plus, Key, RefreshCw, Save, Search, ShieldCheck, CheckCircle, UserCog, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   adminDangerActionClass,
@@ -128,7 +128,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
             eyebrow="جست‌وجو و انتخاب پرونده"
             action={
               <a href="#new-user" className="inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-xs font-medium">
-                <Add aria-hidden="true" className="h-3.5 w-3.5" />
+                <Plus aria-hidden="true" className="h-3.5 w-3.5" />
                 کاربر جدید
               </a>
             }
@@ -141,7 +141,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
                 className={inputClass}
               />
               <Button type="submit" size="sm" className="shrink-0">
-                <SearchNormal1 aria-hidden="true" className="h-4 w-4" />
+                <Search aria-hidden="true" className="h-4 w-4" />
                 جست‌وجو
               </Button>
             </form>
@@ -203,7 +203,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
                 </Field>
               </div>
               <Button type="submit" size="sm">
-                <Add aria-hidden="true" className="h-4 w-4" />
+                <Plus aria-hidden="true" className="h-4 w-4" />
                 ساخت کاربر
               </Button>
             </form>
@@ -226,7 +226,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
               <div className="space-y-3">
                 <form action={updateAdminUserIdentityAction} className={formPanelClass}>
                   <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                    <UserEdit aria-hidden="true" className="h-4 w-4" />
+                    <UserCog aria-hidden="true" className="h-4 w-4" />
                     مشخصات
                   </div>
                   <input type="hidden" name="userId" value={selectedUser.id} />
@@ -242,7 +242,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
                     </Field>
                   </div>
                   <Button type="submit" size="sm">
-                    <Save2 aria-hidden="true" className="h-4 w-4" />
+                    <Save aria-hidden="true" className="h-4 w-4" />
                     ذخیره مشخصات
                   </Button>
                 </form>
@@ -263,7 +263,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
 
                 <form action={updateUserRoleAction} className={formPanelClass}>
                   <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                    <ShieldTick aria-hidden="true" className="h-4 w-4" />
+                    <ShieldCheck aria-hidden="true" className="h-4 w-4" />
                     نقش
                   </div>
                   <input type="hidden" name="userId" value={selectedUser.id} />
@@ -295,7 +295,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
                       <input name="reason" placeholder="دلیل تغییر اعتبار" className={inputClass} />
                     </Field>
                     <Button type="submit" size="sm">
-                      <Save2 aria-hidden="true" className="h-4 w-4" />
+                      <Save aria-hidden="true" className="h-4 w-4" />
                       ثبت اعتبار
                     </Button>
                   </div>
@@ -328,7 +328,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
 
                 <form action={assignSubscriptionAction} className={formPanelClass}>
                   <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                    <ShieldTick aria-hidden="true" className="h-4 w-4" />
+                    <ShieldCheck aria-hidden="true" className="h-4 w-4" />
                     اشتراک
                   </div>
                   <input type="hidden" name="userId" value={selectedUser.id} />
@@ -373,7 +373,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
                         <form action={approvePurchaseRequestAction}>
                           <input type="hidden" name="requestId" value={request.id} />
                           <button className={adminPrimaryActionClass}>
-                            <TickCircle aria-hidden="true" className="h-3.5 w-3.5" />
+                            <CheckCircle aria-hidden="true" className="h-3.5 w-3.5" />
                             تایید
                           </button>
                         </form>
@@ -415,7 +415,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
                       <form action={resetSubscriptionPeriodAction}>
                         <input type="hidden" name="subscriptionId" value={subscription.id} />
                         <button className="inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-xs">
-                          <Refresh aria-hidden="true" className="h-3.5 w-3.5" />
+                          <RefreshCw aria-hidden="true" className="h-3.5 w-3.5" />
                           تمدید دوره
                         </button>
                       </form>

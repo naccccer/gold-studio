@@ -1,18 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ComponentType } from "react";
-import {
-  ArrowLeft2,
-  ArchiveBook,
-  Card,
-  Gallery,
-  Gift,
-  Lifebuoy,
-  MessageQuestion,
-  ReceiptText,
-  ShieldSecurity,
-  UserEdit,
-} from "vuesax-icons-react";
+import { ChevronLeft, Archive, CreditCard, Images, Gift, LifeBuoy, HelpCircle, Receipt, ReceiptText, Shield, UserCog } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button";
 import { PageShell } from "@/components/ui/page-shell";
 import { StatusPill } from "@/components/ui/status-pill";
@@ -47,9 +36,9 @@ type AccountRowItem = {
 };
 
 const rowItems: AccountRowItem[] = [
-  { title: "حساب کاربری", href: "/account/profile", icon: UserEdit },
-  { title: "گالری نمونه‌ها", href: "/account/style-references", icon: Gallery },
-  { title: "آرشیو", href: "/account/archive", icon: ArchiveBook },
+  { title: "حساب کاربری", href: "/account/profile", icon: UserCog },
+  { title: "گالری نمونه‌ها", href: "/account/style-references", icon: Images },
+  { title: "آرشیو", href: "/account/archive", icon: Archive },
   { title: "کد معرفی", href: "/account/referral", icon: Gift },
 ];
 
@@ -105,7 +94,7 @@ function AccountRow({ item }: { item: AccountRowItem }) {
       <div className="min-w-0 text-right">
         <p className="truncate text-sm font-semibold leading-5 text-foreground">{item.title}</p>
       </div>
-      <ArrowLeft2 aria-hidden={true} className="h-4 w-4 shrink-0 text-muted-foreground" />
+      <ChevronLeft aria-hidden={true} className="h-4 w-4 shrink-0 text-muted-foreground" />
     </Link>
   );
 }
@@ -166,7 +155,7 @@ export function AccountScreen({
             </div>
           ) : null}
           <ButtonLink href={nextBillingHref} size="full" className="h-12 rounded-[1rem]">
-            <Card aria-hidden={true} className="h-4 w-4" />
+            <CreditCard aria-hidden={true} className="h-4 w-4" />
             {nextBillingLabel}
           </ButtonLink>
         </section>
@@ -185,7 +174,7 @@ export function AccountScreen({
               size="full"
               className="h-12 rounded-[1rem] bg-[#1f1b16] !text-[#fffdf9] hover:bg-[#30291f]"
             >
-              <ShieldSecurity aria-hidden={true} className="h-4 w-4" />
+              <Shield aria-hidden={true} className="h-4 w-4" />
               ورود به پنل ادمین
             </ButtonLink>
           </section>
@@ -198,7 +187,7 @@ export function AccountScreen({
               variant="secondary"
               className="inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-[1rem] border border-border bg-surface px-2 text-xs font-semibold text-foreground shadow-[0_16px_30px_-28px_rgba(17,16,14,0.55)]"
             >
-              <Lifebuoy aria-hidden={true} className="h-4 w-4" />
+              <LifeBuoy aria-hidden={true} className="h-4 w-4" />
               <span className="truncate">پشتیبانی</span>
             </ButtonLink>
             <ButtonLink
@@ -206,7 +195,7 @@ export function AccountScreen({
               variant="secondary"
               className="inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-[1rem] border border-border bg-surface px-2 text-xs font-semibold text-foreground shadow-[0_16px_30px_-28px_rgba(17,16,14,0.55)]"
             >
-              <MessageQuestion aria-hidden={true} className="h-4 w-4" />
+              <HelpCircle aria-hidden={true} className="h-4 w-4" />
               <span className="truncate">سوالات پرتکرار</span>
             </ButtonLink>
           </div>

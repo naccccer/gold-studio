@@ -1,58 +1,155 @@
+"use client";
+
 import Link from "next/link";
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from "react";
+import { cn } from "@/lib/utils/cn";
 
-type ButtonVariant = "primary" | "secondary" | "light" | "danger" | "ghost" | "studio-primary" | "studio-secondary" | "admin";
-type ButtonSize = "sm" | "md" | "full" | "icon";
+export type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "ghost"
+  | "outline"
+  | "danger"
+  | "champagne"
+  | "dark"
+  | "glass"
+  | "light"
+  | "studio-primary"
+  | "studio-secondary"
+  | "admin";
+
+export type ButtonSize = "xs" | "sm" | "md" | "lg" | "xl" | "full" | "icon" | "icon-sm" | "icon-lg";
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-foreground text-surface shadow-[0_18px_34px_-24px_rgba(17,16,14,0.95)] hover:bg-[#27231f]",
+    "bg-ink-1 text-surface shadow-[var(--shadow-md)] hover:bg-ink-2",
   secondary:
-    "bg-surface-soft text-foreground shadow-[0_14px_28px_-24px_rgba(17,16,14,0.62),inset_0_1px_0_rgba(255,255,255,0.8)] hover:bg-surface",
+    "bg-surface text-ink-1 border border-border shadow-[var(--shadow-xs)] hover:bg-surface-soft hover:border-border-strong",
+  ghost:
+    "bg-transparent text-ink-2 hover:bg-surface-soft hover:text-ink-1",
+  outline:
+    "bg-transparent text-ink-1 border border-border-strong hover:bg-surface-soft",
+  danger:
+    "bg-danger-bright text-white shadow-[var(--shadow-sm)] hover:bg-danger",
+  champagne:
+    "bg-gradient-to-b from-champagne-300 to-champagne-500 text-champagne-ink shadow-[var(--shadow-gold)] hover:from-champagne-200 hover:to-champagne-400",
+  dark:
+    "bg-ink-1 text-surface shadow-[var(--shadow-lg)] hover:bg-ink-2",
+  glass:
+    "bg-surface/70 backdrop-blur-md text-ink-1 border border-border-hairline shadow-[var(--shadow-sm)] hover:bg-surface/90",
   light:
-    "border border-white bg-white text-[#171411] shadow-[0_18px_30px_-24px_rgba(255,255,255,0.82)] hover:bg-[#fff8ef]",
-  danger: "bg-danger-bright text-white shadow-[0_14px_26px_-18px_rgba(217,45,32,0.9)] hover:bg-danger-hover",
-  ghost: "text-muted hover:bg-surface-soft hover:text-foreground",
+    "bg-surface text-ink-1 border border-border-hairline shadow-[var(--shadow-xs)] hover:bg-surface-soft",
   "studio-primary":
-    "border border-[#ffd98f]/45 bg-[linear-gradient(135deg,var(--gold-gradient-start)_0%,var(--gold-gradient-mid)_48%,var(--gold-gradient-end)_100%)] !text-studio-control shadow-[var(--shadow-gold-action)] hover:brightness-105",
+    "bg-gradient-to-b from-champagne-300 to-champagne-500 text-champagne-ink shadow-[var(--shadow-gold)] hover:from-champagne-200 hover:to-champagne-400",
   "studio-secondary":
-    "bg-white/[0.15] !text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_14px_28px_-22px_rgba(0,0,0,0.75)] hover:bg-white/[0.22]",
-  admin: "bg-surface-soft text-foreground shadow-[0_12px_24px_-22px_rgba(17,16,14,0.55)] hover:bg-surface",
+    "bg-white/10 text-surface border border-white/15 hover:bg-white/20",
+  admin:
+    "bg-ink-1 text-surface border border-ink-1/10 shadow-[var(--shadow-md)] hover:bg-ink-2",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: "min-h-11 px-4 text-sm",
-  md: "min-h-12 px-5 text-sm",
-  full: "min-h-12 w-full px-5 text-sm",
-  icon: "h-11 w-11 p-0 text-sm",
+  xs: "h-8 px-3 text-[12px] gap-1.5 rounded-[var(--r-sm)]",
+  sm: "h-10 px-4 text-[13px] gap-1.5 rounded-[var(--r-md)]",
+  md: "h-12 px-5 text-sm gap-2 rounded-[var(--r-md)]",
+  lg: "h-14 px-6 text-[15px] gap-2 rounded-[var(--r-lg)]",
+  xl: "h-16 px-7 text-base gap-2.5 rounded-[var(--r-lg)]",
+  full: "h-12 w-full px-5 text-sm gap-2 rounded-[var(--r-md)]",
+  icon: "h-11 w-11 rounded-[var(--r-md)]",
+  "icon-sm": "h-9 w-9 rounded-[var(--r-sm)]",
+  "icon-lg": "h-12 w-12 rounded-[var(--r-lg)]",
 };
 
-export function buttonClasses({ variant = "primary", size = "md", className = "" }: { variant?: ButtonVariant; size?: ButtonSize; className?: string } = {}) {
-  return [
-    "motion-press inline-flex shrink-0 items-center justify-center gap-2 rounded-[var(--radius-lg)] font-semibold leading-none disabled:pointer-events-none disabled:opacity-60 focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+export type ButtonClassOptions = {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  className?: string;
+  fullWidth?: boolean;
+};
+
+export function buttonClasses({
+  variant = "primary",
+  size = "md",
+  className = "",
+  fullWidth = false,
+}: ButtonClassOptions = {}) {
+  return cn(
+    "ov-press inline-flex shrink-0 items-center justify-center font-semibold leading-none whitespace-nowrap",
+    "focus-visible:outline-none focus-visible:[box-shadow:var(--focus-ring)]",
+    "disabled:opacity-50 disabled:pointer-events-none",
     variantClasses[variant],
     sizeClasses[size],
+    fullWidth && "w-full",
     className,
-  ].filter(Boolean).join(" ");
+  );
 }
 
-type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant; size?: ButtonSize };
-export function Button({ variant, size, className, type = "button", ...props }: ButtonProps) { return <button type={type} className={buttonClasses({ variant, size, className })} {...props} />; }
+type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
+  Omit<ButtonClassOptions, "className"> & { className?: string };
 
-type ButtonLinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & { href: string; children: ReactNode; variant?: ButtonVariant; size?: ButtonSize };
-export function ButtonLink({ href, variant, size, className, children, ...props }: ButtonLinkProps) {
-  return <Link href={href} className={buttonClasses({ variant, size, className })} {...props}>{children}</Link>;
-}
-
-type IconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  label: string;
-  variant?: ButtonVariant;
-};
-
-export function IconButton({ label, variant = "secondary", className, type = "button", children, ...props }: IconButtonProps) {
+export function Button({
+  variant,
+  size,
+  className,
+  fullWidth,
+  type = "button",
+  ...props
+}: ButtonProps) {
   return (
-    <button type={type} aria-label={label} className={buttonClasses({ variant, size: "icon", className: `rounded-full ${className ?? ""}` })} {...props}>
+    <button
+      type={type}
+      className={buttonClasses({ variant, size, className, fullWidth })}
+      {...props}
+    />
+  );
+}
+
+type ButtonLinkProps = AnchorHTMLAttributes<HTMLAnchorElement> &
+  Omit<ButtonClassOptions, "className"> & {
+    href: string;
+    children: ReactNode;
+    className?: string;
+  };
+
+export function ButtonLink({
+  href,
+  variant,
+  size,
+  className,
+  fullWidth,
+  children,
+  ...props
+}: ButtonLinkProps) {
+  return (
+    <Link
+      href={href}
+      className={buttonClasses({ variant, size, className, fullWidth })}
+      {...props}
+    >
       {children}
-    </button>
+    </Link>
+  );
+}
+
+type IconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
+  Omit<ButtonClassOptions, "size"> & {
+    label: string;
+    size?: ButtonSize;
+  };
+
+export function IconButton({
+  label,
+  variant = "secondary",
+  size = "icon",
+  className,
+  type = "button",
+  ...props
+}: IconButtonProps) {
+  return (
+    <button
+      type={type}
+      aria-label={label}
+      className={buttonClasses({ variant, size, className })}
+      {...props}
+    />
   );
 }

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowDown2, ArrowLeft, DocumentUpload, Image as ImageIcon, Magicpen, TickCircle } from "vuesax-icons-react";
+import { ChevronsDown, ChevronLeft, Upload, Image as ImageIcon, Wand2, CheckCircle } from "lucide-react";
 import { ActionDock } from "@/components/ui/action-dock";
 import { AppTopBar } from "@/components/ui/app-top-bar";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -315,7 +315,7 @@ export function GalleryBatchNewScreen({
                           </option>
                         ))}
                       </select>
-                      <ArrowDown2 aria-hidden={true} className="pointer-events-none absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2 text-surface/72" />
+                      <ChevronsDown aria-hidden={true} className="pointer-events-none absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2 text-surface/72" />
                     </div>
                   </div>
                 </div>
@@ -328,7 +328,7 @@ export function GalleryBatchNewScreen({
               </Button>
               <Button type="button" variant="studio-primary" className="h-12 w-full" onClick={() => setStep("size")}>
                 ادامه
-                <ArrowLeft aria-hidden={true} className="h-4 w-4" />
+                <ChevronLeft aria-hidden={true} className="h-4 w-4" />
               </Button>
             </ActionDock>
           </StepScrollPanel>
@@ -372,7 +372,7 @@ export function GalleryBatchNewScreen({
               </Button>
               <Button type="button" variant="studio-primary" className="h-12 w-full" onClick={() => setStep("style")}>
                 ادامه
-                <ArrowLeft aria-hidden={true} className="h-4 w-4" />
+                <ChevronLeft aria-hidden={true} className="h-4 w-4" />
               </Button>
             </ActionDock>
           </StepScrollPanel>
@@ -413,7 +413,7 @@ export function GalleryBatchNewScreen({
                     </div>
                     {checked ? (
                       <span className="absolute left-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-surface">
-                        <TickCircle aria-hidden={true} className="h-3 w-3" />
+                        <CheckCircle aria-hidden={true} className="h-3 w-3" />
                       </span>
                     ) : null}
                   </label>
@@ -481,7 +481,7 @@ export function GalleryBatchNewScreen({
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-xs font-medium text-surface/72">عکس نمونه مشترک</p>
                   <label htmlFor="batch-reference-file-input" className="inline-flex min-h-9 items-center gap-2 rounded-full border border-white/14 bg-white/[0.06] px-3 text-xs font-semibold text-surface">
-                    <DocumentUpload aria-hidden={true} className="h-3.5 w-3.5" />
+                    <Upload aria-hidden={true} className="h-3.5 w-3.5" />
                     آپلود
                   </label>
                 </div>
@@ -511,7 +511,7 @@ export function GalleryBatchNewScreen({
                             />
                             {checked ? (
                               <span className="absolute left-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-surface">
-                                <TickCircle aria-hidden={true} className="h-3.5 w-3.5" />
+                                <CheckCircle aria-hidden={true} className="h-3.5 w-3.5" />
                               </span>
                             ) : null}
                           </JewelryImageFrame>
@@ -554,12 +554,12 @@ export function GalleryBatchNewScreen({
                   <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-studio-control/15 bg-studio-control/12 px-2 text-[11px] font-bold text-studio-control" aria-label={`${requiredCredits.toLocaleString("fa-IR")} اعتبار`}>
                     {requiredCredits.toLocaleString("fa-IR")}
                   </span>
-                  <Magicpen aria-hidden={true} className="h-4 w-4" />
+                  <Wand2 aria-hidden={true} className="h-4 w-4" />
                 </Button>
               ) : (
                 <ButtonLink href="/billing" variant="studio-primary" className="h-12 w-full">
                   خرید اعتبار
-                  <ArrowLeft aria-hidden={true} className="h-4 w-4" />
+                  <ChevronLeft aria-hidden={true} className="h-4 w-4" />
                 </ButtonLink>
               )}
             </ActionDock>
