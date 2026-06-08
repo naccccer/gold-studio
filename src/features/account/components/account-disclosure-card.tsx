@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { ChevronsDown, Lock, User, UserRound } from "lucide-react";
+import { ChevronsDown, Lock, UserRound } from "lucide-react";
 import { accountCardClass } from "@/features/account/components/account-subpage";
 
 type AccountDisclosureCardProps = {
@@ -25,21 +25,21 @@ export function AccountDisclosureCard({ title, icon, children }: AccountDisclosu
         type="button"
         onClick={() => setIsOpen((value) => !value)}
         aria-expanded={isOpen}
-        className="flex w-full items-center justify-between gap-3 text-right"
+        className="ov-press flex w-full items-center justify-between gap-3 text-right"
       >
         <span className="flex min-w-0 items-center gap-3">
-          <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-wash text-accent-deep">
+          <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-champagne-50 text-champagne-700">
             <Icon aria-hidden={true} className="h-4.5 w-4.5" />
           </span>
-          <span className="truncate text-sm font-semibold text-foreground">{title}</span>
+          <span className="truncate text-sm font-semibold text-ink-1">{title}</span>
         </span>
         <ChevronsDown
           aria-hidden={true}
-          className={`h-4 w-4 shrink-0 text-muted transition ${isOpen ? "rotate-180" : ""}`}
+          className={`h-4 w-4 shrink-0 text-ink-3 transition ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
 
-      {isOpen ? <div className="mt-3 space-y-3">{children}</div> : null}
+      {isOpen ? <div className="mt-3 space-y-3 border-t border-border-hairline pt-3">{children}</div> : null}
     </section>
   );
 }

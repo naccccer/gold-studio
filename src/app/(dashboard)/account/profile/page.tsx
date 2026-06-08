@@ -31,18 +31,18 @@ export default async function AccountProfilePage() {
       <form action={updateProfileAction}>
         <AccountDisclosureCard title="ویرایش مشخصات" icon="profile">
           <label className="block space-y-1.5">
-            <span className="text-xs font-medium text-muted">نام نمایشی</span>
+            <span className="text-xs font-medium text-ink-3">نام نمایشی</span>
             <input name="name" defaultValue={user?.name ?? ""} className={accountInputClass} />
           </label>
           <label className="block space-y-1.5">
-            <span className="text-xs font-medium text-muted">ایمیل</span>
+            <span className="text-xs font-medium text-ink-3">ایمیل</span>
             <input name="email" defaultValue={user?.email ?? ""} dir="ltr" className={`${accountInputClass} text-left`} />
           </label>
           <label className="block space-y-1.5">
-            <span className="text-xs font-medium text-muted">موبایل</span>
+            <span className="text-xs font-medium text-ink-3">موبایل</span>
             <input name="phone" defaultValue={user?.phone ?? ""} dir="ltr" className={`${accountInputClass} text-left`} />
           </label>
-          <Button type="submit" size="full" className="h-11 rounded-[0.95rem]">
+          <Button type="submit" size="full" className="h-11">
             ذخیره مشخصات
           </Button>
         </AccountDisclosureCard>
@@ -53,7 +53,7 @@ export default async function AccountProfilePage() {
           <AccountPasswordInput label="رمز فعلی" name="currentPassword" autoComplete="current-password" />
           <AccountPasswordInput label="رمز جدید" name="newPassword" autoComplete="new-password" />
           <AccountPasswordInput label="تکرار رمز جدید" name="confirmPassword" autoComplete="new-password" />
-          <Button type="submit" size="full" className="h-11 rounded-[0.95rem]">
+          <Button type="submit" size="full" className="h-11">
             تغییر رمز عبور
           </Button>
         </AccountDisclosureCard>

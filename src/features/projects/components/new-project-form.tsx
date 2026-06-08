@@ -10,6 +10,8 @@ import { Button, ButtonLink, buttonClasses } from "@/components/ui/button";
 
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { ImageFrame } from "@/components/ui/image-frame";
+import { StepIndicator } from "@/components/ui/step-indicator";
 import {
   createPendingGalleryUpload,
   startPendingGalleryUpload,
@@ -64,6 +66,12 @@ const topBarTitles: Record<WizardStep, string> = {
   style: "انتخاب سبک",
 };
 
+const wizardSteps: Array<{ id: WizardStep; label: string }> = [
+  { id: "source", label: "عکس" },
+  { id: "size", label: "سایز" },
+  { id: "style", label: "سبک" },
+];
+
 function StepScrollPanel({ children }: { children: React.ReactNode }) {
   return (
     <section className="min-h-0 flex-1 overflow-hidden">
@@ -107,21 +115,18 @@ function SourceActionButton({
   href?: string;
   featured?: boolean;
 }) {
-  const className =
-    featured
-      ? "h-12 w-full rounded-[1rem] border border-white bg-white text-xs font-semibold !text-[#171411] shadow-[0_18px_30px_-24px_rgba(255,255,255,0.82)] hover:bg-[#fff8ef]"
-      : "h-12 w-full rounded-[1rem] border border-white/14 bg-white/[0.06] text-xs font-semibold !text-surface shadow-none hover:border-white/24 hover:bg-white/[0.1]";
+  const className = "h-12 w-full rounded-[var(--r-lg)] text-xs font-semibold";
 
   if (href) {
     return (
-      <ButtonLink href={href} variant="studio-secondary" className={className}>
+      <ButtonLink href={href} variant={featured ? "champagne" : "secondary"} className={className}>
         {children}
       </ButtonLink>
     );
   }
 
   return (
-    <label htmlFor={htmlFor} className={buttonClasses({ variant: featured ? "light" : "studio-secondary", className })}>
+    <label htmlFor={htmlFor} className={buttonClasses({ variant: featured ? "champagne" : "secondary", className })}>
       {children}
     </label>
   );
@@ -205,7 +210,7 @@ export function NewProjectForm({
     value: preset.id,
     label: preset.label,
     badge: (
-      <span className="text-[10px] font-medium text-muted" dir="ltr">
+      <span className="text-[10px] font-medium text-ink-3" dir="ltr">
         {preset.ratio}
       </span>
     ),
@@ -340,14 +345,15 @@ export function NewProjectForm({
 
   return (
     <>
-    <form action={formAction} className="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
+    <form action={formAction} className="relative flex min-h-0 w-full flex-1 flex-col gap-3 px-[var(--page-x)] pt-1">
       <AppTopBar
         title={step === "source" ? "آپلود عکس محصول" : topBarTitles[step]}
         onBack={handleTopBarBack}
         logoVariant="mark-light"
-        tone="ink"
-        className="mb-0 min-h-12 px-0"
+        tone="dark"
+        className="-mx-[var(--page-x)] mb-0 min-h-12 px-[var(--page-x)]"
       />
+      <StepIndicator steps={wizardSteps} current={step} tone="dark" className="px-1" />
       <input type="hidden" name="generationMode" value="image" />
       <input type="hidden" name="outputPreset" value={outputPreset} />
       {styleControls.map((control) => (
@@ -395,6 +401,7 @@ export function NewProjectForm({
       />
 
       {step === "source" ? (
+        <>
         <StepScrollPanel>
           <div className="grid grid-cols-3 gap-3">
             <SourceActionButton htmlFor="project-file-input" featured>
@@ -412,24 +419,24 @@ export function NewProjectForm({
           </div>
 
           {sourcePreparing ? (
-            <p className="rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-2 text-xs leading-6 text-surface/72">
+            <p className="rounded-[var(--r-lg)] border border-white/10 bg-white/5 px-3 py-2 text-xs leading-6 text-white/70">
               در حال آماده‌سازی عکس برای آپلود...
             </p>
           ) : null}
 
           {sourceError ? (
-            <div className="rounded-[1rem] border border-danger/24 bg-danger-soft/92 px-3 py-3 text-danger shadow-[0_18px_32px_-26px_rgba(152,59,52,0.42)]">
+            <div className="rounded-[var(--r-lg)] border border-danger/40 bg-danger/15 px-3 py-3 text-danger">
               <p className="text-sm font-semibold">عکس آماده نشد</p>
-              <p className="mt-1 text-[12px] leading-6 text-danger/88">{sourceError}</p>
+              <p className="mt-1 text-[12px] leading-6 text-danger/90">{sourceError}</p>
             </div>
           ) : null}
 
           {visibleGalleryAssets.length > 0 ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-medium text-surface/72">انتخاب سریع از گالری</p>
+                <p className="text-xs font-medium text-white/60">انتخاب سریع از گالری</p>
                 {galleryAssets.length > visibleGalleryAssets.length ? (
-                  <ButtonLink href="/gallery" variant="ghost" className="min-h-8 px-0 text-xs !text-surface/72 hover:!text-surface">
+                  <ButtonLink href="/gallery" variant="ghost" className="min-h-8 px-0 text-xs !text-white/70 hover:!text-white">
                     دیدن همه
                   </ButtonLink>
                 ) : null}
@@ -447,7 +454,7 @@ export function NewProjectForm({
                       aria-label={`انتخاب ${title}`}
                       className="text-right"
                     >
-                      <ImageFrame aspect="square" selected={isSelected} tone="muted" className="rounded-[1rem]">
+                      <ImageFrame aspect="square" selected={isSelected} tone="muted" className="rounded-[var(--r-lg)]">
                         <SafeJewelryImage
                           src={asset.fileUrl}
                           alt={title}
@@ -458,7 +465,7 @@ export function NewProjectForm({
                           sizes="120px"
                         />
                         {isSelected ? (
-                          <span className="absolute left-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-surface">
+                          <span className="absolute left-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-[var(--r-pill)] bg-champagne-500 text-champagne-ink">
                             <CheckCircle aria-hidden={true} className="h-3.5 w-3.5" />
                           </span>
                         ) : null}
@@ -469,64 +476,68 @@ export function NewProjectForm({
               </div>
             </div>
           ) : null}
-
-          <ActionDock columns={hasSource ? 2 : 1} className="mt-auto pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+        </StepScrollPanel>
+        <ActionDock tone="dark" columns={hasSource ? 2 : 1}>
             {hasSource ? (
-              <Button type="button" variant="studio-secondary" className="h-12 w-full" onClick={clearSource}>
+              <Button type="button" variant="secondary" className="h-12 w-full" onClick={clearSource}>
                 تغییر عکس
               </Button>
             ) : null}
-            <Button type="button" variant="studio-primary" className="h-12 w-full" onClick={() => setStep("size")} disabled={!canContinue}>
+            <Button type="button" variant="champagne" className="h-12 w-full" onClick={() => setStep("size")} disabled={!canContinue}>
               {sourcePreparing ? "آماده‌سازی..." : "ادامه"}
               <ChevronLeft aria-hidden={true} className="h-4 w-4" />
             </Button>
           </ActionDock>
-        </StepScrollPanel>
+        </>
       ) : null}
 
       {step === "size" ? (
+        <>
         <StepScrollPanel>
-          <section className="rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-3">
-            <p className="mb-2 block text-xs font-medium text-surface/72">
+          <section className="rounded-[var(--r-lg)] border border-white/10 bg-white/5 px-4 py-4">
+            <p className="block text-xs font-medium text-white/60">
               ابعاد خروجی
             </p>
-            <SegmentedControl items={outputPresetItems} value={outputPreset} onChange={setOutputPreset} label="انتخاب سایز خروجی" />
+            <div className="mt-3">
+              <SegmentedControl items={outputPresetItems} value={outputPreset} onChange={setOutputPreset} label="انتخاب سایز خروجی" />
+            </div>
           </section>
 
-          <section className="rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-3">
-            <label htmlFor="new-project-product-type" className="mb-2 block text-xs font-medium text-surface/72">
+          <section className="rounded-[var(--r-lg)] border border-white/10 bg-white/5 px-4 py-4">
+            <label htmlFor="new-project-product-type" className="block text-xs font-medium text-white/60">
               نوع محصول (در صورت مغایرت تغییر دهید)
             </label>
-            <div className="relative">
+            <div className="relative mt-3">
               <select
                 id="new-project-product-type"
                 value={productType}
                 onChange={(event) => setProductType(normalizeProductType(event.target.value))}
-                className="min-h-10 w-full appearance-none rounded-full border border-white/12 bg-white/[0.08] py-0 pr-3 pl-10 text-sm font-semibold text-surface outline-none transition focus:border-white/28"
+                className="min-h-10 w-full appearance-none rounded-full border border-white/10 bg-white/5 py-0 pr-3 pl-10 text-sm font-semibold text-white outline-none transition focus:border-champagne-500"
               >
                 {PRODUCT_TYPES.map((item) => (
-                  <option key={item} value={item} className="bg-[#171411] text-white">
+                  <option key={item} value={item} className="bg-ink-1 text-white">
                     {productTypeLabel(item)}
                   </option>
                 ))}
               </select>
-              <ChevronsDown aria-hidden={true} className="pointer-events-none absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-surface/72" />
+              <ChevronsDown aria-hidden={true} className="pointer-events-none absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/60" />
             </div>
           </section>
-
-          <ActionDock className="mt-auto pb-[calc(env(safe-area-inset-bottom)+0.75rem)]" columns={2}>
-            <Button type="button" variant="studio-secondary" className="h-12 w-full" onClick={() => setStep("source")}>
+        </StepScrollPanel>
+        <ActionDock tone="dark" columns={2}>
+            <Button type="button" variant="secondary" className="h-12 w-full" onClick={() => setStep("source")}>
               بازگشت
             </Button>
-            <Button type="button" variant="studio-primary" className="h-12 w-full" onClick={() => setStep("style")} disabled={!canContinue}>
+            <Button type="button" variant="champagne" className="h-12 w-full" onClick={() => setStep("style")} disabled={!canContinue}>
               {sourcePreparing ? "آماده‌سازی..." : "ادامه"}
               <ChevronLeft aria-hidden={true} className="h-4 w-4" />
             </Button>
           </ActionDock>
-        </StepScrollPanel>
+        </>
       ) : null}
 
       {step === "style" ? (
+        <>
         <StepScrollPanel>
           <div className="grid grid-cols-3 gap-2">
               {styles.map((preset) => {
@@ -534,8 +545,8 @@ export function NewProjectForm({
                 return (
                   <label
                     key={preset.id}
-                    className={`relative overflow-hidden rounded-[1rem] border transition ${
-                      checked ? "border-accent-bright bg-surface/12 ring-1 ring-accent-bright/45" : "border-white/12 bg-white/[0.04]"
+                    className={`relative overflow-hidden rounded-[var(--r-lg)] border transition ${
+                      checked ? "border-champagne-500 bg-white/5 ring-1 ring-champagne-500/40" : "border-white/10 bg-white/5"
                     }`}
                   >
                     <input
@@ -556,10 +567,10 @@ export function NewProjectForm({
                       />
                     </ImageFrame>
                     <div className="px-2 py-1.5">
-                      <p className="truncate text-[10px] font-semibold leading-4 text-surface">{preset.label}</p>
+                      <p className={`truncate text-[10px] font-semibold leading-4 ${checked ? "text-champagne-300" : "text-white/70"}`}>{preset.label}</p>
                     </div>
                     {checked ? (
-                      <span className="absolute left-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-surface">
+                      <span className="absolute left-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-[var(--r-pill)] bg-champagne-500 text-champagne-ink">
                         <CheckCircle aria-hidden={true} className="h-3 w-3" />
                       </span>
                     ) : null}
@@ -569,7 +580,7 @@ export function NewProjectForm({
           </div>
 
           {styleControls.length > 0 ? (
-            <section className="space-y-3 rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-3">
+            <section className="space-y-3 rounded-[var(--r-lg)] border border-white/10 bg-white/5 px-4 py-4">
               {styleControls.map((control) => {
                 const value = styleControlValues[control.key] ?? getControlDefaultValue(control);
                 const choiceOptions = parseChoiceOptions(control.optionsJson);
@@ -589,10 +600,10 @@ export function NewProjectForm({
 
                 if (control.type === "RANGE") {
                   return (
-                    <label key={control.key} className="block space-y-2">
-                      <span className="flex items-center justify-between gap-3 text-xs text-surface/72">
+                    <label key={control.key} className="block space-y-3">
+                      <span className="flex items-center justify-between gap-3 text-xs text-white/65">
                         <span>{control.label}</span>
-                        <span className="rounded-full border border-white/14 bg-white/[0.05] px-2 py-0.5 text-[10px]" dir="ltr">
+                        <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-white" dir="ltr">
                           {value}
                         </span>
                       </span>
@@ -602,20 +613,20 @@ export function NewProjectForm({
                         max={control.maxValue ?? 100}
                         value={value}
                         onChange={(event) => setStyleControlValue(control.key, event.target.value)}
-                        className="w-full accent-accent-bright"
+                        className="w-full accent-champagne-500"
                       />
                     </label>
                   );
                 }
 
                 return (
-                  <label key={control.key} className="flex min-h-11 items-center justify-between gap-3 rounded-[0.9rem] border border-white/14 bg-white/[0.04] px-3 py-2 text-sm text-surface/84">
+                  <label key={control.key} className="flex min-h-11 items-center justify-between gap-3 rounded-[var(--r-md)] border border-white/10 bg-white/5 px-3 py-2 text-sm text-white">
                     <span>{control.label}</span>
                     <input
                       type="checkbox"
                       checked={value === "true"}
                       onChange={(event) => setStyleControlValue(control.key, event.target.checked ? "true" : "false")}
-                      className="h-4 w-4 accent-accent-bright"
+                      className="h-4 w-4 accent-champagne-500"
                     />
                   </label>
                 );
@@ -624,16 +635,16 @@ export function NewProjectForm({
           ) : null}
 
           {isSampleReferenceStyle ? (
-            <section className="space-y-3 rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-3">
+            <section className="rounded-[var(--r-lg)] border border-white/10 bg-white/5 px-4 py-4">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-medium text-surface/72">عکس نمونه</p>
-                <label htmlFor="project-reference-file-input" className={buttonClasses({ variant: "studio-secondary", className: "min-h-9 rounded-full px-3 text-xs" })}>
+                <p className="text-xs font-medium text-white/65">عکس نمونه</p>
+                <label htmlFor="project-reference-file-input" className={buttonClasses({ variant: "secondary", className: "min-h-9 rounded-full px-3 text-xs" })}>
                   <Upload aria-hidden={true} className="h-3.5 w-3.5" />
                   آپلود
                 </label>
               </div>
               {styleReferences.length > 0 ? (
-                <div className="grid grid-cols-4 gap-3">
+                <div className="mt-3 grid grid-cols-4 gap-3">
                   {styleReferences.slice(0, 8).map((reference) => {
                     const checked = selectedReference?.id === reference.id;
                     const title = reference.title || reference.originalName || "عکس نمونه";
@@ -646,7 +657,7 @@ export function NewProjectForm({
                         aria-label={`انتخاب ${title}`}
                         className="text-right"
                       >
-                        <ImageFrame aspect="square" selected={checked} tone="muted" className="rounded-[1rem]">
+                        <ImageFrame aspect="square" selected={checked} tone="muted" className="rounded-[var(--r-lg)]">
                           <SafeJewelryImage
                             src={reference.fileUrl}
                             alt={title}
@@ -657,7 +668,7 @@ export function NewProjectForm({
                             sizes="120px"
                           />
                           {checked ? (
-                            <span className="absolute left-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-surface">
+                            <span className="absolute left-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-[var(--r-pill)] bg-champagne-500 text-champagne-ink">
                               <CheckCircle aria-hidden={true} className="h-3.5 w-3.5" />
                             </span>
                           ) : null}
@@ -668,13 +679,13 @@ export function NewProjectForm({
                 </div>
               ) : null}
               {referenceUploadPreview ? (
-                <div className="flex items-center gap-3 rounded-[0.9rem] border border-white/14 bg-white/[0.04] px-3 py-2">
-                  <ImageFrame aspect="square" selected tone="muted" className="h-16 w-16 shrink-0 rounded-[0.9rem]">
+                <div className="flex items-center gap-3 rounded-[var(--r-md)] border border-white/10 bg-white/5 px-3 py-2">
+                  <ImageFrame aspect="square" selected tone="muted" className="h-16 w-16 shrink-0 rounded-[var(--r-md)]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={referenceUploadPreview} alt="پیش‌نمایش عکس نمونه" className="h-full w-full object-cover" />
                   </ImageFrame>
-                  <div className="flex min-w-0 items-center gap-2 text-xs text-surface/84">
-                    <ImageIcon aria-hidden={true} className="h-4 w-4 shrink-0 text-accent-bright" />
+                  <div className="flex min-w-0 items-center gap-2 text-xs text-white/75">
+                    <ImageIcon aria-hidden={true} className="h-4 w-4 shrink-0 text-champagne-300" />
                     <span>نمونه آپلودی</span>
                   </div>
                 </div>
@@ -683,33 +694,33 @@ export function NewProjectForm({
           ) : null}
 
           {state.error || sourceError ? (
-            <div className="rounded-[1rem] border border-danger/24 bg-danger-soft/92 px-3 py-3 text-danger shadow-[0_18px_32px_-26px_rgba(152,59,52,0.42)]">
+            <div className="rounded-[var(--r-lg)] border border-danger/40 bg-danger/15 px-3 py-3 text-danger">
               <p className="text-sm font-semibold">این مرحله کامل نشد</p>
               <p
-                className="mt-1 text-[12px] leading-6 text-danger/88"
+                className="mt-1 text-[12px] leading-6 text-danger/90"
                 style={{ textAlign: "justify", textAlignLast: "right" }}
               >
                 {sourceError || state.error}
               </p>
               {shouldShowBillingShortcut ? (
-                <ButtonLink href="/billing" variant="ghost" className="mt-3 min-h-10 px-0 text-sm !text-danger hover:!text-danger/88">
+                <ButtonLink href="/billing" variant="ghost" className="mt-3 min-h-10 px-0 text-sm !text-danger hover:!text-danger/90">
                   رفتن به صفحه اعتبار
                   <ChevronLeft aria-hidden={true} className="h-4 w-4" />
                 </ButtonLink>
               ) : null}
             </div>
           ) : null}
-
-          <ActionDock className="mt-auto pb-[calc(env(safe-area-inset-bottom)+0.75rem)]" columns={2}>
-            <Button type="button" variant="studio-secondary" className="h-12 w-full" onClick={() => setStep("size")}>
+        </StepScrollPanel>
+        <ActionDock tone="dark" columns={2}>
+            <Button type="button" variant="secondary" className="h-12 w-full" onClick={() => setStep("size")}>
               بازگشت
             </Button>
-            <Button type="submit" disabled={pending || !canSubmitWithReference} variant="studio-primary" className="h-12 w-full">
+            <Button type="submit" disabled={pending || !canSubmitWithReference} variant="champagne" className="h-12 w-full">
               {sourcePreparing ? "آماده‌سازی..." : pending ? "در حال ساخت..." : "شروع پردازش"}
               <Wand2 aria-hidden={true} className="h-4 w-4" />
             </Button>
           </ActionDock>
-        </StepScrollPanel>
+        </>
       ) : null}
     </form>
     {cropUploadId ? <GalleryCropScreen uploadId={cropUploadId} onClose={handleCropClose} /> : null}

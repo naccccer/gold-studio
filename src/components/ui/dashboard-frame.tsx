@@ -38,7 +38,13 @@ export function DashboardFrame({
           userLabel={userLabel}
           remainingCredits={remainingCredits}
         />
-        <main className="flex-1 pb-[calc(7rem+env(safe-area-inset-bottom))]">
+        <main
+          className={
+            isProjectDarkSurface
+              ? "flex min-h-0 flex-1 flex-col"
+              : "flex-1 pb-[calc(7rem+env(safe-area-inset-bottom))]"
+          }
+        >
           {children}
         </main>
         <span className="sr-only">{userLabel}</span>

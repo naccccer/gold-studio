@@ -9,10 +9,12 @@ type Step = {
 type StepIndicatorProps = {
   steps: Step[];
   current: string;
+  tone?: "light" | "dark";
   className?: string;
 };
 
-export function StepIndicator({ steps, current, className }: StepIndicatorProps) {
+export function StepIndicator({ steps, current, tone = "light", className }: StepIndicatorProps) {
+  const isDark = tone === "dark";
   const currentIndex = Math.max(
     0,
     steps.findIndex((s) => s.id === current),
@@ -20,20 +22,23 @@ export function StepIndicator({ steps, current, className }: StepIndicatorProps)
   return (
     <ol
       dir="ltr"
-      className={cn("flex items-center gap-2", className)}
+      className={cn("flex w-full items-center gap-1.5", className)}
       aria-label="مراحل"
     >
       {steps.map((step, index) => {
         const completed = index < currentIndex;
         const active = index === currentIndex;
+        const isLast = index === steps.length - 1;
         return (
-          <li key={step.id} className="flex flex-1 items-center gap-2">
+          <li key={step.id} className="flex flex-1 items-center gap-1.5 last:flex-none">
             <span
               className={cn(
                 "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--r-pill)] text-[11px] font-bold",
                 completed && "bg-champagne-500 text-champagne-ink",
-                active && "bg-ink-1 text-surface",
-                !completed && !active && "bg-surface-soft text-ink-3 border border-border",
+                active && (isDark ? "bg-white text-ink-1" : "bg-ink-1 text-surface"),
+                !completed && !active && (isDark
+                  ? "bg-white/5 text-white/55 border border-white/12"
+                  : "bg-surface-soft text-ink-3 border border-border"),
               )}
               aria-current={active ? "step" : undefined}
             >
@@ -41,18 +46,28 @@ export function StepIndicator({ steps, current, className }: StepIndicatorProps)
             </span>
             <span
               className={cn(
-                "text-[11px] font-semibold leading-4 truncate",
-                active ? "text-ink-1" : "text-ink-3",
+                "shrink-0 text-[11px] font-semibold leading-4 whitespace-nowrap",
+                active
+                  ? isDark
+                    ? "text-white"
+                    : "text-ink-1"
+                  : isDark
+                    ? "text-white/55"
+                    : "text-ink-3",
               )}
             >
               {step.label}
             </span>
-            {index < steps.length - 1 ? (
+            {!isLast ? (
               <span
                 aria-hidden
                 className={cn(
-                  "h-px flex-1",
-                  index < currentIndex ? "bg-champagne-400" : "bg-border",
+                  "h-px min-w-0 flex-1",
+                  index < currentIndex
+                    ? "bg-champagne-500"
+                    : isDark
+                      ? "bg-white/12"
+                      : "bg-border",
                 )}
               />
             ) : null}

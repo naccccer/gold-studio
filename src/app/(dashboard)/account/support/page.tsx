@@ -1,6 +1,7 @@
 import { LifeBuoy, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
+  AccountSectionHeader,
   AccountSubpage,
   accountCardClass,
   accountInputClass,
@@ -41,48 +42,40 @@ export default async function AccountSupportPage({ searchParams }: SupportPagePr
     <AccountSubpage title="پشتیبانی">
       {settings?.isActive ? (
         <section className={`${accountCardClass} space-y-3`}>
-          <div className="flex items-center gap-3">
-            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-wash text-accent-deep">
-              <LifeBuoy aria-hidden={true} className="h-4.5 w-4.5" />
-            </span>
-            <h2 className="text-sm font-semibold text-foreground">راه ارتباط سریع</h2>
-          </div>
-          {settings.instructions ? <p className="text-xs leading-6 text-muted">{settings.instructions}</p> : null}
+          <AccountSectionHeader icon={LifeBuoy} title="راه ارتباط سریع" />
+          {settings.instructions ? <p className="text-xs leading-6 text-ink-3">{settings.instructions}</p> : null}
           <div className="grid grid-cols-3 gap-2 text-xs font-semibold">
-            {settings.phone ? <a href={`tel:${settings.phone}`} className="rounded-[0.95rem] border border-border bg-surface px-2 py-2.5 text-center text-foreground">تماس</a> : null}
-            {settings.whatsappUrl ? <a href={settings.whatsappUrl} className="rounded-[0.95rem] border border-border bg-surface px-2 py-2.5 text-center text-foreground">واتساپ</a> : null}
-            {settings.telegramUrl ? <a href={settings.telegramUrl} className="rounded-[0.95rem] border border-border bg-surface px-2 py-2.5 text-center text-foreground">تلگرام</a> : null}
+            {settings.phone ? <a href={`tel:${settings.phone}`} className="rounded-[var(--r-md)] border border-border bg-surface px-2 py-2.5 text-center text-ink-1">تماس</a> : null}
+            {settings.whatsappUrl ? <a href={settings.whatsappUrl} className="rounded-[var(--r-md)] border border-border bg-surface px-2 py-2.5 text-center text-ink-1">واتساپ</a> : null}
+            {settings.telegramUrl ? <a href={settings.telegramUrl} className="rounded-[var(--r-md)] border border-border bg-surface px-2 py-2.5 text-center text-ink-1">تلگرام</a> : null}
           </div>
         </section>
       ) : null}
 
       <form action={createSupportTicketAction} className={`${accountCardClass} space-y-3`}>
-        <div className="flex items-center gap-3">
-          <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-wash text-accent-deep">
-            <HelpCircle aria-hidden={true} className="h-4.5 w-4.5" />
-          </span>
-          <h2 className="text-sm font-semibold text-foreground">تیکت جدید</h2>
-        </div>
+        <AccountSectionHeader icon={HelpCircle} title="تیکت جدید" />
         <input name="subject" placeholder="موضوع" className={accountInputClass} />
         <textarea name="body" placeholder="متن درخواست" className={accountTextareaClass} />
-        <Button type="submit" size="full" className="h-11 rounded-[0.95rem]">
+        <Button type="submit" size="full" className="h-11">
           ثبت تیکت
         </Button>
       </form>
 
       <section className={`${accountCardClass} space-y-2.5`}>
-        <h2 className="text-sm font-semibold text-foreground">پیگیری تیکت‌ها</h2>
+        <h2 className="text-sm font-semibold text-ink-1">پیگیری تیکت‌ها</h2>
         {tickets.length === 0 ? (
-          <p className="text-xs leading-6 text-muted">موردی نیست.</p>
+          <p className="text-xs leading-6 text-ink-3">موردی نیست.</p>
         ) : (
           tickets.map((ticket) => (
             <a
               key={ticket.id}
               href={`/account/support?ticketId=${ticket.id}`}
-              className={`block rounded-[0.95rem] px-3 py-2.5 ${selectedTicket?.id === ticket.id ? "bg-[#efe2cd]" : "bg-white/62"}`}
+              className={`block rounded-[var(--r-md)] border border-border-hairline px-3 py-2.5 transition hover:border-border ${
+                selectedTicket?.id === ticket.id ? "bg-champagne-50" : "bg-surface-soft/68"
+              }`}
             >
-              <p className="text-sm font-semibold text-foreground">{ticket.subject}</p>
-              <p className="mt-1 text-[11px] text-muted">{statusLabel[ticket.status] ?? ticket.status}</p>
+              <p className="text-sm font-semibold text-ink-1">{ticket.subject}</p>
+              <p className="mt-1 text-[11px] text-ink-3">{statusLabel[ticket.status] ?? ticket.status}</p>
             </a>
           ))
         )}
@@ -90,19 +83,26 @@ export default async function AccountSupportPage({ searchParams }: SupportPagePr
 
       {selectedTicket ? (
         <section className={`${accountCardClass} space-y-3`}>
-          <h2 className="text-sm font-semibold text-foreground">{selectedTicket.subject}</h2>
-          <p className="text-[11px] text-muted">{statusLabel[selectedTicket.status] ?? selectedTicket.status}</p>
+          <h2 className="text-sm font-semibold text-ink-1">{selectedTicket.subject}</h2>
+          <p className="text-[11px] text-ink-3">{statusLabel[selectedTicket.status] ?? selectedTicket.status}</p>
           {selectedTicket.messages.map((message) => (
-            <div key={message.id} className={message.authorType === "ADMIN" ? "rounded-[0.95rem] bg-[#efe2cd] px-3 py-2.5" : accountMutedCardClass}>
-              <p className="text-[10px] font-semibold text-muted">{message.authorType === "ADMIN" ? "پشتیبانی" : "شما"}</p>
-              <p className="mt-1 text-xs leading-6 text-foreground">{message.body}</p>
+            <div
+              key={message.id}
+              className={
+                message.authorType === "ADMIN"
+                  ? "rounded-[var(--r-md)] border border-champagne-200 bg-champagne-50/72 px-3 py-2.5"
+                  : accountMutedCardClass
+              }
+            >
+              <p className="text-[10px] font-semibold text-ink-3">{message.authorType === "ADMIN" ? "پشتیبانی" : "شما"}</p>
+              <p className="mt-1 text-xs leading-6 text-ink-1">{message.body}</p>
             </div>
           ))}
           {selectedTicket.status !== "CLOSED" ? (
-            <form action={replySupportTicketAction} className="space-y-2 pt-1">
+            <form action={replySupportTicketAction} className="space-y-2 border-t border-border-hairline pt-3">
               <input type="hidden" name="ticketId" value={selectedTicket.id} />
               <textarea name="body" placeholder="پاسخ" className={accountTextareaClass} />
-              <Button type="submit" size="full" variant="secondary" className="h-11 rounded-[0.95rem]">
+              <Button type="submit" size="full" variant="secondary" className="h-11">
                 ارسال پاسخ
               </Button>
             </form>

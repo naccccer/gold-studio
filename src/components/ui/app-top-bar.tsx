@@ -33,10 +33,17 @@ export function AppTopBar({
   logoVariant = "wordmark",
   centeredLogo = false,
   hideLogo = false,
+  tone = "light",
   action,
   onBack,
   className,
 }: AppTopBarProps) {
+  const isDark = tone === "dark";
+  const backClass = isDark
+    ? "bg-white/10 border border-white/20 text-white hover:bg-white/15 shadow-[var(--shadow-xs)]"
+    : "bg-surface border border-border text-ink-2";
+  const titleClass = isDark ? "text-white" : "text-ink-1";
+
   if (centeredLogo) {
     return (
       <header
@@ -62,8 +69,8 @@ export function AppTopBar({
         onClick={onBack}
         aria-label="بازگشت"
         className={cn(
-          "ov-press inline-flex h-10 w-10 items-center justify-center rounded-[var(--r-pill)]",
-          "bg-surface border border-border text-ink-2 shadow-[var(--shadow-xs)]",
+          "ov-press inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--r-pill)]",
+          backClass,
         )}
       >
         <ChevronRight aria-hidden className="h-4.5 w-4.5" strokeWidth={2.2} />
@@ -73,8 +80,8 @@ export function AppTopBar({
         href={backHref as string}
         aria-label="بازگشت"
         className={cn(
-          "ov-press inline-flex h-10 w-10 items-center justify-center rounded-[var(--r-pill)]",
-          "bg-surface border border-border text-ink-2 shadow-[var(--shadow-xs)]",
+          "ov-press inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--r-pill)]",
+          backClass,
         )}
       >
         <ChevronRight aria-hidden className="h-4.5 w-4.5" strokeWidth={2.2} />
@@ -87,6 +94,7 @@ export function AppTopBar({
       dir="ltr"
       className={cn(
         "flex min-h-14 items-center justify-between gap-3 py-3",
+        isDark && "border-b border-white/5",
         className,
       )}
     >
@@ -102,11 +110,11 @@ export function AppTopBar({
         ) : null}
       </div>
 
-      <div dir="rtl" className="flex min-w-0 flex-1 items-center justify-end gap-2">
+      <div dir="rtl" className="flex min-w-0 flex-1 items-center justify-start gap-2 ps-2">
         {backButton}
         {action}
         {title ? (
-          <h1 className="min-w-0 truncate text-[15px] font-bold text-ink-1">
+          <h1 className={cn("min-w-0 truncate text-[15px] font-bold", titleClass)}>
             {title}
           </h1>
         ) : null}

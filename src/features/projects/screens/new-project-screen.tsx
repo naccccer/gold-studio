@@ -1,4 +1,3 @@
-import { PageShell } from "@/components/ui/page-shell";
 import {
   NewProjectForm,
   type GalleryAssetOption,
@@ -32,7 +31,11 @@ export function NewProjectScreen({
   initialStep,
 }: NewProjectScreenProps) {
   return (
-    <PageShell maxWidth="lg" minHeight={false} className="flex-1 space-y-5 overflow-hidden pb-0">
+    <div className="relative isolate flex min-h-0 w-full flex-1 flex-col bg-ink-1 text-white">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_-10%,rgba(212,184,134,0.10),transparent_55%)]"
+      />
       <NewProjectForm
         action={action}
         galleryAssets={galleryAssets}
@@ -43,6 +46,6 @@ export function NewProjectScreen({
         defaultOutputPreset={defaultOutputPreset}
         initialStep={initialStep}
       />
-    </PageShell>
+    </div>
   );
 }

@@ -132,6 +132,28 @@
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
   --color-focus: var(--focus);
+
+  /* Default Tailwind colors used for dark surfaces / status pills / etc.
+     Declared so utilities like text-white / bg-white / text-amber-800 work
+     alongside the brand palette. */
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* Status pill palette (used in light tone by various badges). */
+  --color-amber-50: #fffbeb;
+  --color-amber-200: #fde68a;
+  --color-amber-800: #92400e;
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-200: #a7f3d0;
+  --color-emerald-800: #065f46;
+  --color-rose-50: #fff1f2;
+  --color-rose-200: #fecdd3;
+  --color-rose-700: #be123c;
+  --color-sky-50: #f0f9ff;
+  --color-sky-200: #bae6fd;
+  --color-sky-800: #075985;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -162,7 +184,6 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
   margin: 0;
-  color: var(--ink-1);
   font-family: var(--font-vazirmatn), Tahoma, sans-serif;
   font-weight: 700;
   letter-spacing: -0.01em;

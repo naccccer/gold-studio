@@ -602,7 +602,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
             </ImageFrame>
           </div>
 
-          <div className="shrink-0 pb-1" columns={2}>
+          <div className="shrink-0 pb-1">
             <div className="grid grid-cols-[3rem_minmax(0,1fr)] gap-2">
               <ConfirmAction
                 action={archiveProjectAction}

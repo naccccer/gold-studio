@@ -6,9 +6,8 @@ import { useRouter } from "next/navigation";
 import { ChevronsDown, ChevronLeft, Upload, Image as ImageIcon, Wand2, CheckCircle } from "lucide-react";
 import { ActionDock } from "@/components/ui/action-dock";
 import { AppTopBar } from "@/components/ui/app-top-bar";
-import { Button, ButtonLink } from "@/components/ui/button";
+import { Button, ButtonLink, buttonClasses } from "@/components/ui/button";
 
-import { PageShell } from "@/components/ui/page-shell";
 import { Pill } from "@/components/ui/pill";
 import { ImageFrame } from "@/components/ui/image-frame";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
@@ -145,7 +144,7 @@ export function GalleryBatchNewScreen({
     value: preset.id,
     label: preset.label,
     badge: (
-      <span className="text-[10px] font-medium text-muted" dir="ltr">
+      <span className="text-[10px] font-medium text-ink-3" dir="ltr">
         {preset.ratio}
       </span>
     ),
@@ -192,14 +191,18 @@ export function GalleryBatchNewScreen({
   }
 
   return (
-    <PageShell maxWidth="lg" minHeight={false} className="flex-1 overflow-hidden pb-0">
-      <form action={action} className="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
+    <div className="relative isolate flex min-h-0 w-full flex-1 flex-col bg-ink-1 text-white">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_-10%,rgba(212,184,134,0.10),transparent_55%)]"
+      />
+      <form action={action} className="relative flex min-h-0 w-full flex-1 flex-col gap-3 px-[var(--page-x)] pt-1">
         <AppTopBar
           title={topBarTitles[step]}
           onBack={handleTopBarBack}
           logoVariant="mark-light"
           tone="dark"
-          className="mb-0 min-h-12 px-0"
+          className="-mx-[var(--page-x)] mb-0 min-h-12 px-[var(--page-x)]"
         />
 
         {assets.map((asset) => (
@@ -244,7 +247,7 @@ export function GalleryBatchNewScreen({
                 <span
                   key={item}
                   className={`h-1.5 rounded-full transition ${
-                    isActive ? "w-9 bg-accent-bright" : isDone ? "w-6 bg-accent/60" : "w-5 bg-white/18"
+                    isActive ? "w-9 bg-champagne-500" : isDone ? "w-6 bg-champagne-300" : "w-5 bg-border-strong"
                   }`}
                 />
               );
@@ -270,24 +273,24 @@ export function GalleryBatchNewScreen({
               ))}
             </div>
 
-            <section className="grid grid-cols-3 gap-3 rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-3">
+            <section className="grid grid-cols-3 gap-3 rounded-[var(--r-lg)] border border-white/10 bg-white/5 px-4 py-4">
               <div>
-                <p className="text-[11px] text-surface/60">عکس‌ها</p>
-                <p className="mt-1 text-sm font-semibold text-surface">{requiredCredits.toLocaleString("fa-IR")}</p>
+                <p className="text-[11px] text-white/60">عکس‌ها</p>
+                <p className="mt-1 text-sm font-semibold text-white">{requiredCredits.toLocaleString("fa-IR")}</p>
               </div>
               <div>
-                <p className="text-[11px] text-surface/60">اعتبار لازم</p>
-                <p className="mt-1 text-sm font-semibold text-surface">{requiredCredits.toLocaleString("fa-IR")}</p>
+                <p className="text-[11px] text-white/60">اعتبار لازم</p>
+                <p className="mt-1 text-sm font-semibold text-white">{requiredCredits.toLocaleString("fa-IR")}</p>
               </div>
               <div>
-                <p className="text-[11px] text-surface/60">اعتبار شما</p>
-                <p className="mt-1 text-sm font-semibold text-surface">{availableCredits.toLocaleString("fa-IR")}</p>
+                <p className="text-[11px] text-white/60">اعتبار شما</p>
+                <p className="mt-1 text-sm font-semibold text-white">{availableCredits.toLocaleString("fa-IR")}</p>
               </div>
             </section>
 
             <section className="space-y-2">
               {assets.map((asset) => (
-                <div key={asset.id} className="flex items-center gap-3 rounded-[1rem] border border-white/12 bg-white/[0.04] px-3 py-2">
+                <div key={asset.id} className="flex items-center gap-3 rounded-[var(--r-lg)] border border-white/10 bg-white/5 px-3 py-2">
                   <ImageFrame aspect="square" tone="muted" className="h-11 w-11 shrink-0 rounded-[0.8rem]">
                     <SafeJewelryImage
                       src={asset.fileUrl}
@@ -300,7 +303,7 @@ export function GalleryBatchNewScreen({
                     />
                   </ImageFrame>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-semibold text-surface">{assetTitle(asset)}</p>
+                    <p className="truncate text-xs font-semibold text-white">{assetTitle(asset)}</p>
                     <div className="relative mt-1">
                       <select
                         name={`productType_${asset.id}`}
@@ -309,26 +312,26 @@ export function GalleryBatchNewScreen({
                           setProductTypes((current) => ({ ...current, [asset.id]: event.target.value }))
                         }
                         aria-label={`نوع محصول ${assetTitle(asset)}`}
-                        className="min-h-8 w-full appearance-none rounded-full border border-white/12 bg-white/[0.08] py-0 pr-3 pl-8 text-xs font-semibold text-surface outline-none transition focus:border-white/28"
+                        className="min-h-8 w-full appearance-none rounded-full border border-white/10 bg-white/5 py-0 pr-3 pl-8 text-xs font-semibold text-white outline-none transition focus:border-champagne-500"
                       >
                         {PRODUCT_TYPES.map((item) => (
-                          <option key={item} value={item} className="bg-[#171411] text-white">
+                          <option key={item} value={item} className="bg-ink-1 text-white">
                             {productTypeLabel(item)}
                           </option>
                         ))}
                       </select>
-                      <ChevronsDown aria-hidden={true} className="pointer-events-none absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2 text-surface/72" />
+                      <ChevronsDown aria-hidden={true} className="pointer-events-none absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2 text-white/60" />
                     </div>
                   </div>
                 </div>
               ))}
             </section>
 
-            <ActionDock className="mt-auto pb-[calc(env(safe-area-inset-bottom)+0.75rem)]" columns={2}>
-              <Button type="button" variant="studio-secondary" className="h-12 w-full" onClick={() => router.push("/gallery")}>
+            <ActionDock tone="dark" columns={2}>
+              <Button type="button" variant="secondary" className="h-12 w-full" onClick={() => router.push("/gallery")}>
                 تغییر عکس‌ها
               </Button>
-              <Button type="button" variant="studio-primary" className="h-12 w-full" onClick={() => setStep("size")}>
+              <Button type="button" variant="champagne" className="h-12 w-full" onClick={() => setStep("size")}>
                 ادامه
                 <ChevronLeft aria-hidden={true} className="h-4 w-4" />
               </Button>
@@ -368,11 +371,11 @@ export function GalleryBatchNewScreen({
               />
             </fieldset>
 
-            <ActionDock className="mt-auto pb-[calc(env(safe-area-inset-bottom)+0.75rem)]" columns={2}>
-              <Button type="button" variant="studio-secondary" className="h-12 w-full" onClick={() => setStep("assets")}>
+            <ActionDock tone="dark" columns={2}>
+              <Button type="button" variant="secondary" className="h-12 w-full" onClick={() => setStep("assets")}>
                 بازگشت
               </Button>
-              <Button type="button" variant="studio-primary" className="h-12 w-full" onClick={() => setStep("style")}>
+              <Button type="button" variant="champagne" className="h-12 w-full" onClick={() => setStep("style")}>
                 ادامه
                 <ChevronLeft aria-hidden={true} className="h-4 w-4" />
               </Button>
@@ -389,8 +392,8 @@ export function GalleryBatchNewScreen({
                 return (
                   <label
                     key={style.id}
-                    className={`relative overflow-hidden rounded-[1rem] border transition ${
-                      checked ? "border-accent-bright bg-surface/12 ring-1 ring-accent-bright/45" : "border-white/12 bg-white/[0.04]"
+                    className={`relative overflow-hidden rounded-[var(--r-lg)] border transition ${
+                      checked ? "border-champagne-500 bg-white/5 ring-1 ring-champagne-500/40" : "border-white/10 bg-white/5"
                     }`}
                   >
                     <input
@@ -411,10 +414,10 @@ export function GalleryBatchNewScreen({
                       />
                     </ImageFrame>
                     <div className="px-2 py-1.5">
-                      <p className="truncate text-[10px] font-semibold leading-4 text-surface">{style.label}</p>
+                      <p className={`truncate text-[10px] font-semibold leading-4 ${checked ? "text-champagne-300" : "text-white"}`}>{style.label}</p>
                     </div>
                     {checked ? (
-                      <span className="absolute left-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-surface">
+                      <span className="absolute left-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-[var(--r-pill)] bg-champagne-500 text-champagne-ink">
                         <CheckCircle aria-hidden={true} className="h-3 w-3" />
                       </span>
                     ) : null}
@@ -424,7 +427,7 @@ export function GalleryBatchNewScreen({
             </div>
 
             {styleControls.length > 0 ? (
-              <section className="space-y-3 rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-3">
+              <section className="space-y-3 rounded-[var(--r-lg)] border border-white/10 bg-white/5 px-4 py-4">
                 {styleControls.map((control) => {
                   const value = styleControlValues[control.key] ?? getControlDefaultValue(control);
                   const choiceOptions = parseChoiceOptions(control.optionsJson);
@@ -445,9 +448,9 @@ export function GalleryBatchNewScreen({
                   if (control.type === "RANGE") {
                     return (
                       <label key={control.key} className="block space-y-2">
-                        <span className="flex items-center justify-between gap-3 text-xs text-surface/72">
+                        <span className="flex items-center justify-between gap-3 text-xs text-white/60">
                           <span>{control.label}</span>
-                          <span className="rounded-full border border-white/14 bg-white/[0.05] px-2 py-0.5 text-[10px]" dir="ltr">
+                          <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-white" dir="ltr">
                             {value}
                           </span>
                         </span>
@@ -457,20 +460,20 @@ export function GalleryBatchNewScreen({
                           max={control.maxValue ?? 100}
                           value={value}
                           onChange={(event) => setStyleControlValue(control.key, event.target.value)}
-                          className="w-full accent-accent-bright"
+                          className="w-full accent-champagne-500"
                         />
                       </label>
                     );
                   }
 
                   return (
-                    <label key={control.key} className="flex min-h-11 items-center justify-between gap-3 rounded-[0.9rem] border border-white/14 bg-white/[0.04] px-3 py-2 text-sm text-surface/84">
+                    <label key={control.key} className="flex min-h-11 items-center justify-between gap-3 rounded-[var(--r-md)] border border-white/10 bg-white/5 px-3 py-2 text-sm text-white">
                       <span>{control.label}</span>
                       <input
                         type="checkbox"
                         checked={value === "true"}
                         onChange={(event) => setStyleControlValue(control.key, event.target.checked ? "true" : "false")}
-                        className="h-4 w-4 accent-accent-bright"
+                        className="h-4 w-4 accent-champagne-500"
                       />
                     </label>
                   );
@@ -479,10 +482,10 @@ export function GalleryBatchNewScreen({
             ) : null}
 
             {isSampleReferenceStyle ? (
-              <section className="space-y-3 rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-3">
+              <section className="space-y-3 rounded-[var(--r-lg)] border border-white/10 bg-white/5 px-4 py-4">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs font-medium text-surface/72">عکس نمونه مشترک</p>
-                  <label htmlFor="batch-reference-file-input" className="inline-flex min-h-9 items-center gap-2 rounded-full border border-white/14 bg-white/[0.06] px-3 text-xs font-semibold text-surface">
+                  <p className="text-xs font-medium text-white/60">عکس نمونه مشترک</p>
+                  <label htmlFor="batch-reference-file-input" className={buttonClasses({ variant: "secondary", className: "min-h-9 rounded-full px-3 text-xs" })}>
                     <Upload aria-hidden={true} className="h-3.5 w-3.5" />
                     آپلود
                   </label>
@@ -501,7 +504,7 @@ export function GalleryBatchNewScreen({
                           aria-label={`انتخاب ${title}`}
                           className="text-right"
                         >
-                          <ImageFrame aspect="square" selected={checked} tone="muted" className="rounded-[1rem]">
+                          <ImageFrame aspect="square" selected={checked} tone="muted" className="rounded-[var(--r-lg)]">
                             <SafeJewelryImage
                               src={reference.fileUrl}
                               fallbackSrc={uploadPreview.src}
@@ -512,7 +515,7 @@ export function GalleryBatchNewScreen({
                               sizes="120px"
                             />
                             {checked ? (
-                              <span className="absolute left-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-surface">
+                              <span className="absolute left-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-[var(--r-pill)] bg-champagne-500 text-champagne-ink">
                                 <CheckCircle aria-hidden={true} className="h-3.5 w-3.5" />
                               </span>
                             ) : null}
@@ -523,13 +526,13 @@ export function GalleryBatchNewScreen({
                   </div>
                 ) : null}
                 {referenceUploadPreview ? (
-                  <div className="flex items-center gap-3 rounded-[0.9rem] border border-white/14 bg-white/[0.04] px-3 py-2">
-                    <ImageFrame aspect="square" selected tone="muted" className="h-16 w-16 shrink-0 rounded-[0.9rem]">
+                  <div className="flex items-center gap-3 rounded-[var(--r-md)] border border-white/10 bg-white/5 px-3 py-2">
+                    <ImageFrame aspect="square" selected tone="muted" className="h-16 w-16 shrink-0 rounded-[var(--r-md)]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={referenceUploadPreview} alt="پیش‌نمایش عکس نمونه" className="h-full w-full object-cover" />
                     </ImageFrame>
-                    <div className="flex min-w-0 items-center gap-2 text-xs text-surface/84">
-                      <ImageIcon aria-hidden={true} className="h-4 w-4 shrink-0 text-accent-bright" />
+                    <div className="flex min-w-0 items-center gap-2 text-xs text-white/75">
+                      <ImageIcon aria-hidden={true} className="h-4 w-4 shrink-0 text-champagne-300" />
                       <span>نمونه آپلودی</span>
                     </div>
                   </div>
@@ -538,28 +541,28 @@ export function GalleryBatchNewScreen({
             ) : null}
 
             {!hasEnoughCredits || error ? (
-              <div className="rounded-[1rem] border border-danger/24 bg-danger-soft/92 px-3 py-3 text-danger shadow-[0_18px_32px_-26px_rgba(152,59,52,0.42)]">
+              <div className="rounded-[var(--r-lg)] border border-danger/30 bg-danger/8 px-3 py-3 text-danger">
                 <p className="text-sm font-semibold">اعتبار کافی نیست</p>
-                <p className="mt-1 text-[12px] leading-6 text-danger/88">
+                <p className="mt-1 text-[12px] leading-6 text-danger/90">
                   {error || "برای این تعداد عکس اعتبار آزاد کافی ندارید."}
                 </p>
               </div>
             ) : null}
 
-            <ActionDock className="mt-auto pb-[calc(env(safe-area-inset-bottom)+0.75rem)]" columns={2}>
-              <Button type="button" variant="studio-secondary" className="h-12 w-full" onClick={() => setStep("size")}>
+            <ActionDock tone="dark" columns={2}>
+              <Button type="button" variant="secondary" className="h-12 w-full" onClick={() => setStep("size")}>
                 بازگشت
               </Button>
               {hasEnoughCredits ? (
-                <Button type="submit" disabled={!selectedStyleData || (isSampleReferenceStyle && !selectedReference && !referenceUploadPreview)} variant="studio-primary" className="h-12 w-full">
+                <Button type="submit" disabled={!selectedStyleData || (isSampleReferenceStyle && !selectedReference && !referenceUploadPreview)} variant="champagne" className="h-12 w-full">
                   شروع گروهی
-                  <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-studio-control/15 bg-studio-control/12 px-2 text-[11px] font-bold text-studio-control" aria-label={`${requiredCredits.toLocaleString("fa-IR")} اعتبار`}>
+                  <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-champagne-500/30 bg-champagne-500/15 px-2 text-[11px] font-bold text-champagne-200" aria-label={`${requiredCredits.toLocaleString("fa-IR")} اعتبار`}>
                     {requiredCredits.toLocaleString("fa-IR")}
                   </span>
                   <Wand2 aria-hidden={true} className="h-4 w-4" />
                 </Button>
               ) : (
-                <ButtonLink href="/billing" variant="studio-primary" className="h-12 w-full">
+                <ButtonLink href="/billing" variant="champagne" className="h-12 w-full">
                   خرید اعتبار
                   <ChevronLeft aria-hidden={true} className="h-4 w-4" />
                 </ButtonLink>
@@ -568,6 +571,6 @@ export function GalleryBatchNewScreen({
           </StepScrollPanel>
         ) : null}
       </form>
-    </PageShell>
+    </div>
   );
 }

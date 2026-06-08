@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Landmark, CreditCard, Upload, Layers, Receipt, CheckCircle, Trash2, Wallet, ReceiptText, type LucideIcon } from "lucide-react";
+import { Landmark, CreditCard, Upload, Layers, ReceiptText, CheckCircle, Trash2, Wallet, type LucideIcon } from "lucide-react";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { fieldControlClassName } from "@/components/ui/field";
 import { PageShell } from "@/components/ui/page-shell";
@@ -76,60 +76,60 @@ function purchaseStatusCopy(request: PendingPurchase) {
   }
 
   if (request.receiptSubmittedAt) {
-    return { label: "در حال بررسی", detail: "رسید ارسال شده و پس از تایید، اعتبار روی حساب می‌نشیند.", variant: "accent" as const };
+    return { label: "در حال بررسی", detail: "رسید ارسال شده و پس از تایید، اعتبار روی حساب می‌نشیند.", variant: "pending" as const };
   }
 
-  return { label: "منتظر رسید", detail: "بعد از کارت‌به‌کارت، تصویر رسید را در همین بخش ارسال کنید.", variant: "accent" as const };
+  return { label: "منتظر رسید", detail: "بعد از کارت‌به‌کارت، تصویر رسید را در همین بخش ارسال کنید.", variant: "pending" as const };
 }
 
 const subscriptionCardSkins = {
   amber: {
-    card: "border-[#f4d69b]/42 bg-[radial-gradient(circle_at_16%_12%,rgba(255,235,178,0.42),transparent_31%),linear-gradient(135deg,#20140f_0%,#4b2b1f_48%,#9b7040_100%)] text-surface shadow-[0_24px_56px_-36px_rgba(83,45,23,0.82)]",
+    card: "border-[#f4d69b]/42 bg-[radial-gradient(circle_at_16%_12%,rgba(255,235,178,0.42),transparent_31%),linear-gradient(135deg,#20140f_0%,#4b2b1f_48%,#9b7040_100%)] text-white shadow-[0_24px_56px_-36px_rgba(83,45,23,0.82)]",
     glow: "bg-[#ffe1a3]/28",
     accent: "text-[#ffe6ae]",
   },
   rose: {
-    card: "border-[#d7c8ff]/38 bg-[radial-gradient(circle_at_18%_10%,rgba(238,220,255,0.42),transparent_30%),linear-gradient(135deg,#15131f_0%,#34264d_48%,#8b6677_100%)] text-surface shadow-[0_24px_56px_-36px_rgba(52,38,77,0.86)]",
+    card: "border-[#d7c8ff]/38 bg-[radial-gradient(circle_at_18%_10%,rgba(238,220,255,0.42),transparent_30%),linear-gradient(135deg,#15131f_0%,#34264d_48%,#8b6677_100%)] text-white shadow-[0_24px_56px_-36px_rgba(52,38,77,0.86)]",
     glow: "bg-[#eadcff]/24",
     accent: "text-[#efe2ff]",
   },
   emerald: {
-    card: "border-[#c7f0e0]/34 bg-[radial-gradient(circle_at_18%_10%,rgba(215,255,236,0.34),transparent_31%),linear-gradient(135deg,#101a17_0%,#16392f_48%,#b09358_100%)] text-surface shadow-[0_24px_56px_-36px_rgba(22,57,47,0.86)]",
+    card: "border-[#c7f0e0]/34 bg-[radial-gradient(circle_at_18%_10%,rgba(215,255,236,0.34),transparent_31%),linear-gradient(135deg,#101a17_0%,#16392f_48%,#b09358_100%)] text-white shadow-[0_24px_56px_-36px_rgba(22,57,47,0.86)]",
     glow: "bg-[#d3ffe9]/22",
     accent: "text-[#dfffee]",
   },
   sapphire: {
-    card: "border-[#c8ddff]/34 bg-[radial-gradient(circle_at_18%_10%,rgba(207,226,255,0.38),transparent_31%),linear-gradient(135deg,#101521_0%,#203a5f_50%,#7c6843_100%)] text-surface shadow-[0_24px_56px_-36px_rgba(32,58,95,0.86)]",
+    card: "border-[#c8ddff]/34 bg-[radial-gradient(circle_at_18%_10%,rgba(207,226,255,0.38),transparent_31%),linear-gradient(135deg,#101521_0%,#203a5f_50%,#7c6843_100%)] text-white shadow-[0_24px_56px_-36px_rgba(32,58,95,0.86)]",
     glow: "bg-[#d7e7ff]/22",
     accent: "text-[#dceaff]",
   },
   plum: {
-    card: "border-[#e7c7f0]/34 bg-[radial-gradient(circle_at_18%_10%,rgba(245,215,255,0.34),transparent_31%),linear-gradient(135deg,#18111d_0%,#4c2d59_50%,#9a7250_100%)] text-surface shadow-[0_24px_56px_-36px_rgba(76,45,89,0.86)]",
+    card: "border-[#e7c7f0]/34 bg-[radial-gradient(circle_at_18%_10%,rgba(245,215,255,0.34),transparent_31%),linear-gradient(135deg,#18111d_0%,#4c2d59_50%,#9a7250_100%)] text-white shadow-[0_24px_56px_-36px_rgba(76,45,89,0.86)]",
     glow: "bg-[#f1d7ff]/22",
     accent: "text-[#f4dcff]",
   },
   graphite: {
-    card: "border-[#ddd4c8]/30 bg-[radial-gradient(circle_at_18%_10%,rgba(230,222,211,0.3),transparent_31%),linear-gradient(135deg,#11100e_0%,#302b26_50%,#746552_100%)] text-surface shadow-[0_24px_56px_-36px_rgba(17,16,14,0.9)]",
+    card: "border-[#ddd4c8]/30 bg-[radial-gradient(circle_at_18%_10%,rgba(230,222,211,0.3),transparent_31%),linear-gradient(135deg,#11100e_0%,#302b26_50%,#746552_100%)] text-white shadow-[0_24px_56px_-36px_rgba(17,16,14,0.9)]",
     glow: "bg-[#e7ded2]/18",
     accent: "text-[#efe5d7]",
   },
   bronze: {
-    card: "border-[#f1c995]/34 bg-[radial-gradient(circle_at_18%_10%,rgba(255,214,161,0.34),transparent_31%),linear-gradient(135deg,#1f120b_0%,#613a20_50%,#a57842_100%)] text-surface shadow-[0_24px_56px_-36px_rgba(97,58,32,0.86)]",
+    card: "border-[#f1c995]/34 bg-[radial-gradient(circle_at_18%_10%,rgba(255,214,161,0.34),transparent_31%),linear-gradient(135deg,#1f120b_0%,#613a20_50%,#a57842_100%)] text-white shadow-[0_24px_56px_-36px_rgba(97,58,32,0.86)]",
     glow: "bg-[#ffd8a1]/22",
     accent: "text-[#ffe0b1]",
   },
   teal: {
-    card: "border-[#bde9e5]/34 bg-[radial-gradient(circle_at_18%_10%,rgba(199,255,250,0.3),transparent_31%),linear-gradient(135deg,#0d1a1a_0%,#164647_50%,#9a7a4d_100%)] text-surface shadow-[0_24px_56px_-36px_rgba(22,70,71,0.86)]",
+    card: "border-[#bde9e5]/34 bg-[radial-gradient(circle_at_18%_10%,rgba(199,255,250,0.3),transparent_31%),linear-gradient(135deg,#0d1a1a_0%,#164647_50%,#9a7a4d_100%)] text-white shadow-[0_24px_56px_-36px_rgba(22,70,71,0.86)]",
     glow: "bg-[#cbfff8]/20",
     accent: "text-[#ddfffb]",
   },
   ruby: {
-    card: "border-[#f0c1c8]/34 bg-[radial-gradient(circle_at_18%_10%,rgba(255,207,215,0.3),transparent_31%),linear-gradient(135deg,#1f1012_0%,#5f2831_50%,#a07147_100%)] text-surface shadow-[0_24px_56px_-36px_rgba(95,40,49,0.86)]",
+    card: "border-[#f0c1c8]/34 bg-[radial-gradient(circle_at_18%_10%,rgba(255,207,215,0.3),transparent_31%),linear-gradient(135deg,#1f1012_0%,#5f2831_50%,#a07147_100%)] text-white shadow-[0_24px_56px_-36px_rgba(95,40,49,0.86)]",
     glow: "bg-[#ffd0d8]/20",
     accent: "text-[#ffdde2]",
   },
   ivory: {
-    card: "border-[#ead7a8]/40 bg-[radial-gradient(circle_at_18%_10%,rgba(255,241,199,0.48),transparent_31%),linear-gradient(135deg,#231b12_0%,#6d5630_50%,#d6bf91_100%)] text-surface shadow-[0_24px_56px_-36px_rgba(109,86,48,0.82)]",
+    card: "border-[#ead7a8]/40 bg-[radial-gradient(circle_at_18%_10%,rgba(255,241,199,0.48),transparent_31%),linear-gradient(135deg,#231b12_0%,#6d5630_50%,#d6bf91_100%)] text-white shadow-[0_24px_56px_-36px_rgba(109,86,48,0.82)]",
     glow: "bg-[#fff0c0]/26",
     accent: "text-[#fff1c7]",
   },
@@ -156,8 +156,8 @@ function PackageCard({
     <form
       action={createPurchaseRequestAction}
       className={[
-        "motion-surface motion-reveal-soft relative overflow-hidden rounded-[1.05rem] border p-3.5 text-right",
-        isSubscription ? skin?.card : "border-white/72 bg-surface/64 shadow-[0_18px_42px_-42px_rgba(17,16,14,0.7)]",
+        "ov-fade-in relative overflow-hidden rounded-[var(--r-lg)] border p-3.5 text-right",
+        isSubscription ? skin?.card : "border-border-hairline bg-surface shadow-[var(--shadow-sm)]",
       ].join(" ")}
     >
       <input type="hidden" name="packageId" value={billingPackage.id} />
@@ -170,32 +170,32 @@ function PackageCard({
       ) : null}
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className={["text-sm font-semibold", isSubscription ? "text-white" : "text-foreground"].join(" ")}>{billingPackage.title}</p>
-          <p className={["mt-1 text-[11px] leading-5", isSubscription ? "text-white/72" : "text-muted"].join(" ")}>{billingPackage.description}</p>
+          <p className={["text-sm font-semibold", isSubscription ? "text-white" : "text-ink-1"].join(" ")}>{billingPackage.title}</p>
+          <p className={["mt-1 text-[11px] leading-5", isSubscription ? "text-white/72" : "text-ink-3"].join(" ")}>{billingPackage.description}</p>
         </div>
         <span
           className={[
             "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold",
-            isSubscription ? "border border-white/20 bg-white/14 text-white backdrop-blur" : "border border-accent-soft bg-accent-wash text-accent-deep",
+            isSubscription ? "border border-white/20 bg-white/14 text-white backdrop-blur" : "border border-champagne-200 bg-champagne-50 text-champagne-700",
           ].join(" ")}
         >
           {billingPackage.credits.toLocaleString("fa-IR")} {kind === "subscription" ? "خروجی" : "اعتبار"}
         </span>
       </div>
-      <div className={["relative mt-3 flex flex-wrap items-center justify-between gap-2 text-xs", isSubscription ? "text-white/68" : "text-muted"].join(" ")}>
+      <div className={["relative mt-3 flex flex-wrap items-center justify-between gap-2 text-xs", isSubscription ? "text-white/68" : "text-ink-3"].join(" ")}>
         <span>{kind === "subscription" ? `${(billingPackage.periodDays ?? 30).toLocaleString("fa-IR")} روزه` : "افزایش موجودی حساب"}</span>
-        <span className={["font-semibold", isSubscription ? skin?.accent : "text-foreground"].join(" ")}>
+        <span className={["font-semibold", isSubscription ? skin?.accent : "text-ink-1"].join(" ")}>
           {formatPrice(billingPackage.priceAmount, billingPackage.currency)}
         </span>
       </div>
       {pending ? (
         <div className="relative mt-3 grid gap-2">
           <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.5rem] gap-2">
-            <ButtonLink href="/billing?tab=payment" variant={isSubscription ? "studio-secondary" : "primary"} size="full" className="h-10 rounded-[0.9rem] px-2 text-xs">
+            <ButtonLink href="/billing?tab=payment" variant={isSubscription ? "studio-secondary" : "primary"} size="full" className="h-10 rounded-[var(--r-md)] px-2 text-xs">
               <Landmark aria-hidden={true} className="h-4 w-4" />
               اطلاعات پرداخت
             </ButtonLink>
-            <ButtonLink href="/billing?tab=receipts" variant={isSubscription ? "studio-secondary" : "secondary"} size="full" className="h-10 rounded-[0.9rem] px-2 text-xs">
+            <ButtonLink href="/billing?tab=receipts" variant={isSubscription ? "studio-secondary" : "secondary"} size="full" className="h-10 rounded-[var(--r-md)] px-2 text-xs">
               <Upload aria-hidden={true} className="h-4 w-4" />
               بارگذاری رسید
             </ButtonLink>
@@ -203,10 +203,10 @@ function PackageCard({
               type="submit"
               formAction={deletePurchaseRequestAction}
               className={[
-                "motion-press inline-flex h-10 w-10 items-center justify-center rounded-[0.9rem] text-xs shadow-[0_12px_24px_-20px_rgba(17,16,14,0.68)] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+                "ov-press inline-flex h-10 w-10 items-center justify-center rounded-[var(--r-md)] text-xs shadow-[0_12px_24px_-20px_rgba(17,16,14,0.68)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]",
                 isSubscription
                   ? "bg-white/12 text-white/82 hover:bg-white/18"
-                  : "bg-danger-soft text-danger hover:bg-[#efd5d0]",
+                  : "bg-danger-soft text-danger hover:bg-rose-200/72",
               ].join(" ")}
               aria-label="حذف درخواست خرید"
               title="حذف درخواست"
@@ -221,12 +221,12 @@ function PackageCard({
           className={
             isSubscription
               ? [
-                  "motion-press relative mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[0.9rem] border border-white bg-white text-xs font-semibold text-[#1b1713] shadow-[0_18px_30px_-22px_rgba(255,255,255,0.9)] hover:bg-[#fff8ef] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+                  "ov-press relative mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[var(--r-md)] border border-white bg-white text-xs font-semibold text-[#1b1713] shadow-[0_18px_30px_-22px_rgba(255,255,255,0.9)] hover:bg-[#fff8ef] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]",
                 ].join(" ")
               : buttonClasses({
                   size: "full",
                   variant: "primary",
-                  className: "mt-3 h-10 rounded-[0.9rem] text-xs",
+                  className: "mt-3 h-10 rounded-[var(--r-md)] text-xs",
                 })
           }
         >
@@ -247,7 +247,7 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
 
   return (
     <PageShell maxWidth="md" className="space-y-3 pb-32">
-      <nav className="motion-reveal-soft grid grid-cols-4 gap-1 rounded-[1.1rem] border border-white/72 bg-surface/64 p-1" aria-label="بخش‌های پرداخت">
+      <nav className="ov-fade-in grid grid-cols-4 gap-1 rounded-[var(--r-lg)] border border-border-hairline bg-surface p-1 shadow-[var(--shadow-xs)]" aria-label="بخش‌های پرداخت">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const active = tab.id === activeTab;
@@ -258,14 +258,14 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
               key={tab.id}
               href={`/billing?tab=${tab.id}`}
               className={[
-                "motion-nav-item relative inline-flex h-11 items-center justify-center gap-1.5 rounded-[0.85rem] text-[11px] font-semibold",
-                active ? "bg-foreground text-surface shadow-[0_14px_24px_-22px_rgba(17,16,14,0.9)]" : "text-muted hover:bg-white/58 hover:text-foreground",
+                "ov-press relative inline-flex h-11 items-center justify-center gap-1.5 rounded-[var(--r-md)] text-[11px] font-semibold transition",
+                active ? "bg-ink-1 text-white shadow-[var(--shadow-sm)]" : "text-ink-3 hover:bg-surface-soft hover:text-ink-1",
               ].join(" ")}
               aria-current={active ? "page" : undefined}
             >
               <Icon aria-hidden={true} className="h-3.5 w-3.5" />
               {tab.label}
-              {receiptBadge ? <span className="absolute left-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-accent-bright" /> : null}
+              {receiptBadge ? <span className="absolute left-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-champagne-500" /> : null}
             </Link>
           );
         })}
@@ -284,7 +284,7 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
               />
             ))
           ) : (
-            <p className={`${accountCardClass} text-xs leading-6 text-muted`}>موردی نیست.</p>
+            <p className={`${accountCardClass} text-xs leading-6 text-ink-3`}>موردی نیست.</p>
           )}
         </section>
       ) : null}
@@ -302,7 +302,7 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
               />
             ))
           ) : (
-            <p className={`${accountCardClass} text-xs leading-6 text-muted`}>موردی نیست.</p>
+            <p className={`${accountCardClass} text-xs leading-6 text-ink-3`}>موردی نیست.</p>
           )}
         </section>
       ) : null}
@@ -312,28 +312,28 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
           <AccountSectionHeader icon={Landmark} title="اطلاعات کارت‌به‌کارت" />
           {paymentSettings?.isActive ? (
             <>
-              <div className="motion-state rounded-[1rem] bg-white/62 p-3">
-                <div className="motion-state rounded-[0.95rem] bg-white/78 px-3 py-2.5">
-                  <p className="text-[11px] text-muted">نام صاحب کارت</p>
-                  <p className="mt-1 text-sm font-semibold text-foreground">{paymentSettings.cardholderName}</p>
+              <div className="space-y-2 rounded-[var(--r-md)] border border-border-hairline bg-surface-soft/68 p-3">
+                <div className="rounded-[var(--r-sm)] border border-border-hairline bg-surface px-3 py-2.5">
+                  <p className="text-[11px] text-ink-3">نام صاحب کارت</p>
+                  <p className="mt-1 text-sm font-semibold text-ink-1">{paymentSettings.cardholderName}</p>
                 </div>
-                <div className="motion-state mt-2 rounded-[0.95rem] bg-white/78 px-3 py-2.5">
-                  <p className="text-[11px] text-muted">شماره کارت</p>
+                <div className="rounded-[var(--r-sm)] border border-border-hairline bg-surface px-3 py-2.5">
+                  <p className="text-[11px] text-ink-3">شماره کارت</p>
                   <div className="mt-1 flex items-center justify-between gap-3">
                     <CopyCardNumberButton cardNumber={paymentSettings.cardNumber} />
-                    <p className="min-w-0 text-left text-lg font-semibold tracking-[0.16em] text-foreground" dir="ltr">
+                    <p className="min-w-0 text-left text-lg font-semibold tracking-[0.16em] text-ink-1" dir="ltr">
                       {compactCardNumber(paymentSettings.cardNumber)}
                     </p>
                   </div>
                 </div>
               </div>
-              <ButtonLink href="/billing?tab=receipts" variant="primary" size="full" className="h-11 rounded-[0.95rem] px-2 text-xs">
+              <ButtonLink href="/billing?tab=receipts" variant="primary" size="full" className="h-11">
                 <Upload aria-hidden={true} className="h-4 w-4" />
                 رفتن به ارسال رسید
               </ButtonLink>
             </>
           ) : (
-            <p className="motion-state rounded-[1rem] bg-white/62 p-3 text-xs leading-6 text-muted">
+            <p className="rounded-[var(--r-md)] border border-border-hairline bg-surface-soft/68 p-3 text-xs leading-6 text-ink-3">
               پرداخت کارت‌به‌کارت فعلا فعال نیست. برای ثبت خرید، از پشتیبانی راهنمایی بگیرید.
             </p>
           )}
@@ -355,10 +355,10 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
                   key={request.id}
                   action={submitPurchaseReceiptAction}
                   className={[
-                    "motion-surface motion-reveal-soft relative overflow-hidden rounded-[1.05rem] border p-3.5 text-right",
+                    "ov-fade-in relative overflow-hidden rounded-[var(--r-lg)] border p-3.5 text-right",
                     isPlanRequest
                       ? `${requestSkin?.card} space-y-3`
-                      : "space-y-3 border-white/72 bg-surface/64 shadow-[0_18px_42px_-42px_rgba(17,16,14,0.7)]",
+                      : "space-y-3 border-border-hairline bg-surface shadow-[var(--shadow-sm)]",
                   ].join(" ")}
                 >
                 <input type="hidden" name="requestId" value={request.id} />
@@ -370,8 +370,8 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
                 ) : null}
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className={["relative text-sm font-semibold", isPlanRequest ? "text-white" : "text-foreground"].join(" ")}>{request.package.title}</p>
-                    <p className={["relative mt-1 text-[11px]", isPlanRequest ? "text-white/68" : "text-muted"].join(" ")}>
+                    <p className={["relative text-sm font-semibold", isPlanRequest ? "text-white" : "text-ink-1"].join(" ")}>{request.package.title}</p>
+                    <p className={["relative mt-1 text-[11px]", isPlanRequest ? "text-white/68" : "text-ink-3"].join(" ")}>
                       {formatPrice(request.amount, request.currency)} · {dateFormatter.format(request.updatedAt)}
                     </p>
                   </div>
@@ -388,7 +388,7 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
                       <button
                         type="submit"
                         formAction={deletePurchaseRequestAction}
-                        className="motion-press inline-flex h-9 w-9 items-center justify-center rounded-full bg-danger-soft text-danger shadow-[0_12px_24px_-20px_rgba(152,59,52,0.65)] hover:bg-[#efd5d0] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+                        className="ov-press inline-flex h-9 w-9 items-center justify-center rounded-full bg-danger-soft text-danger shadow-[0_12px_24px_-20px_rgba(152,59,52,0.65)] hover:bg-rose-200/72 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
                         aria-label="حذف از لیست"
                         title="حذف"
                       >
@@ -400,8 +400,8 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
                 {request.status !== "APPROVED" ? (
                   <p
                     className={[
-                      "relative rounded-[0.95rem] px-3 py-2.5 text-xs leading-6",
-                      isPlanRequest ? "bg-white/12 text-white/76" : "bg-white/56 text-muted",
+                      "relative rounded-[var(--r-sm)] px-3 py-2.5 text-xs leading-6",
+                      isPlanRequest ? "bg-white/12 text-white/76" : "bg-surface-soft text-ink-3",
                     ].join(" ")}
                   >
                     {status.detail}
@@ -411,7 +411,7 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
                 {request.receiptImageUrl ? (
                   <a
                     href={request.receiptImageUrl}
-                    className={["relative block text-xs font-medium", isPlanRequest ? requestSkin?.accent : "text-[#7b5d31]"].join(" ")}
+                    className={["relative block text-xs font-medium", isPlanRequest ? requestSkin?.accent : "text-champagne-700"].join(" ")}
                     target="_blank"
                     rel="noreferrer"
                   >
@@ -426,7 +426,7 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
                         name="receipt"
                         type="file"
                         accept="image/jpeg,image/png,image/webp"
-                        className={`${fieldControlClassName} block py-2 text-xs text-muted file:ml-3 file:rounded-full file:border-0 file:bg-accent-wash file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-accent-deep`}
+                        className={`${fieldControlClassName} block py-2 text-xs text-ink-3 file:ml-3 file:rounded-full file:border-0 file:bg-champagne-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-champagne-700`}
                       />
                       <input name="receiptNote" placeholder="یادداشت اختیاری" className={`${fieldControlClassName} text-xs`} />
                     </div>
@@ -435,8 +435,8 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
                       type="submit"
                       className={
                         isPlanRequest
-                          ? "motion-press relative inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-[0.9rem] bg-white px-5 text-xs font-semibold leading-none text-[#1b1713] shadow-[0_18px_30px_-24px_rgba(255,255,255,0.82)] hover:bg-[#fff8ef] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
-                          : buttonClasses({ size: "full", variant: "primary", className: "h-10 rounded-[0.9rem] text-xs" })
+                          ? "ov-press relative inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-[var(--r-md)] bg-white px-5 text-xs font-semibold leading-none text-[#1b1713] shadow-[0_18px_30px_-24px_rgba(255,255,255,0.82)] hover:bg-[#fff8ef] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+                          : buttonClasses({ size: "full", variant: "primary", className: "h-10 rounded-[var(--r-md)] text-xs" })
                       }
                     >
                       <Upload aria-hidden={true} className="h-4 w-4" />
@@ -448,7 +448,7 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
               );
             })
           ) : (
-            <p className={`${accountCardClass} text-xs leading-6 text-muted`}>
+            <p className={`${accountCardClass} text-xs leading-6 text-ink-3`}>
               هنوز خریدی ثبت نشده است. از پلن‌های ماهانه یا اعتبار جداگانه شروع کنید.
             </p>
           )}

@@ -16,7 +16,7 @@ export function AccountPasswordInput({ label, name, autoComplete }: AccountPassw
 
   return (
     <div className="block space-y-1.5">
-      <label htmlFor={inputId} className="block text-xs font-medium text-muted">
+      <label htmlFor={inputId} className="block text-xs font-medium text-ink-3">
         {label}
       </label>
       <div className="relative">
@@ -34,7 +34,7 @@ export function AccountPasswordInput({ label, name, autoComplete }: AccountPassw
           type="button"
           onClick={() => setIsVisible((value) => !value)}
           aria-label={isVisible ? "پنهان کردن رمز عبور" : "نمایش رمز عبور"}
-          className="absolute left-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-muted transition hover:bg-surface-soft hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          className="absolute left-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-ink-3 transition hover:bg-surface-soft hover:text-ink-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         >
           {isVisible ? (
             <EyeOff aria-hidden="true" />

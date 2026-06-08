@@ -15,12 +15,12 @@ export function CopyCardNumberButton({ cardNumber }: { cardNumber: string }) {
   return (
     <button
       type="button"
-      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-soft text-foreground shadow-[0_12px_24px_-20px_rgba(17,16,14,0.65),inset_0_1px_0_rgba(255,255,255,0.75)] transition hover:bg-surface focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+      className="ov-press inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border-hairline bg-surface text-ink-1 shadow-[var(--shadow-xs)] transition hover:bg-surface-soft focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
       onClick={handleCopy}
       aria-label={copied ? "شماره کارت کپی شد" : "کپی شماره کارت"}
       title={copied ? "کپی شد" : "کپی شماره کارت"}
     >
-      {copied ? <CheckCircle aria-hidden={true} className="h-4 w-4" /> : <Copy aria-hidden={true} className="h-4 w-4" />}
+      {copied ? <CheckCircle aria-hidden={true} className="h-4 w-4 text-champagne-600" /> : <Copy aria-hidden={true} className="h-4 w-4" />}
     </button>
   );
 }

@@ -41,17 +41,17 @@ export function StyleChoiceControl({ controlKey, label, options, value, onChange
   const selected = options.find((option) => option.value === value) ?? options[0];
 
   return (
-    <div className="space-y-2">
-      <p className="text-xs text-surface/72">{label}</p>
+    <div className="space-y-3">
+      <p className="text-xs text-white/65">{label}</p>
       <details className="group relative">
-        <summary className="flex min-h-10 cursor-pointer list-none items-center justify-between gap-3 rounded-[0.9rem] border border-white/14 bg-white/[0.05] py-0 pr-3 pl-4 text-sm font-semibold text-surface outline-none transition focus-visible:border-accent-bright focus-visible:shadow-[var(--shadow-focus)] [&::-webkit-details-marker]:hidden">
+        <summary className="flex min-h-10 cursor-pointer list-none items-center justify-between gap-3 rounded-[var(--r-md)] border border-white/10 bg-white/5 py-0 pr-3 pl-4 text-sm font-semibold text-white outline-none transition focus-visible:border-champagne-500 [&::-webkit-details-marker]:hidden">
           <span className="flex min-w-0 items-center gap-2">
             <OptionSwatch value={selected?.value ?? ""} />
             <span className="truncate">{selected?.label}</span>
           </span>
-          <ChevronsDown aria-hidden={true} className="h-3.5 w-3.5 shrink-0 text-surface/72 transition group-open:rotate-180" />
+          <ChevronsDown aria-hidden={true} className="h-3.5 w-3.5 shrink-0 text-white/55 transition group-open:rotate-180" />
         </summary>
-        <div className="absolute inset-x-0 top-[calc(100%+0.35rem)] z-30 max-h-64 overflow-auto rounded-[0.9rem] border border-white/14 bg-[#171411] p-1.5 shadow-[0_22px_44px_-28px_rgba(0,0,0,0.85)]">
+        <div className="absolute inset-x-0 top-[calc(100%+0.35rem)] z-30 max-h-64 overflow-auto rounded-[var(--r-md)] border border-white/10 bg-ink-1 p-1.5 shadow-[0_22px_44px_-28px_rgba(0,0,0,0.85)]">
           {options.map((item) => (
             <button
               key={item.value}
@@ -60,8 +60,10 @@ export function StyleChoiceControl({ controlKey, label, options, value, onChange
                 onChange(item.value);
                 event.currentTarget.closest("details")?.removeAttribute("open");
               }}
-              className={`flex min-h-9 w-full items-center gap-2 rounded-[0.7rem] px-2.5 text-right text-sm transition ${
-                value === item.value ? "bg-accent-wash/95 font-semibold text-accent-deep" : "text-surface/86 hover:bg-white/[0.07]"
+              className={`flex min-h-9 w-full items-center gap-2 rounded-[var(--r-pill)] px-2.5 text-right text-sm transition ${
+                value === item.value
+                  ? "bg-champagne-500/15 font-semibold text-champagne-200"
+                  : "text-white/85 hover:bg-white/10"
               }`}
               aria-label={`${label}: ${item.label}`}
               aria-current={value === item.value ? "true" : undefined}

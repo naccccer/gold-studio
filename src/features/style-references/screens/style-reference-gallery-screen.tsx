@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/item-context-menu";
 
 import { PageShell } from "@/components/ui/page-shell";
+import { ImageFrame } from "@/components/ui/image-frame";
 import {
   archiveStyleReferenceAction,
   renameStyleReferenceAction,
