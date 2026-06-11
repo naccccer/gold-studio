@@ -197,6 +197,7 @@ export function NewProjectForm({
   });
   const [selectedAsset, setSelectedAsset] = useState<GalleryAssetOption | null>(explicitSelectedAsset);
   const [supportingAssets, setSupportingAssets] = useState<GalleryAssetOption[]>([]);
+  const [supportingPanelOpen, setSupportingPanelOpen] = useState(false);
   const [cropUploadId, setCropUploadId] = useState<string | null>(null);
   const [cropUploadPurpose, setCropUploadPurpose] = useState<CropUploadPurpose>("source");
   const [outputPreset, setOutputPreset] = useState<OutputPresetId>(defaultOutputPreset);
@@ -228,6 +229,8 @@ export function NewProjectForm({
   const visibleGalleryAssets = galleryAssets.slice(0, 4);
   const currentImageSrc = selectedAsset?.fileUrl ?? null;
   const hasSource = Boolean(currentImageSrc);
+  const hasSupportingAssets = supportingAssets.length > 0;
+  const shouldShowSupportingPanel = supportingPanelOpen || hasSupportingAssets;
   const canContinue = hasSource && !sourcePreparing && !sourceError;
   const canSubmit = Boolean(selectedStyleData) && canContinue;
   const canSubmitWithReference = canSubmit && (!isSampleReferenceStyle || Boolean(selectedReference || referenceUploadPreview));
@@ -251,6 +254,7 @@ export function NewProjectForm({
     if (purpose === "source") {
       setSelectedAsset(null);
       setSupportingAssets([]);
+      setSupportingPanelOpen(false);
       setProductType(DEFAULT_PRODUCT_TYPE);
     }
 
@@ -305,6 +309,7 @@ export function NewProjectForm({
     setSourceError(null);
     setSelectedAsset(asset);
     setSupportingAssets((current) => current.filter((item) => item.id !== asset.id));
+    setSupportingPanelOpen(false);
     setProductType(normalizeProductType(asset.productType));
   }
 
@@ -322,6 +327,7 @@ export function NewProjectForm({
     }
     setSelectedAsset(null);
     setSupportingAssets([]);
+    setSupportingPanelOpen(false);
     setCropUploadId(null);
   }
 
@@ -335,6 +341,7 @@ export function NewProjectForm({
         return current;
       }
 
+      setSupportingPanelOpen(true);
       return [...current, asset];
     });
   }
@@ -543,31 +550,51 @@ export function NewProjectForm({
             </div>
           ) : null}
 
-          {hasSource ? (
-            <section className="space-y-3 rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-3">
-              <div className="flex items-center justify-between gap-3">
+          {hasSource && !shouldShowSupportingPanel ? (
+            <button
+              type="button"
+              onClick={() => setSupportingPanelOpen(true)}
+              className="flex w-full items-center justify-between gap-3 rounded-[1rem] border border-white/10 bg-white/[0.04] px-3 py-2.5 text-right transition hover:border-white/18 hover:bg-white/[0.07]"
+            >
+              <span className="min-w-0">
+                <span className="block text-xs font-medium text-surface/78">محصولم جزئیات بیشتری دارد</span>
+                <span className="mt-0.5 block text-[11px] leading-5 text-surface/48">اختیاری، فقط برای زاویه یا قفل و نگین پیچیده</span>
+              </span>
+              <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/12 bg-white/[0.06] text-surface/72">
+                <Add aria-hidden={true} className="h-4 w-4" />
+              </span>
+            </button>
+          ) : null}
+
+          {hasSource && shouldShowSupportingPanel ? (
+            <section className="space-y-3 rounded-[1rem] border border-white/10 bg-white/[0.045] px-3 py-3">
+              <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-surface/82">عکس‌های تکمیلی</p>
-                  <p className="mt-0.5 text-[11px] leading-5 text-surface/56">
-                    برای محصول‌های پرجزئیات، تا دو زاویه دیگر اضافه کنید.
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-xs font-medium text-surface/82">زاویه‌های کمکی</p>
+                    <span className="rounded-full border border-white/10 bg-white/[0.05] px-2 py-0.5 text-[10px] leading-4 text-surface/56">
+                      اختیاری
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[11px] leading-5 text-surface/54">
+                    اگر محصول از یک عکس کامل مشخص است، این بخش را رد کنید.
                   </p>
                 </div>
-                <label
-                  htmlFor="project-supporting-file-input"
-                  aria-disabled={!canAddSupportingAsset}
-                  className={buttonClasses({
-                    variant: "studio-secondary",
-                    className: `min-h-9 shrink-0 rounded-full px-3 text-xs ${!canAddSupportingAsset ? "pointer-events-none opacity-45" : ""}`,
-                  })}
-                >
-                  <Add aria-hidden={true} className="h-3.5 w-3.5" />
-                  افزودن
-                </label>
+                {!hasSupportingAssets ? (
+                  <button
+                    type="button"
+                    onClick={() => setSupportingPanelOpen(false)}
+                    aria-label="بستن زاویه‌های کمکی"
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-surface/64 transition hover:bg-white/[0.09]"
+                  >
+                    <CloseCircle aria-hidden={true} className="h-4 w-4" />
+                  </button>
+                ) : null}
               </div>
-              {supportingAssets.length > 0 ? (
+              {hasSupportingAssets ? (
                 <div className="grid grid-cols-2 gap-3">
                   {supportingAssets.map((asset) => {
-                    const title = asset.title || asset.originalName || "عکس تکمیلی محصول";
+                    const title = asset.title || asset.originalName || "زاویه کمکی محصول";
 
                     return (
                       <div key={asset.id} className="relative">
@@ -584,7 +611,7 @@ export function NewProjectForm({
                           <button
                             type="button"
                             onClick={() => removeSupportingAsset(asset.id)}
-                            aria-label="حذف عکس تکمیلی"
+                            aria-label="حذف زاویه کمکی"
                             className="absolute left-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/24 bg-black/34 text-white backdrop-blur transition hover:bg-black/48"
                           >
                             <CloseCircle aria-hidden={true} className="h-4 w-4" />
@@ -595,6 +622,22 @@ export function NewProjectForm({
                   })}
                 </div>
               ) : null}
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[10px] leading-5 text-surface/46">
+                  {supportingAssets.length.toLocaleString("fa-IR")} از {MAX_SUPPORTING_PRODUCT_IMAGES.toLocaleString("fa-IR")} عکس
+                </p>
+                <label
+                  htmlFor="project-supporting-file-input"
+                  aria-disabled={!canAddSupportingAsset}
+                  className={buttonClasses({
+                    variant: "studio-secondary",
+                    className: `min-h-9 shrink-0 rounded-full px-3 text-xs ${!canAddSupportingAsset ? "pointer-events-none opacity-45" : ""}`,
+                  })}
+                >
+                  <Add aria-hidden={true} className="h-3.5 w-3.5" />
+                  افزودن زاویه
+                </label>
+              </div>
             </section>
           ) : null}
 
