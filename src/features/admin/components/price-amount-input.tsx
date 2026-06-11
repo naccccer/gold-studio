@@ -28,17 +28,19 @@ type PriceAmountInputProps = {
   className: string;
   defaultValue?: number;
   placeholder?: string;
+  form?: string;
 };
 
-export function PriceAmountInput({ className, defaultValue, placeholder }: PriceAmountInputProps) {
+export function PriceAmountInput({ className, defaultValue, placeholder, form }: PriceAmountInputProps) {
   const initialValue = typeof defaultValue === "number" && Number.isFinite(defaultValue) ? String(defaultValue) : "";
   const [rawValue, setRawValue] = useState(initialValue);
   const displayValue = useMemo(() => formatPrice(rawValue), [rawValue]);
 
   return (
     <>
-      <input type="hidden" name="priceAmount" value={rawValue || "0"} />
+      <input type="hidden" name="priceAmount" value={rawValue || "0"} form={form} />
       <input
+        form={form}
         value={displayValue}
         inputMode="numeric"
         dir="ltr"
