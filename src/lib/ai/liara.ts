@@ -39,6 +39,7 @@ const GENERATION_PROMPT_SUFFIX = [
 type GenerateImageInput = {
   sourceBuffer: Buffer;
   mimeType: string;
+  supportingImages?: PreparedFormImage[] | null;
   referenceBuffer?: Buffer | null;
   referenceMimeType?: string | null;
   stylePrompt: string;
@@ -442,6 +443,7 @@ function getProviderErrorDetail(error: unknown) {
 export async function generateStyledImageWithLiara({
   sourceBuffer,
   mimeType,
+  supportingImages,
   referenceBuffer,
   referenceMimeType,
   stylePrompt,
@@ -468,6 +470,14 @@ export async function generateStyledImageWithLiara({
         new Blob([new Uint8Array(sourceImage.buffer)], { type: sourceImage.mimeType }),
         `source.${extensionFromMimeType(sourceImage.mimeType)}`,
       );
+      for (const [index, supportingImage] of (supportingImages ?? []).entries()) {
+        const preparedSupportingImage = await prepareEditImageForModel(supportingImage.buffer, supportingImage.mimeType, imageModel);
+        form.append(
+          "image",
+          new Blob([new Uint8Array(preparedSupportingImage.buffer)], { type: preparedSupportingImage.mimeType }),
+          `supporting-${index + 1}.${extensionFromMimeType(preparedSupportingImage.mimeType)}`,
+        );
+      }
       if (referenceImage) {
         form.append(
           "image",

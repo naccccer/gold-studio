@@ -20,6 +20,7 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 - Image generation uses the Liara-compatible provider boundary in `src/lib/ai`, with admin-configurable provider model settings.
 - DB-backed rate limits, credit reservations, manual purchase review, sales referral codes, support tickets, FAQ, and admin billing operations are present.
 - Batch generation starts from Gallery, creates one project per selected source photo, and reserves generation credit until each output succeeds.
+- New project creation supports optional supporting product photos for complicated products: one primary source plus up to two extra product angles still creates one project and one output.
 
 ## Next Priorities
 

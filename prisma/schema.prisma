@@ -156,6 +156,7 @@ model Project {
   freeVariantUsedAt DateTime?
   freeVariantProjectId String?
   variantParentId String?
+  supportingAssets ProjectSupportingAsset[]
   batchItems       GenerationBatchItem[]
   providerEvents   ProviderEvent[]
   creditReservations GenerationCreditReservation[]
@@ -275,6 +276,7 @@ model ProductAsset {
   status       ProductAssetStatus    @default(READY)
   archivedAt   DateTime?
   projects     Project[]
+  supportingProjects ProjectSupportingAsset[]
   batchItems   GenerationBatchItem[]
   createdAt    DateTime              @default(now())
   updatedAt    DateTime              @updatedAt
@@ -282,6 +284,21 @@ model ProductAsset {
   @@index([userId, createdAt])
   @@index([userId, archivedAt])
   @@index([collectionId])
+}
+
+model ProjectSupportingAsset {
+  id        String       @id @default(cuid())
+  projectId String
+  project   Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assetId   String
+  asset     ProductAsset @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  position  Int
+  createdAt DateTime     @default(now())
+
+  @@unique([projectId, assetId])
+  @@unique([projectId, position])
+  @@index([assetId])
+  @@index([projectId, position])
 }
 
 model StyleReferenceAsset {

@@ -348,13 +348,13 @@ export async function archiveAssetAction(formData: FormData) {
       id: true,
       storageKey: true,
       _count: {
-        select: { batchItems: true, projects: true },
+        select: { batchItems: true, projects: true, supportingProjects: true },
       },
     },
   });
 
-  const deletableAssets = assets.filter((asset) => asset._count.projects === 0 && asset._count.batchItems === 0);
-  const usedAssets = assets.filter((asset) => asset._count.projects > 0 || asset._count.batchItems > 0);
+  const deletableAssets = assets.filter((asset) => asset._count.projects === 0 && asset._count.batchItems === 0 && asset._count.supportingProjects === 0);
+  const usedAssets = assets.filter((asset) => asset._count.projects > 0 || asset._count.batchItems > 0 || asset._count.supportingProjects > 0);
 
   if (deletableAssets.length > 0) {
     const deleted = await db.productAsset.deleteMany({

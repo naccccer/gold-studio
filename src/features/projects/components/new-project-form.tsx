@@ -4,9 +4,11 @@ import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
+  Add,
   ArrowDown2,
   ArrowLeft,
   Camera,
+  CloseCircle,
   DocumentUpload,
   Gallery,
   Image as ImageIcon,
@@ -66,6 +68,8 @@ type NewProjectFormProps = {
 type OutputPresetId = "post" | "story" | "banner";
 type WizardStep = "source" | "size" | "style";
 type StyleControl = NonNullable<StyleOption["controls"]>[number];
+type CropUploadPurpose = "source" | "supporting";
+const MAX_SUPPORTING_PRODUCT_IMAGES = 2;
 
 const topBarTitles: Record<WizardStep, string> = {
   source: "آپلود عکس محصول",
@@ -192,7 +196,9 @@ export function NewProjectForm({
     return explicitSelectedAsset && !freeVariantParentId ? "size" : "source";
   });
   const [selectedAsset, setSelectedAsset] = useState<GalleryAssetOption | null>(explicitSelectedAsset);
+  const [supportingAssets, setSupportingAssets] = useState<GalleryAssetOption[]>([]);
   const [cropUploadId, setCropUploadId] = useState<string | null>(null);
+  const [cropUploadPurpose, setCropUploadPurpose] = useState<CropUploadPurpose>("source");
   const [outputPreset, setOutputPreset] = useState<OutputPresetId>(defaultOutputPreset);
   const [selectedStyle, setSelectedStyle] = useState(defaultStyle?.id ?? "");
   const [selectedReference, setSelectedReference] = useState<StyleReferenceOption | null>(null);
@@ -225,6 +231,7 @@ export function NewProjectForm({
   const canContinue = hasSource && !sourcePreparing && !sourceError;
   const canSubmit = Boolean(selectedStyleData) && canContinue;
   const canSubmitWithReference = canSubmit && (!isSampleReferenceStyle || Boolean(selectedReference || referenceUploadPreview));
+  const canAddSupportingAsset = hasSource && supportingAssets.length < MAX_SUPPORTING_PRODUCT_IMAGES && !sourcePreparing;
   const shouldShowBillingShortcut = state.error === NO_CREDITS_ERROR;
 
   useEffect(() => {
@@ -235,12 +242,17 @@ export function NewProjectForm({
     };
   }, [referenceUploadPreview]);
 
-  function beginGalleryUploadCrop(file: File, source: PendingUploadSource) {
+  function beginGalleryUploadCrop(file: File, source: PendingUploadSource, purpose: CropUploadPurpose) {
     fileInputRequestRef.current += 1;
     setSourcePreparing(true);
     setSourceError(null);
-    setSelectedAsset(null);
-    setProductType(DEFAULT_PRODUCT_TYPE);
+    setCropUploadPurpose(purpose);
+
+    if (purpose === "source") {
+      setSelectedAsset(null);
+      setSupportingAssets([]);
+      setProductType(DEFAULT_PRODUCT_TYPE);
+    }
 
     const pendingUpload = createPendingGalleryUpload(file, source);
     setCropUploadId(pendingUpload.id);
@@ -266,7 +278,25 @@ export function NewProjectForm({
     }
 
     input.value = "";
-    beginGalleryUploadCrop(file, input.id === "project-camera-input" ? "camera" : "files");
+    beginGalleryUploadCrop(file, input.id === "project-camera-input" ? "camera" : "files", "source");
+  }
+
+  function handleSupportingImageInputChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const input = event.currentTarget;
+    const file = input.files?.[0] ?? null;
+    setSourceError(null);
+
+    if (!file) {
+      setSourcePreparing(false);
+      return;
+    }
+
+    input.value = "";
+    if (!canAddSupportingAsset) {
+      return;
+    }
+
+    beginGalleryUploadCrop(file, "files", "supporting");
   }
 
   function selectAsset(asset: GalleryAssetOption) {
@@ -274,6 +304,7 @@ export function NewProjectForm({
     setSourcePreparing(false);
     setSourceError(null);
     setSelectedAsset(asset);
+    setSupportingAssets((current) => current.filter((item) => item.id !== asset.id));
     setProductType(normalizeProductType(asset.productType));
   }
 
@@ -290,7 +321,26 @@ export function NewProjectForm({
       fileInput.value = "";
     }
     setSelectedAsset(null);
+    setSupportingAssets([]);
     setCropUploadId(null);
+  }
+
+  function addSupportingAsset(asset: GalleryAssetOption) {
+    if (selectedAsset?.id === asset.id) {
+      return;
+    }
+
+    setSupportingAssets((current) => {
+      if (current.some((item) => item.id === asset.id) || current.length >= MAX_SUPPORTING_PRODUCT_IMAGES) {
+        return current;
+      }
+
+      return [...current, asset];
+    });
+  }
+
+  function removeSupportingAsset(assetId: string) {
+    setSupportingAssets((current) => current.filter((asset) => asset.id !== assetId));
   }
 
   function selectStyle(style: StyleOption) {
@@ -338,8 +388,12 @@ export function NewProjectForm({
         productType,
       };
 
-      selectAsset(uploadedAsset);
-      setStep("size");
+      if (cropUploadPurpose === "supporting") {
+        addSupportingAsset(uploadedAsset);
+      } else {
+        selectAsset(uploadedAsset);
+        setStep("size");
+      }
     }
 
     if (options?.refresh) {
@@ -364,6 +418,9 @@ export function NewProjectForm({
       ))}
       {freeVariantParentId ? <input type="hidden" name="freeVariantParentId" value={freeVariantParentId} /> : null}
       {selectedAsset ? <input type="hidden" name="sourceAssetId" value={selectedAsset.id} /> : null}
+      {supportingAssets.map((asset) => (
+        <input key={asset.id} type="hidden" name="supportingAssetId" value={asset.id} />
+      ))}
       {selectedReference ? <input type="hidden" name="referenceAssetId" value={selectedReference.id} /> : null}
       <input type="hidden" name="productType" value={productType} />
 
@@ -401,6 +458,13 @@ export function NewProjectForm({
             return file ? URL.createObjectURL(file) : null;
           });
         }}
+      />
+      <input
+        id="project-supporting-file-input"
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="sr-only"
+        onChange={handleSupportingImageInputChange}
       />
 
       {step === "source" ? (
@@ -477,6 +541,61 @@ export function NewProjectForm({
                 })}
               </div>
             </div>
+          ) : null}
+
+          {hasSource ? (
+            <section className="space-y-3 rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-surface/82">عکس‌های تکمیلی</p>
+                  <p className="mt-0.5 text-[11px] leading-5 text-surface/56">
+                    برای محصول‌های پرجزئیات، تا دو زاویه دیگر اضافه کنید.
+                  </p>
+                </div>
+                <label
+                  htmlFor="project-supporting-file-input"
+                  aria-disabled={!canAddSupportingAsset}
+                  className={buttonClasses({
+                    variant: "studio-secondary",
+                    className: `min-h-9 shrink-0 rounded-full px-3 text-xs ${!canAddSupportingAsset ? "pointer-events-none opacity-45" : ""}`,
+                  })}
+                >
+                  <Add aria-hidden={true} className="h-3.5 w-3.5" />
+                  افزودن
+                </label>
+              </div>
+              {supportingAssets.length > 0 ? (
+                <div className="grid grid-cols-2 gap-3">
+                  {supportingAssets.map((asset) => {
+                    const title = asset.title || asset.originalName || "عکس تکمیلی محصول";
+
+                    return (
+                      <div key={asset.id} className="relative">
+                        <JewelryImageFrame aspect="square" treatment="quiet" className="rounded-[1rem]">
+                          <SafeJewelryImage
+                            src={asset.fileUrl}
+                            alt={title}
+                            fallbackSrc={uploadPreview.src}
+                            fallbackAlt={uploadPreview.alt}
+                            fill
+                            className="object-cover"
+                            sizes="160px"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeSupportingAsset(asset.id)}
+                            aria-label="حذف عکس تکمیلی"
+                            className="absolute left-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/24 bg-black/34 text-white backdrop-blur transition hover:bg-black/48"
+                          >
+                            <CloseCircle aria-hidden={true} className="h-4 w-4" />
+                          </button>
+                        </JewelryImageFrame>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </section>
           ) : null}
 
           <ActionDock columns={hasSource ? 2 : 1} className="mt-auto pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">

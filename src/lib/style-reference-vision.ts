@@ -37,8 +37,11 @@ export function normalizeReferencePromptMetadata(input: StyleReferencePromptMeta
   };
 }
 
-export function buildSampleReferencePromptContext(input?: StyleReferencePromptMetadata | null) {
+export function buildSampleReferencePromptContext(input?: StyleReferencePromptMetadata | null, productImageCount = 1) {
   const metadata = input ? normalizeReferencePromptMetadata(input) : null;
+  const safeProductImageCount = Math.max(1, productImageCount);
+  const sampleImageNumber = safeProductImageCount + 1;
+  const productImageLabel = safeProductImageCount === 1 ? "image 1" : `images 1-${safeProductImageCount}`;
   const hasReliableMetadata =
     metadata &&
     (metadata.visionConfidence ?? 0) >= MIN_REFERENCE_CONFIDENCE &&
@@ -52,11 +55,11 @@ export function buildSampleReferencePromptContext(input?: StyleReferencePromptMe
 
   const promptParts = [
     "Strict sample-photo replacement mode:",
-    "Use image 1 as the absolute product identity source. Preserve the user's product shape, proportions, silhouette, metal color, gemstone count and placement, chain or clasp design, watch face, engravings, material finish, and all visible details.",
-    "Use image 2 only as the scene/style template. Preserve its setup, camera angle, perspective, product placement, framing, surface, background, props, lighting direction, shadow behavior, reflections, color palette, and mood as closely as possible.",
-    "Remove, ignore, and do not copy the sample product identity from image 2. Place the user's product from image 1 exactly where the sample product/subject sits in image 2, adapted only as needed for realistic scale, contact shadows, perspective, and material reflections.",
+    `Use ${productImageLabel} as the absolute product identity source. Preserve the user's product shape, proportions, silhouette, metal color, gemstone count and placement, chain or clasp design, watch face, engravings, material finish, and all visible details.`,
+    `Use image ${sampleImageNumber} only as the scene/style template. Preserve its setup, camera angle, perspective, product placement, framing, surface, background, props, lighting direction, shadow behavior, reflections, color palette, and mood as closely as possible.`,
+    `Remove, ignore, and do not copy the sample product identity from image ${sampleImageNumber}. Place the user's product from ${productImageLabel} exactly where the sample product/subject sits in image ${sampleImageNumber}, adapted only as needed for realistic scale, contact shadows, perspective, and material reflections.`,
     "The result should look as if the user's product was physically photographed in the sample environment with the same lighting and camera setup.",
-    "If there is conflict between product identity and sample scene, product identity from image 1 wins; scene, light, angle, and composition from image 2 should still be followed as closely as possible.",
+    `If there is conflict between product identity and sample scene, product identity from ${productImageLabel} wins; scene, light, angle, and composition from image ${sampleImageNumber} should still be followed as closely as possible.`,
   ];
 
   if (hasReliableMetadata && metadata) {

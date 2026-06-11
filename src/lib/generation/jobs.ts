@@ -99,6 +99,7 @@ async function generateImageWithModelFallback({
   projectId,
   sourceBuffer,
   mimeType,
+  supportingImages,
   referenceBuffer,
   referenceMimeType,
   stylePrompt,
@@ -108,6 +109,7 @@ async function generateImageWithModelFallback({
   projectId: string;
   sourceBuffer: Buffer;
   mimeType: string;
+  supportingImages?: Array<{ buffer: Buffer; mimeType: string }> | null;
   referenceBuffer?: Buffer | null;
   referenceMimeType?: string | null;
   stylePrompt: string;
@@ -122,6 +124,7 @@ async function generateImageWithModelFallback({
       const generatedImage = await generateStyledImageWithLiara({
         sourceBuffer,
         mimeType,
+        supportingImages,
         referenceBuffer,
         referenceMimeType,
         stylePrompt,
@@ -134,7 +137,7 @@ async function generateImageWithModelFallback({
         status: "SUCCESS",
         model: generatedImage.model,
         retryCount: index,
-        statusDetail: `outputPreset=${outputPreset}; reference=${referenceUsed ? "yes" : "no"}; fallbackAttempt=${index + 1}/${models.length}`,
+        statusDetail: `outputPreset=${outputPreset}; supportingImages=${supportingImages?.length ?? 0}; reference=${referenceUsed ? "yes" : "no"}; fallbackAttempt=${index + 1}/${models.length}`,
       });
       return generatedImage;
     } catch (error) {
@@ -145,7 +148,7 @@ async function generateImageWithModelFallback({
         status: "FAILED",
         model,
         retryCount: index,
-        statusDetail: `fallbackAttempt=${index + 1}/${models.length}; next=${index < models.length - 1 ? models[index + 1] : "none"}`,
+        statusDetail: `supportingImages=${supportingImages?.length ?? 0}; fallbackAttempt=${index + 1}/${models.length}; next=${index < models.length - 1 ? models[index + 1] : "none"}`,
         errorMessage: technicalErrorMessage(error, "خطا در تولید تصویر رخ داد."),
       });
     }
@@ -296,6 +299,17 @@ export async function processImageProject(projectId: string) {
             mimeType: true,
           },
         },
+        supportingAssets: {
+          orderBy: { position: "asc" },
+          select: {
+            asset: {
+              select: {
+                storageKey: true,
+                mimeType: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -308,6 +322,9 @@ export async function processImageProject(projectId: string) {
     }
 
     const source = await readStoredUpload(project.sourceAsset.storageKey, project.sourceAsset.mimeType);
+    const supportingImages = await Promise.all(
+      project.supportingAssets.map((item) => readStoredUpload(item.asset.storageKey, item.asset.mimeType)),
+    );
     const reference = project.referenceAsset
       ? await readStoredUpload(project.referenceAsset.storageKey, project.referenceAsset.mimeType)
       : null;
@@ -321,6 +338,7 @@ export async function processImageProject(projectId: string) {
       projectId,
       sourceBuffer: source.buffer,
       mimeType: source.mimeType,
+      supportingImages,
       referenceBuffer: reference?.buffer ?? null,
       referenceMimeType: reference?.mimeType ?? null,
       stylePrompt,

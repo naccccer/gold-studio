@@ -32,6 +32,8 @@ export type ProjectFormState = {
   error?: string;
 };
 
+const MAX_SUPPORTING_PRODUCT_IMAGES = 2;
+
 async function getReadyUser(userId: string) {
   const user = await db.user.findUnique({ where: { id: userId } });
   if (!user) {
@@ -39,6 +41,60 @@ async function getReadyUser(userId: string) {
   }
 
   return { user };
+}
+
+function supportingAssetIdsFromFormData(formData: FormData, sourceAssetId?: string | null) {
+  const seen = new Set<string>();
+  const sourceId = sourceAssetId?.trim() || "";
+  const ids: string[] = [];
+
+  for (const value of formData.getAll("supportingAssetId")) {
+    const id = String(value).trim();
+    if (!id || id === sourceId || seen.has(id)) {
+      continue;
+    }
+
+    seen.add(id);
+    ids.push(id);
+  }
+
+  return ids;
+}
+
+async function resolveSupportingAssets(formData: FormData, userId: string, sourceAssetId?: string | null) {
+  const supportingAssetIds = supportingAssetIdsFromFormData(formData, sourceAssetId);
+  if (supportingAssetIds.length > MAX_SUPPORTING_PRODUCT_IMAGES) {
+    return { error: "برای هر پروژه حداکثر دو عکس تکمیلی می‌توانید اضافه کنید." };
+  }
+
+  if (supportingAssetIds.length === 0) {
+    return { assets: [] as Array<{ id: string }> };
+  }
+
+  const assets = await db.productAsset.findMany({
+    where: {
+      id: { in: supportingAssetIds },
+      userId,
+      status: "READY",
+      archivedAt: null,
+    },
+    select: { id: true },
+  });
+  const assetIds = new Set(assets.map((asset) => asset.id));
+  const orderedAssets = supportingAssetIds.flatMap((id) => (assetIds.has(id) ? [{ id }] : []));
+
+  if (orderedAssets.length !== supportingAssetIds.length) {
+    return { error: "یکی از عکس‌های تکمیلی پیدا نشد یا آماده استفاده نیست." };
+  }
+
+  return { assets: orderedAssets };
+}
+
+function supportingAssetCreateData(supportingAssets: Array<{ id: string }>) {
+  return supportingAssets.map((asset, index) => ({
+    assetId: asset.id,
+    position: index + 1,
+  }));
 }
 
 async function reserveCreditOrState(userId: string) {
@@ -104,6 +160,19 @@ function getFineDetailInstruction(productType?: string | null) {
   ].join("\n");
 }
 
+function getProductImageSetInstruction(productImageCount: number) {
+  if (productImageCount <= 1) {
+    return "";
+  }
+
+  return [
+    `Product identity references: use images 1-${productImageCount} together as views of the same product.`,
+    "Image 1 is the primary composition/source image. The additional product images are supporting detail and angle references only.",
+    "Use the supporting images to preserve complicated details such as clasp structure, side profile, gemstone layout, engraving, watch face markings, chain shape, material finish, and hidden edges.",
+    "Do not create multiple products, a collage, or multiple outputs. Return one final product image.",
+  ].join("\n");
+}
+
 function stripVersionSuffix(title: string) {
   return title.replace(/\s*[-–]\s*نسخه\s+(?:دیگر|[0-9۰-۹٠-٩]+)\s*$/u, "").trim();
 }
@@ -125,6 +194,7 @@ function buildPrompt(
     visionConfidence?: number | null;
     visionAngle?: string | null;
   } | null,
+  productImageCount = 1,
 ) {
   const outputPreset = normalizeOutputPreset(formData.get("outputPreset"));
   const promptParts = [style.prompt, getOutputPresetSpec(outputPreset).instruction];
@@ -155,7 +225,12 @@ function buildPrompt(
     promptParts.push(styleCompositionInstruction);
   }
 
-  const referenceStyleInstruction = style.id === "style_sample_reference" ? buildSampleReferencePromptContext() : "";
+  const productImageSetInstruction = getProductImageSetInstruction(productImageCount);
+  if (productImageSetInstruction) {
+    promptParts.push(productImageSetInstruction);
+  }
+
+  const referenceStyleInstruction = style.id === "style_sample_reference" ? buildSampleReferencePromptContext(null, productImageCount) : "";
   if (referenceStyleInstruction) {
     promptParts.push(referenceStyleInstruction);
   }
@@ -308,12 +383,18 @@ export async function createProjectAction(
       return { error: "تصویر گالری یافت نشد." };
     }
 
+    const supportingAssets = await resolveSupportingAssets(formData, session.userId, asset.id);
+    if ("error" in supportingAssets) {
+      return { error: supportingAssets.error };
+    }
+    const supportingCreateData = supportingAssetCreateData(supportingAssets.assets);
+
     const projectPrompt = buildPrompt(style, formData, {
       productType: selectedProductType,
       visionDescription: asset.visionDescription,
       visionConfidence: asset.visionConfidence,
       visionAngle: asset.visionAngle,
-    });
+    }, 1 + supportingAssets.assets.length);
 
     const projectTitle = pickVisionTitle({
       userTitle: title,
@@ -387,6 +468,7 @@ export async function createProjectAction(
               prompt: projectPrompt,
               status: "QUEUED",
               variantParentId: parent.id,
+              supportingAssets: supportingCreateData.length > 0 ? { create: supportingCreateData } : undefined,
             },
             select: { id: true },
           });
@@ -424,6 +506,7 @@ export async function createProjectAction(
             referenceAssetId: referenceAsset?.id ?? null,
             prompt: projectPrompt,
             status: "QUEUED",
+            supportingAssets: supportingCreateData.length > 0 ? { create: supportingCreateData } : undefined,
           },
           select: { id: true },
         });
