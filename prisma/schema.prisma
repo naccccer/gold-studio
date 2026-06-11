@@ -294,6 +294,15 @@ model StyleReferenceAsset {
   originalName String?
   title        String?
   notes        String?
+  visionSceneDescription String?         @db.Text
+  visionCameraAngle String?
+  visionLighting String?                 @db.Text
+  visionBackground String?               @db.Text
+  visionSubjectDescription String?       @db.Text
+  visionConfidence Float?
+  visionModel  String?
+  visionAnalyzedAt DateTime?
+  visionError  String?                   @db.Text
   status       StyleReferenceAssetStatus @default(READY)
   archivedAt   DateTime?
   projects     Project[]

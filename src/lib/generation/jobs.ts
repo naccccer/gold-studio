@@ -2,6 +2,7 @@ import { generateStyledImageWithLiara, generateTextImageWithLiara, type LiaraIma
 import { getImageModelAttemptOrder, getProviderSettings } from "@/lib/ai/provider-settings";
 import { captureGenerationCreditReservation, logProviderEvent, releaseGenerationCreditReservation } from "@/lib/billing";
 import { db } from "@/lib/db";
+import { buildSampleReferenceVisionPromptContext, ensureStyleReferenceVision } from "@/lib/style-reference-vision";
 import { readStoredUpload, saveGeneratedImage } from "@/lib/uploads";
 
 function collectErrorText(error: unknown, depth = 0): string {
@@ -248,6 +249,31 @@ async function refreshGenerationBatchesForProject(projectId: string) {
   }
 }
 
+async function enrichPromptWithReferenceVision(project: {
+  id: string;
+  styleId: string;
+  prompt: string;
+  referenceAssetId: string | null;
+}) {
+  if (project.styleId !== "style_sample_reference" || !project.referenceAssetId) {
+    return project.prompt;
+  }
+
+  const metadata = await ensureStyleReferenceVision(project.referenceAssetId);
+  const referenceVisionContext = buildSampleReferenceVisionPromptContext(metadata);
+  if (!referenceVisionContext || project.prompt.includes("Reference scene analysis:")) {
+    return project.prompt;
+  }
+
+  const enrichedPrompt = `${project.prompt}\n${referenceVisionContext}`;
+  await db.project.update({
+    where: { id: project.id },
+    data: { prompt: enrichedPrompt },
+  });
+
+  return enrichedPrompt;
+}
+
 export async function processImageProject(projectId: string) {
   const claimed = await claimQueuedProject(projectId);
   if (!claimed) {
@@ -285,13 +311,19 @@ export async function processImageProject(projectId: string) {
     const reference = project.referenceAsset
       ? await readStoredUpload(project.referenceAsset.storageKey, project.referenceAsset.mimeType)
       : null;
+    const stylePrompt = await enrichPromptWithReferenceVision({
+      id: project.id,
+      styleId: project.styleId,
+      prompt: project.prompt,
+      referenceAssetId: project.referenceAssetId,
+    });
     const generatedImage = await generateImageWithModelFallback({
       projectId,
       sourceBuffer: source.buffer,
       mimeType: source.mimeType,
       referenceBuffer: reference?.buffer ?? null,
       referenceMimeType: reference?.mimeType ?? null,
-      stylePrompt: project.prompt,
+      stylePrompt,
       outputPreset: project.outputPreset,
       referenceUsed: Boolean(project.referenceAsset),
     });

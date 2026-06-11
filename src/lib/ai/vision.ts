@@ -18,6 +18,15 @@ export type ProductVisionMetadata = {
   qualityIssues: VisionQualityIssue[];
 };
 
+export type StyleReferenceVisionMetadata = {
+  sceneDescription: string | null;
+  cameraAngle: VisionAngle;
+  lighting: string | null;
+  background: string | null;
+  subjectDescription: string | null;
+  confidence: number;
+};
+
 type AnalyzeProductImageInput = {
   sourceBuffer: Buffer;
   mimeType: string;
@@ -136,6 +145,19 @@ export function normalizeVisionMetadata(raw: unknown): ProductVisionMetadata {
   };
 }
 
+export function normalizeStyleReferenceVisionMetadata(raw: unknown): StyleReferenceVisionMetadata {
+  const value = typeof raw === "object" && raw !== null ? raw as Record<string, unknown> : {};
+
+  return {
+    sceneDescription: normalizeDescription(value.sceneDescription),
+    cameraAngle: normalizeAngle(value.cameraAngle),
+    lighting: normalizeDescription(value.lighting),
+    background: normalizeDescription(value.background),
+    subjectDescription: normalizeDescription(value.subjectDescription),
+    confidence: clampConfidence(value.confidence),
+  };
+}
+
 function parseVisionMetadata(content: unknown) {
   const text = Array.isArray(content)
     ? content.map((part) => {
@@ -152,6 +174,24 @@ function parseVisionMetadata(content: unknown) {
   }
 
   return normalizeVisionMetadata(JSON.parse(extractJsonObject(text)));
+}
+
+function parseStyleReferenceVisionMetadata(content: unknown) {
+  const text = Array.isArray(content)
+    ? content.map((part) => {
+        if (typeof part === "string") return part;
+        if (typeof part === "object" && part !== null && "text" in part && typeof part.text === "string") return part.text;
+        return "";
+      }).join("\n")
+    : typeof content === "string"
+      ? content
+      : "";
+
+  if (!text) {
+    throw new Error("Vision response was empty.");
+  }
+
+  return normalizeStyleReferenceVisionMetadata(JSON.parse(extractJsonObject(text)));
 }
 
 export async function analyzeProductImageWithLiara({
@@ -212,6 +252,62 @@ export async function analyzeProductImageWithLiara({
 
   const result = await response.json() as ChatCompletionResponse;
   return parseVisionMetadata(result.choices?.[0]?.message?.content);
+}
+
+export async function analyzeStyleReferenceImageWithLiara({
+  sourceBuffer,
+  mimeType,
+}: AnalyzeProductImageInput): Promise<StyleReferenceVisionMetadata> {
+  const { apiKey, baseURL, model } = getLiaraVisionConfig();
+  const imageUrl = `data:${mimeType};base64,${sourceBuffer.toString("base64")}`;
+  const prompt = [
+    "You are a vision assistant for Ovala, a Persian RTL jewelry product-photo app.",
+    "Analyze this sample/reference image as a scene template for image editing.",
+    "The sample product identity is NOT important except to locate what should be replaced.",
+    "Focus on the scene, camera angle, product placement, surface, background, props, lighting, shadows, color palette, mood, and framing.",
+    "Return ONLY valid JSON. Do not use markdown. Do not add explanations.",
+    "Rules:",
+    "- Describe how a different user product should be placed into the same setup.",
+    "- Mention whether the view is front, top, side, three-quarter, close-up, worn, or unknown.",
+    "- Describe the visible sample subject/product only so it can be removed/replaced, not copied.",
+    "- Do not invent hidden props, brands, materials, or scene details.",
+    "Return this exact JSON shape:",
+    "{\"sceneDescription\":\"short English description of the setup, composition, product placement, mood, and framing\",\"cameraAngle\":\"front | top | side | three-quarter | close-up | worn | unknown\",\"lighting\":\"short English description of lighting direction, softness, contrast, shadows, and reflections\",\"background\":\"short English description of background, surface, props, colors, and negative space\",\"subjectDescription\":\"short English description of the sample product/subject that must be replaced\",\"confidence\":0.0}",
+  ].join("\n");
+
+  const response = await fetch(`${baseURL.replace(/\/$/, "")}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", image_url: { url: imageUrl } },
+          ],
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    let detail = "";
+    try {
+      detail = await response.text();
+    } catch {
+      detail = "";
+    }
+    throw new Error(`Liara reference vision request failed with status ${response.status}${detail ? `: ${detail}` : ""}.`);
+  }
+
+  const result = await response.json() as ChatCompletionResponse;
+  return parseStyleReferenceVisionMetadata(result.choices?.[0]?.message?.content);
 }
 
 export function buildVisionPromptContext(input: {

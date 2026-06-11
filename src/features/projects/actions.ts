@@ -20,6 +20,7 @@ import { normalizeProductType } from "@/lib/product-types";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { readStorageObject } from "@/lib/storage";
 import { getStyleForGeneration, type StyleForGeneration } from "@/lib/styles";
+import { buildSampleReferencePromptContext } from "@/lib/style-reference-vision";
 import {
   saveStyleReferenceFile,
   saveStyleReferenceFromStoredObject,
@@ -78,20 +79,6 @@ function getStyleCompositionInstruction(styleId: string) {
     "Social media composition: do not make the product a huge centered close-up. Keep it premium, readable, and intentionally smaller than a catalog hero shot.",
     "Always reserve text space for this social media style: the product should occupy roughly 18-30% of the frame, placed off-center on one side or lower corner, leaving the opposite side as clean designed negative space for text.",
     "Avoid filling most of the frame with the product, avoid edge-to-edge product crops, and avoid a plain centered packshot composition.",
-  ].join("\n");
-}
-
-function getReferenceStyleInstruction(styleId: string) {
-  if (styleId !== "style_sample_reference") {
-    return "";
-  }
-
-  return [
-    "Reference sample transfer: use the second uploaded image only as the visual sample for arrangement, lighting, color palette, camera angle, surface, background, and overall mood.",
-    "Match the sample product angle and perspective as closely as possible: if the sample shows a top view, three-quarter view, low angle, side angle, tilted product, worn angle, or macro view, render the user's product from that same visual angle while preserving its true identity.",
-    "If the sample is a tight macro or close-up, keep the angle and mood, but do not make every reference-based result equally tight; include enough breathing room unless the close-up is essential to the selected sample style.",
-    "Replace the sample subject/product with the user's product from the first image.",
-    "Do not change the user's product identity: preserve exact form, metal, stones, details, proportions, silhouette, engravings, and material finish.",
   ].join("\n");
 }
 
@@ -168,7 +155,7 @@ function buildPrompt(
     promptParts.push(styleCompositionInstruction);
   }
 
-  const referenceStyleInstruction = getReferenceStyleInstruction(style.id);
+  const referenceStyleInstruction = style.id === "style_sample_reference" ? buildSampleReferencePromptContext() : "";
   if (referenceStyleInstruction) {
     promptParts.push(referenceStyleInstruction);
   }

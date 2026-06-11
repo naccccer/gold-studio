@@ -21,20 +21,8 @@ import { normalizeProductType } from "@/lib/product-types";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { deleteStorageObject } from "@/lib/storage";
 import { getStyleForGeneration } from "@/lib/styles";
+import { buildSampleReferencePromptContext } from "@/lib/style-reference-vision";
 import { saveStyleReferenceFile, saveStyleReferenceFromStoredObject, saveUploadedFile } from "@/lib/uploads";
-
-function getReferenceStyleInstruction(styleId: string) {
-  if (styleId !== "style_sample_reference") {
-    return "";
-  }
-
-  return [
-    "Reference sample transfer: use the second uploaded image only as the visual sample for arrangement, lighting, color palette, camera angle, surface, background, and overall mood.",
-    "Match the sample product angle and perspective as closely as possible: if the sample shows a top view, three-quarter view, low angle, side angle, tilted product, worn angle, or macro crop, render the user's product from that same visual angle while preserving its true identity.",
-    "Replace the sample subject/product with the user's product from the first image.",
-    "Do not change the user's product identity: preserve exact form, metal, stones, details, proportions, silhouette, engravings, and material finish.",
-  ].join("\n");
-}
 
 function getEditorialBackgroundDecorInstruction(styleId: string) {
   if (styleId !== "style_soft_editorial") {
@@ -232,7 +220,7 @@ export async function createBatchFromGalleryAction(formData: FormData) {
             style.prompt,
             getOutputPresetSpec(outputPreset).instruction,
             styleControlPrompt,
-            getReferenceStyleInstruction(style.id),
+            style.id === "style_sample_reference" ? buildSampleReferencePromptContext() : "",
             getEditorialBackgroundDecorInstruction(style.id),
             visionContext,
           ].filter(Boolean).join("\n"),
