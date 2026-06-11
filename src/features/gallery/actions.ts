@@ -348,13 +348,21 @@ export async function archiveAssetAction(formData: FormData) {
       id: true,
       storageKey: true,
       _count: {
-        select: { batchItems: true, projects: true, supportingProjects: true },
+        select: { batchItems: true, projects: true },
       },
     },
   });
+  const supportingAssetCounts = await db.projectSupportingAsset.groupBy({
+    by: ["assetId"],
+    where: { assetId: { in: assets.map((asset) => asset.id) } },
+    _count: { assetId: true },
+  });
+  const supportingAssetCountById = new Map(
+    supportingAssetCounts.map((item) => [item.assetId, item._count.assetId]),
+  );
 
-  const deletableAssets = assets.filter((asset) => asset._count.projects === 0 && asset._count.batchItems === 0 && asset._count.supportingProjects === 0);
-  const usedAssets = assets.filter((asset) => asset._count.projects > 0 || asset._count.batchItems > 0 || asset._count.supportingProjects > 0);
+  const deletableAssets = assets.filter((asset) => asset._count.projects === 0 && asset._count.batchItems === 0 && (supportingAssetCountById.get(asset.id) ?? 0) === 0);
+  const usedAssets = assets.filter((asset) => asset._count.projects > 0 || asset._count.batchItems > 0 || (supportingAssetCountById.get(asset.id) ?? 0) > 0);
 
   if (deletableAssets.length > 0) {
     const deleted = await db.productAsset.deleteMany({

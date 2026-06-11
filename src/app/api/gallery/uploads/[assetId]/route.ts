@@ -23,7 +23,7 @@ export async function DELETE(
       id: true,
       storageKey: true,
       _count: {
-        select: { batchItems: true, projects: true, supportingProjects: true },
+        select: { batchItems: true, projects: true },
       },
     },
   });
@@ -32,7 +32,11 @@ export async function DELETE(
     return NextResponse.json({ ok: true });
   }
 
-  if (asset._count.projects > 0 || asset._count.batchItems > 0 || asset._count.supportingProjects > 0) {
+  const supportingProjectsCount = await db.projectSupportingAsset.count({
+    where: { assetId: asset.id },
+  });
+
+  if (asset._count.projects > 0 || asset._count.batchItems > 0 || supportingProjectsCount > 0) {
     return NextResponse.json({ error: "این تصویر در پروژه استفاده شده و حذف نمی‌شود." }, { status: 409 });
   }
 
