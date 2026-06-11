@@ -2,107 +2,73 @@
 
 Ovala is a mobile-first Farsi RTL web app for turning low-quality jewelry, gold, watch, and luxury accessory photos into premium studio-style product images.
 
-## Tech Stack
-- Next.js App Router
-- TypeScript
-- Tailwind CSS
-- Prisma with MySQL
-- MariaDB JS driver adapter for Prisma runtime
-- Liara OpenAI-compatible image API
+## Stack
+
+- Next.js App Router, React, TypeScript, Tailwind
+- Prisma with MySQL through the MariaDB JS adapter
 - Local filesystem storage by default, optional S3-compatible storage
-- Vuesax icons for user-facing UI, with remaining lucide usage awaiting deliberate migration
+- Liara/OpenAI-compatible image and vision APIs
+- Vuesax icons for user-facing UI
 
-## Setup
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
-2. Create an env file:
-   ```bash
-   cp .env.example .env
-   ```
-3. Fill required env vars:
-   - `DATABASE_URL`
-   - `AUTH_SECRET`
-   - `LIARA_API_KEY`
-4. Generate Prisma client:
-   ```bash
-   npm run db:generate
-   ```
-5. Apply migrations:
-   ```bash
-   npx prisma migrate dev
-   ```
-6. Start the app:
-   ```bash
-   npm run dev
-   ```
-7. Bootstrap the first admin locally:
-   ```bash
-   npm run admin:bootstrap -- --email admin@example.com --password strong-password
-   ```
+## Local Setup
 
-## Useful Scripts
-- `npm run dev`: generate Prisma client and start Next dev server.
-- `npm run build`: generate Prisma client and build production app.
-- `npm run start`: start the built app.
+Use XAMPP MySQL on `127.0.0.1:3306` for current local development.
+
+```powershell
+npm install
+Copy-Item .env.example .env
+```
+
+Edit `.env` with local values. A typical local database URL is:
+
+```env
+DATABASE_URL="mysql://root@127.0.0.1:3306/gold_studio"
+```
+
+Create the database if needed:
+
+```sql
+CREATE DATABASE gold_studio CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+Apply Prisma setup:
+
+```powershell
+npm run db:generate
+npx prisma migrate deploy
+npm run dev
+```
+
+Create or reset a local admin only when needed:
+
+```powershell
+npm run admin:bootstrap -- --email "admin@example.com" --password "strong-password" --name "Admin"
+```
+
+`admin:bootstrap` creates the admin if missing. If the email already exists, it promotes that user to `ADMIN` and resets the password.
+
+## Important Commands
+
+- `npm run db:generate`: regenerate Prisma Client only. It does not reset, migrate, or seed the database.
+- `npx prisma migrate deploy`: apply committed migrations to the current database.
+- `npm run db:export-local`: export the current local DB to `Desktop\gold_studio_local.sql`.
+- `npm run check:mojibake`: detect corrupted Persian text.
 - `npm run lint`: run ESLint.
-- `npm run check:mojibake`: detect common Persian mojibake.
-- `npm run db:generate`: generate Prisma client into `src/generated/prisma`.
-- `npm run db:start` / `npm run db:stop`: manage the isolated local MariaDB helper.
-- `npm run admin:bootstrap`: create or promote a local admin account from the terminal.
-- `npm run cleanup:archives`: hard-delete archived assets/projects after the retention window.
+- `npm run build`: generate Prisma Client and build the app.
+- `npm run check:liara`: test direct Liara access from the local machine.
 
-## Environment
-Use `.env.example` as the source of current env names.
+Avoid `npx prisma migrate reset` unless you intentionally want to wipe and recreate local data.
 
-Image generation defaults in docs should match `.env.example`:
-- `LIARA_BASE_URL` points to Liara's OpenAI-compatible `/v1` endpoint.
-- `LIARA_IMAGE_MODEL` is currently `google/gemini-3-pro-image-preview`.
-- `LIARA_IMAGE_SIZE` is the default provider size when no output preset overrides it.
-- `LIARA_IMAGE_QUALITY` is `2K`.
+## Storage
 
-For local/live VPS tests, keep `STORAGE_DRIVER="local"` and make sure `.local-storage/uploads` is writable. Switch to `STORAGE_DRIVER="s3"` only when persistent object storage is intentionally configured.
+With `STORAGE_DRIVER="local"`, uploads and generated results are stored under `.local-storage/uploads` and streamed through `/api/storage/...` with authorization.
 
-When `STORAGE_DRIVER="local"`, uploaded files live under `.local-storage/uploads` and stream through `/api/storage/...` with authorization. Do not store uploaded user files in `public/uploads`.
+Preserve `.local-storage/uploads` when moving PCs or deployment folders. Do not move user uploads into `public/uploads`.
 
-## Routes
-User routes:
-- `/`
-- `/signup`
-- `/login`
-- `/dashboard`
-- `/gallery`
-- `/gallery/[assetId]`
-- `/gallery/batches/[batchId]`
-- `/projects/new`
-- `/projects`
-- `/projects/[projectId]`
-- `/account`
-- `/account/profile`
-- `/account/referral`
-- `/account/output-settings`
-- `/account/security`
-- `/account/support`
-- `/account/faq`
-- `/billing`
+## Canonical Docs
 
-Admin routes:
-- `/admin`
-- `/admin/access`
-- `/admin/assets`
-- `/admin/packages`
-- `/admin/projects`
-- `/admin/provider`
-- `/admin/styles`
-- `/admin/support`
-- `/admin/users`
-
-## Operational Docs
-- `roadmap.md`: current product status and priorities.
-- `AGENTS.md`: active agent rules for this repo.
-- `docs/architecture.md`: architecture and boundaries.
-- `docs/conventions.md`: coding, UI, Farsi/RTL, and verification rules.
-- `docs/brand-identity.md`: brand, logo, typography, and image constraints.
-- `docs/proxy.md`: Iran/proxy and network guidance.
-- `docs/deployment-runbook.md`: VPS deployment and update checklist.
+- [Agent rules](AGENTS.md)
+- [Roadmap](roadmap.md)
+- [Switching PCs](docs/local-pc-switch.md)
+- [Deployment runbook](docs/deployment-runbook.md)
+- [Proxy notes](docs/proxy.md)

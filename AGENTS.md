@@ -1,9 +1,11 @@
 # Ovala Agent Rules
 
 ## Product
+
 Ovala is a mobile-first Farsi RTL web app for turning low-quality jewelry, gold, watch, and luxury accessory photos into premium studio-style product images.
 
 ## Current Direction
+
 - Professional, minimal, premium, image-led, and easy for non-technical users.
 - Farsi-first, RTL-first, and mobile-first.
 - Guided assistant, not a SaaS dashboard, form app, admin panel, or prompt-heavy AI tool.
@@ -16,17 +18,16 @@ Ovala is a mobile-first Farsi RTL web app for turning low-quality jewelry, gold,
 - `/billing` owns packages, standalone credits, card-to-card details, purchase status, and receipt upload.
 
 ## Architecture Rules
+
 - Keep the app in a single Next.js repo for MVP.
-- Use App Router.
-- Use TypeScript.
-- Use Tailwind.
-- Use Prisma with MySQL.
+- Use App Router, TypeScript, Tailwind, Prisma, and MySQL.
 - Keep business logic out of UI components.
 - Keep AI logic inside dedicated `src/lib/ai` files.
 - Keep admin and user flows in the same app, separated by routes and features.
 - Use local filesystem storage by default; use S3-compatible storage only when intentionally configured.
 
 ## Folder Rules
+
 - App routes in `src/app`.
 - Shared UI in `src/components`.
 - Feature code in `src/features`.
@@ -35,6 +36,7 @@ Ovala is a mobile-first Farsi RTL web app for turning low-quality jewelry, gold,
 - Docs in `docs`.
 
 ## UI Rules
+
 - Prefer small components and thin route files.
 - Use Vazirmatn for UI/body text.
 - Use Doran only for very short display titles.
@@ -49,6 +51,7 @@ Ovala is a mobile-first Farsi RTL web app for turning low-quality jewelry, gold,
 - Admin may be denser and more operational, but should remain visually related to Ovala.
 
 ## Coding Rules
+
 - Prefer server-side logic for sensitive operations.
 - Do not hardcode secrets.
 - Do not introduce new architecture layers unless needed.
@@ -58,12 +61,14 @@ Ovala is a mobile-first Farsi RTL web app for turning low-quality jewelry, gold,
 - Update `roadmap.md` when progress or scope changes.
 
 ## Persian And Encoding
+
 - Save source and docs as UTF-8.
 - Keep Persian text as direct UTF-8, not escaped Unicode, unless technically required.
 - Never paste already-corrupted mojibake text.
 - If Persian appears corrupted or unreadable, stop and repair deliberately.
 
 ## Verification
+
 Every implementation phase should run:
 
 ```powershell
@@ -72,14 +77,13 @@ npm run lint
 npm run build
 ```
 
-If build fails only because of the known PrismaClient issue in `src/lib/db.ts`, report it clearly as unrelated and unchanged.
-
 UI phases should consider the `393x852` mobile layout target, but do not capture screenshots unless explicitly requested.
 
-## Network/Proxy Rules
+## Network And Proxy Rules
+
 - The developer may be in Iran and using limited paid proxy bandwidth.
 - Do not assume proxy is needed for local-only work.
 - Try direct access first when an external service usually works.
-- Use proxy only for blocked external services such as Prisma engine downloads, Gemini/Liara API calls, or npm package downloads if npm fails.
+- Use proxy only for blocked external services such as Prisma downloads, Liara/Gemini API calls, or npm package downloads if npm fails.
 - For v2rayN on `127.0.0.1:10808`, proxy env vars must include a scheme, e.g. `http://127.0.0.1:10808` or `socks5://127.0.0.1:10808`.
 - See `docs/proxy.md` before changing network setup instructions.
