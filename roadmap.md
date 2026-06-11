@@ -14,7 +14,7 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 - User navigation is organized around Home, Gallery, New Project, Projects, and Account.
 - Gallery owns uploaded source product photos. Projects owns generated outputs and generation status.
 - `/billing` owns packages, standalone credits, card-to-card payment details, purchase status, and receipt upload.
-- `/admin` owns users, projects, packages, styles, provider settings/events, support, referrals, credits, and audit-style operations.
+- `/admin` is now a separate operations console with overview, health, audit, users, billing, projects, AI operations, assets, style controls, support/FAQ, and referrals.
 - Local uploads and generated results are stored under `.local-storage/uploads` when `STORAGE_DRIVER="local"` and are streamed through authorized `/api/storage/...` routes.
 - Prisma uses MySQL and generates the client into `src/generated/prisma`.
 - Image generation uses the provider boundary in `src/lib/ai`, with Liara as the default path and an admin-controlled Avalai path for Gemini image testing.
@@ -27,7 +27,7 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 - Production hardening: verify real Liara/Avalai generation, retry behavior, storage display URLs, provider cost, and failed-state recovery on the deployment target.
 - Release readiness: route QA across auth, home, gallery, new project, project detail, projects, account, billing, support, settings, and admin.
 - Mobile polish: check the `393x852` mobile layout target for Farsi wrapping, RTL controls, bottom navigation, action placement, calm motion, and accidental scrolling.
-- Admin operations QA: review real-data admin tables and payment/provider/support workflows for speed and clarity.
+- Admin operations QA: review the rebuilt navy/white console with real data across overview, health, audit, users, billing, projects, AI, assets, styles, support/FAQ, and referrals.
 - Documentation hygiene: keep docs short and current; update this file only when scope or active priorities change.
 
 ## Local Database

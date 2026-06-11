@@ -1,18 +1,20 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Archive, Refresh } from "vuesax-icons-react";
+import type { Prisma } from "@/generated/prisma";
 import {
-  adminDangerActionClass,
   adminInputClass,
   adminPrimaryActionClass,
-  AdminMetric,
-  AdminRow,
-  AdminSection,
+  adminTableCellClass,
+  AdminDataTable,
+  AdminEmptyState,
+  AdminFilterBar,
+  AdminKpi,
+  AdminKpiStrip,
+  AdminPageHeader,
+  AdminPanel,
   AdminStatus,
-  EmptyAdminState,
   formatAdminDate,
 } from "@/features/admin/components/admin-ui";
-import { archiveAdminProjectAction, retryAdminProjectAction } from "@/features/admin/actions";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { db } from "@/lib/db";
@@ -21,7 +23,7 @@ import { storageUrlFromKeyOrUrl } from "@/lib/storage";
 export const dynamic = "force-dynamic";
 
 type AdminProjectsPageProps = {
-  searchParams?: Promise<{ status?: string; q?: string; styleId?: string; archived?: string; projectId?: string }>;
+  searchParams?: Promise<{ status?: string; q?: string; styleId?: string; archived?: string }>;
 };
 
 export default async function AdminProjectsPage({ searchParams }: AdminProjectsPageProps) {
@@ -30,9 +32,8 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
   const q = params?.q?.trim();
   const styleId = params?.styleId;
   const includeArchived = params?.archived === "all";
-  const selectedProjectId = params?.projectId;
 
-  const where = {
+  const where: Prisma.ProjectWhereInput = {
     ...(includeArchived ? {} : { archivedAt: null }),
     ...(status && status !== "ALL" ? { status: status as "QUEUED" | "PROCESSING" | "COMPLETED" | "FAILED" } : {}),
     ...(styleId ? { styleId } : {}),
@@ -42,18 +43,25 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
             { id: { contains: q } },
             { title: { contains: q } },
             { errorMessage: { contains: q } },
+            { prompt: { contains: q } },
             { user: { OR: [{ email: { contains: q } }, { phone: { contains: q } }, { name: { contains: q } }] } },
           ],
         }
       : {}),
   };
 
-  const [projects, styles, counts, selectedProject] = await Promise.all([
+  const [projects, styles, counts] = await Promise.all([
     db.project.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      take: 80,
-      include: { user: true, style: { select: { id: true, name: true } }, sourceAsset: { select: { storageKey: true } } },
+      take: 120,
+      include: {
+        user: true,
+        style: { select: { id: true, name: true } },
+        sourceAsset: { select: { storageKey: true } },
+        providerEvents: { orderBy: { createdAt: "desc" }, take: 1 },
+        _count: { select: { supportingAssets: true, providerEvents: true } },
+      },
     }),
     db.creativeStyle.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], select: { id: true, name: true } }),
     Promise.all([
@@ -61,32 +69,29 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
       db.project.count({ where: { status: "PROCESSING", archivedAt: null } }),
       db.project.count({ where: { status: "COMPLETED", archivedAt: null } }),
       db.project.count({ where: { status: "FAILED", archivedAt: null } }),
+      db.generationBatch.count({ where: { status: { in: ["QUEUED", "PROCESSING"] } } }),
     ]),
-    selectedProjectId
-      ? db.project.findUnique({
-          where: { id: selectedProjectId },
-          include: {
-            user: true,
-            style: true,
-            sourceAsset: true,
-            providerEvents: { orderBy: { createdAt: "desc" }, take: 10 },
-          },
-        })
-      : null,
   ]);
 
   return (
     <>
-      <section className="grid gap-2.5 sm:grid-cols-4">
-        <AdminMetric label="در صف" value={counts[0]} />
-        <AdminMetric label="پردازش" value={counts[1]} />
-        <AdminMetric label="تکمیل" value={counts[2]} />
-        <AdminMetric label="ناموفق" value={counts[3]} />
-      </section>
+      <AdminPageHeader
+        title="پروژه‌ها و صف تولید"
+        description="نمای عملیاتی generation: وضعیت، مالک، سبک، خروجی، خطا و آخرین event provider."
+      />
 
-      <AdminSection title="فیلتر پروژه‌ها" eyebrow="وضعیت، کاربر، سبک">
-        <form className="grid gap-2 md:grid-cols-[1fr_140px_180px_130px_auto]">
-          <input name="q" defaultValue={q} placeholder="شناسه، عنوان، خطا یا کاربر" className={adminInputClass} />
+      <AdminKpiStrip>
+        <AdminKpi label="در صف" value={counts[0]} tone={counts[0] ? "attention" : "neutral"} />
+        <AdminKpi label="در پردازش" value={counts[1]} tone={counts[1] ? "attention" : "neutral"} />
+        <AdminKpi label="تکمیل‌شده" value={counts[2]} />
+        <AdminKpi label="ناموفق" value={counts[3]} tone={counts[3] ? "danger" : "neutral"} />
+        <AdminKpi label="Batch فعال" value={counts[4]} />
+        <AdminKpi label="نمایش فعلی" value={projects.length} />
+      </AdminKpiStrip>
+
+      <AdminFilterBar>
+        <form className="grid gap-2 md:grid-cols-[minmax(0,1fr)_150px_190px_140px_auto]">
+          <input name="q" defaultValue={q} placeholder="شناسه، عنوان، خطا، prompt یا کاربر" className={adminInputClass} />
           <select name="status" defaultValue={status ?? "ALL"} className={adminInputClass}>
             <option value="ALL">همه وضعیت‌ها</option>
             <option value="QUEUED">در صف</option>
@@ -106,133 +111,62 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
           </select>
           <button className={adminPrimaryActionClass}>اعمال</button>
         </form>
-      </AdminSection>
+      </AdminFilterBar>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)]">
-        <AdminSection title="لیست پروژه‌ها" eyebrow={`${projects.length.toLocaleString("fa-IR")} مورد`}>
-          {projects.length === 0 ? (
-            <EmptyAdminState>پروژه‌ای با این فیلتر پیدا نشد.</EmptyAdminState>
-          ) : (
-            projects.map((project) => (
-              <AdminRow key={project.id}>
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-surface-soft">
-                    <Image
-                      src={
-                        storageUrlFromKeyOrUrl(project.resultStorageKey, project.resultImageUrl) ||
-                        storageUrlFromKeyOrUrl(project.sourceAsset?.storageKey, project.sourceImageUrl) ||
-                        uploadPreview.src
-                      }
-                      alt=""
-                      fill
-                      unoptimized
-                      className="object-cover"
-                      sizes="56px"
-                    />
+      <AdminPanel title="لیست پروژه‌ها" description="روی هر پروژه برای باز شدن پرونده کامل کلیک کنید.">
+        <AdminDataTable headers={["پروژه", "کاربر", "سبک", "وضعیت", "Provider", "زمان"]} empty={<AdminEmptyState title="پروژه‌ای با این فیلتر پیدا نشد." />}>
+          {projects.map((project) => {
+            const preview =
+              storageUrlFromKeyOrUrl(project.resultStorageKey, project.resultImageUrl) ||
+              storageUrlFromKeyOrUrl(project.sourceAsset?.storageKey, project.sourceImageUrl) ||
+              uploadPreview.src;
+            const lastProviderEvent = project.providerEvents[0];
+
+            return (
+              <tr key={project.id} className="hover:bg-slate-50">
+                <td className={adminTableCellClass}>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+                      <Image src={preview} alt="" fill unoptimized className="object-cover" sizes="48px" />
+                    </div>
+                    <div className="min-w-0">
+                      <Link href={`/admin/projects/${project.id}`} className="font-semibold text-slate-950 hover:underline">
+                        {project.title || "پروژه بدون عنوان"}
+                      </Link>
+                      <p className="truncate text-xs text-slate-500" dir="ltr">{project.id}</p>
+                      {project.errorMessage ? <p className="max-w-xs truncate text-xs text-rose-700">{project.errorMessage}</p> : null}
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <Link href={`/admin/projects?projectId=${project.id}`} className="font-semibold text-foreground hover:underline">
-                      {project.title || "پروژه بدون عنوان"}
-                    </Link>
-                    <p className="truncate text-xs text-muted">{getUserDisplayName(project.user)} · {project.style.name}</p>
-                  </div>
-                </div>
-                <div className="text-xs text-muted">
+                </td>
+                <td className={adminTableCellClass}>
+                  <Link href={`/admin/users/${project.userId}`} className="font-semibold text-slate-950 hover:underline">{getUserDisplayName(project.user)}</Link>
+                  <p className="text-xs text-slate-500" dir="ltr">{getUserIdentifier(project.user)}</p>
+                </td>
+                <td className={adminTableCellClass}>
+                  <p className="font-semibold text-slate-950">{project.style.name}</p>
+                  <p className="text-xs text-slate-500">{project.outputPreset} · {project._count.supportingAssets.toLocaleString("fa-IR")} عکس کمکی</p>
+                </td>
+                <td className={adminTableCellClass}><AdminStatus status={project.status} /></td>
+                <td className={adminTableCellClass}>
+                  {lastProviderEvent ? (
+                    <>
+                      <AdminStatus status={lastProviderEvent.status} />
+                      <p className="mt-1 text-xs text-slate-500" dir="ltr">{lastProviderEvent.provider}/{lastProviderEvent.model || "unknown"}</p>
+                    </>
+                  ) : (
+                    <span className="text-xs text-slate-500">event ندارد</span>
+                  )}
+                  <p className="text-xs text-slate-500">{project._count.providerEvents.toLocaleString("fa-IR")} event</p>
+                </td>
+                <td className={adminTableCellClass}>
                   <p>{formatAdminDate(project.createdAt)}</p>
-                  <p className="truncate">{project.errorMessage || "بدون خطای ثبت‌شده"}</p>
-                </div>
-                <AdminStatus status={project.status} />
-              </AdminRow>
-            ))
-          )}
-        </AdminSection>
-
-        <AdminSection title="جزئیات پروژه" eyebrow="منبع، خروجی، خطا و رویدادها">
-          {!selectedProject ? (
-            <EmptyAdminState>برای مشاهده جزئیات، یک پروژه را انتخاب کنید.</EmptyAdminState>
-          ) : (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="mb-2 text-xs text-muted">تصویر منبع</p>
-                  <div className="relative aspect-square overflow-hidden rounded-[var(--radius-md)] bg-surface-soft">
-                    <Image
-                      src={storageUrlFromKeyOrUrl(selectedProject.sourceAsset?.storageKey, selectedProject.sourceImageUrl) || uploadPreview.src}
-                      alt=""
-                      fill
-                      unoptimized
-                      className="object-cover"
-                      sizes="220px"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <p className="mb-2 text-xs text-muted">خروجی</p>
-                  <div className="relative aspect-square overflow-hidden rounded-[var(--radius-md)] bg-surface-soft">
-                    <Image
-                      src={
-                        storageUrlFromKeyOrUrl(selectedProject.resultStorageKey, selectedProject.resultImageUrl) ||
-                        storageUrlFromKeyOrUrl(selectedProject.sourceAsset?.storageKey, selectedProject.sourceImageUrl) ||
-                        uploadPreview.src
-                      }
-                      alt=""
-                      fill
-                      unoptimized
-                      className="object-cover"
-                      sizes="220px"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-1 text-xs leading-6 text-muted">
-                <p>کاربر: {getUserDisplayName(selectedProject.user)} · <span dir="ltr">{getUserIdentifier(selectedProject.user)}</span></p>
-                <p>سبک: {selectedProject.style.name}</p>
-                <p dir="ltr">Project ID: {selectedProject.id}</p>
-                {selectedProject.sourceAsset ? <p dir="ltr">Storage: {selectedProject.sourceAsset.storageKey}</p> : null}
-                {selectedProject.errorMessage ? <p className="text-danger">خطا: {selectedProject.errorMessage}</p> : null}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <form action={retryAdminProjectAction}>
-                  <input type="hidden" name="projectId" value={selectedProject.id} />
-                  <button className={adminPrimaryActionClass}>
-                    <Refresh className="h-4 w-4" />
-                    تلاش دوباره
-                  </button>
-                </form>
-                <form action={archiveAdminProjectAction}>
-                  <input type="hidden" name="projectId" value={selectedProject.id} />
-                  <button className={adminDangerActionClass}>
-                    <Archive className="h-4 w-4" />
-                    آرشیو
-                  </button>
-                </form>
-              </div>
-              <div>
-                <p className="mb-2 text-xs font-semibold text-foreground">پرامپت داخلی</p>
-                <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-[var(--radius-md)] bg-surface-soft p-3 text-left text-[11px] leading-5 text-muted" dir="ltr">
-                  {selectedProject.prompt}
-                </pre>
-              </div>
-              <div>
-                <p className="mb-2 text-xs font-semibold text-foreground">رویدادهای Provider</p>
-                {selectedProject.providerEvents.length === 0 ? (
-                  <EmptyAdminState>رویدادی ثبت نشده است.</EmptyAdminState>
-                ) : (
-                  selectedProject.providerEvents.map((event) => (
-                    <AdminRow key={event.id} className="md:grid-cols-[1fr_auto]">
-                      <div>
-                        <p className="text-xs font-semibold text-foreground">{event.operation} · {event.model || "model unknown"}</p>
-                        <p className="text-xs text-muted">{event.errorMessage || event.statusDetail || "بدون پیام خطا"}</p>
-                      </div>
-                      <AdminStatus status={event.status} />
-                    </AdminRow>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-        </AdminSection>
-      </div>
+                  <p className="text-xs text-slate-500">آپدیت {formatAdminDate(project.updatedAt)}</p>
+                </td>
+              </tr>
+            );
+          })}
+        </AdminDataTable>
+      </AdminPanel>
     </>
   );
 }

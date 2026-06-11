@@ -1,132 +1,185 @@
+import Link from "next/link";
 import {
-  createFaqItemAction,
+  adminInputClass,
+  adminPrimaryActionClass,
+  adminSecondaryActionClass,
+  adminTextareaClass,
+  AdminEmptyState,
+  AdminKpi,
+  AdminKpiStrip,
+  AdminPageHeader,
+  AdminPanel,
+  AdminStatus,
+  formatAdminDate,
+} from "@/features/admin/components/admin-ui";
+import {
   replySupportTicketAction,
-  updateFaqItemAction,
   updateSupportSettingsAction,
   updateSupportTicketStatusAction,
 } from "@/features/admin/actions";
-import { adminInputClass, adminTextareaClass, AdminMetric, AdminRow, AdminSection, AdminStatus, EmptyAdminState, formatAdminDate } from "@/features/admin/components/admin-ui";
-import { Button } from "@/components/ui/button";
+import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-const inputClass = adminInputClass;
-const textareaClass = adminTextareaClass;
+type AdminSupportPageProps = {
+  searchParams?: Promise<{ ticketId?: string; status?: string }>;
+};
 
-export default async function AdminSupportPage() {
-  const [settings, tickets, faqs, openCount] = await Promise.all([
+export default async function AdminSupportPage({ searchParams }: AdminSupportPageProps) {
+  const params = await searchParams;
+  const selectedTicketId = params?.ticketId;
+  const status = params?.status ?? "";
+
+  const [settings, tickets, selectedTicket, openCount, answeredCount, closedCount, faqCount] = await Promise.all([
     db.supportSettings.findUnique({ where: { id: "default" } }),
     db.supportTicket.findMany({
+      where: status && status !== "ALL" ? { status: status as "OPEN" | "ANSWERED" | "CLOSED" } : {},
       orderBy: { updatedAt: "desc" },
-      take: 20,
+      take: 50,
       include: {
-        user: { select: { name: true, email: true, phone: true } },
-        messages: { orderBy: { createdAt: "asc" }, take: 6 },
+        user: { select: { id: true, name: true, email: true, phone: true } },
+        messages: { orderBy: { createdAt: "desc" }, take: 1 },
       },
     }),
-    db.faqItem.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }),
-    db.supportTicket.count({ where: { status: { not: "CLOSED" } } }),
+    selectedTicketId
+      ? db.supportTicket.findUnique({
+          where: { id: selectedTicketId },
+          include: {
+            user: { select: { id: true, name: true, email: true, phone: true } },
+            messages: { orderBy: { createdAt: "asc" } },
+          },
+        })
+      : null,
+    db.supportTicket.count({ where: { status: "OPEN" } }),
+    db.supportTicket.count({ where: { status: "ANSWERED" } }),
+    db.supportTicket.count({ where: { status: "CLOSED" } }),
+    db.faqItem.count(),
   ]);
 
   return (
-    <div className="space-y-4">
-      <section className="grid gap-2.5 sm:grid-cols-3">
-        <AdminMetric label="تیکت باز" value={openCount} />
-        <AdminMetric label="FAQ" value={faqs.length} />
-        <AdminMetric label="تیکت اخیر" value={tickets.length} />
-      </section>
+    <>
+      <AdminPageHeader
+        title="پشتیبانی"
+        description="Inbox عملیاتی برای تیکت‌ها، پاسخ‌ها و وضعیت تماس سریع."
+        actions={<Link href="/admin/support/faq" className={adminPrimaryActionClass}>مدیریت FAQ</Link>}
+      />
 
-      <AdminSection title="تنظیمات تماس سریع" eyebrow="نمایش در حساب کاربر">
-        <form action={updateSupportSettingsAction} className="grid gap-3 md:grid-cols-2">
-          <input name="phone" defaultValue={settings?.phone ?? ""} placeholder="شماره تماس" className={inputClass} />
-          <input name="whatsappUrl" defaultValue={settings?.whatsappUrl ?? ""} placeholder="لینک واتساپ" dir="ltr" className={`${inputClass} text-left`} />
-          <input name="telegramUrl" defaultValue={settings?.telegramUrl ?? ""} placeholder="لینک تلگرام" dir="ltr" className={`${inputClass} text-left`} />
-          <label className="inline-flex h-10 items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-xs">
-            <input name="isActive" type="checkbox" defaultChecked={settings?.isActive ?? true} className="h-4 w-4 accent-accent" />
-            فعال
-          </label>
-          <textarea name="instructions" defaultValue={settings?.instructions ?? ""} placeholder="توضیح راهنمای پشتیبانی" className={`${textareaClass} md:col-span-2`} />
-          <Button type="submit" size="sm" className="md:col-span-2">ذخیره تنظیمات</Button>
-        </form>
-      </AdminSection>
+      <AdminKpiStrip>
+        <AdminKpi label="باز" value={openCount} tone={openCount ? "attention" : "neutral"} />
+        <AdminKpi label="پاسخ داده‌شده" value={answeredCount} />
+        <AdminKpi label="بسته" value={closedCount} />
+        <AdminKpi label="FAQ" value={faqCount} />
+      </AdminKpiStrip>
 
-      <AdminSection title="تیکت‌ها" eyebrow="پاسخ و وضعیت">
-        {tickets.length === 0 ? (
-          <EmptyAdminState>تیکتی ثبت نشده است.</EmptyAdminState>
-        ) : (
-          tickets.map((ticket) => (
-            <AdminRow key={ticket.id}>
-              <div className="min-w-0 space-y-2">
-                <div>
-                  <p className="font-semibold text-foreground">{ticket.subject}</p>
-                  <p className="text-xs text-muted">
-                    {ticket.user.name || ticket.user.email || ticket.user.phone || "کاربر"} · {formatAdminDate(ticket.createdAt)}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  {ticket.messages.map((message) => (
-                    <p key={message.id} className="rounded-[var(--radius-sm)] bg-surface-soft px-3 py-2 text-xs leading-6 text-muted">
-                      {message.authorType === "ADMIN" ? "ادمین: " : "کاربر: "}
-                      {message.body}
-                    </p>
-                  ))}
-                </div>
-                <form action={replySupportTicketAction} className="grid gap-2 md:grid-cols-[1fr_auto]">
-                  <input type="hidden" name="ticketId" value={ticket.id} />
-                  <input name="body" placeholder="پاسخ ادمین" className={inputClass} />
-                  <Button type="submit" size="sm">ارسال پاسخ</Button>
-                </form>
-              </div>
-              <div className="space-y-2">
-                <AdminStatus status={ticket.status} />
-                <form action={updateSupportTicketStatusAction} className="flex gap-2">
-                  <input type="hidden" name="ticketId" value={ticket.id} />
-                  <select name="status" defaultValue={ticket.status} className={inputClass}>
-                    <option value="OPEN">باز</option>
-                    <option value="ANSWERED">پاسخ داده‌شده</option>
-                    <option value="CLOSED">بسته</option>
-                  </select>
-                  <Button type="submit" size="sm">ثبت</Button>
-                </form>
-              </div>
-            </AdminRow>
-          ))
-        )}
-      </AdminSection>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+        <div className="space-y-4">
+          <AdminPanel title="تنظیمات تماس سریع" description="در حساب کاربر نمایش داده می‌شود.">
+            <form action={updateSupportSettingsAction} className="grid gap-3 p-4">
+              <input name="phone" defaultValue={settings?.phone ?? ""} placeholder="شماره تماس" className={adminInputClass} />
+              <input name="whatsappUrl" defaultValue={settings?.whatsappUrl ?? ""} placeholder="لینک واتساپ" dir="ltr" className={`${adminInputClass} text-left`} />
+              <input name="telegramUrl" defaultValue={settings?.telegramUrl ?? ""} placeholder="لینک تلگرام" dir="ltr" className={`${adminInputClass} text-left`} />
+              <textarea name="instructions" defaultValue={settings?.instructions ?? ""} placeholder="توضیح راهنمای پشتیبانی" className={adminTextareaClass} />
+              <label className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-950">
+                <input name="isActive" type="checkbox" defaultChecked={settings?.isActive ?? true} className="h-4 w-4 accent-slate-950" />
+                فعال
+              </label>
+              <button className={adminPrimaryActionClass}>ذخیره تنظیمات</button>
+            </form>
+          </AdminPanel>
 
-      <AdminSection title="سوالات پرتکرار" eyebrow="نمایش در حساب کاربر">
-        <form action={createFaqItemAction} className="mb-4 grid gap-2 md:grid-cols-[1fr_100px_auto]">
-          <input name="question" placeholder="سوال" className={inputClass} />
-          <input name="sortOrder" type="number" defaultValue={10} className={inputClass} />
-          <label className="inline-flex h-10 items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-xs">
-            <input name="isActive" type="checkbox" defaultChecked className="h-4 w-4 accent-accent" />
-            فعال
-          </label>
-          <textarea name="answer" placeholder="پاسخ" className={`${textareaClass} md:col-span-3`} />
-          <Button type="submit" size="sm" className="md:col-span-3">افزودن سوال</Button>
-        </form>
-
-        {faqs.length === 0 ? (
-          <EmptyAdminState>FAQ ثبت نشده است.</EmptyAdminState>
-        ) : (
-          <div className="space-y-3">
-            {faqs.map((faq) => (
-              <form key={faq.id} action={updateFaqItemAction} className="grid gap-2 rounded-[var(--radius-md)] border border-border bg-surface-soft/50 p-3 md:grid-cols-[1fr_100px_auto]">
-                <input type="hidden" name="faqId" value={faq.id} />
-                <input name="question" defaultValue={faq.question} className={inputClass} />
-                <input name="sortOrder" type="number" defaultValue={faq.sortOrder} className={inputClass} />
-                <label className="inline-flex h-10 items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-xs">
-                  <input name="isActive" type="checkbox" defaultChecked={faq.isActive} className="h-4 w-4 accent-accent" />
-                  فعال
-                </label>
-                <textarea name="answer" defaultValue={faq.answer} className={`${textareaClass} md:col-span-3`} />
-                <Button type="submit" size="sm" className="md:col-span-3">ذخیره FAQ</Button>
+          <AdminPanel title="Inbox تیکت‌ها">
+            <div className="border-b border-slate-200 p-3">
+              <form className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                <select name="status" defaultValue={status} className={adminInputClass}>
+                  <option value="">همه وضعیت‌ها</option>
+                  <option value="OPEN">باز</option>
+                  <option value="ANSWERED">پاسخ داده‌شده</option>
+                  <option value="CLOSED">بسته</option>
+                </select>
+                <button className={adminSecondaryActionClass}>فیلتر</button>
               </form>
-            ))}
-          </div>
-        )}
-      </AdminSection>
-    </div>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {tickets.length === 0 ? (
+                <div className="p-4"><AdminEmptyState title="تیکتی با این فیلتر نیست." /></div>
+              ) : (
+                tickets.map((ticket) => (
+                  <Link
+                    key={ticket.id}
+                    href={`/admin/support?ticketId=${ticket.id}${status ? `&status=${status}` : ""}`}
+                    className={[
+                      "block px-4 py-3 hover:bg-slate-50",
+                      selectedTicketId === ticket.id ? "bg-cyan-50" : "",
+                    ].join(" ")}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-slate-950">{ticket.subject}</p>
+                        <p className="truncate text-xs text-slate-500">{getUserDisplayName(ticket.user)} · {formatAdminDate(ticket.updatedAt)}</p>
+                        <p className="mt-1 max-w-sm truncate text-xs text-slate-600">{ticket.messages[0]?.body || "بدون پیام"}</p>
+                      </div>
+                      <AdminStatus status={ticket.status} />
+                    </div>
+                  </Link>
+                ))
+              )}
+            </div>
+          </AdminPanel>
+        </div>
+
+        <AdminPanel title="پرونده تیکت" description={selectedTicket ? selectedTicket.subject : "یک تیکت از Inbox انتخاب کنید."}>
+          {!selectedTicket ? (
+            <div className="p-4"><AdminEmptyState title="تیکتی انتخاب نشده است." /></div>
+          ) : (
+            <div className="grid gap-4 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div>
+                  <p className="font-semibold text-slate-950">{selectedTicket.subject}</p>
+                  <Link href={`/admin/users/${selectedTicket.userId}`} className="text-xs font-semibold text-slate-700 hover:underline">
+                    {getUserDisplayName(selectedTicket.user)}
+                  </Link>
+                  <p className="text-xs text-slate-500" dir="ltr">{getUserIdentifier(selectedTicket.user)}</p>
+                </div>
+                <AdminStatus status={selectedTicket.status} />
+              </div>
+
+              <div className="grid gap-2">
+                {selectedTicket.messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={[
+                      "rounded-xl border px-3 py-2 text-sm leading-7",
+                      message.authorType === "ADMIN" ? "border-slate-200 bg-slate-950 text-white" : "border-slate-200 bg-white text-slate-800",
+                    ].join(" ")}
+                  >
+                    <p>{message.body}</p>
+                    <p className={message.authorType === "ADMIN" ? "mt-1 text-[11px] text-slate-400" : "mt-1 text-[11px] text-slate-500"}>
+                      {message.authorType === "ADMIN" ? "ادمین" : "کاربر"} · {formatAdminDate(message.createdAt)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <form action={replySupportTicketAction} className="grid gap-2">
+                <input type="hidden" name="ticketId" value={selectedTicket.id} />
+                <textarea name="body" placeholder="پاسخ ادمین" className={adminTextareaClass} />
+                <button className={adminPrimaryActionClass}>ارسال پاسخ</button>
+              </form>
+
+              <form action={updateSupportTicketStatusAction} className="flex flex-wrap items-center gap-2 border-t border-slate-200 pt-4">
+                <input type="hidden" name="ticketId" value={selectedTicket.id} />
+                <select name="status" defaultValue={selectedTicket.status} className={adminInputClass}>
+                  <option value="OPEN">باز</option>
+                  <option value="ANSWERED">پاسخ داده‌شده</option>
+                  <option value="CLOSED">بسته</option>
+                </select>
+                <button className={adminSecondaryActionClass}>ثبت وضعیت</button>
+              </form>
+            </div>
+          )}
+        </AdminPanel>
+      </div>
+    </>
   );
 }

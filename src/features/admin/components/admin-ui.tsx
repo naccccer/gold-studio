@@ -82,7 +82,7 @@ export function AdminKpi({
   tone = "neutral",
 }: {
   label: string;
-  value: string | number;
+  value: ReactNode;
   hint?: string;
   tone?: "neutral" | "attention" | "danger" | "success";
 }) {
@@ -188,9 +188,9 @@ export function AdminRow({ children, className = "" }: { children: ReactNode; cl
   return <div className={`grid gap-2 border-b border-slate-100 px-3 py-2.5 text-sm last:border-b-0 md:grid-cols-[minmax(0,1fr)_auto] md:items-center ${className}`}>{children}</div>;
 }
 
-export function AdminStatus({ status, className = "" }: { status: string; className?: string }) {
+export function AdminStatus({ status, label, className = "" }: { status: string; label?: string; className?: string }) {
   const item = statusMap[status] ?? { label: status, variant: "neutral" as const };
-  return <StatusPill variant={item.variant} className={className}>{item.label}</StatusPill>;
+  return <StatusPill variant={item.variant} className={className}>{label ?? item.label}</StatusPill>;
 }
 
 export function AdminEmptyState({

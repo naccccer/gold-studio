@@ -121,10 +121,10 @@ async function hasDuplicateIdentifier({
 function revalidateAdmin() {
   revalidatePath("/admin");
   revalidatePath("/admin/users");
-  revalidatePath("/admin/packages");
+  revalidatePath("/admin/billing");
   revalidatePath("/admin/support");
   revalidatePath("/admin/projects");
-  revalidatePath("/admin/provider");
+  revalidatePath("/admin/ai");
   revalidatePath("/admin/styles");
   revalidatePath("/admin/referrals");
   revalidatePath("/account");
@@ -161,8 +161,8 @@ export async function updateProviderSettingsAction(formData: FormData) {
       autoFallback: settings.autoFallback,
     },
   });
-  revalidatePath("/admin/provider");
-  redirect("/admin/provider");
+  revalidatePath("/admin/ai");
+  redirect("/admin/ai");
 }
 
 function isAvailableToUsers(formData: FormData) {
