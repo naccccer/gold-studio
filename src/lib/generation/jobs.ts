@@ -1,5 +1,7 @@
-import { generateStyledImageWithLiara, generateTextImageWithLiara, type LiaraImageResult } from "@/lib/ai/liara";
-import { getImageModelAttemptOrder, getProviderSettings } from "@/lib/ai/provider-settings";
+import { generateStyledImageWithAvalai, generateTextImageWithAvalai } from "@/lib/ai/avalai";
+import { generateStyledImageWithLiara, generateTextImageWithLiara } from "@/lib/ai/liara";
+import { imageProviderLabel, type GeneratedImageResult } from "@/lib/ai/provider";
+import { getImageProviderAttemptOrder, getProviderSettings, type ProviderModelAttempt } from "@/lib/ai/provider-settings";
 import { captureGenerationCreditReservation, logProviderEvent, releaseGenerationCreditReservation } from "@/lib/billing";
 import { db } from "@/lib/db";
 import { buildSampleReferenceVisionPromptContext, ensureStyleReferenceVision } from "@/lib/style-reference-vision";
@@ -48,16 +50,20 @@ function technicalErrorMessage(error: unknown, fallback: string) {
 function userErrorMessage(error: unknown, fallback: string) {
   const detail = collectErrorText(error).toLowerCase();
 
+  if (detail.includes("avalai_api_key")) {
+    return "تنظیمات سرویس تولید تصویر کامل نیست. کلید AVALAI_API_KEY در محیط اجرا تنظیم نشده است.";
+  }
+
   if (detail.includes("liara_api_key")) {
     return "تنظیمات سرویس تولید تصویر کامل نیست. کلید LIARA_API_KEY در محیط اجرا تنظیم نشده است.";
   }
 
   if (detail.includes("insufficient balance") || detail.includes("status 402")) {
-    return "اعتبار پنل Liara برای ساخت این تصویر کافی نیست. شارژ سرویس تولید تصویر را بررسی کنید.";
+    return "اعتبار پنل provider برای ساخت این تصویر کافی نیست. شارژ سرویس تولید تصویر را بررسی کنید.";
   }
 
   if (detail.includes("temporary network error")) {
-    return "ارتباط سرور با Liara بعد از چند تلاش کامل نشد. اگر روی لوکال هستید، اتصال اینترنت یا پراکسی Liara را بررسی کنید و دوباره تلاش کنید.";
+    return "ارتباط سرور با provider بعد از چند تلاش کامل نشد. اگر روی لوکال هستید، اتصال اینترنت یا پراکسی سرویس تولید تصویر را بررسی کنید و دوباره تلاش کنید.";
   }
 
   if (detail.includes("timeout") || detail.includes("timed out")) {
@@ -69,11 +75,11 @@ function userErrorMessage(error: unknown, fallback: string) {
       return "ارسال هم‌زمان عکس محصول و عکس نمونه برای provider کامل نشد. پروژه ناموفق شد و جزئیات خطای provider در پنل ادمین ثبت شده است.";
     }
 
-    return "درخواست تولید تصویر به Liara رسید، اما provider آن را کامل نکرد. مدل، سایز خروجی، اعتبار Liara و دسترسی شبکه را بررسی کنید.";
+    return "درخواست تولید تصویر به provider رسید، اما provider آن را کامل نکرد. مدل، سایز خروجی، اعتبار سرویس و دسترسی شبکه را بررسی کنید.";
   }
 
   if (detail.includes("did not return an image")) {
-    return "سرویس تولید تصویر پاسخ داد، اما فایل تصویر خروجی برنگرداند. دوباره تلاش کنید یا مدل Liara را بررسی کنید.";
+    return "سرویس تولید تصویر پاسخ داد، اما فایل تصویر خروجی برنگرداند. دوباره تلاش کنید یا مدل provider را بررسی کنید.";
   }
 
   if (detail.includes("not a valid png") || detail.includes("تصویر معتبر")) {
@@ -83,13 +89,13 @@ function userErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
-async function modelAttemptOrder() {
-  return getImageModelAttemptOrder(await getProviderSettings());
+function attemptLabel(attempt: ProviderModelAttempt) {
+  return `${attempt.provider}/${attempt.model}`;
 }
 
-function allModelsFailedError(errors: Array<{ model: string; error: unknown }>) {
+function allModelsFailedError(errors: Array<{ attempt: ProviderModelAttempt; error: unknown }>) {
   const details = errors
-    .map(({ model, error }) => `${model}: ${technicalErrorMessage(error, "generation failed")}`)
+    .map(({ attempt, error }) => `${attemptLabel(attempt)}: ${technicalErrorMessage(error, "generation failed")}`)
     .join(" || ");
 
   return new Error(`All configured image models failed.${details ? ` ${details}` : ""}`);
@@ -115,13 +121,16 @@ async function generateImageWithModelFallback({
   stylePrompt: string;
   outputPreset?: string | null;
   referenceUsed: boolean;
-}): Promise<LiaraImageResult> {
-  const errors: Array<{ model: string; error: unknown }> = [];
-  const models = await modelAttemptOrder();
+}): Promise<GeneratedImageResult> {
+  const errors: Array<{ attempt: ProviderModelAttempt; error: unknown }> = [];
+  const providerSettings = await getProviderSettings();
+  const attempts = getImageProviderAttemptOrder(providerSettings);
 
-  for (const [index, model] of models.entries()) {
+  for (const [index, attempt] of attempts.entries()) {
     try {
-      const generatedImage = await generateStyledImageWithLiara({
+      const providerLabel = imageProviderLabel(attempt.provider);
+      const generate = attempt.provider === "avalai" ? generateStyledImageWithAvalai : generateStyledImageWithLiara;
+      const generatedImage = await generate({
         sourceBuffer,
         mimeType,
         supportingImages,
@@ -129,26 +138,31 @@ async function generateImageWithModelFallback({
         referenceMimeType,
         stylePrompt,
         outputPreset,
-        model,
+        model: attempt.model,
       });
       await logProviderEvent({
         projectId,
+        provider: attempt.provider,
         operation: "image.edit",
         status: "SUCCESS",
         model: generatedImage.model,
         retryCount: index,
-        statusDetail: `outputPreset=${outputPreset}; supportingImages=${supportingImages?.length ?? 0}; reference=${referenceUsed ? "yes" : "no"}; fallbackAttempt=${index + 1}/${models.length}`,
+        statusDetail: `provider=${providerLabel}; outputPreset=${outputPreset}; supportingImages=${supportingImages?.length ?? 0}; reference=${referenceUsed ? "yes" : "no"}; fallbackAttempt=${index + 1}/${attempts.length}`,
       });
       return generatedImage;
     } catch (error) {
-      errors.push({ model, error });
+      const providerLabel = imageProviderLabel(attempt.provider);
+      errors.push({ attempt, error });
       await logProviderEvent({
         projectId,
+        provider: attempt.provider,
         operation: "image.edit",
         status: "FAILED",
-        model,
+        model: attempt.model,
         retryCount: index,
-        statusDetail: `supportingImages=${supportingImages?.length ?? 0}; fallbackAttempt=${index + 1}/${models.length}; next=${index < models.length - 1 ? models[index + 1] : "none"}`,
+        statusDetail: `provider=${providerLabel}; supportingImages=${supportingImages?.length ?? 0}; fallbackAttempt=${index + 1}/${attempts.length}; next=${
+          index < attempts.length - 1 ? attemptLabel(attempts[index + 1]) : "none"
+        }`,
         errorMessage: technicalErrorMessage(error, "خطا در تولید تصویر رخ داد."),
       });
     }
@@ -167,36 +181,44 @@ async function generateTextImageWithModelFallback({
   prompt: string;
   stylePrompt: string;
   outputPreset: string;
-}): Promise<LiaraImageResult> {
-  const errors: Array<{ model: string; error: unknown }> = [];
-  const models = await modelAttemptOrder();
+}): Promise<GeneratedImageResult> {
+  const errors: Array<{ attempt: ProviderModelAttempt; error: unknown }> = [];
+  const providerSettings = await getProviderSettings();
+  const attempts = getImageProviderAttemptOrder(providerSettings);
 
-  for (const [index, model] of models.entries()) {
+  for (const [index, attempt] of attempts.entries()) {
     try {
-      const generatedImage = await generateTextImageWithLiara({
+      const providerLabel = imageProviderLabel(attempt.provider);
+      const generate = attempt.provider === "avalai" ? generateTextImageWithAvalai : generateTextImageWithLiara;
+      const generatedImage = await generate({
         prompt,
         stylePrompt,
         outputPreset,
-        model,
+        model: attempt.model,
       });
       await logProviderEvent({
         projectId,
+        provider: attempt.provider,
         operation: "image.generate",
         status: "SUCCESS",
         model: generatedImage.model,
         retryCount: index,
-        statusDetail: `fallbackAttempt=${index + 1}/${models.length}`,
+        statusDetail: `provider=${providerLabel}; fallbackAttempt=${index + 1}/${attempts.length}`,
       });
       return generatedImage;
     } catch (error) {
-      errors.push({ model, error });
+      const providerLabel = imageProviderLabel(attempt.provider);
+      errors.push({ attempt, error });
       await logProviderEvent({
         projectId,
+        provider: attempt.provider,
         operation: "image.generate",
         status: "FAILED",
-        model,
+        model: attempt.model,
         retryCount: index,
-        statusDetail: `fallbackAttempt=${index + 1}/${models.length}; next=${index < models.length - 1 ? models[index + 1] : "none"}`,
+        statusDetail: `provider=${providerLabel}; fallbackAttempt=${index + 1}/${attempts.length}; next=${
+          index < attempts.length - 1 ? attemptLabel(attempts[index + 1]) : "none"
+        }`,
         errorMessage: technicalErrorMessage(error, "خطا در تست متن به تصویر رخ داد."),
       });
     }

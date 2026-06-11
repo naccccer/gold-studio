@@ -1,7 +1,10 @@
 import { normalizeProductType, type ProductType } from "@/lib/product-types";
+import { imageProvider, normalizeImageProvider, type ImageProvider } from "@/lib/ai/provider";
 
 const DEFAULT_LIARA_BASE_URL = "https://ai.liara.ir/api/69fe30c50bb427e049d327f6/v1";
 const DEFAULT_LIARA_VISION_MODEL = "google/gemini-2.0-flash-lite-001";
+const DEFAULT_AVALAI_BASE_URL = "https://api.avalai.ir/v1";
+const DEFAULT_AVALAI_VISION_MODEL = "gemini-3.1-flash-lite";
 const ANGLES = ["front", "top", "side", "three-quarter", "close-up", "worn", "unknown"] as const;
 const QUALITY_ISSUES = ["low_light", "blur", "busy_background", "cropped", "reflection", "none"] as const;
 const MIN_METADATA_CONFIDENCE = 0.55;
@@ -51,7 +54,25 @@ function readEnv(primaryName: string, fallbackNames: string[] = []) {
   return undefined;
 }
 
-function getLiaraVisionConfig() {
+function visionProvider(): ImageProvider {
+  return normalizeImageProvider(process.env.VISION_PROVIDER || imageProvider());
+}
+
+function getVisionConfig() {
+  if (visionProvider() === "avalai") {
+    const apiKey = readEnv("AVALAI_API_KEY");
+    if (!apiKey) {
+      throw new Error("AVALAI_API_KEY env var is required.");
+    }
+
+    return {
+      provider: "avalai" as const,
+      apiKey,
+      baseURL: readEnv("AVALAI_BASE_URL") || DEFAULT_AVALAI_BASE_URL,
+      model: readEnv("AVALAI_VISION_MODEL") || DEFAULT_AVALAI_VISION_MODEL,
+    };
+  }
+
   const visionApiKey = readEnv("LIARA_VISION_API_KEY", ["GAPGPT_VISION_API_KEY"]);
   const liaraApiKey = visionApiKey || readEnv("LIARA_API_KEY", ["liara_API_KEY"]);
   const apiKey = liaraApiKey || readEnv("GAPGPT_API_KEY");
@@ -60,6 +81,7 @@ function getLiaraVisionConfig() {
   }
 
   return {
+    provider: "liara" as const,
     apiKey,
     baseURL:
       (visionApiKey || liaraApiKey ? readEnv("LIARA_BASE_URL") : readEnv("LIARA_BASE_URL", ["GAPGPT_BASE_URL"])) ||
@@ -70,8 +92,16 @@ function getLiaraVisionConfig() {
   };
 }
 
-export function liaraVisionModel() {
+export function visionModel() {
+  if (visionProvider() === "avalai") {
+    return process.env.AVALAI_VISION_MODEL?.trim() || DEFAULT_AVALAI_VISION_MODEL;
+  }
+
   return process.env.LIARA_VISION_MODEL?.trim() || process.env.GAPGPT_VISION_MODEL?.trim() || DEFAULT_LIARA_VISION_MODEL;
+}
+
+export function liaraVisionModel() {
+  return visionModel();
 }
 
 function extractJsonObject(value: string) {
@@ -198,7 +228,7 @@ export async function analyzeProductImageWithLiara({
   sourceBuffer,
   mimeType,
 }: AnalyzeProductImageInput): Promise<ProductVisionMetadata> {
-  const { apiKey, baseURL, model } = getLiaraVisionConfig();
+  const { apiKey, baseURL, model, provider } = getVisionConfig();
   const imageUrl = `data:${mimeType};base64,${sourceBuffer.toString("base64")}`;
   const prompt = [
     "You are a vision assistant for Ovala, a Persian RTL jewelry product-photo app.",
@@ -247,7 +277,7 @@ export async function analyzeProductImageWithLiara({
     } catch {
       detail = "";
     }
-    throw new Error(`Liara vision request failed with status ${response.status}${detail ? `: ${detail}` : ""}.`);
+    throw new Error(`${provider} vision request failed with status ${response.status}${detail ? `: ${detail}` : ""}.`);
   }
 
   const result = await response.json() as ChatCompletionResponse;
@@ -258,7 +288,7 @@ export async function analyzeStyleReferenceImageWithLiara({
   sourceBuffer,
   mimeType,
 }: AnalyzeProductImageInput): Promise<StyleReferenceVisionMetadata> {
-  const { apiKey, baseURL, model } = getLiaraVisionConfig();
+  const { apiKey, baseURL, model, provider } = getVisionConfig();
   const imageUrl = `data:${mimeType};base64,${sourceBuffer.toString("base64")}`;
   const prompt = [
     "You are a vision assistant for Ovala, a Persian RTL jewelry product-photo app.",
@@ -303,7 +333,7 @@ export async function analyzeStyleReferenceImageWithLiara({
     } catch {
       detail = "";
     }
-    throw new Error(`Liara reference vision request failed with status ${response.status}${detail ? `: ${detail}` : ""}.`);
+    throw new Error(`${provider} reference vision request failed with status ${response.status}${detail ? `: ${detail}` : ""}.`);
   }
 
   const result = await response.json() as ChatCompletionResponse;

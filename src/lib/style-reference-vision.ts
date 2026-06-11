@@ -1,7 +1,7 @@
 import {
   analyzeStyleReferenceImageWithLiara,
-  liaraVisionModel,
   type StyleReferenceVisionMetadata,
+  visionModel,
 } from "@/lib/ai/vision";
 import { db } from "@/lib/db";
 import { readStoredUpload } from "@/lib/uploads";
@@ -93,7 +93,7 @@ function metadataToUpdate(metadata: StyleReferenceVisionMetadata) {
     visionBackground: metadata.background,
     visionSubjectDescription: metadata.subjectDescription,
     visionConfidence: metadata.confidence,
-    visionModel: liaraVisionModel(),
+    visionModel: visionModel(),
     visionAnalyzedAt: new Date(),
     visionError: null,
   };
@@ -128,7 +128,7 @@ export async function analyzeAndStoreStyleReferenceVision(referenceAssetId: stri
     await db.styleReferenceAsset.updateMany({
       where: { id: asset.id },
       data: {
-        visionModel: liaraVisionModel(),
+        visionModel: visionModel(),
         visionAnalyzedAt: new Date(),
         visionError: errorText(error),
       },

@@ -31,6 +31,7 @@ export async function logAdminAudit({
 
 export async function logProviderEvent({
   projectId,
+  provider,
   operation,
   status,
   model,
@@ -39,6 +40,7 @@ export async function logProviderEvent({
   retryCount = 0,
 }: {
   projectId?: string | null;
+  provider?: string | null;
   operation: string;
   status: "SUCCESS" | "FAILED";
   model?: string | null;
@@ -49,6 +51,7 @@ export async function logProviderEvent({
   await db.providerEvent.create({
     data: {
       projectId: projectId || null,
+      provider: provider || "liara",
       operation,
       status,
       model: model || null,

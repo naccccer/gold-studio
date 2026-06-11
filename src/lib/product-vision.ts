@@ -1,4 +1,4 @@
-import { analyzeProductImageWithLiara, liaraVisionModel, serializeQualityIssues } from "@/lib/ai/vision";
+import { analyzeProductImageWithLiara, serializeQualityIssues, visionModel } from "@/lib/ai/vision";
 import { db } from "@/lib/db";
 import { readStoredUpload } from "@/lib/uploads";
 
@@ -47,7 +47,7 @@ export async function analyzeAndStoreProductAssetVision(assetId: string) {
           visionAngle: metadata.detectedAngle,
           visionQualityIssues: serializeQualityIssues(metadata.qualityIssues),
           visionConfidence: metadata.confidence,
-          visionModel: liaraVisionModel(),
+          visionModel: visionModel(),
           visionAnalyzedAt: new Date(),
           visionError: null,
         },
@@ -63,7 +63,7 @@ export async function analyzeAndStoreProductAssetVision(assetId: string) {
     await db.productAsset.updateMany({
       where: { id: asset.id },
       data: {
-        visionModel: liaraVisionModel(),
+        visionModel: visionModel(),
         visionAnalyzedAt: new Date(),
         visionError: errorText(error),
       },

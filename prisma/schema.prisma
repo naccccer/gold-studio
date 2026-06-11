@@ -455,6 +455,7 @@ model PaymentSettings {
 
 model ProviderSettings {
   id             String   @id @default("default")
+  imageProvider  String?
   activeModel    String
   fallbackModels String   @db.Text
   autoFallback   Boolean  @default(true)

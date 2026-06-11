@@ -16,6 +16,7 @@
     "db:export-local": "powershell -ExecutionPolicy Bypass -File scripts/export-local-db.ps1",
     "admin:bootstrap": "npm run db:generate && node scripts/bootstrap-admin.mjs",
     "check:liara": "node scripts/check-liara-direct.mjs",
+    "check:avalai": "node scripts/check-avalai.mjs",
     "cleanup:archives": "node scripts/cleanup-archives.mjs",
     "check:mojibake": "node scripts/check-mojibake.mjs",
     "convert:placeholders": "node scripts/convert-placeholders-to-webp.mjs"

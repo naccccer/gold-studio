@@ -17,14 +17,14 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 - `/admin` owns users, projects, packages, styles, provider settings/events, support, referrals, credits, and audit-style operations.
 - Local uploads and generated results are stored under `.local-storage/uploads` when `STORAGE_DRIVER="local"` and are streamed through authorized `/api/storage/...` routes.
 - Prisma uses MySQL and generates the client into `src/generated/prisma`.
-- Image generation uses the Liara-compatible provider boundary in `src/lib/ai`, with admin-configurable provider model settings.
+- Image generation uses the provider boundary in `src/lib/ai`, with Liara as the default path and an admin-controlled Avalai path for Gemini image testing.
 - DB-backed rate limits, credit reservations, manual purchase review, sales referral codes, support tickets, FAQ, and admin billing operations are present.
 - Batch generation starts from Gallery, creates one project per selected source photo, and reserves generation credit until each output succeeds.
 - New project creation supports optional supporting product photos for complicated products: one primary source plus up to two extra product angles still creates one project and one output.
 
 ## Next Priorities
 
-- Production hardening: verify real Liara generation, retry behavior, storage display URLs, and failed-state recovery on the deployment target.
+- Production hardening: verify real Liara/Avalai generation, retry behavior, storage display URLs, provider cost, and failed-state recovery on the deployment target.
 - Release readiness: route QA across auth, home, gallery, new project, project detail, projects, account, billing, support, settings, and admin.
 - Mobile polish: check the `393x852` mobile layout target for Farsi wrapping, RTL controls, bottom navigation, action placement, calm motion, and accidental scrolling.
 - Admin operations QA: review real-data admin tables and payment/provider/support workflows for speed and clarity.

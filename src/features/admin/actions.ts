@@ -133,9 +133,11 @@ function revalidateAdmin() {
 
 export async function updateProviderSettingsAction(formData: FormData) {
   const session = await requireAdminSession();
+  const imageProvider = text(formData, "imageProvider");
   const activeModel = text(formData, "activeModel");
   const fallbackModels = formData.getAll("fallbackModels").map(String);
   const settings = normalizeProviderSettings({
+    imageProvider,
     activeModel,
     fallbackModels,
     autoFallback: formData.has("autoFallback"),
@@ -153,6 +155,7 @@ export async function updateProviderSettingsAction(formData: FormData) {
     targetId: "default",
     summary: "تنظیمات مدل تولید تصویر به‌روزرسانی شد.",
     metadata: {
+      imageProvider: settings.imageProvider,
       activeModel: settings.activeModel,
       fallbackModels: settings.fallbackModels,
       autoFallback: settings.autoFallback,

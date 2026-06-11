@@ -20,6 +20,7 @@ const titles: Array<{ match: (pathname: string) => boolean; title: string; paren
   { match: (pathname) => /^\/projects\/[^/]+$/.test(pathname), title: "نتیجه", parent: "/projects" },
   { match: (pathname) => pathname === "/projects", title: "پروژه‌ها" },
   { match: (pathname) => pathname === "/account/profile", title: "حساب کاربری", parent: "/account" },
+  { match: (pathname) => pathname === "/account/style-references", title: "گالری نمونه‌ها", parent: "/account" },
   { match: (pathname) => pathname === "/account/referral", title: "کد معرفی", parent: "/account" },
   { match: (pathname) => pathname === "/account/security", title: "حساب کاربری", parent: "/account" },
   { match: (pathname) => pathname === "/account/support", title: "پشتیبانی", parent: "/account" },
