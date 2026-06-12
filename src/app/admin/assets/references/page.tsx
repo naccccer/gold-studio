@@ -84,14 +84,14 @@ export default async function AdminReferenceAssetsPage({ searchParams }: AdminRe
   return (
     <>
       <ConsoleHeader
-        title="رفرنس‌های سبک"
+        title="عکس‌های نمونه کاربران"
         meta={<span>تصاویر نمونه برای انتقال نور، زاویه و حال‌وهوا به خروجی.</span>}
       />
 
       <TabNav
         tabs={[
           { href: "/admin/assets", label: "تصاویر منبع کاربران", active: false },
-          { href: "/admin/assets/references", label: "رفرنس‌های سبک", active: true },
+          { href: "/admin/assets/references", label: "عکس‌های نمونه کاربران", active: true },
         ]}
       />
 
@@ -114,7 +114,7 @@ export default async function AdminReferenceAssetsPage({ searchParams }: AdminRe
 
       {assets.length === 0 ? (
         <Surface className="p-8">
-          <EmptyState title="رفرنسی با این فیلتر پیدا نشد." />
+          <EmptyState title="عکس نمونه‌ای با این فیلتر پیدا نشد." />
         </Surface>
       ) : (
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
@@ -126,7 +126,7 @@ export default async function AdminReferenceAssetsPage({ searchParams }: AdminRe
                   <Link
                     href={assetHref(asset.id)}
                     aria-current={isSelected ? "true" : undefined}
-                    aria-label={asset.title || asset.originalName || "رفرنس بدون نام"}
+                    aria-label={asset.title || asset.originalName || "عکس نمونه بدون نام"}
                     className={[
                       "relative block aspect-square overflow-hidden rounded-xl bg-slate-100 transition",
                       isSelected ? "ring-2 ring-navy-700 ring-offset-2 ring-offset-navy-25" : "hover:opacity-85",
@@ -167,7 +167,7 @@ function ReferenceDetailPanel({ asset }: { asset: ReferenceWithRelations }) {
       <div className="relative aspect-square bg-slate-100">
         <Image
           src={storageUrlFromKeyOrUrl(asset.storageKey, asset.fileUrl) || uploadPreview.src}
-          alt={asset.title || asset.originalName || "رفرنس بدون نام"}
+          alt={asset.title || asset.originalName || "عکس نمونه بدون نام"}
           fill
           unoptimized
           className="object-cover"
@@ -176,7 +176,7 @@ function ReferenceDetailPanel({ asset }: { asset: ReferenceWithRelations }) {
       </div>
       <div className="space-y-4 p-4">
         <div>
-          <h2 className="truncate text-sm font-semibold text-navy-950">{asset.title || asset.originalName || "رفرنس بدون نام"}</h2>
+          <h2 className="truncate text-sm font-semibold text-navy-950">{asset.title || asset.originalName || "عکس نمونه بدون نام"}</h2>
           <p className="mt-0.5 text-xs text-slate-500">
             <StatusDot status={asset.status} />
           </p>

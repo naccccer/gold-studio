@@ -97,7 +97,7 @@ export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageP
       <TabNav
         tabs={[
           { href: "/admin/assets", label: "تصاویر منبع کاربران", active: true },
-          { href: "/admin/assets/references", label: "رفرنس‌های سبک", active: false },
+          { href: "/admin/assets/references", label: "عکس‌های نمونه کاربران", active: false },
         ]}
       />
 

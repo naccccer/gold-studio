@@ -96,7 +96,7 @@ export default async function AdminProjectDetailPage({ params }: AdminProjectDet
           <div className="grid grid-cols-2 gap-4 p-5 sm:grid-cols-3">
             <ImageBlock title="منبع" src={sourceUrl} />
             <ImageBlock title="خروجی" src={resultUrl || sourceUrl} muted={!resultUrl} />
-            {referenceUrl ? <ImageBlock title="رفرنس سبک" src={referenceUrl} /> : null}
+            {referenceUrl ? <ImageBlock title="عکس نمونه" src={referenceUrl} /> : null}
             {project.supportingAssets.map((item) => (
               <ImageBlock
                 key={item.id}

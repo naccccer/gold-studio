@@ -52,7 +52,7 @@ const titleBySegment: Record<string, string> = {
   billing: "پرداخت",
   projects: "پروژه‌ها",
   assets: "دارایی‌ها",
-  references: "رفرنس‌ها",
+  references: "عکس‌های نمونه",
   styles: "سبک‌ها",
   ai: "موتور AI",
   support: "پشتیبانی",
