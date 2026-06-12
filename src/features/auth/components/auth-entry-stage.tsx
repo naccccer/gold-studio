@@ -307,8 +307,8 @@ export function AuthEntryStage({
   );
 
   return (
-    <main className="flex min-h-svh justify-center overflow-hidden bg-[#eee5d8] text-right text-foreground md:bg-[radial-gradient(circle_at_top,#fffaf3_0%,#f5efe5_48%,#e7dccc_100%)] md:py-6">
-      <section className="relative isolate flex min-h-svh w-full max-w-[430px] flex-col overflow-hidden md:min-h-[820px] md:rounded-[1.5rem] md:border md:border-white/75 md:shadow-[0_18px_42px_-32px_rgba(23,20,17,0.62)]">
+    <main className="flex min-h-svh justify-center overflow-hidden bg-[#070605] text-right text-studio-text md:bg-[radial-gradient(circle_at_top,#1a1611_0%,#0b0a08_55%,#050404_100%)] md:py-6">
+      <section className="relative isolate flex min-h-svh w-full max-w-[430px] flex-col overflow-hidden md:min-h-[820px] md:rounded-[1.5rem] md:border md:border-white/10 md:shadow-[var(--shadow-studio-frame)]">
         <div ref={stageRef} className="ov-stage relative flex flex-1 flex-col" data-commit={commit ?? undefined}>
           <div aria-hidden="true" className="pointer-events-none absolute inset-0">
             <div className="ov-cyclorama absolute inset-0" />
@@ -321,7 +321,7 @@ export function AuthEntryStage({
           </div>
 
           <header className="relative z-10 flex justify-center pt-8">
-            <BrandLogo variant="primary" priority />
+            <BrandLogo variant="primary-light" priority />
           </header>
 
           <div className="ov-scene relative z-10 flex flex-1 items-center justify-center">
@@ -347,34 +347,34 @@ export function AuthEntryStage({
 
             <div
               aria-hidden="true"
-              className="ov-medallion-grip relative z-10 select-none"
+              className="ov-card-grip relative z-10 select-none"
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerEnd}
               onPointerCancel={onPointerEnd}
             >
-              <div className="ov-contact-shadow" />
-              <div className="ov-medallion-track">
-                <div className="ov-medallion-float">
-                  <div className="ov-medallion">
-                    <div className="ov-medallion-side" />
-                    <div className="ov-medallion-face flex items-center justify-center">
+              <div className="ov-ground-glow" />
+              <div className="ov-card-track">
+                <div className="ov-card-float">
+                  <div className="ov-card">
+                    <div className="ov-card-face flex items-center justify-center">
                       <Image
-                        src="/brand/ovala-mark.svg"
+                        src="/brand/ovala-mark-light.svg"
                         alt=""
-                        width={78}
-                        height={86}
+                        width={76}
+                        height={84}
                         draggable={false}
-                        className="opacity-85"
+                        className="opacity-95"
                       />
                     </div>
+                    <div className="ov-card-reflection" />
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <p className="relative z-10 pb-9 text-center text-[0.8rem] font-semibold text-muted-strong">
+          <p className="relative z-10 pb-9 text-center text-[0.8rem] font-semibold text-studio-text-muted">
             <span className="ov-hint-drag">کارت را به یک سمت بکشید</span>
             <span className="ov-hint-tap">ورود یا ثبت‌نام را انتخاب کنید</span>
           </p>
@@ -386,7 +386,7 @@ export function AuthEntryStage({
               type="button"
               aria-label="بستن"
               onClick={closePanel}
-              className={["ov-scrim absolute inset-0 z-30 cursor-default bg-[#171411]/25", closing ? "ov-scrim-leave" : ""].join(" ")}
+              className={["ov-scrim absolute inset-0 z-30 cursor-default bg-black/55", closing ? "ov-scrim-leave" : ""].join(" ")}
             />
             <div
               role="dialog"

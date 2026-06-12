@@ -437,7 +437,7 @@ h1,h2,h3,h4,h5,h6 {
   }
 }
 
-/* صحنه ورود: سیکلوراما و مدال اووالا */
+/* صحنه ورود: استودیوی تاریک و کارت اووالا */
 .ov-stage {
   --drag-x: 0px;
   --drag-p: 0;
@@ -447,15 +447,16 @@ h1,h2,h3,h4,h5,h6 {
 
 .ov-cyclorama {
   background:
-    radial-gradient(120% 55% at 50% 24%, rgba(255, 252, 245, 0.9) 0%, rgba(255, 252, 245, 0) 60%),
-    linear-gradient(180deg, #faf4e9 0%, #f3e9d6 44%, #e6d6b9 76%, #d8c39e 100%);
+    radial-gradient(130% 80% at 50% -10%, #322a1f 0%, rgba(50, 42, 31, 0) 55%),
+    radial-gradient(120% 60% at 50% 62%, #1d1812 0%, rgba(29, 24, 18, 0) 70%),
+    linear-gradient(180deg, #14110e 0%, #0d0c0a 55%, #070605 100%);
 }
 
 .ov-floor {
   position: absolute;
   inset: auto 0 0 0;
-  height: 42%;
-  background: radial-gradient(140% 110% at 50% 118%, rgba(122, 90, 48, 0.22) 0%, rgba(122, 90, 48, 0) 60%);
+  height: 30%;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.55) 100%);
 }
 
 .ov-parallax {
@@ -465,23 +466,23 @@ h1,h2,h3,h4,h5,h6 {
 .ov-pool {
   position: absolute;
   left: 50%;
-  top: 52%;
-  width: 380px;
-  height: 430px;
+  top: 54%;
+  width: 400px;
+  height: 460px;
   transform: translate(-50%, -50%);
-  background: radial-gradient(50% 50% at 50% 50%, rgba(255, 251, 240, 0.9) 0%, rgba(255, 251, 240, 0) 70%);
+  background: radial-gradient(50% 50% at 50% 50%, rgba(248, 223, 159, 0.09) 0%, rgba(248, 223, 159, 0) 70%);
 }
 
 .ov-grain {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 120px 120px;
-  opacity: 0.05;
+  opacity: 0.07;
 }
 
 .ov-sweepband {
   position: absolute;
   inset: -12% -45%;
-  background: linear-gradient(100deg, rgba(248, 223, 159, 0) 34%, rgba(248, 223, 159, 0.32) 50%, rgba(248, 223, 159, 0) 66%);
+  background: linear-gradient(100deg, rgba(248, 223, 159, 0) 34%, rgba(248, 223, 159, 0.16) 50%, rgba(248, 223, 159, 0) 66%);
   opacity: 0;
   transform: translateX(-130%);
   pointer-events: none;
@@ -499,16 +500,16 @@ h1,h2,h3,h4,h5,h6 {
   perspective: 1100px;
 }
 
-.ov-medallion-grip {
+.ov-card-grip {
   touch-action: none;
   cursor: grab;
 }
 
-.ov-stage[data-dragging="true"] .ov-medallion-grip {
+.ov-stage[data-dragging="true"] .ov-card-grip {
   cursor: grabbing;
 }
 
-.ov-medallion-track {
+.ov-card-track {
   transform: translateX(calc(var(--drag-x) * 0.85)) rotateY(calc(var(--drag-p) * 16deg))
     rotateZ(calc(var(--drag-p) * 2deg)) scale(calc(1 + var(--drag-abs) * 0.04));
   transition:
@@ -516,81 +517,94 @@ h1,h2,h3,h4,h5,h6 {
     opacity var(--motion-duration-standard) var(--motion-ease-state);
 }
 
-.ov-stage[data-dragging="true"] .ov-medallion-track {
+.ov-stage[data-dragging="true"] .ov-card-track {
   will-change: transform;
 }
 
-.ov-stage[data-commit] .ov-medallion-track {
+.ov-stage[data-commit] .ov-card-track {
   filter: blur(6px);
   opacity: 0;
 }
 
-.ov-medallion-float {
-  animation: ovMedallionFloat 6s ease-in-out infinite;
+.ov-card-float {
+  animation: ovCardFloat 6s ease-in-out infinite;
 }
 
-.ov-medallion {
+.ov-card {
   position: relative;
-  width: 216px;
-  height: 270px;
+  width: 206px;
+  height: 296px;
+  border-radius: 1.6rem;
 }
 
-.ov-medallion-side {
+.ov-card-face {
   position: absolute;
   inset: 0;
-  border-radius: 50% / 47%;
-  transform: translateY(9px);
-  background: linear-gradient(180deg, #e6d8bf 0%, #cdb78e 52%, #a3884f 100%);
-  box-shadow: 0 16px 28px -16px rgba(96, 72, 38, 0.5);
-}
-
-.ov-medallion-face {
-  position: absolute;
-  inset: 0;
-  border-radius: 50% / 47%;
-  background: radial-gradient(130% 100% at 38% 12%, #fffefc 0%, #fbf5e9 42%, #efe3cc 78%, #e2d0ae 100%);
+  border-radius: inherit;
+  background: linear-gradient(165deg, #27211a 0%, #17130f 38%, #0f0d0b 100%);
   box-shadow:
-    inset 0 2px 1px rgba(255, 255, 255, 0.95),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.55),
-    inset 0 -20px 38px rgba(166, 128, 70, 0.24),
-    inset 16px 4px 34px -20px rgba(255, 255, 255, 0.55),
-    inset -20px -8px 38px -22px rgba(150, 112, 58, 0.3);
+    0 34px 70px -32px rgba(0, 0, 0, 0.95),
+    inset 0 1px 0 rgba(255, 242, 214, 0.22),
+    inset 1px 0 0 rgba(255, 242, 214, 0.07),
+    inset -1px 0 0 rgba(255, 242, 214, 0.04),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.7);
 }
 
-.ov-medallion-face::after {
+.ov-card-face::after {
   content: "";
   position: absolute;
-  inset: 6px;
+  inset: 1px;
   border-radius: inherit;
-  background: linear-gradient(155deg, rgba(255, 255, 255, 0.7) 4%, rgba(255, 255, 255, 0) 36%);
-  transform: translateX(calc(var(--drag-p) * -16px));
-  opacity: 0.8;
+  background: linear-gradient(
+    120deg,
+    rgba(255, 250, 240, 0) 30%,
+    rgba(255, 250, 240, 0.06) 46%,
+    rgba(255, 250, 240, 0.11) 50%,
+    rgba(255, 250, 240, 0.06) 54%,
+    rgba(255, 250, 240, 0) 70%
+  );
+  transform: translateX(calc(var(--drag-p) * -34px));
   pointer-events: none;
 }
 
-.ov-contact-shadow {
+.ov-card-reflection {
+  position: absolute;
+  top: calc(100% + 16px);
+  left: 0;
+  right: 0;
+  height: 52%;
+  border-radius: 1.6rem;
+  background: linear-gradient(165deg, #221d17 0%, #14110d 60%);
+  transform: scaleY(-1);
+  opacity: calc(0.26 - var(--drag-abs) * 0.14);
+  -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0) 78%);
+  mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0) 78%);
+  pointer-events: none;
+}
+
+.ov-ground-glow {
   position: absolute;
   left: 50%;
-  bottom: -2.7rem;
-  width: 204px;
-  height: 42px;
+  bottom: -3.1rem;
+  width: 230px;
+  height: 52px;
   transform: translateX(-50%) translateX(calc(var(--drag-x) * 0.6)) scaleX(calc(1 + var(--drag-abs) * 0.25));
-  opacity: calc(0.95 - var(--drag-abs) * 0.5);
+  opacity: calc(0.9 - var(--drag-abs) * 0.4);
   transition: opacity var(--motion-duration-standard) var(--motion-ease-state);
 }
 
-.ov-contact-shadow::before {
+.ov-ground-glow::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: 50%;
   background:
-    radial-gradient(42% 42% at 50% 50%, rgba(23, 20, 17, 0.44) 0%, rgba(23, 20, 17, 0) 100%),
-    radial-gradient(72% 72% at 50% 50%, rgba(23, 20, 17, 0.2) 0%, rgba(23, 20, 17, 0) 100%);
+    radial-gradient(42% 42% at 50% 50%, rgba(216, 165, 82, 0.26) 0%, rgba(216, 165, 82, 0) 100%),
+    radial-gradient(75% 75% at 50% 50%, rgba(216, 165, 82, 0.1) 0%, rgba(216, 165, 82, 0) 100%);
   animation: ovShadowBreath 6s ease-in-out infinite;
 }
 
-.ov-stage[data-commit] .ov-contact-shadow {
+.ov-stage[data-commit] .ov-ground-glow {
   opacity: 0;
 }
 
@@ -604,13 +618,13 @@ h1,h2,h3,h4,h5,h6 {
   padding: 0.85rem 0.7rem;
   border-radius: var(--radius-xl);
   border: 1px solid transparent;
-  color: var(--muted-strong);
+  color: #e9e1d2;
   transition: color var(--motion-duration-micro) var(--motion-ease-state);
 }
 
 .ov-dir-zone:focus-visible {
   outline: none;
-  box-shadow: var(--shadow-focus);
+  box-shadow: 0 0 0 3px rgba(216, 165, 82, 0.35);
 }
 
 .ov-dir-login {
@@ -627,16 +641,16 @@ h1,h2,h3,h4,h5,h6 {
 
 .ov-stage[data-armed="login"] .ov-dir-login,
 .ov-stage[data-armed="signup"] .ov-dir-signup {
-  color: var(--accent-deep);
+  color: var(--gold-gradient-start);
   animation: ovArmTick 200ms var(--motion-ease-interactive);
 }
 
 .ov-chevrons {
-  color: var(--accent);
+  color: var(--gold-gradient-mid);
 }
 
 .ov-chevron {
-  opacity: 0.25;
+  opacity: 0.3;
   animation: ovChevronPulse 1.7s ease-in-out infinite;
 }
 
@@ -696,7 +710,7 @@ h1,h2,h3,h4,h5,h6 {
   animation: ovSwapFromLeft 280ms var(--motion-ease-standard) both;
 }
 
-@keyframes ovMedallionFloat {
+@keyframes ovCardFloat {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-6px); }
 }
@@ -707,7 +721,7 @@ h1,h2,h3,h4,h5,h6 {
 }
 
 @keyframes ovChevronPulse {
-  0%, 100% { opacity: 0.2; }
+  0%, 100% { opacity: 0.22; }
   35% { opacity: 1; }
 }
 
@@ -753,8 +767,8 @@ h1,h2,h3,h4,h5,h6 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ov-medallion-float,
-  .ov-contact-shadow::before,
+  .ov-card-float,
+  .ov-ground-glow::before,
   .ov-chevron,
   .ov-sweepband {
     animation: none !important;
@@ -775,8 +789,8 @@ h1,h2,h3,h4,h5,h6 {
   }
 
   .ov-dir-zone {
-    border-color: var(--border-strong);
-    background: rgba(255, 253, 249, 0.75);
+    border-color: var(--studio-border);
+    background: rgba(255, 253, 249, 0.06);
   }
 
   .ov-hint-drag {
