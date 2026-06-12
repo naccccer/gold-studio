@@ -23,6 +23,7 @@ import {
   textareaClass,
 } from "@/features/admin/components/console";
 import { PriceAmountInput } from "@/features/admin/components/price-amount-input";
+import { BILLING_PLAN_COLOR_PRESETS, normalizeBillingPlanColorPreset } from "@/lib/billing-plan-colors";
 import {
   approvePurchaseRequestAction,
   createBillingPackageAction,
@@ -186,6 +187,28 @@ function PackageFormFields({
       <Field label="توضیح">
         <input name="description" defaultValue={billingPackage?.description} className={fieldClass} />
       </Field>
+      <fieldset className="grid gap-1.5">
+        <legend className="text-xs font-medium text-slate-600">رنگ کارت پلن در اپ کاربر</legend>
+        <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
+          {BILLING_PLAN_COLOR_PRESETS.map((preset) => (
+            <label key={preset.id} className="cursor-pointer" title={preset.label}>
+              <input
+                type="radio"
+                name="colorPreset"
+                value={preset.id}
+                defaultChecked={normalizeBillingPlanColorPreset(billingPackage?.colorPreset) === preset.id}
+                className="peer sr-only"
+              />
+              <span
+                className="block h-7 w-7 rounded-full border-2 border-transparent transition peer-checked:border-navy-900 peer-checked:ring-2 peer-checked:ring-navy-100 peer-focus-visible:ring-2 peer-focus-visible:ring-navy-300"
+                style={{ backgroundColor: preset.swatch }}
+              >
+                <span className="sr-only">{preset.label}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
       <label className="inline-flex items-center gap-2 text-xs font-medium text-navy-900">
         <input name="isActive" type="checkbox" defaultChecked={billingPackage ? billingPackage.isActive : true} className={checkboxClass} />
         به کاربران نمایش داده شود
@@ -207,7 +230,6 @@ function PackagesTab({ packages }: { packages: BillingPackageWithCounts[] }) {
       >
         <form action={createBillingPackageAction} className="grid max-w-2xl gap-3">
           <input type="hidden" name="currency" value="IRR" />
-          <input type="hidden" name="colorPreset" value="amber" />
           <Field label="نوع بسته">
             <select name="type" defaultValue="SUBSCRIPTION" className={fieldClass}>
               <option value="SUBSCRIPTION">اشتراک ماهانه</option>
@@ -242,6 +264,15 @@ function PackagesTab({ packages }: { packages: BillingPackageWithCounts[] }) {
                 summary={
                   <>
                     <StatusDot status={billingPackage.isActive ? "ACTIVE" : "PAUSED"} label="" />
+                    <span
+                      aria-hidden="true"
+                      className="h-3.5 w-3.5 shrink-0 rounded-full"
+                      style={{
+                        backgroundColor: BILLING_PLAN_COLOR_PRESETS.find(
+                          (preset) => preset.id === normalizeBillingPlanColorPreset(billingPackage.colorPreset),
+                        )?.swatch,
+                      }}
+                    />
                     <span className="truncate font-medium text-navy-950">{billingPackage.title}</span>
                     <span className="rounded-full bg-navy-50 px-2 py-0.5 text-[10px] font-medium text-navy-700">
                       {billingPackage.type === "SUBSCRIPTION" ? "اشتراک" : "بسته اعتبار"}
@@ -259,7 +290,6 @@ function PackagesTab({ packages }: { packages: BillingPackageWithCounts[] }) {
                   <input type="hidden" name="packageId" value={billingPackage.id} />
                   <input type="hidden" name="type" value={billingPackage.type} />
                   <input type="hidden" name="currency" value={billingPackage.currency} />
-                  <input type="hidden" name="colorPreset" value={billingPackage.colorPreset} />
                   <PackageFormFields billingPackage={billingPackage} />
                   <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
                     <div className="flex gap-1.5">
