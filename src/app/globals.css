@@ -532,9 +532,9 @@ h1,h2,h3,h4,h5,h6 {
 
 .ov-card {
   position: relative;
-  width: 206px;
-  height: 296px;
-  border-radius: 1.6rem;
+  width: 148px;
+  height: 212px;
+  border-radius: 1.15rem;
 }
 
 .ov-card-face {
@@ -543,40 +543,23 @@ h1,h2,h3,h4,h5,h6 {
   border-radius: inherit;
   background: linear-gradient(165deg, #27211a 0%, #17130f 38%, #0f0d0b 100%);
   box-shadow:
-    0 34px 70px -32px rgba(0, 0, 0, 0.95),
     inset 0 1px 0 rgba(255, 242, 214, 0.22),
     inset 1px 0 0 rgba(255, 242, 214, 0.07),
     inset -1px 0 0 rgba(255, 242, 214, 0.04),
     inset 0 -1px 0 rgba(0, 0, 0, 0.7);
 }
 
-.ov-card-face::after {
-  content: "";
-  position: absolute;
-  inset: 1px;
-  border-radius: inherit;
-  background: linear-gradient(
-    120deg,
-    rgba(255, 250, 240, 0) 30%,
-    rgba(255, 250, 240, 0.06) 46%,
-    rgba(255, 250, 240, 0.11) 50%,
-    rgba(255, 250, 240, 0.06) 54%,
-    rgba(255, 250, 240, 0) 70%
-  );
-  transform: translateX(calc(var(--drag-p) * -34px));
-  pointer-events: none;
-}
-
 .ov-card-reflection {
   position: absolute;
-  top: calc(100% + 16px);
+  top: calc(100% + 12px);
   left: 0;
   right: 0;
   height: 52%;
   border-radius: 1.6rem;
   background: linear-gradient(165deg, #221d17 0%, #14110d 60%);
   transform: scaleY(-1);
-  opacity: calc(0.26 - var(--drag-abs) * 0.14);
+  opacity: calc(0.18 - var(--drag-abs) * 0.1);
+  filter: blur(2px);
   -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0) 78%);
   mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0) 78%);
   pointer-events: none;
@@ -585,9 +568,9 @@ h1,h2,h3,h4,h5,h6 {
 .ov-ground-glow {
   position: absolute;
   left: 50%;
-  bottom: -3.1rem;
-  width: 230px;
-  height: 52px;
+  bottom: -2.6rem;
+  width: 170px;
+  height: 44px;
   transform: translateX(-50%) translateX(calc(var(--drag-x) * 0.6)) scaleX(calc(1 + var(--drag-abs) * 0.25));
   opacity: calc(0.9 - var(--drag-abs) * 0.4);
   transition: opacity var(--motion-duration-standard) var(--motion-ease-state);
@@ -598,9 +581,7 @@ h1,h2,h3,h4,h5,h6 {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background:
-    radial-gradient(42% 42% at 50% 50%, rgba(216, 165, 82, 0.26) 0%, rgba(216, 165, 82, 0) 100%),
-    radial-gradient(75% 75% at 50% 50%, rgba(216, 165, 82, 0.1) 0%, rgba(216, 165, 82, 0) 100%);
+  background: radial-gradient(50% 50% at 50% 50%, rgba(216, 165, 82, 0.14) 0%, rgba(216, 165, 82, 0) 78%);
   animation: ovShadowBreath 6s ease-in-out infinite;
 }
 
@@ -628,13 +609,13 @@ h1,h2,h3,h4,h5,h6 {
 }
 
 .ov-dir-login {
-  right: 0.4rem;
+  left: calc(50% + 90px);
   transform: translateY(-50%) scale(calc(1 + max(var(--drag-p), 0) * 0.12));
   opacity: calc(1 - max(calc(var(--drag-p) * -1), 0) * 0.6);
 }
 
 .ov-dir-signup {
-  left: 0.4rem;
+  right: calc(50% + 90px);
   transform: translateY(-50%) scale(calc(1 + max(calc(var(--drag-p) * -1), 0) * 0.12));
   opacity: calc(1 - max(var(--drag-p), 0) * 0.6);
 }

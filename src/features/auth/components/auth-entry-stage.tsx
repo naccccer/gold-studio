@@ -321,7 +321,7 @@ export function AuthEntryStage({
           </div>
 
           <header className="relative z-10 flex justify-center pt-8">
-            <BrandLogo variant="primary-light" priority />
+            <BrandLogo variant="primary-on-dark" priority />
           </header>
 
           <div className="ov-scene relative z-10 flex flex-1 items-center justify-center">
@@ -361,8 +361,8 @@ export function AuthEntryStage({
                       <Image
                         src="/brand/ovala-mark-light.svg"
                         alt=""
-                        width={76}
-                        height={84}
+                        width={56}
+                        height={62}
                         draggable={false}
                         className="opacity-95"
                       />
