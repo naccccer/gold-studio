@@ -17,7 +17,10 @@ type ConfirmActionProps = {
   description?: string;
   confirmLabel?: string;
   cancelLabel?: string;
-  trigger: (open: () => void) => ReactNode;
+  trigger?: (open: () => void) => ReactNode;
+  triggerLabel?: string;
+  triggerClassName?: string;
+  triggerIcon?: "trash";
 };
 
 export function ConfirmAction({
@@ -28,6 +31,9 @@ export function ConfirmAction({
   confirmLabel = "تایید حذف",
   cancelLabel = "انصراف",
   trigger,
+  triggerLabel = confirmLabel,
+  triggerClassName,
+  triggerIcon,
 }: ConfirmActionProps) {
   const [open, setOpen] = useState(false);
   const titleId = useId();
@@ -103,7 +109,14 @@ export function ConfirmAction({
 
   return (
     <>
-      {trigger(() => setOpen(true))}
+      {trigger ? (
+        trigger(() => setOpen(true))
+      ) : (
+        <button type="button" onClick={() => setOpen(true)} className={triggerClassName}>
+          {triggerIcon === "trash" ? <Trash className="h-4 w-4" /> : null}
+          {triggerLabel}
+        </button>
+      )}
       {dialog}
     </>
   );

@@ -5,7 +5,6 @@ import {
   EyeSlash,
   Save2,
   Setting4,
-  Trash,
 } from "vuesax-icons-react";
 import { ConfirmAction } from "@/components/ui/confirm-action";
 import {
@@ -219,12 +218,9 @@ export default async function AdminStylesPage() {
                                 title="کنترل حذف شود؟"
                                 description="این گزینه از فرم سبک کاربر حذف می‌شود."
                                 confirmLabel="حذف"
-                                trigger={(open) => (
-                                  <button type="button" onClick={open} className={adminDangerActionClass}>
-                                    <Trash className="h-4 w-4" />
-                                    حذف
-                                  </button>
-                                )}
+                                triggerLabel="حذف"
+                                triggerClassName={adminDangerActionClass}
+                                triggerIcon="trash"
                               />
                             </div>
                           </td>
