@@ -314,7 +314,6 @@ export function AuthEntryStage({
             <div className="ov-cyclorama absolute inset-0" />
             <div className="ov-floor" />
             <div className="ov-parallax absolute inset-0">
-              <div className="ov-echo" />
               <div className="ov-pool" />
             </div>
             <div className="ov-grain absolute inset-0" />
@@ -357,15 +356,18 @@ export function AuthEntryStage({
               <div className="ov-contact-shadow" />
               <div className="ov-medallion-track">
                 <div className="ov-medallion-float">
-                  <div className="ov-medallion flex items-center justify-center">
-                    <Image
-                      src="/brand/ovala-mark.svg"
-                      alt=""
-                      width={74}
-                      height={82}
-                      draggable={false}
-                      className="opacity-90"
-                    />
+                  <div className="ov-medallion">
+                    <div className="ov-medallion-side" />
+                    <div className="ov-medallion-face flex items-center justify-center">
+                      <Image
+                        src="/brand/ovala-mark.svg"
+                        alt=""
+                        width={78}
+                        height={86}
+                        draggable={false}
+                        className="opacity-85"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
