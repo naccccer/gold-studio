@@ -321,9 +321,8 @@ export function AuthEntryStage({
             <div className="ov-sweepband" />
           </div>
 
-          <header className="relative z-10 flex flex-col items-center gap-1 pt-8">
+          <header className="relative z-10 flex justify-center pt-8">
             <BrandLogo variant="primary" priority />
-            <p className="text-display text-[0.95rem] text-muted-strong">عکس ساده، نتیجه استودیویی</p>
           </header>
 
           <div className="ov-scene relative z-10 flex flex-1 items-center justify-center">
