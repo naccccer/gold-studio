@@ -1,19 +1,20 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { Prisma } from "@/generated/prisma";
 import {
-  adminInputClass,
-  adminPrimaryActionClass,
-  adminTableCellClass,
-  AdminDataTable,
-  AdminEmptyState,
-  AdminFilterBar,
-  AdminKpi,
-  AdminKpiStrip,
-  AdminPageHeader,
-  AdminPanel,
-  AdminStatus,
+  btnSecondary,
+  cellClass,
+  ConsoleHeader,
+  ConsoleTable,
+  EmptyState,
+  faNum,
+  fieldClass,
   formatAdminDate,
-} from "@/features/admin/components/admin-ui";
+  SegmentedLinks,
+  StatusDot,
+  Surface,
+  TabNav,
+} from "@/features/admin/components/console";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { db } from "@/lib/db";
@@ -51,7 +52,7 @@ export default async function AdminReferenceAssetsPage({ searchParams }: AdminRe
       : {}),
   };
 
-  const [assets, readyCount, archivedCount, analyzedCount, errorCount] = await Promise.all([
+  const [assets, readyCount, archivedCount, errorCount] = await Promise.all([
     db.styleReferenceAsset.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -60,72 +61,88 @@ export default async function AdminReferenceAssetsPage({ searchParams }: AdminRe
     }),
     db.styleReferenceAsset.count({ where: { status: "READY" } }),
     db.styleReferenceAsset.count({ where: { status: "ARCHIVED" } }),
-    db.styleReferenceAsset.count({ where: { visionAnalyzedAt: { not: null } } }),
     db.styleReferenceAsset.count({ where: { visionError: { not: null } } }),
   ]);
 
+  const filterHref = (next: { status?: string; vision?: string }) => {
+    const query = new URLSearchParams();
+    if (q) query.set("q", q);
+    query.set("status", next.status ?? status);
+    const nextVision = next.vision !== undefined ? next.vision : vision;
+    if (nextVision) query.set("vision", nextVision);
+    return `/admin/assets/references?${query.toString()}`;
+  };
+
   return (
     <>
-      <AdminPageHeader title="رفرنس‌های سبک" description="Sample/style reference assets برای انتقال نور، زاویه، چیدمان و حال‌وهوای تصویر نمونه." />
+      <ConsoleHeader title="رفرنس‌های سبک" meta={<span>{faNum(readyCount)} رفرنس آماده</span>} />
 
-      <AdminKpiStrip>
-        <AdminKpi label="آماده" value={readyCount} />
-        <AdminKpi label="آرشیوشده" value={archivedCount} />
-        <AdminKpi label="Vision analyzed" value={analyzedCount} />
-        <AdminKpi label="Vision error" value={errorCount} tone={errorCount ? "danger" : "neutral"} />
-        <AdminKpi label="نمایش فعلی" value={assets.length} />
-      </AdminKpiStrip>
+      <TabNav
+        tabs={[
+          { href: "/admin/assets", label: "تصاویر منبع کاربران", active: false },
+          { href: "/admin/assets/references", label: "رفرنس‌های سبک", active: true },
+        ]}
+      />
 
-      <AdminFilterBar>
-        <form className="grid gap-2 md:grid-cols-[minmax(0,1fr)_150px_160px_auto]">
-          <input name="q" defaultValue={q} placeholder="شناسه، مالک، storage key، صحنه، نور یا پس‌زمینه" className={adminInputClass} />
-          <select name="status" defaultValue={status} className={adminInputClass}>
-            <option value="READY">آماده</option>
-            <option value="ARCHIVED">آرشیوشده</option>
-            <option value="ALL">همه</option>
-          </select>
-          <select name="vision" defaultValue={vision} className={adminInputClass}>
-            <option value="">همه vision</option>
-            <option value="analyzed">تحلیل‌شده</option>
-            <option value="error">دارای خطا</option>
-          </select>
-          <button className={adminPrimaryActionClass}>اعمال</button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <SegmentedLinks
+          items={[
+            { href: filterHref({ status: "READY" }), label: "آماده", active: status === "READY", count: readyCount },
+            { href: filterHref({ status: "ARCHIVED" }), label: "آرشیوشده", active: status === "ARCHIVED", count: archivedCount },
+            { href: filterHref({ status: "ALL", vision: "error" }), label: "خطای Vision", active: vision === "error", count: errorCount },
+            { href: filterHref({ status: "ALL", vision: "" }), label: "همه", active: status === "ALL" && vision !== "error" },
+          ]}
+        />
+        <form className="flex items-center gap-2">
+          <input type="hidden" name="status" value={status} />
+          {vision ? <input type="hidden" name="vision" value={vision} /> : null}
+          <input name="q" defaultValue={q} placeholder="شناسه، مالک، صحنه، نور یا پس‌زمینه" className={`${fieldClass} h-8 w-64 text-xs`} />
+          <button className={`${btnSecondary} h-8`}>جست‌وجو</button>
         </form>
-      </AdminFilterBar>
+      </div>
 
-      <AdminPanel title="Inventory رفرنس‌ها">
-        <AdminDataTable headers={["تصویر", "مالک", "Vision", "استفاده", "Storage", "وضعیت"]} empty={<AdminEmptyState title="رفرنسی با این فیلتر پیدا نشد." />}>
+      <Surface>
+        <ConsoleTable
+          head={["تصویر", "مالک", "Vision", "استفاده", "وضعیت"]}
+          empty={<EmptyState title="رفرنسی با این فیلتر پیدا نشد." />}
+        >
           {assets.map((asset) => (
-            <tr key={asset.id} className="hover:bg-slate-50">
-              <td className={adminTableCellClass}>
+            <tr key={asset.id}>
+              <td className={cellClass}>
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-100">
-                    <Image src={storageUrlFromKeyOrUrl(asset.storageKey, asset.fileUrl) || uploadPreview.src} alt="" fill unoptimized className="object-cover" sizes="48px" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold text-slate-950">{asset.title || asset.originalName || "رفرنس بدون نام"}</p>
-                    <p className="truncate text-xs text-slate-500">{formatAdminDate(asset.createdAt)}</p>
-                  </div>
+                  <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+                    <Image src={storageUrlFromKeyOrUrl(asset.storageKey, asset.fileUrl) || uploadPreview.src} alt="" fill unoptimized className="object-cover" sizes="40px" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">{asset.title || asset.originalName || "رفرنس بدون نام"}</span>
+                    <span className="block truncate text-xs text-slate-400">{formatAdminDate(asset.createdAt)}</span>
+                  </span>
                 </div>
               </td>
-              <td className={adminTableCellClass}>
-                <a href={`/admin/users/${asset.userId}`} className="font-semibold text-slate-950 hover:underline">{getUserDisplayName(asset.user)}</a>
-                <p className="text-xs text-slate-500" dir="ltr">{getUserIdentifier(asset.user)}</p>
+              <td className={cellClass}>
+                <Link href={`/admin/users/${asset.userId}`} className="font-medium hover:text-navy-700 hover:underline">
+                  {getUserDisplayName(asset.user)}
+                </Link>
+                <p className="text-xs text-slate-400" dir="ltr">
+                  {getUserIdentifier(asset.user)}
+                </p>
               </td>
-              <td className={adminTableCellClass}>
-                <p className="max-w-[260px] truncate text-sm text-slate-700">{asset.visionSceneDescription || "تحلیل نشده"}</p>
-                <p className="max-w-[260px] truncate text-xs text-slate-500">{asset.visionCameraAngle || asset.visionLighting || asset.visionBackground || asset.visionError || "بدون metadata"}</p>
+              <td className={cellClass}>
+                <p className="max-w-64 truncate text-xs text-slate-500">{asset.visionSceneDescription || "تحلیل نشده"}</p>
+                <p className="max-w-64 truncate text-xs text-slate-400">
+                  {asset.visionCameraAngle || asset.visionLighting || asset.visionBackground || asset.visionError || "بدون metadata"}
+                </p>
               </td>
-              <td className={adminTableCellClass}>{asset._count.projects.toLocaleString("fa-IR")} پروژه · {asset._count.batches.toLocaleString("fa-IR")} batch</td>
-              <td className={adminTableCellClass}>
-                <p className="max-w-[220px] truncate text-xs text-slate-500" dir="ltr">{asset.storageKey}</p>
-                <p className="text-xs text-slate-500">{asset.mimeType}</p>
+              <td className={`${cellClass} text-xs text-slate-500`}>
+                {faNum(asset._count.projects)} پروژه · {faNum(asset._count.batches)} batch
               </td>
-              <td className={adminTableCellClass}><AdminStatus status={asset.status} /></td>
+              <td className={cellClass}>
+                <StatusDot status={asset.status} />
+              </td>
             </tr>
           ))}
-        </AdminDataTable>
-      </AdminPanel>
+        </ConsoleTable>
+      </Surface>
     </>
   );
 }

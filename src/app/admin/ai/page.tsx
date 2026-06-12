@@ -1,18 +1,20 @@
 import { Danger, Save2, TickCircle } from "vuesax-icons-react";
 import {
-  adminInputClass,
-  adminLabelClass,
-  adminPrimaryActionClass,
-  adminTableCellClass,
-  AdminDataTable,
-  AdminEmptyState,
-  AdminKpi,
-  AdminKpiStrip,
-  AdminPageHeader,
-  AdminPanel,
-  AdminStatus,
+  btnPrimary,
+  cellClass,
+  checkboxClass,
+  ConsoleHeader,
+  ConsoleTable,
+  Disclosure,
+  EmptyState,
+  faNum,
+  Field,
+  fieldClass,
   formatAdminDate,
-} from "@/features/admin/components/admin-ui";
+  StatBar,
+  StatusDot,
+  Surface,
+} from "@/features/admin/components/console";
 import { updateProviderSettingsAction } from "@/features/admin/actions";
 import { imageProviderLabel } from "@/lib/ai/provider";
 import { AVALAI_IMAGE_MODELS, getImageProviderAttemptOrder, getProviderSettings, LIARA_IMAGE_MODELS } from "@/lib/ai/provider-settings";
@@ -21,8 +23,8 @@ import { ProviderSwitch } from "../provider/provider-switch";
 
 export const dynamic = "force-dynamic";
 
-function envStatus(name: string) {
-  return process.env[name]?.trim() ? "تنظیم شده" : "تنظیم نشده";
+function envIsSet(name: string) {
+  return Boolean(process.env[name]?.trim());
 }
 
 export default async function AdminAiPage() {
@@ -32,7 +34,7 @@ export default async function AdminAiPage() {
   const [events, failedToday, successToday, groupedFailures, providerSettings] = await Promise.all([
     db.providerEvent.findMany({
       orderBy: { createdAt: "desc" },
-      take: 80,
+      take: 60,
       include: { project: { select: { title: true, id: true } } },
     }),
     db.providerEvent.count({ where: { status: "FAILED", createdAt: { gte: today } } }),
@@ -48,150 +50,183 @@ export default async function AdminAiPage() {
   ]);
 
   const selectedProvider = providerSettings.imageProvider;
-  const providerLabel = imageProviderLabel(selectedProvider);
   const modelOrder = getImageProviderAttemptOrder(providerSettings);
-  const activeModelOptions = selectedProvider === "avalai" ? AVALAI_IMAGE_MODELS : LIARA_IMAGE_MODELS;
-  const fallbackModelOptions = selectedProvider === "avalai" ? AVALAI_IMAGE_MODELS : LIARA_IMAGE_MODELS;
-  const envItems =
+  const modelOptions = selectedProvider === "avalai" ? AVALAI_IMAGE_MODELS : LIARA_IMAGE_MODELS;
+  const envNames =
     selectedProvider === "avalai"
-      ? [
-          ["AVALAI_API_KEY", envStatus("AVALAI_API_KEY")],
-          ["AVALAI_BASE_URL", envStatus("AVALAI_BASE_URL")],
-          ["AVALAI_IMAGE_MODEL", process.env.AVALAI_IMAGE_MODEL?.trim() || "پیش‌فرض برنامه"],
-          ["AVALAI_VISION_MODEL", process.env.AVALAI_VISION_MODEL?.trim() || "gemini-3.1-flash-lite"],
-          ["AVALAI_IMAGE_SIZE", process.env.AVALAI_IMAGE_SIZE?.trim() || "2K"],
-        ]
-      : [
-          ["LIARA_API_KEY", envStatus("LIARA_API_KEY")],
-          ["LIARA_BASE_URL", envStatus("LIARA_BASE_URL")],
-          ["LIARA_IMAGE_MODEL", process.env.LIARA_IMAGE_MODEL?.trim() || process.env.GAPGPT_IMAGE_MODEL?.trim() || "پیش‌فرض برنامه"],
-          ["LIARA_VISION_MODEL", process.env.LIARA_VISION_MODEL?.trim() || "google/gemini-2.0-flash-lite-001"],
-          ["LIARA_IMAGE_SIZE", envStatus("LIARA_IMAGE_SIZE")],
-        ];
+      ? ["AVALAI_API_KEY", "AVALAI_BASE_URL", "AVALAI_IMAGE_MODEL", "AVALAI_VISION_MODEL", "AVALAI_IMAGE_SIZE"]
+      : ["LIARA_API_KEY", "LIARA_BASE_URL", "LIARA_IMAGE_MODEL", "LIARA_VISION_MODEL", "LIARA_IMAGE_SIZE"];
+  const missingEnvCount = envNames.filter((name) => !envIsSet(name)).length;
 
   return (
     <>
-      <AdminPageHeader
-        title="عملیات AI"
-        description="کنترل provider، مدل‌ها، fallback، readiness محیط و eventهای generation."
+      <ConsoleHeader
+        title="موتور AI"
+        meta={
+          <>
+            <span>
+              Provider فعال: <strong className="font-semibold text-navy-950">{imageProviderLabel(selectedProvider)}</strong>
+            </span>
+            <span dir="ltr" className="text-slate-400">
+              {providerSettings.activeModel}
+            </span>
+          </>
+        }
       />
 
-      <AdminKpiStrip>
-        <AdminKpi label="Provider" value={providerLabel} />
-        <AdminKpi label="مدل اصلی" value={providerSettings.activeModel} />
-        <AdminKpi label="Fallback" value={providerSettings.autoFallback ? "روشن" : "خاموش"} tone={providerSettings.autoFallback ? "success" : "attention"} />
-        <AdminKpi label="موفق امروز" value={successToday} tone="success" />
-        <AdminKpi label="ناموفق امروز" value={failedToday} tone={failedToday ? "danger" : "neutral"} />
-        <AdminKpi label="Event اخیر" value={events.length} />
-      </AdminKpiStrip>
+      <StatBar
+        items={[
+          { label: "موفق امروز", value: successToday, tone: "success" },
+          { label: "ناموفق امروز", value: failedToday, tone: failedToday ? "danger" : "neutral" },
+          {
+            label: "Fallback خودکار",
+            value: providerSettings.autoFallback ? "روشن" : "خاموش",
+            tone: providerSettings.autoFallback ? "success" : "attention",
+          },
+          {
+            label: "متغیر محیطی ناقص",
+            value: missingEnvCount,
+            tone: missingEnvCount ? "danger" : "success",
+          },
+        ]}
+      />
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)]">
-        <AdminPanel title="تنظیم مدل تولید تصویر" description="سوییچ DB-backed بدون تغییر env و بدون restart.">
-          <form action={updateProviderSettingsAction} className="grid gap-4 p-4">
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)]">
-              <ProviderSwitch selectedProvider={selectedProvider} />
-              <label className={adminLabelClass}>
-                مدل اصلی
-                <select name="activeModel" defaultValue={providerSettings.activeModel} className={adminInputClass} dir="ltr">
-                  {activeModelOptions.map((item) => (
-                    <option key={item} value={item}>{item}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
+      <Surface>
+        <div className="border-b border-slate-100 px-5 py-3.5">
+          <h2 className="text-sm font-semibold text-navy-950">پیکربندی تولید تصویر</h2>
+          <p className="mt-0.5 text-xs text-slate-500">تغییرات بدون نیاز به restart اعمال می‌شود.</p>
+        </div>
+        <form action={updateProviderSettingsAction} className="grid gap-4 p-5">
+          <div className="grid max-w-2xl gap-4 sm:grid-cols-2">
+            <ProviderSwitch selectedProvider={selectedProvider} />
+            <Field label="مدل اصلی">
+              <select name="activeModel" defaultValue={providerSettings.activeModel} className={fieldClass} dir="ltr">
+                {modelOptions.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
 
-            <div className="grid gap-2">
-              <p className="text-xs font-semibold text-slate-600">Fallback بعد از خطا</p>
-              <div className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 md:grid-cols-2 xl:grid-cols-3">
-                {fallbackModelOptions.map((item) => (
-                  <label key={item} className="flex items-center gap-2 text-xs text-slate-800" dir="ltr">
+          <Disclosure summary={`تنظیمات Fallback (${faNum(providerSettings.fallbackModels.length)} مدل انتخاب‌شده)`}>
+            <div className="grid gap-3">
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {modelOptions.map((item) => (
+                  <label key={item} className="flex items-center gap-2 text-xs text-navy-900" dir="ltr">
                     <input
                       type="checkbox"
                       name="fallbackModels"
                       value={item}
                       defaultChecked={providerSettings.fallbackModels.includes(item)}
-                      className="h-4 w-4 accent-slate-950"
+                      className={checkboxClass}
                     />
                     <span className="min-w-0 truncate">{item}</span>
                   </label>
                 ))}
               </div>
-              <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-800">
-                <input type="checkbox" name="autoFallback" defaultChecked={providerSettings.autoFallback} className="h-4 w-4 accent-slate-950" />
-                fallback خودکار روشن باشد
+              <label className="inline-flex items-center gap-2 border-t border-slate-100 pt-3 text-xs font-medium text-navy-900">
+                <input type="checkbox" name="autoFallback" defaultChecked={providerSettings.autoFallback} className={checkboxClass} />
+                بعد از خطا به‌صورت خودکار مدل بعدی امتحان شود
               </label>
             </div>
+          </Disclosure>
 
-            <button className={adminPrimaryActionClass}>
+          <div>
+            <button className={btnPrimary}>
               <Save2 className="h-4 w-4" />
-              ذخیره تنظیمات
+              ذخیره پیکربندی
             </button>
-          </form>
-        </AdminPanel>
-
-        <AdminPanel title="Readiness محیط" description="بدون تماس زنده با provider.">
-          <div className="grid gap-2 p-4">
-            {envItems.map(([label, value]) => (
-              <div key={label} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                <p className="text-[11px] text-slate-500" dir="ltr">{label}</p>
-                <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-slate-950">
-                  {value === "تنظیم نشده" ? <Danger className="h-4 w-4 text-rose-700" /> : <TickCircle className="h-4 w-4 text-emerald-700" />}
-                  {value}
-                </p>
-              </div>
-            ))}
           </div>
-        </AdminPanel>
-      </div>
+        </form>
+      </Surface>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-        <AdminPanel title="ترتیب واقعی تلاش">
-          <div className="divide-y divide-slate-100">
+      <div className="grid items-start gap-4 lg:grid-cols-2">
+        <Disclosure summary={`ترتیب واقعی تلاش مدل‌ها (${faNum(modelOrder.length)})`}>
+          <ol className="m-0 grid list-none gap-1.5 p-0">
             {modelOrder.map((attempt, index) => (
-              <div key={`${attempt.provider}-${attempt.model}-${index}`} className="grid gap-2 px-4 py-3 md:grid-cols-[64px_110px_minmax(0,1fr)]">
-                <p className="text-xs font-semibold text-slate-500">#{(index + 1).toLocaleString("fa-IR")}</p>
-                <p className="font-semibold text-slate-950" dir="ltr">{attempt.provider}</p>
-                <p className="truncate text-sm text-slate-600" dir="ltr">{attempt.model}</p>
+              <li key={`${attempt.provider}-${attempt.model}-${index}`} className="flex items-center gap-3 text-xs">
+                <span className="w-6 shrink-0 tabular-nums text-slate-400">{faNum(index + 1)}</span>
+                <span className="w-16 shrink-0 font-medium text-navy-950" dir="ltr">
+                  {attempt.provider}
+                </span>
+                <span className="min-w-0 truncate text-slate-500" dir="ltr">
+                  {attempt.model}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </Disclosure>
+
+        <Disclosure summary={missingEnvCount ? `آمادگی محیط (${faNum(missingEnvCount)} مورد ناقص)` : "آمادگی محیط"}>
+          <div className="grid gap-1.5">
+            {envNames.map((name) => {
+              const ok = envIsSet(name);
+              return (
+                <div key={name} className="flex items-center justify-between gap-3 text-xs">
+                  <span className="text-slate-500" dir="ltr">
+                    {name}
+                  </span>
+                  <span className={`inline-flex items-center gap-1.5 font-medium ${ok ? "text-emerald-700" : "text-rose-700"}`}>
+                    {ok ? <TickCircle className="h-3.5 w-3.5" /> : <Danger className="h-3.5 w-3.5" />}
+                    {ok ? "تنظیم شده" : "تنظیم نشده"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </Disclosure>
+      </div>
+
+      {groupedFailures.length > 0 ? (
+        <Disclosure summary={`دلایل شکست پرتکرار (${faNum(groupedFailures.length)})`}>
+          <div className="grid gap-1.5">
+            {groupedFailures.map((item) => (
+              <div key={`${item.provider}-${item.operation}-${item.model ?? "unknown"}`} className="flex items-center justify-between gap-3 text-xs">
+                <span className="min-w-0 truncate text-slate-500" dir="ltr">
+                  {item.provider} · {item.operation} · {item.model || "unknown"}
+                </span>
+                <span className="shrink-0 font-semibold tabular-nums text-rose-700">{faNum(item._count._all)}</span>
               </div>
             ))}
           </div>
-        </AdminPanel>
+        </Disclosure>
+      ) : null}
 
-        <AdminPanel title="دلایل شکست پرتکرار">
-          <AdminDataTable headers={["Provider", "Operation", "Model", "تعداد"]} empty={<AdminEmptyState title="شکستی ثبت نشده است." />}>
-            {groupedFailures.map((item) => (
-              <tr key={`${item.provider}-${item.operation}-${item.model ?? "unknown"}`}>
-                <td className={adminTableCellClass} dir="ltr">{item.provider}</td>
-                <td className={adminTableCellClass} dir="ltr">{item.operation}</td>
-                <td className={adminTableCellClass} dir="ltr">{item.model || "unknown"}</td>
-                <td className={adminTableCellClass}>{item._count._all.toLocaleString("fa-IR")}</td>
-              </tr>
-            ))}
-          </AdminDataTable>
-        </AdminPanel>
-      </div>
-
-      <AdminPanel title="رویدادهای اخیر Provider">
-        <AdminDataTable headers={["وضعیت", "Provider", "پروژه", "جزئیات", "زمان"]} empty={<AdminEmptyState title="event ثبت نشده است." />}>
+      <Surface>
+        <div className="border-b border-slate-100 px-5 py-3.5">
+          <h2 className="text-sm font-semibold text-navy-950">رویدادهای اخیر</h2>
+        </div>
+        <ConsoleTable head={["وضعیت", "Provider", "پروژه", "جزئیات", "زمان"]} empty={<EmptyState title="رویدادی ثبت نشده است." />}>
           {events.map((event) => (
             <tr key={event.id}>
-              <td className={adminTableCellClass}><AdminStatus status={event.status} /></td>
-              <td className={adminTableCellClass} dir="ltr">{event.provider}<p className="text-xs text-slate-500">{event.operation} · {event.model || "unknown"}</p></td>
-              <td className={adminTableCellClass}>
+              <td className={cellClass}>
+                <StatusDot status={event.status} />
+              </td>
+              <td className={cellClass} dir="ltr">
+                {event.provider}
+                <p className="text-xs text-slate-400">
+                  {event.operation} · {event.model || "unknown"}
+                </p>
+              </td>
+              <td className={cellClass}>
                 {event.projectId ? (
-                  <a href={`/admin/projects/${event.projectId}`} className="font-semibold text-slate-950 hover:underline">{event.project?.title || event.projectId}</a>
+                  <a href={`/admin/projects/${event.projectId}`} className="font-medium hover:text-navy-700 hover:underline">
+                    {event.project?.title || event.projectId}
+                  </a>
                 ) : (
-                  "بدون پروژه"
+                  <span className="text-xs text-slate-400">بدون پروژه</span>
                 )}
               </td>
-              <td className={adminTableCellClass}>
-                <p className="max-w-xl truncate text-xs text-slate-600">{event.errorMessage || event.statusDetail || "بدون جزئیات"}</p>
+              <td className={cellClass}>
+                <p className="max-w-xl truncate text-xs text-slate-500">{event.errorMessage || event.statusDetail || "بدون جزئیات"}</p>
               </td>
-              <td className={adminTableCellClass}>{formatAdminDate(event.createdAt)}</td>
+              <td className={`${cellClass} text-xs text-slate-500`}>{formatAdminDate(event.createdAt)}</td>
             </tr>
           ))}
-        </AdminDataTable>
-      </AdminPanel>
+        </ConsoleTable>
+      </Surface>
     </>
   );
 }

@@ -3,20 +3,19 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Archive, Refresh } from "vuesax-icons-react";
 import {
-  adminDangerActionClass,
-  adminPrimaryActionClass,
-  adminSecondaryActionClass,
-  adminTableCellClass,
-  AdminDataTable,
-  AdminDescriptionList,
-  AdminEmptyState,
-  AdminKpi,
-  AdminKpiStrip,
-  AdminPageHeader,
-  AdminPanel,
-  AdminStatus,
+  btnDanger,
+  btnPrimary,
+  cellClass,
+  ConsoleHeader,
+  ConsoleTable,
+  Disclosure,
+  EmptyState,
+  faNum,
   formatAdminDate,
-} from "@/features/admin/components/admin-ui";
+  KeyValueList,
+  StatusDot,
+  Surface,
+} from "@/features/admin/components/console";
 import { archiveAdminProjectAction, retryAdminProjectAction } from "@/features/admin/actions";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
@@ -49,26 +48,37 @@ export default async function AdminProjectDetailPage({ params }: AdminProjectDet
 
   const sourceUrl = storageUrlFromKeyOrUrl(project.sourceAsset?.storageKey, project.sourceImageUrl) || uploadPreview.src;
   const resultUrl = storageUrlFromKeyOrUrl(project.resultStorageKey, project.resultImageUrl);
-  const referenceUrl = project.referenceAsset ? storageUrlFromKeyOrUrl(project.referenceAsset.storageKey, project.referenceAsset.fileUrl) : null;
+  const referenceUrl = project.referenceAsset
+    ? storageUrlFromKeyOrUrl(project.referenceAsset.storageKey, project.referenceAsset.fileUrl)
+    : null;
 
   return (
     <>
-      <AdminPageHeader
+      <ConsoleHeader
+        backHref="/admin/projects"
+        backLabel="صف تولید"
         title={project.title || "پروژه بدون عنوان"}
-        description={project.id}
+        meta={
+          <>
+            <StatusDot status={project.status} />
+            <span dir="ltr" className="text-slate-400">
+              {project.id}
+            </span>
+            <span>{formatAdminDate(project.createdAt)}</span>
+          </>
+        }
         actions={
           <>
-            <Link href="/admin/projects" className={adminSecondaryActionClass}>بازگشت به پروژه‌ها</Link>
             <form action={retryAdminProjectAction}>
               <input type="hidden" name="projectId" value={project.id} />
-              <button className={adminPrimaryActionClass}>
+              <button className={btnPrimary}>
                 <Refresh className="h-4 w-4" />
                 تلاش دوباره
               </button>
             </form>
             <form action={archiveAdminProjectAction}>
               <input type="hidden" name="projectId" value={project.id} />
-              <button className={adminDangerActionClass}>
+              <button className={btnDanger}>
                 <Archive className="h-4 w-4" />
                 آرشیو
               </button>
@@ -77,94 +87,116 @@ export default async function AdminProjectDetailPage({ params }: AdminProjectDet
         }
       />
 
-      <AdminKpiStrip>
-        <AdminKpi label="وضعیت" value={<AdminStatus status={project.status} />} tone={project.status === "FAILED" ? "danger" : project.status === "COMPLETED" ? "success" : "attention"} />
-        <AdminKpi label="Provider events" value={project.providerEvents.length} />
-        <AdminKpi label="Credit reservations" value={project.creditReservations.length} />
-        <AdminKpi label="عکس کمکی" value={project.supportingAssets.length} />
-        <AdminKpi label="Batch" value={project.batchItems.length} />
-      </AdminKpiStrip>
+      {project.errorMessage ? (
+        <p className="rounded-xl bg-rose-50 px-4 py-3 text-sm font-medium leading-7 text-rose-700">{project.errorMessage}</p>
+      ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-        <AdminPanel title="تصاویر" description="منبع، خروجی، رفرنس و عکس‌های کمکی پروژه.">
-          <div className="grid gap-4 p-4 md:grid-cols-2">
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+        <Surface>
+          <div className="grid grid-cols-2 gap-4 p-5 sm:grid-cols-3">
             <ImageBlock title="منبع" src={sourceUrl} />
             <ImageBlock title="خروجی" src={resultUrl || sourceUrl} muted={!resultUrl} />
             {referenceUrl ? <ImageBlock title="رفرنس سبک" src={referenceUrl} /> : null}
             {project.supportingAssets.map((item) => (
-              <ImageBlock key={item.id} title={`عکس کمکی ${item.position.toLocaleString("fa-IR")}`} src={storageUrlFromKeyOrUrl(item.asset.storageKey, item.asset.fileUrl) || uploadPreview.src} />
+              <ImageBlock
+                key={item.id}
+                title={`عکس کمکی ${faNum(item.position)}`}
+                src={storageUrlFromKeyOrUrl(item.asset.storageKey, item.asset.fileUrl) || uploadPreview.src}
+              />
             ))}
           </div>
-        </AdminPanel>
+        </Surface>
 
-        <div className="space-y-4">
-          <AdminPanel title="جزئیات پروژه">
-            <div className="p-4">
-              <AdminDescriptionList
-                items={[
-                  { label: "کاربر", value: <Link href={`/admin/users/${project.userId}`} className="hover:underline">{getUserDisplayName(project.user)}</Link> },
-                  { label: "شناسه کاربر", value: getUserIdentifier(project.user), dir: "ltr" },
-                  { label: "سبک", value: project.style.name },
-                  { label: "Preset", value: project.outputPreset, dir: "ltr" },
-                  { label: "ساخته شده", value: formatAdminDate(project.createdAt) },
-                  { label: "آپدیت", value: formatAdminDate(project.updatedAt) },
-                  { label: "Source asset", value: project.sourceAssetId || "ندارد", dir: "ltr" },
-                  { label: "Reference asset", value: project.referenceAssetId || "ندارد", dir: "ltr" },
-                ]}
-              />
-              {project.errorMessage ? <p className="mt-4 rounded-lg bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">{project.errorMessage}</p> : null}
-            </div>
-          </AdminPanel>
+        <div className="min-w-0 space-y-4">
+          <Surface className="p-5">
+            <KeyValueList
+              items={[
+                {
+                  label: "کاربر",
+                  value: (
+                    <Link href={`/admin/users/${project.userId}`} className="hover:text-navy-700 hover:underline">
+                      {getUserDisplayName(project.user)}
+                    </Link>
+                  ),
+                },
+                { label: "شناسه کاربر", value: getUserIdentifier(project.user), dir: "ltr" },
+                { label: "سبک", value: project.style.name },
+                { label: "قالب خروجی", value: project.outputPreset, dir: "ltr" },
+                { label: "آخرین آپدیت", value: formatAdminDate(project.updatedAt) },
+                { label: "Batch", value: project.batchItems.length ? faNum(project.batchItems.length) : "ندارد" },
+              ]}
+            />
+          </Surface>
 
-          <AdminPanel title="Prompt داخلی">
-            <pre className="max-h-[360px] overflow-auto whitespace-pre-wrap bg-slate-950 p-4 text-left text-xs leading-6 text-slate-100" dir="ltr">
+          <Disclosure summary="پرامپت داخلی">
+            <pre
+              dir="ltr"
+              className="max-h-80 overflow-auto whitespace-pre-wrap rounded-lg bg-navy-950 px-4 py-3 text-left font-mono text-xs leading-6 text-navy-100"
+            >
               {project.prompt}
             </pre>
-          </AdminPanel>
+          </Disclosure>
+
+          <Disclosure summary={`رزروهای اعتبار (${faNum(project.creditReservations.length)})`}>
+            {project.creditReservations.length === 0 ? (
+              <EmptyState title="رزرو اعتباری ثبت نشده است." />
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {project.creditReservations.map((reservation) => (
+                  <div key={reservation.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-xs first:pt-0 last:pb-0">
+                    <span className="flex items-center gap-3">
+                      <StatusDot status={reservation.source} />
+                      <StatusDot status={reservation.status} />
+                    </span>
+                    <span className="text-slate-400">{formatAdminDate(reservation.createdAt)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Disclosure>
         </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <AdminPanel title="Provider timeline">
-          <AdminDataTable headers={["وضعیت", "Provider", "Operation", "جزئیات", "زمان"]} empty={<AdminEmptyState title="رویداد provider ثبت نشده است." />}>
-            {project.providerEvents.map((event) => (
-              <tr key={event.id}>
-                <td className={adminTableCellClass}><AdminStatus status={event.status} /></td>
-                <td className={adminTableCellClass} dir="ltr">{event.provider}<p className="text-xs text-slate-500">{event.model || "model unknown"}</p></td>
-                <td className={adminTableCellClass} dir="ltr">{event.operation}<p className="text-xs text-slate-500">retry {event.retryCount}</p></td>
-                <td className={adminTableCellClass}>
-                  <p className="max-w-md truncate text-xs text-slate-600">{event.errorMessage || event.statusDetail || "بدون جزئیات"}</p>
-                </td>
-                <td className={adminTableCellClass}>{formatAdminDate(event.createdAt)}</td>
-              </tr>
-            ))}
-          </AdminDataTable>
-        </AdminPanel>
-
-        <AdminPanel title="Credit reservations">
-          <AdminDataTable headers={["منبع", "وضعیت", "Subscription", "زمان"]} empty={<AdminEmptyState title="رزرو اعتباری ثبت نشده است." />}>
-            {project.creditReservations.map((reservation) => (
-              <tr key={reservation.id}>
-                <td className={adminTableCellClass}><AdminStatus status={reservation.source} /></td>
-                <td className={adminTableCellClass}><AdminStatus status={reservation.status} /></td>
-                <td className={adminTableCellClass} dir="ltr">{reservation.subscriptionId || "wallet"}</td>
-                <td className={adminTableCellClass}>{formatAdminDate(reservation.createdAt)}</td>
-              </tr>
-            ))}
-          </AdminDataTable>
-        </AdminPanel>
-      </div>
+      <Surface>
+        <div className="border-b border-slate-100 px-5 py-3.5">
+          <h2 className="text-sm font-semibold text-navy-950">رویدادهای Provider</h2>
+        </div>
+        <ConsoleTable
+          head={["وضعیت", "Provider", "عملیات", "جزئیات", "زمان"]}
+          empty={<EmptyState title="رویداد provider ثبت نشده است." />}
+        >
+          {project.providerEvents.map((event) => (
+            <tr key={event.id}>
+              <td className={cellClass}>
+                <StatusDot status={event.status} />
+              </td>
+              <td className={cellClass} dir="ltr">
+                {event.provider}
+                <p className="text-xs text-slate-400">{event.model || "model unknown"}</p>
+              </td>
+              <td className={cellClass} dir="ltr">
+                {event.operation}
+                <p className="text-xs text-slate-400">retry {event.retryCount}</p>
+              </td>
+              <td className={cellClass}>
+                <p className="max-w-md truncate text-xs text-slate-500">{event.errorMessage || event.statusDetail || "بدون جزئیات"}</p>
+              </td>
+              <td className={`${cellClass} text-xs text-slate-500`}>{formatAdminDate(event.createdAt)}</td>
+            </tr>
+          ))}
+        </ConsoleTable>
+      </Surface>
     </>
   );
 }
 
 function ImageBlock({ title, src, muted = false }: { title: string; src: string; muted?: boolean }) {
   return (
-    <div>
-      <p className="mb-2 text-xs font-semibold text-slate-600">{title}</p>
-      <div className={`relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-100 ${muted ? "opacity-60" : ""}`}>
-        <Image src={src} alt="" fill unoptimized className="object-cover" sizes="420px" />
+    <figure className="m-0">
+      <div className={`relative aspect-square overflow-hidden rounded-xl bg-slate-100 ${muted ? "opacity-50" : ""}`}>
+        <Image src={src} alt={title} fill unoptimized className="object-cover" sizes="320px" />
       </div>
-    </div>
+      <figcaption className="mt-1.5 text-[11px] font-medium text-slate-500">{title}</figcaption>
+    </figure>
   );
 }

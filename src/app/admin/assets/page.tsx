@@ -3,20 +3,20 @@ import Link from "next/link";
 import type { Prisma } from "@/generated/prisma";
 import { Archive } from "vuesax-icons-react";
 import {
-  adminDangerActionClass,
-  adminInputClass,
-  adminPrimaryActionClass,
-  adminTableCellClass,
-  AdminDataTable,
-  AdminEmptyState,
-  AdminFilterBar,
-  AdminKpi,
-  AdminKpiStrip,
-  AdminPageHeader,
-  AdminPanel,
-  AdminStatus,
+  btnDanger,
+  btnSecondary,
+  cellClass,
+  ConsoleHeader,
+  ConsoleTable,
+  EmptyState,
+  faNum,
+  fieldClass,
   formatAdminDate,
-} from "@/features/admin/components/admin-ui";
+  SegmentedLinks,
+  StatusDot,
+  Surface,
+  TabNav,
+} from "@/features/admin/components/console";
 import { archiveAdminAssetAction } from "@/features/admin/actions";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
@@ -55,7 +55,7 @@ export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageP
       : {}),
   };
 
-  const [assets, readyCount, archivedCount, analyzedCount, errorCount] = await Promise.all([
+  const [assets, readyCount, archivedCount, errorCount] = await Promise.all([
     db.productAsset.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -67,95 +67,98 @@ export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageP
     }),
     db.productAsset.count({ where: { status: "READY" } }),
     db.productAsset.count({ where: { status: "ARCHIVED" } }),
-    db.productAsset.count({ where: { visionAnalyzedAt: { not: null } } }),
     db.productAsset.count({ where: { visionError: { not: null } } }),
   ]);
 
+  const filterHref = (next: { status?: string; vision?: string }) => {
+    const query = new URLSearchParams();
+    if (q) query.set("q", q);
+    query.set("status", next.status ?? status);
+    if (next.vision !== undefined ? next.vision : vision) query.set("vision", next.vision !== undefined ? next.vision : vision);
+    return `/admin/assets?${query.toString()}`;
+  };
+
   return (
     <>
-      <AdminPageHeader
-        title="دارایی‌های گالری"
-        description="تصاویر منبع کاربران، مالکیت، vision metadata، storage و میزان استفاده در پروژه‌ها."
-        actions={<Link href="/admin/assets/references" className={adminPrimaryActionClass}>رفرنس‌های سبک</Link>}
+      <ConsoleHeader title="دارایی‌ها" meta={<span>{faNum(readyCount)} تصویر منبع آماده</span>} />
+
+      <TabNav
+        tabs={[
+          { href: "/admin/assets", label: "تصاویر منبع کاربران", active: true },
+          { href: "/admin/assets/references", label: "رفرنس‌های سبک", active: false },
+        ]}
       />
 
-      <AdminKpiStrip>
-        <AdminKpi label="آماده" value={readyCount} />
-        <AdminKpi label="آرشیوشده" value={archivedCount} />
-        <AdminKpi label="Vision analyzed" value={analyzedCount} />
-        <AdminKpi label="Vision error" value={errorCount} tone={errorCount ? "danger" : "neutral"} />
-        <AdminKpi label="نمایش فعلی" value={assets.length} />
-      </AdminKpiStrip>
-
-      <AdminFilterBar>
-        <form className="grid gap-2 md:grid-cols-[minmax(0,1fr)_150px_160px_auto]">
-          <input name="q" defaultValue={q} placeholder="شناسه، مالک، storage key، نوع محصول یا vision" className={adminInputClass} />
-          <select name="status" defaultValue={status} className={adminInputClass}>
-            <option value="READY">آماده</option>
-            <option value="ARCHIVED">آرشیوشده</option>
-            <option value="ALL">همه</option>
-          </select>
-          <select name="vision" defaultValue={vision} className={adminInputClass}>
-            <option value="">همه vision</option>
-            <option value="analyzed">تحلیل‌شده</option>
-            <option value="error">دارای خطا</option>
-          </select>
-          <button className={adminPrimaryActionClass}>اعمال</button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <SegmentedLinks
+          items={[
+            { href: filterHref({ status: "READY" }), label: "آماده", active: status === "READY", count: readyCount },
+            { href: filterHref({ status: "ARCHIVED" }), label: "آرشیوشده", active: status === "ARCHIVED", count: archivedCount },
+            { href: filterHref({ status: "ALL", vision: "error" }), label: "خطای Vision", active: vision === "error", count: errorCount },
+            { href: filterHref({ status: "ALL", vision: "" }), label: "همه", active: status === "ALL" && vision !== "error" },
+          ]}
+        />
+        <form className="flex items-center gap-2">
+          <input type="hidden" name="status" value={status} />
+          {vision ? <input type="hidden" name="vision" value={vision} /> : null}
+          <input name="q" defaultValue={q} placeholder="شناسه، مالک، نوع محصول یا vision" className={`${fieldClass} h-8 w-64 text-xs`} />
+          <button className={`${btnSecondary} h-8`}>جست‌وجو</button>
         </form>
-      </AdminFilterBar>
+      </div>
 
-      <AdminPanel title="Inventory تصاویر منبع">
-        <AdminDataTable headers={["تصویر", "مالک", "Vision", "استفاده", "Storage", "وضعیت", "عملیات"]} empty={<AdminEmptyState title="دارایی‌ای با این فیلتر پیدا نشد." />}>
+      <Surface>
+        <ConsoleTable
+          head={["تصویر", "مالک", "Vision", "استفاده", "وضعیت", ""]}
+          empty={<EmptyState title="دارایی‌ای با این فیلتر پیدا نشد." />}
+        >
           {assets.map((asset) => (
-            <tr key={asset.id} className="hover:bg-slate-50">
-              <td className={adminTableCellClass}>
+            <tr key={asset.id}>
+              <td className={cellClass}>
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-100">
-                    <Image src={storageUrlFromKeyOrUrl(asset.storageKey, asset.fileUrl) || uploadPreview.src} alt="" fill unoptimized className="object-cover" sizes="48px" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold text-slate-950">{asset.title || asset.originalName || asset.visionShortTitle || "تصویر بدون نام"}</p>
-                    <p className="truncate text-xs text-slate-500">{asset.productType || "بدون نوع محصول"} · {formatAdminDate(asset.createdAt)}</p>
-                  </div>
+                  <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+                    <Image src={storageUrlFromKeyOrUrl(asset.storageKey, asset.fileUrl) || uploadPreview.src} alt="" fill unoptimized className="object-cover" sizes="40px" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">{asset.title || asset.originalName || asset.visionShortTitle || "تصویر بدون نام"}</span>
+                    <span className="block truncate text-xs text-slate-400">
+                      {asset.productType || "بدون نوع محصول"} · {formatAdminDate(asset.createdAt)}
+                    </span>
+                  </span>
                 </div>
               </td>
-              <td className={adminTableCellClass}>
-                <Link href={`/admin/users/${asset.userId}`} className="font-semibold text-slate-950 hover:underline">{getUserDisplayName(asset.user)}</Link>
-                <p className="text-xs text-slate-500" dir="ltr">{getUserIdentifier(asset.user)}</p>
-              </td>
-              <td className={adminTableCellClass}>
-                <p className="max-w-[220px] truncate text-sm text-slate-700">{asset.visionDescription || asset.visionShortTitle || "تحلیل نشده"}</p>
-                <p className={asset.visionError ? "max-w-[220px] truncate text-xs text-rose-700" : "text-xs text-slate-500"}>
-                  {asset.visionError || `${asset.visionModel || "model unknown"} · ${asset.visionConfidence ?? "?"}`}
+              <td className={cellClass}>
+                <Link href={`/admin/users/${asset.userId}`} className="font-medium hover:text-navy-700 hover:underline">
+                  {getUserDisplayName(asset.user)}
+                </Link>
+                <p className="text-xs text-slate-400" dir="ltr">
+                  {getUserIdentifier(asset.user)}
                 </p>
               </td>
-              <td className={adminTableCellClass}>
-                <p className="text-xs text-slate-600">
-                  {asset._count.projects.toLocaleString("fa-IR")} پروژه · {asset._count.supportingProjects.toLocaleString("fa-IR")} کمکی · {asset._count.batchItems.toLocaleString("fa-IR")} batch
-                </p>
+              <td className={cellClass}>
+                <p className="max-w-56 truncate text-xs text-slate-500">{asset.visionDescription || asset.visionShortTitle || "تحلیل نشده"}</p>
+                {asset.visionError ? <p className="max-w-56 truncate text-xs text-rose-600">{asset.visionError}</p> : null}
               </td>
-              <td className={adminTableCellClass}>
-                <p className="max-w-[220px] truncate text-xs text-slate-500" dir="ltr">{asset.storageKey}</p>
-                <p className="text-xs text-slate-500">{asset.mimeType}</p>
+              <td className={`${cellClass} text-xs text-slate-500`}>
+                {faNum(asset._count.projects)} پروژه · {faNum(asset._count.supportingProjects)} کمکی · {faNum(asset._count.batchItems)} batch
               </td>
-              <td className={adminTableCellClass}><AdminStatus status={asset.status} /></td>
-              <td className={adminTableCellClass}>
+              <td className={cellClass}>
+                <StatusDot status={asset.status} />
+              </td>
+              <td className={cellClass}>
                 {asset.status === "READY" ? (
-                  <form action={archiveAdminAssetAction}>
+                  <form action={archiveAdminAssetAction} className="flex justify-end">
                     <input type="hidden" name="assetId" value={asset.id} />
-                    <button className={adminDangerActionClass}>
+                    <button className={btnDanger}>
                       <Archive className="h-4 w-4" />
                       آرشیو
                     </button>
                   </form>
-                ) : (
-                  <span className="text-xs text-slate-500">آرشیوشده</span>
-                )}
+                ) : null}
               </td>
             </tr>
           ))}
-        </AdminDataTable>
-      </AdminPanel>
+        </ConsoleTable>
+      </Surface>
     </>
   );
 }
