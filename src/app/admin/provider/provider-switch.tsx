@@ -4,9 +4,9 @@ import type { ImageProvider } from "@/lib/ai/provider";
 
 export function ProviderSwitch({ selectedProvider }: { selectedProvider: ImageProvider }) {
   return (
-    <div className="grid min-w-0 gap-1.5">
-      <p className="text-xs font-medium text-muted">Provider فعال</p>
-      <div className="grid grid-cols-2 gap-2 rounded-[var(--radius-md)] border border-border/70 bg-surface-soft/45 p-1.5">
+    <div className="grid min-w-0 content-start gap-1.5">
+      <p className="text-xs font-medium text-slate-600">Provider فعال</p>
+      <div className="grid grid-cols-2 gap-1.5 rounded-lg border border-slate-200 bg-navy-25 p-1">
         {[
           { value: "liara", label: "Liara", hint: "مسیر اصلی" },
           { value: "avalai", label: "Avalai", hint: "تست 2K" },
@@ -20,7 +20,7 @@ export function ProviderSwitch({ selectedProvider }: { selectedProvider: ImagePr
               className="peer sr-only"
               onChange={(event) => event.currentTarget.form?.requestSubmit()}
             />
-            <span className="grid gap-0.5 rounded-[var(--radius-sm)] border border-transparent px-2.5 py-2 text-xs text-muted transition hover:bg-surface/70 hover:text-foreground peer-checked:border-foreground peer-checked:bg-surface peer-checked:text-foreground peer-checked:shadow-[var(--shadow-soft)]">
+            <span className="grid gap-0.5 rounded-md border border-transparent px-2.5 py-1.5 text-xs text-slate-500 transition hover:text-navy-900 peer-checked:border-slate-200 peer-checked:bg-white peer-checked:text-navy-950 peer-checked:shadow-sm peer-focus-visible:outline-2 peer-focus-visible:outline-navy-600">
               <span className="font-semibold" dir="ltr">
                 {item.label}
               </span>

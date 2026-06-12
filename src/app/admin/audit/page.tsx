@@ -1,14 +1,14 @@
 import {
-  adminInputClass,
-  adminPrimaryActionClass,
-  adminTableCellClass,
-  AdminDataTable,
-  AdminEmptyState,
-  AdminFilterBar,
-  AdminPageHeader,
-  AdminPanel,
+  btnSecondary,
+  cellClass,
+  ConsoleHeader,
+  ConsoleTable,
+  EmptyState,
+  faNum,
+  inlineFieldClass,
   formatAdminDate,
-} from "@/features/admin/components/admin-ui";
+  Surface,
+} from "@/features/admin/components/console";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { db } from "@/lib/db";
 
@@ -52,51 +52,60 @@ export default async function AdminAuditPage({ searchParams }: AdminAuditPagePro
 
   return (
     <>
-      <AdminPageHeader title="Audit عملیات ادمین" description="ردپای تغییرات حساس: پرداخت، اعتبار، نقش، سبک‌ها، provider و عملیات پشتیبانی." />
+      <ConsoleHeader title="ردپای تغییرات" meta={<span>{faNum(events.length)} رویداد اخیر</span>} />
 
-      <AdminFilterBar>
-        <form className="grid gap-2 md:grid-cols-[minmax(0,1fr)_180px_180px_auto]">
-          <input name="q" defaultValue={q} placeholder="جست‌وجو در عملیات، هدف، خلاصه یا ادمین" className={adminInputClass} />
-          <select name="targetType" defaultValue={targetType ?? ""} className={adminInputClass}>
-            <option value="">همه هدف‌ها</option>
-            {targetTypes.map((item) => (
-              <option key={item.targetType} value={item.targetType}>{item.targetType}</option>
-            ))}
-          </select>
-          <input name="action" defaultValue={action} placeholder="action مثل package.update" className={`${adminInputClass} text-left`} dir="ltr" />
-          <button className={adminPrimaryActionClass}>اعمال</button>
-        </form>
-      </AdminFilterBar>
+      <form className="flex flex-wrap items-center gap-2">
+        <input name="q" defaultValue={q} placeholder="جست‌وجو در عملیات، هدف یا ادمین" className={`${inlineFieldClass} w-64`} />
+        <select name="targetType" defaultValue={targetType ?? ""} className={`${inlineFieldClass} w-40`}>
+          <option value="">همه هدف‌ها</option>
+          {targetTypes.map((item) => (
+            <option key={item.targetType} value={item.targetType}>
+              {item.targetType}
+            </option>
+          ))}
+        </select>
+        <input name="action" defaultValue={action} placeholder="package.update" dir="ltr" className={`${inlineFieldClass} w-44 text-left`} />
+        <button className={`${btnSecondary} h-8`}>اعمال</button>
+      </form>
 
-      <AdminPanel title="رویدادها" description={`${events.length.toLocaleString("fa-IR")} مورد اخیر`}>
-        <AdminDataTable headers={["عملیات", "هدف", "خلاصه", "ادمین", "زمان"]} empty={<AdminEmptyState title="رویدادی با این فیلتر پیدا نشد." />}>
+      <Surface>
+        <ConsoleTable
+          head={["عملیات", "هدف", "خلاصه", "ادمین", "زمان"]}
+          empty={<EmptyState title="رویدادی با این فیلتر پیدا نشد." />}
+        >
           {events.map((event) => (
             <tr key={event.id}>
-              <td className={adminTableCellClass}>
-                <p className="font-semibold text-foreground" dir="ltr">{event.action}</p>
+              <td className={cellClass}>
+                <p className="font-medium" dir="ltr">
+                  {event.action}
+                </p>
               </td>
-              <td className={adminTableCellClass}>
-                <p className="font-semibold text-foreground" dir="ltr">{event.targetType}</p>
-                <p className="max-w-[180px] truncate text-xs text-muted" dir="ltr">{event.targetId}</p>
+              <td className={cellClass}>
+                <p dir="ltr">{event.targetType}</p>
+                <p className="max-w-44 truncate text-xs text-slate-400" dir="ltr">
+                  {event.targetId}
+                </p>
               </td>
-              <td className={adminTableCellClass}>
-                <p className="max-w-md truncate text-sm text-foreground">{event.summary}</p>
+              <td className={cellClass}>
+                <p className="max-w-md truncate">{event.summary}</p>
               </td>
-              <td className={adminTableCellClass}>
+              <td className={cellClass}>
                 {event.actorAdmin ? (
                   <>
-                    <p className="font-semibold text-foreground">{getUserDisplayName(event.actorAdmin)}</p>
-                    <p className="text-xs text-muted" dir="ltr">{getUserIdentifier(event.actorAdmin)}</p>
+                    <p className="font-medium">{getUserDisplayName(event.actorAdmin)}</p>
+                    <p className="text-xs text-slate-400" dir="ltr">
+                      {getUserIdentifier(event.actorAdmin)}
+                    </p>
                   </>
                 ) : (
                   "سیستم"
                 )}
               </td>
-              <td className={adminTableCellClass}>{formatAdminDate(event.createdAt)}</td>
+              <td className={`${cellClass} text-xs text-slate-500`}>{formatAdminDate(event.createdAt)}</td>
             </tr>
           ))}
-        </AdminDataTable>
-      </AdminPanel>
+        </ConsoleTable>
+      </Surface>
     </>
   );
 }

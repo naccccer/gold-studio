@@ -14,7 +14,7 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 - User navigation is organized around Home, Gallery, New Project, Projects, and Account.
 - Gallery owns uploaded source product photos. Projects owns generated outputs and generation status.
 - `/billing` owns packages, standalone credits, card-to-card payment details, purchase status, and receipt upload.
-- `/admin` is now a separate operations console with overview, health, audit, users, billing, projects, AI operations, assets, style controls, support/FAQ, and referrals.
+- `/admin` is a calm white/deep-navy operations console built on the `console.tsx` primitive kit: one job per page, link-driven tabs, master-detail surfaces (styles, support), and `<details>`-based progressive disclosure instead of always-visible mega-forms.
 - Local uploads and generated results are stored under `.local-storage/uploads` when `STORAGE_DRIVER="local"` and are streamed through authorized `/api/storage/...` routes.
 - Prisma uses MySQL and generates the client into `src/generated/prisma`.
 - Image generation uses the provider boundary in `src/lib/ai`, with Liara as the default path and an admin-controlled Avalai path for Gemini image testing.

@@ -1,19 +1,19 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { Prisma } from "@/generated/prisma";
 import {
-  adminInputClass,
-  adminPrimaryActionClass,
-  adminTableCellClass,
-  AdminDataTable,
-  AdminEmptyState,
-  AdminFilterBar,
-  AdminKpi,
-  AdminKpiStrip,
-  AdminPageHeader,
-  AdminPanel,
-  AdminStatus,
-  formatAdminDate,
-} from "@/features/admin/components/admin-ui";
+  btnSecondary,
+  ConsoleHeader,
+  EmptyState,
+  faNum,
+  inlineFieldClass,
+  formatAdminFullDate,
+  KeyValueList,
+  SegmentedLinks,
+  StatusDot,
+  Surface,
+  TabNav,
+} from "@/features/admin/components/console";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { db } from "@/lib/db";
@@ -22,7 +22,7 @@ import { storageUrlFromKeyOrUrl } from "@/lib/storage";
 export const dynamic = "force-dynamic";
 
 type AdminReferenceAssetsPageProps = {
-  searchParams?: Promise<{ q?: string; status?: string; vision?: string }>;
+  searchParams?: Promise<{ q?: string; status?: string; vision?: string; asset?: string }>;
 };
 
 export default async function AdminReferenceAssetsPage({ searchParams }: AdminReferenceAssetsPageProps) {
@@ -51,7 +51,7 @@ export default async function AdminReferenceAssetsPage({ searchParams }: AdminRe
       : {}),
   };
 
-  const [assets, readyCount, archivedCount, analyzedCount, errorCount] = await Promise.all([
+  const [assets, readyCount, archivedCount, errorCount] = await Promise.all([
     db.styleReferenceAsset.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -60,72 +60,167 @@ export default async function AdminReferenceAssetsPage({ searchParams }: AdminRe
     }),
     db.styleReferenceAsset.count({ where: { status: "READY" } }),
     db.styleReferenceAsset.count({ where: { status: "ARCHIVED" } }),
-    db.styleReferenceAsset.count({ where: { visionAnalyzedAt: { not: null } } }),
     db.styleReferenceAsset.count({ where: { visionError: { not: null } } }),
   ]);
 
+  const selected = assets.find((asset) => asset.id === params?.asset) ?? assets[0] ?? null;
+
+  const baseQuery = (next: { status?: string; vision?: string }) => {
+    const query = new URLSearchParams();
+    if (q) query.set("q", q);
+    query.set("status", next.status ?? status);
+    const nextVision = next.vision !== undefined ? next.vision : vision;
+    if (nextVision) query.set("vision", nextVision);
+    return query;
+  };
+
+  const filterHref = (next: { status?: string; vision?: string }) => `/admin/assets/references?${baseQuery(next).toString()}`;
+  const assetHref = (assetId: string) => {
+    const query = baseQuery({});
+    query.set("asset", assetId);
+    return `/admin/assets/references?${query.toString()}`;
+  };
+
   return (
     <>
-      <AdminPageHeader title="رفرنس‌های سبک" description="Sample/style reference assets برای انتقال نور، زاویه، چیدمان و حال‌وهوای تصویر نمونه." />
+      <ConsoleHeader
+        title="عکس‌های نمونه کاربران"
+        meta={<span>تصاویر نمونه برای انتقال نور، زاویه و حال‌وهوا به خروجی.</span>}
+      />
 
-      <AdminKpiStrip>
-        <AdminKpi label="آماده" value={readyCount} />
-        <AdminKpi label="آرشیوشده" value={archivedCount} />
-        <AdminKpi label="Vision analyzed" value={analyzedCount} />
-        <AdminKpi label="Vision error" value={errorCount} tone={errorCount ? "danger" : "neutral"} />
-        <AdminKpi label="نمایش فعلی" value={assets.length} />
-      </AdminKpiStrip>
+      <TabNav
+        tabs={[
+          { href: "/admin/assets", label: "تصاویر منبع کاربران", active: false },
+          { href: "/admin/assets/references", label: "عکس‌های نمونه کاربران", active: true },
+          { href: "/admin/assets/outputs", label: "خروجی‌ها", active: false },
+        ]}
+      />
 
-      <AdminFilterBar>
-        <form className="grid gap-2 md:grid-cols-[minmax(0,1fr)_150px_160px_auto]">
-          <input name="q" defaultValue={q} placeholder="شناسه، مالک، storage key، صحنه، نور یا پس‌زمینه" className={adminInputClass} />
-          <select name="status" defaultValue={status} className={adminInputClass}>
-            <option value="READY">آماده</option>
-            <option value="ARCHIVED">آرشیوشده</option>
-            <option value="ALL">همه</option>
-          </select>
-          <select name="vision" defaultValue={vision} className={adminInputClass}>
-            <option value="">همه vision</option>
-            <option value="analyzed">تحلیل‌شده</option>
-            <option value="error">دارای خطا</option>
-          </select>
-          <button className={adminPrimaryActionClass}>اعمال</button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <SegmentedLinks
+          items={[
+            { href: filterHref({ status: "READY", vision: "" }), label: "آماده", active: status === "READY" && vision !== "error", count: readyCount },
+            { href: filterHref({ status: "ARCHIVED", vision: "" }), label: "آرشیوشده", active: status === "ARCHIVED", count: archivedCount },
+            { href: filterHref({ status: "ALL", vision: "error" }), label: "خطای Vision", active: vision === "error", count: errorCount },
+            { href: filterHref({ status: "ALL", vision: "" }), label: "همه", active: status === "ALL" && vision !== "error" },
+          ]}
+        />
+        <form className="flex items-center gap-2">
+          <input type="hidden" name="status" value={status} />
+          {vision ? <input type="hidden" name="vision" value={vision} /> : null}
+          <input name="q" defaultValue={q} placeholder="شناسه، مالک، صحنه، نور یا پس‌زمینه" className={`${inlineFieldClass} w-64`} />
+          <button className={`${btnSecondary} h-8`}>جست‌وجو</button>
         </form>
-      </AdminFilterBar>
+      </div>
 
-      <AdminPanel title="Inventory رفرنس‌ها">
-        <AdminDataTable headers={["تصویر", "مالک", "Vision", "استفاده", "Storage", "وضعیت"]} empty={<AdminEmptyState title="رفرنسی با این فیلتر پیدا نشد." />}>
-          {assets.map((asset) => (
-            <tr key={asset.id} className="hover:bg-slate-50">
-              <td className={adminTableCellClass}>
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-100">
-                    <Image src={storageUrlFromKeyOrUrl(asset.storageKey, asset.fileUrl) || uploadPreview.src} alt="" fill unoptimized className="object-cover" sizes="48px" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold text-slate-950">{asset.title || asset.originalName || "رفرنس بدون نام"}</p>
-                    <p className="truncate text-xs text-slate-500">{formatAdminDate(asset.createdAt)}</p>
-                  </div>
-                </div>
-              </td>
-              <td className={adminTableCellClass}>
-                <a href={`/admin/users/${asset.userId}`} className="font-semibold text-slate-950 hover:underline">{getUserDisplayName(asset.user)}</a>
-                <p className="text-xs text-slate-500" dir="ltr">{getUserIdentifier(asset.user)}</p>
-              </td>
-              <td className={adminTableCellClass}>
-                <p className="max-w-[260px] truncate text-sm text-slate-700">{asset.visionSceneDescription || "تحلیل نشده"}</p>
-                <p className="max-w-[260px] truncate text-xs text-slate-500">{asset.visionCameraAngle || asset.visionLighting || asset.visionBackground || asset.visionError || "بدون metadata"}</p>
-              </td>
-              <td className={adminTableCellClass}>{asset._count.projects.toLocaleString("fa-IR")} پروژه · {asset._count.batches.toLocaleString("fa-IR")} batch</td>
-              <td className={adminTableCellClass}>
-                <p className="max-w-[220px] truncate text-xs text-slate-500" dir="ltr">{asset.storageKey}</p>
-                <p className="text-xs text-slate-500">{asset.mimeType}</p>
-              </td>
-              <td className={adminTableCellClass}><AdminStatus status={asset.status} /></td>
-            </tr>
-          ))}
-        </AdminDataTable>
-      </AdminPanel>
+      {assets.length === 0 ? (
+        <Surface className="p-8">
+          <EmptyState title="عکس نمونه‌ای با این فیلتر پیدا نشد." />
+        </Surface>
+      ) : (
+        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(108px,1fr))] gap-2 p-0">
+            {assets.map((asset) => {
+              const isSelected = selected?.id === asset.id;
+              return (
+                <li key={asset.id} className="relative">
+                  <Link
+                    href={assetHref(asset.id)}
+                    aria-current={isSelected ? "true" : undefined}
+                    aria-label={asset.title || asset.originalName || "عکس نمونه بدون نام"}
+                    className={[
+                      "relative block aspect-square overflow-hidden rounded-xl bg-slate-100 transition",
+                      isSelected ? "ring-2 ring-navy-700 ring-offset-2 ring-offset-navy-25" : "hover:opacity-85",
+                      asset.status === "ARCHIVED" ? "opacity-55" : "",
+                    ].join(" ")}
+                  >
+                    <Image
+                      src={storageUrlFromKeyOrUrl(asset.storageKey, asset.fileUrl) || uploadPreview.src}
+                      alt=""
+                      fill
+                      unoptimized
+                      className="object-cover"
+                      sizes="140px"
+                    />
+                    {asset.visionError ? (
+                      <span aria-hidden="true" className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />
+                    ) : null}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+
+          {selected ? <ReferenceDetailPanel key={selected.id} asset={selected} /> : null}
+        </div>
+      )}
     </>
+  );
+}
+
+type ReferenceWithRelations = Prisma.StyleReferenceAssetGetPayload<{
+  include: { user: true; _count: { select: { projects: true; batches: true } } };
+}>;
+
+function ReferenceDetailPanel({ asset }: { asset: ReferenceWithRelations }) {
+  return (
+    <Surface className="lg:sticky lg:top-16">
+      <div className="relative aspect-square bg-slate-100">
+        <Image
+          src={storageUrlFromKeyOrUrl(asset.storageKey, asset.fileUrl) || uploadPreview.src}
+          alt={asset.title || asset.originalName || "عکس نمونه بدون نام"}
+          fill
+          unoptimized
+          className="object-cover"
+          sizes="300px"
+        />
+      </div>
+      <div className="space-y-4 p-4">
+        <div>
+          <h2 className="truncate text-sm font-semibold text-navy-950">{asset.title || asset.originalName || "عکس نمونه بدون نام"}</h2>
+          <p className="mt-0.5 text-xs text-slate-500">
+            <StatusDot status={asset.status} />
+          </p>
+        </div>
+
+        {asset.visionError ? (
+          <p className="rounded-lg bg-rose-50 px-3 py-2 text-xs leading-6 text-rose-700">{asset.visionError}</p>
+        ) : asset.visionSceneDescription ? (
+          <p className="rounded-lg bg-navy-25 px-3 py-2 text-xs leading-6 text-slate-600">{asset.visionSceneDescription}</p>
+        ) : (
+          <p className="text-xs text-slate-400">هنوز با Vision تحلیل نشده است.</p>
+        )}
+
+        <KeyValueList
+          items={[
+            {
+              label: "مالک",
+              value: (
+                <Link href={`/admin/users/${asset.userId}`} className="hover:text-navy-700 hover:underline">
+                  {getUserDisplayName(asset.user)}
+                </Link>
+              ),
+            },
+            { label: "شناسه مالک", value: getUserIdentifier(asset.user), dir: "ltr" },
+            {
+              label: "استفاده",
+              value:
+                asset._count.projects + asset._count.batches > 0
+                  ? `${faNum(asset._count.projects)} پروژه · ${faNum(asset._count.batches)} batch`
+                  : "استفاده نشده",
+            },
+            ...(asset.visionLighting ? [{ label: "نور", value: asset.visionLighting }] : []),
+            ...(asset.visionCameraAngle ? [{ label: "زاویه دوربین", value: asset.visionCameraAngle }] : []),
+            ...(asset.visionBackground ? [{ label: "پس‌زمینه", value: asset.visionBackground }] : []),
+            { label: "آپلود", value: formatAdminFullDate(asset.createdAt) },
+            { label: "فرمت", value: asset.mimeType, dir: "ltr" as const },
+          ]}
+        />
+
+        <p className="truncate rounded-lg bg-slate-50 px-2.5 py-1.5 font-mono text-[11px] text-slate-400" dir="ltr" title={asset.storageKey}>
+          {asset.storageKey}
+        </p>
+      </div>
+    </Surface>
   );
 }

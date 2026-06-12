@@ -1,16 +1,17 @@
+import { Add, Save2 } from "vuesax-icons-react";
 import {
-  adminInputClass,
-  adminPrimaryActionClass,
-  adminTableCellClass,
-  adminTextareaClass,
-  AdminDataTable,
-  AdminEmptyState,
-  AdminKpi,
-  AdminKpiStrip,
-  AdminPageHeader,
-  AdminPanel,
-  AdminStatus,
-} from "@/features/admin/components/admin-ui";
+  btnPrimary,
+  checkboxClass,
+  ConsoleHeader,
+  Disclosure,
+  EmptyState,
+  faNum,
+  Field,
+  fieldClass,
+  StatusDot,
+  Surface,
+  textareaClass,
+} from "@/features/admin/components/console";
 import { createFaqItemAction, updateFaqItemAction } from "@/features/admin/actions";
 import { db } from "@/lib/db";
 
@@ -22,54 +23,91 @@ export default async function AdminFaqPage() {
 
   return (
     <>
-      <AdminPageHeader title="FAQ" description="سوالات پرتکرار نمایش‌داده‌شده در حساب کاربر." />
+      <ConsoleHeader
+        backHref="/admin/support"
+        backLabel="پشتیبانی"
+        title="پرسش‌های پرتکرار"
+        meta={<span>{faNum(activeCount)} فعال از {faNum(faqs.length)}</span>}
+      />
 
-      <AdminKpiStrip>
-        <AdminKpi label="کل FAQ" value={faqs.length} />
-        <AdminKpi label="فعال" value={activeCount} />
-        <AdminKpi label="پنهان" value={faqs.length - activeCount} />
-      </AdminKpiStrip>
-
-      <AdminPanel title="افزودن سوال">
-        <form action={createFaqItemAction} className="grid gap-3 p-4 md:grid-cols-[minmax(0,1fr)_120px_auto] md:items-end">
-          <input name="question" placeholder="سوال" className={adminInputClass} />
-          <input name="sortOrder" type="number" defaultValue={10} className={adminInputClass} />
-          <label className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-950">
-            <input name="isActive" type="checkbox" defaultChecked className="h-4 w-4 accent-slate-950" />
-            فعال
-          </label>
-          <textarea name="answer" placeholder="پاسخ" className={`${adminTextareaClass} md:col-span-3`} />
-          <button className={`${adminPrimaryActionClass} md:col-span-3`}>افزودن FAQ</button>
-        </form>
-      </AdminPanel>
-
-      <AdminPanel title="لیست FAQ">
-        <AdminDataTable headers={["سوال و پاسخ", "ترتیب", "وضعیت", "عملیات"]} empty={<AdminEmptyState title="FAQ ثبت نشده است." />}>
+      {faqs.length === 0 ? (
+        <Surface className="p-8">
+          <EmptyState title="هنوز پرسشی ثبت نشده است." />
+        </Surface>
+      ) : (
+        <div className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
           {faqs.map((faq) => (
-            <tr key={faq.id}>
-              <td className={adminTableCellClass}>
-                <form id={`faq-${faq.id}`} action={updateFaqItemAction} className="grid gap-2">
-                  <input type="hidden" name="faqId" value={faq.id} />
-                  <input name="question" defaultValue={faq.question} className={adminInputClass} />
-                  <textarea name="answer" defaultValue={faq.answer} className={adminTextareaClass} />
-                </form>
-              </td>
-              <td className={adminTableCellClass}>
-                <input form={`faq-${faq.id}`} name="sortOrder" type="number" defaultValue={faq.sortOrder} className={adminInputClass} />
-              </td>
-              <td className={adminTableCellClass}>
-                <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700">
-                  <input form={`faq-${faq.id}`} name="isActive" type="checkbox" defaultChecked={faq.isActive} className="h-4 w-4 accent-slate-950" />
-                  <AdminStatus status={faq.isActive ? "ACTIVE" : "PAUSED"} />
-                </label>
-              </td>
-              <td className={adminTableCellClass}>
-                <button form={`faq-${faq.id}`} className={adminPrimaryActionClass}>ذخیره FAQ</button>
-              </td>
-            </tr>
+            <Disclosure
+              key={faq.id}
+              flush
+              summary={
+                <>
+                  <StatusDot status={faq.isActive ? "ACTIVE" : "PAUSED"} label="" />
+                  <span className="truncate font-medium text-navy-950">{faq.question}</span>
+                </>
+              }
+            >
+              <form action={updateFaqItemAction} className="grid gap-3">
+                <input type="hidden" name="faqId" value={faq.id} />
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_100px]">
+                  <Field label="سوال">
+                    <input name="question" required defaultValue={faq.question} className={fieldClass} />
+                  </Field>
+                  <Field label="ترتیب">
+                    <input name="sortOrder" type="number" defaultValue={faq.sortOrder} className={fieldClass} />
+                  </Field>
+                </div>
+                <Field label="پاسخ">
+                  <textarea name="answer" required defaultValue={faq.answer} className={textareaClass} />
+                </Field>
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                  <label className="inline-flex items-center gap-2 text-xs font-medium text-navy-900">
+                    <input name="isActive" type="checkbox" defaultChecked={faq.isActive} className={checkboxClass} />
+                    در حساب کاربر نمایش داده شود
+                  </label>
+                  <button className={btnPrimary}>
+                    <Save2 className="h-4 w-4" />
+                    ذخیره
+                  </button>
+                </div>
+              </form>
+            </Disclosure>
           ))}
-        </AdminDataTable>
-      </AdminPanel>
+        </div>
+      )}
+
+      <Disclosure
+        summary={
+          <>
+            <Add className="h-4 w-4 text-slate-400" />
+            افزودن پرسش جدید
+          </>
+        }
+      >
+        <form action={createFaqItemAction} className="grid gap-3">
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_100px]">
+            <Field label="سوال">
+              <input name="question" required className={fieldClass} />
+            </Field>
+            <Field label="ترتیب">
+              <input name="sortOrder" type="number" defaultValue={(faqs.length + 1) * 10} className={fieldClass} />
+            </Field>
+          </div>
+          <Field label="پاسخ">
+            <textarea name="answer" required className={textareaClass} />
+          </Field>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+            <label className="inline-flex items-center gap-2 text-xs font-medium text-navy-900">
+              <input name="isActive" type="checkbox" defaultChecked className={checkboxClass} />
+              فعال باشد
+            </label>
+            <button className={btnPrimary}>
+              <Add className="h-4 w-4" />
+              افزودن
+            </button>
+          </div>
+        </form>
+      </Disclosure>
     </>
   );
 }

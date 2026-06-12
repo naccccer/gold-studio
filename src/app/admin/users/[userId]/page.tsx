@@ -1,23 +1,29 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Add, Key, Refresh, ShieldTick, UserEdit, Wallet } from "vuesax-icons-react";
+import type { Prisma } from "@/generated/prisma";
 import {
-  adminDangerActionClass,
-  adminInputClass,
-  adminPrimaryActionClass,
-  adminSecondaryActionClass,
-  adminTableCellClass,
-  AdminDataTable,
-  AdminDescriptionList,
-  AdminEmptyState,
-  AdminKpi,
-  AdminKpiStrip,
-  AdminPageHeader,
-  AdminPanel,
-  AdminStatus,
+  btnDanger,
+  btnPrimary,
+  btnSecondary,
+  cellClass,
+  ConsoleHeader,
+  ConsoleTable,
+  Disclosure,
+  EmptyState,
+  faNum,
+  Field,
+  fieldClass,
+  inlineFieldClass,
   formatAdminDate,
+  formatAdminFullDate,
   formatIrr,
-} from "@/features/admin/components/admin-ui";
+  KeyValueList,
+  StatBar,
+  StatusDot,
+  Surface,
+  TabNav,
+} from "@/features/admin/components/console";
 import {
   adjustUserCreditsAction,
   approvePurchaseRequestAction,
@@ -37,18 +43,31 @@ import { storageUrlFromKeyOrUrl } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
+const tabs = [
+  { key: "overview", label: "پرونده" },
+  { key: "billing", label: "اعتبار و خرید" },
+  { key: "activity", label: "فعالیت" },
+  { key: "security", label: "امنیت" },
+] as const;
+
+type TabKey = (typeof tabs)[number]["key"];
+
 type AdminUserDetailPageProps = {
   params: Promise<{ userId: string }>;
+  searchParams?: Promise<{ tab?: string }>;
 };
 
-export default async function AdminUserDetailPage({ params }: AdminUserDetailPageProps) {
+export default async function AdminUserDetailPage({ params, searchParams }: AdminUserDetailPageProps) {
   const { userId } = await params;
+  const query = await searchParams;
+  const activeTab: TabKey = tabs.some((tab) => tab.key === query?.tab) ? (query?.tab as TabKey) : "overview";
+
   const [user, creditSummary, subscriptionPackages, creditPackages] = await Promise.all([
     db.user.findUnique({
       where: { id: userId },
       include: {
-        projects: { orderBy: { createdAt: "desc" }, take: 8, include: { style: { select: { name: true } } } },
-        assets: { orderBy: { createdAt: "desc" }, take: 8 },
+        projects: { orderBy: { createdAt: "desc" }, take: 10, include: { style: { select: { name: true } } } },
+        assets: { orderBy: { createdAt: "desc" }, take: 10 },
         subscriptions: { orderBy: { createdAt: "desc" }, take: 10, include: { package: true } },
         purchaseRequests: { orderBy: { createdAt: "desc" }, take: 10, include: { package: true } },
         creditEvents: { orderBy: { createdAt: "desc" }, take: 12, include: { package: true } },
@@ -62,276 +81,431 @@ export default async function AdminUserDetailPage({ params }: AdminUserDetailPag
 
   if (!user) notFound();
 
+  const tabHref = (tab: TabKey) => `/admin/users/${user.id}${tab === "overview" ? "" : `?tab=${tab}`}`;
+
   return (
     <>
-      <AdminPageHeader
+      <ConsoleHeader
+        backHref="/admin/users"
+        backLabel="کاربران"
         title={getUserDisplayName(user)}
-        description={getUserIdentifier(user)}
-        actions={<Link href="/admin/users" className={adminSecondaryActionClass}>بازگشت به کاربران</Link>}
+        meta={
+          <>
+            <span dir="ltr">{getUserIdentifier(user)}</span>
+            <StatusDot status={user.role} />
+            <span>عضویت {formatAdminDate(user.createdAt)}</span>
+          </>
+        }
       />
 
-      <AdminKpiStrip>
-        <AdminKpi label="اعتبار قابل استفاده" value={creditSummary.totalAvailableCredits} />
-        <AdminKpi label="کیف پول" value={creditSummary.walletCredits} />
-        <AdminKpi label="اشتراک" value={creditSummary.subscriptionCredits} />
-        <AdminKpi label="پروژه‌ها" value={user._count.projects} />
-        <AdminKpi label="دارایی‌ها" value={user._count.assets} />
-        <AdminKpi label="خریدها" value={user._count.purchaseRequests} />
-      </AdminKpiStrip>
+      <StatBar
+        items={[
+          { label: "اعتبار قابل استفاده", value: creditSummary.totalAvailableCredits },
+          { label: "کیف پول", value: creditSummary.walletCredits },
+          { label: "اعتبار اشتراک", value: creditSummary.subscriptionCredits },
+          { label: "پروژه", value: user._count.projects },
+          { label: "دارایی", value: user._count.assets },
+          { label: "خرید", value: user._count.purchaseRequests },
+        ]}
+      />
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-        <div className="space-y-4">
-          <AdminPanel title="پرونده" description="شناسه، نقش و وضعیت اصلی کاربر.">
-            <div className="p-4">
-              <AdminDescriptionList
-                items={[
-                  { label: "شناسه", value: user.id, dir: "ltr" },
-                  { label: "نقش", value: <AdminStatus status={user.role} /> },
-                  { label: "کد معرف", value: user.referralCode || "ندارد", dir: "ltr" },
-                  { label: "عضویت", value: formatAdminDate(user.createdAt) },
-                ]}
-              />
+      <TabNav tabs={tabs.map((tab) => ({ href: tabHref(tab.key), label: tab.label, active: activeTab === tab.key }))} />
+
+      {activeTab === "overview" ? (
+        <div className="grid items-start gap-5 lg:grid-cols-2">
+          <Surface className="p-5">
+            <h2 className="mb-3 text-sm font-semibold text-navy-950">مشخصات پرونده</h2>
+            <KeyValueList
+              items={[
+                { label: "شناسه", value: user.id, dir: "ltr" },
+                { label: "نام یا فروشگاه", value: user.name ?? "ثبت نشده" },
+                { label: "ایمیل", value: user.email ?? "ندارد", dir: "ltr" },
+                { label: "موبایل", value: user.phone ?? "ندارد", dir: "ltr" },
+                { label: "کد معرف", value: user.referralCode || "ندارد", dir: "ltr" },
+                { label: "تاریخ عضویت", value: formatAdminFullDate(user.createdAt) },
+              ]}
+            />
+          </Surface>
+          <Surface className="p-5">
+            <h2 className="mb-3 text-sm font-semibold text-navy-950">آخرین پروژه‌ها</h2>
+            {user.projects.length === 0 ? (
+              <EmptyState title="پروژه‌ای ندارد." />
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {user.projects.slice(0, 6).map((project) => (
+                  <Link key={project.id} href={`/admin/projects/${project.id}`} className="flex items-center justify-between gap-3 py-2.5 transition first:pt-0 last:pb-0 hover:opacity-70">
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-medium text-navy-950">{project.title || "پروژه بدون عنوان"}</span>
+                      <span className="block text-xs text-slate-400">
+                        {project.style.name} · {formatAdminDate(project.createdAt)}
+                      </span>
+                    </span>
+                    <StatusDot status={project.status} />
+                  </Link>
+                ))}
+              </div>
+            )}
+          </Surface>
+        </div>
+      ) : null}
+
+      {activeTab === "billing" ? (
+        <BillingTab
+          key={user.id}
+          user={user}
+          subscriptionPackages={subscriptionPackages}
+          creditPackages={creditPackages}
+        />
+      ) : null}
+
+      {activeTab === "activity" ? <ActivityTab user={user} /> : null}
+      {activeTab === "security" ? <SecurityTab key={user.id} user={user} /> : null}
+    </>
+  );
+}
+
+type UserWithRelations = Prisma.UserGetPayload<{
+  include: {
+    projects: { include: { style: { select: { name: true } } } };
+    assets: true;
+    subscriptions: { include: { package: true } };
+    purchaseRequests: { include: { package: true } };
+    creditEvents: { include: { package: true } };
+    _count: { select: { projects: true; assets: true; purchaseRequests: true } };
+  };
+}>;
+
+type BillingPackage = Awaited<ReturnType<typeof db.billingPackage.findMany>>[number];
+
+function BillingTab({
+  user,
+  subscriptionPackages,
+  creditPackages,
+}: {
+  user: UserWithRelations;
+  subscriptionPackages: BillingPackage[];
+  creditPackages: BillingPackage[];
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Disclosure
+          summary={
+            <>
+              <Wallet className="h-4 w-4 text-slate-400" />
+              تغییر دستی اعتبار
+            </>
+          }
+        >
+          <form action={adjustUserCreditsAction} className="grid gap-3">
+            <input type="hidden" name="userId" value={user.id} />
+            <Field label="تغییر (مثبت یا منفی)">
+              <input name="delta" type="number" required placeholder="+10 یا -2" dir="ltr" className={`${fieldClass} text-left`} />
+            </Field>
+            <Field label="دلیل">
+              <input name="reason" required placeholder="دلیل تغییر اعتبار" className={fieldClass} />
+            </Field>
+            <div>
+              <button className={btnPrimary}>ثبت تغییر</button>
             </div>
-          </AdminPanel>
+          </form>
+        </Disclosure>
 
-          <AdminPanel title="مشخصات" description="ویرایش نام، ایمیل و موبایل.">
-            <form action={updateAdminUserIdentityAction} className="grid gap-3 p-4">
-              <input type="hidden" name="userId" value={user.id} />
-              <label className="grid gap-1.5 text-xs font-semibold text-muted">
-                نام یا فروشگاه
-                <input name="name" required minLength={2} maxLength={80} defaultValue={user.name ?? ""} className={adminInputClass} />
-              </label>
-              <label className="grid gap-1.5 text-xs font-semibold text-muted">
-                ایمیل
-                <input name="email" type="email" dir="ltr" defaultValue={user.email ?? ""} className={`${adminInputClass} text-left`} />
-              </label>
-              <label className="grid gap-1.5 text-xs font-semibold text-muted">
-                موبایل
-                <input name="phone" inputMode="tel" dir="ltr" defaultValue={user.phone ?? ""} className={`${adminInputClass} text-left`} />
-              </label>
-              <button className={adminPrimaryActionClass}>
-                <UserEdit className="h-4 w-4" />
-                ذخیره مشخصات
+        <Disclosure
+          summary={
+            <>
+              <Add className="h-4 w-4 text-slate-400" />
+              افزودن بسته اعتبار
+            </>
+          }
+        >
+          <form action={assignCreditPackAction} className="grid gap-3">
+            <input type="hidden" name="userId" value={user.id} />
+            <Field label="بسته اعتبار">
+              <select name="packageId" className={fieldClass}>
+                {creditPackages.map((billingPackage) => (
+                  <option key={billingPackage.id} value={billingPackage.id}>
+                    {billingPackage.title} · {faNum(billingPackage.credits)} اعتبار
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="یادداشت">
+              <input name="notes" className={fieldClass} />
+            </Field>
+            <div>
+              <button className={btnPrimary} disabled={creditPackages.length === 0}>
+                افزودن بسته
               </button>
-            </form>
-          </AdminPanel>
-
-          <AdminPanel title="امنیت و نقش" description="عملیات حساس با تایید صریح.">
-            <div className="grid gap-3 p-4">
-              <form action={updateAdminUserPasswordAction} className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-                <input type="hidden" name="userId" value={user.id} />
-                <label className="grid gap-1.5 text-xs font-semibold text-muted">
-                  رمز جدید
-                  <input name="password" minLength={6} type="password" dir="ltr" className={`${adminInputClass} text-left`} />
-                </label>
-                <button className={adminSecondaryActionClass}>
-                  <Key className="h-4 w-4" />
-                  تغییر رمز
-                </button>
-              </form>
-              <form action={updateUserRoleAction} className="grid gap-2 md:grid-cols-[150px_minmax(0,1fr)_auto] md:items-end">
-                <input type="hidden" name="userId" value={user.id} />
-                <label className="grid gap-1.5 text-xs font-semibold text-muted">
-                  نقش
-                  <select name="role" defaultValue={user.role} className={adminInputClass}>
-                    <option value="USER">کاربر</option>
-                    <option value="ADMIN">ادمین</option>
-                  </select>
-                </label>
-                <label className="grid gap-1.5 text-xs font-semibold text-muted">
-                  تایید
-                  <input name="confirmRoleChange" placeholder="برای تایید بنویسید: تایید" className={adminInputClass} />
-                </label>
-                <button className={adminDangerActionClass}>
-                  <ShieldTick className="h-4 w-4" />
-                  تغییر نقش
-                </button>
-              </form>
             </div>
-          </AdminPanel>
-        </div>
+          </form>
+        </Disclosure>
 
-        <div className="space-y-4">
-          <AdminPanel title="اعتبار و اشتراک" description="افزایش/کاهش دستی اعتبار، اختصاص بسته و تمدید دوره.">
-            <div className="grid gap-3 p-4">
-              <form action={adjustUserCreditsAction} className="grid gap-2 lg:grid-cols-[120px_minmax(0,1fr)_auto] lg:items-end">
-                <input type="hidden" name="userId" value={user.id} />
-                <label className="grid gap-1.5 text-xs font-semibold text-muted">
-                  تغییر
-                  <input name="delta" type="number" placeholder="+10 یا -2" className={`${adminInputClass} text-left`} dir="ltr" />
-                </label>
-                <label className="grid gap-1.5 text-xs font-semibold text-muted">
-                  دلیل
-                  <input name="reason" placeholder="دلیل تغییر اعتبار" className={adminInputClass} />
-                </label>
-                <button className={adminPrimaryActionClass}>
-                  <Wallet className="h-4 w-4" />
-                  ثبت
-                </button>
-              </form>
-
-              <form action={assignCreditPackAction} className="grid gap-2 lg:grid-cols-[220px_minmax(0,1fr)_auto] lg:items-end">
-                <input type="hidden" name="userId" value={user.id} />
-                <label className="grid gap-1.5 text-xs font-semibold text-muted">
-                  بسته اعتبار
-                  <select name="packageId" className={adminInputClass}>
-                    {creditPackages.map((billingPackage) => (
-                      <option key={billingPackage.id} value={billingPackage.id}>{billingPackage.title} · {billingPackage.credits.toLocaleString("fa-IR")}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="grid gap-1.5 text-xs font-semibold text-muted">
-                  یادداشت
-                  <input name="notes" className={adminInputClass} />
-                </label>
-                <button className={adminSecondaryActionClass} disabled={creditPackages.length === 0}>
-                  <Add className="h-4 w-4" />
-                  افزودن
-                </button>
-              </form>
-
-              <form action={assignSubscriptionAction} className="grid gap-2 lg:grid-cols-[220px_minmax(0,1fr)_auto] lg:items-end">
-                <input type="hidden" name="userId" value={user.id} />
-                <label className="grid gap-1.5 text-xs font-semibold text-muted">
-                  اشتراک
-                  <select name="packageId" className={adminInputClass}>
-                    {subscriptionPackages.map((billingPackage) => (
-                      <option key={billingPackage.id} value={billingPackage.id}>{billingPackage.title}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="grid gap-1.5 text-xs font-semibold text-muted">
-                  یادداشت
-                  <input name="notes" className={adminInputClass} />
-                </label>
-                <button className={adminSecondaryActionClass} disabled={subscriptionPackages.length === 0}>
-                  <ShieldTick className="h-4 w-4" />
-                  اختصاص
-                </button>
-              </form>
+        <Disclosure
+          summary={
+            <>
+              <ShieldTick className="h-4 w-4 text-slate-400" />
+              اختصاص اشتراک
+            </>
+          }
+        >
+          <form action={assignSubscriptionAction} className="grid gap-3">
+            <input type="hidden" name="userId" value={user.id} />
+            <Field label="اشتراک">
+              <select name="packageId" className={fieldClass}>
+                {subscriptionPackages.map((billingPackage) => (
+                  <option key={billingPackage.id} value={billingPackage.id}>
+                    {billingPackage.title}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="یادداشت">
+              <input name="notes" className={fieldClass} />
+            </Field>
+            <div>
+              <button className={btnPrimary} disabled={subscriptionPackages.length === 0}>
+                اختصاص اشتراک
+              </button>
             </div>
-          </AdminPanel>
-
-          <AdminPanel title="اشتراک‌ها">
-            <AdminDataTable headers={["بسته", "مصرف", "وضعیت", "عملیات"]} empty={<AdminEmptyState title="اشتراکی ثبت نشده است." />}>
-              {user.subscriptions.map((subscription) => (
-                <tr key={subscription.id}>
-                  <td className={adminTableCellClass}>
-                    <p className="font-semibold text-foreground">{subscription.package.title}</p>
-                    <p className="text-xs text-muted">پایان {formatAdminDate(subscription.currentPeriodEnd)}</p>
-                  </td>
-                  <td className={adminTableCellClass}>{subscription.creditsUsedThisPeriod.toLocaleString("fa-IR")} / {subscription.creditsPerPeriod.toLocaleString("fa-IR")}</td>
-                  <td className={adminTableCellClass}><AdminStatus status={subscription.status} /></td>
-                  <td className={adminTableCellClass}>
-                    <div className="flex flex-wrap gap-2">
-                      <form action={updateSubscriptionStatusAction} className="flex gap-2">
-                        <input type="hidden" name="subscriptionId" value={subscription.id} />
-                        <select name="status" defaultValue={subscription.status} className={adminInputClass}>
-                          <option value="ACTIVE">فعال</option>
-                          <option value="PAUSED">متوقف</option>
-                          <option value="CANCELED">لغوشده</option>
-                          <option value="EXPIRED">منقضی</option>
-                        </select>
-                        <button className={adminPrimaryActionClass}>ثبت</button>
-                      </form>
-                      <form action={resetSubscriptionPeriodAction}>
-                        <input type="hidden" name="subscriptionId" value={subscription.id} />
-                        <button className={adminSecondaryActionClass}>
-                          <Refresh className="h-4 w-4" />
-                          تمدید
-                        </button>
-                      </form>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </AdminDataTable>
-          </AdminPanel>
-        </div>
+          </form>
+        </Disclosure>
       </div>
 
-      <AdminPanel title="درخواست‌های خرید">
-        <AdminDataTable headers={["بسته", "مبلغ", "رسید", "وضعیت", "عملیات"]} empty={<AdminEmptyState title="درخواست خریدی ثبت نشده است." />}>
-          {user.purchaseRequests.map((request) => (
-            <tr key={request.id}>
-              <td className={adminTableCellClass}>
-                <p className="font-semibold text-foreground">{request.package.title}</p>
-                <p className="text-xs text-muted">{formatAdminDate(request.createdAt)}</p>
+      <Surface>
+        <div className="border-b border-slate-100 px-5 py-3.5">
+          <h2 className="text-sm font-semibold text-navy-950">اشتراک‌ها</h2>
+        </div>
+        <ConsoleTable head={["بسته", "مصرف دوره", "وضعیت", ""]} empty={<EmptyState title="اشتراکی ثبت نشده است." />}>
+          {user.subscriptions.map((subscription) => (
+            <tr key={subscription.id}>
+              <td className={cellClass}>
+                <p className="font-medium">{subscription.package.title}</p>
+                <p className="text-xs text-slate-400">پایان دوره {formatAdminDate(subscription.currentPeriodEnd)}</p>
               </td>
-              <td className={adminTableCellClass}>{formatIrr(request.amount, request.currency)}</td>
-              <td className={adminTableCellClass}>
-                {storageUrlFromKeyOrUrl(request.receiptStorageKey, request.receiptImageUrl) ? (
-                  <a href={storageUrlFromKeyOrUrl(request.receiptStorageKey, request.receiptImageUrl) ?? ""} target="_blank" rel="noreferrer" className="text-xs font-semibold text-accent-deep">مشاهده رسید</a>
-                ) : (
-                  <span className="text-xs text-danger">بدون رسید</span>
-                )}
+              <td className={`${cellClass} tabular-nums`}>
+                {faNum(subscription.creditsUsedThisPeriod)} / {faNum(subscription.creditsPerPeriod)}
               </td>
-              <td className={adminTableCellClass}><AdminStatus status={request.status} /></td>
-              <td className={adminTableCellClass}>
-                {request.status === "PENDING" ? (
-                  <div className="flex flex-wrap gap-2">
-                    <form action={approvePurchaseRequestAction}>
-                      <input type="hidden" name="requestId" value={request.id} />
-                      <button className={adminPrimaryActionClass}>تایید</button>
-                    </form>
-                    <form action={rejectPurchaseRequestAction}>
-                      <input type="hidden" name="requestId" value={request.id} />
-                      <button className={adminDangerActionClass}>رد</button>
-                    </form>
-                  </div>
-                ) : (
-                  <span className="text-xs text-muted">ثبت‌شده</span>
-                )}
+              <td className={cellClass}>
+                <StatusDot status={subscription.status} />
+              </td>
+              <td className={cellClass}>
+                <div className="flex flex-wrap justify-end gap-1.5">
+                  <form action={updateSubscriptionStatusAction} className="flex gap-1.5">
+                    <input type="hidden" name="subscriptionId" value={subscription.id} />
+                    <select name="status" defaultValue={subscription.status} className={`${inlineFieldClass} w-28`}>
+                      <option value="ACTIVE">فعال</option>
+                      <option value="PAUSED">متوقف</option>
+                      <option value="CANCELED">لغوشده</option>
+                      <option value="EXPIRED">منقضی</option>
+                    </select>
+                    <button className={`${btnSecondary} h-8`}>ثبت</button>
+                  </form>
+                  <form action={resetSubscriptionPeriodAction}>
+                    <input type="hidden" name="subscriptionId" value={subscription.id} />
+                    <button className={`${btnSecondary} h-8`}>
+                      <Refresh className="h-3.5 w-3.5" />
+                      تمدید دوره
+                    </button>
+                  </form>
+                </div>
               </td>
             </tr>
           ))}
-        </AdminDataTable>
-      </AdminPanel>
+        </ConsoleTable>
+      </Surface>
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <AdminPanel title="دفتر اعتبار">
-          <AdminDataTable headers={["تغییر", "منبع", "دلیل", "زمان"]} empty={<AdminEmptyState title="رویداد اعتباری ثبت نشده است." />}>
-            {user.creditEvents.map((event) => (
-              <tr key={event.id}>
-                <td className={adminTableCellClass}>
-                  <p className={event.delta >= 0 ? "font-semibold text-accent-deep" : "font-semibold text-danger"}>{event.delta.toLocaleString("fa-IR")}</p>
-                  <p className="text-xs text-muted">{event.balanceBefore.toLocaleString("fa-IR")} → {event.balanceAfter.toLocaleString("fa-IR")}</p>
+      <Surface>
+        <div className="border-b border-slate-100 px-5 py-3.5">
+          <h2 className="text-sm font-semibold text-navy-950">درخواست‌های خرید</h2>
+        </div>
+        <ConsoleTable head={["بسته", "مبلغ", "رسید", "وضعیت", ""]} empty={<EmptyState title="درخواست خریدی ثبت نشده است." />}>
+          {user.purchaseRequests.map((request) => {
+            const receiptUrl = storageUrlFromKeyOrUrl(request.receiptStorageKey, request.receiptImageUrl);
+            return (
+              <tr key={request.id}>
+                <td className={cellClass}>
+                  <p className="font-medium">{request.package.title}</p>
+                  <p className="text-xs text-slate-400">{formatAdminDate(request.createdAt)}</p>
                 </td>
-                <td className={adminTableCellClass}><AdminStatus status={event.source} /></td>
-                <td className={adminTableCellClass}>{event.reason}</td>
-                <td className={adminTableCellClass}>{formatAdminDate(event.createdAt)}</td>
+                <td className={`${cellClass} tabular-nums`}>{formatIrr(request.amount, request.currency)}</td>
+                <td className={cellClass}>
+                  {receiptUrl ? (
+                    <a href={receiptUrl} target="_blank" rel="noreferrer" className="text-xs font-medium text-navy-700 hover:underline">
+                      مشاهده رسید
+                    </a>
+                  ) : (
+                    <span className="text-xs text-rose-600">بدون رسید</span>
+                  )}
+                </td>
+                <td className={cellClass}>
+                  <StatusDot status={request.status} />
+                </td>
+                <td className={cellClass}>
+                  {request.status === "PENDING" ? (
+                    <div className="flex justify-end gap-1.5">
+                      <form action={approvePurchaseRequestAction}>
+                        <input type="hidden" name="requestId" value={request.id} />
+                        <button className={btnPrimary}>تایید</button>
+                      </form>
+                      <form action={rejectPurchaseRequestAction}>
+                        <input type="hidden" name="requestId" value={request.id} />
+                        <button className={btnDanger}>رد</button>
+                      </form>
+                    </div>
+                  ) : null}
+                </td>
               </tr>
-            ))}
-          </AdminDataTable>
-        </AdminPanel>
+            );
+          })}
+        </ConsoleTable>
+      </Surface>
 
-        <AdminPanel title="آخرین پروژه‌ها و دارایی‌ها">
-          <div className="grid gap-3 p-4 md:grid-cols-2">
-            <div>
-              <h3 className="mb-2 text-xs font-semibold text-muted">پروژه‌ها</h3>
-              <div className="divide-y divide-border/60 rounded-[var(--radius-md)] border border-border/70">
-                {user.projects.length === 0 ? <p className="p-3 text-xs text-muted">پروژه‌ای ندارد.</p> : user.projects.map((project) => (
-                  <Link key={project.id} href={`/admin/projects/${project.id}`} className="block px-3 py-2 hover:bg-surface-soft/45">
-                    <p className="truncate text-sm font-semibold text-foreground">{project.title || "پروژه بدون عنوان"}</p>
-                    <p className="text-xs text-muted">{project.style.name} · {formatAdminDate(project.createdAt)}</p>
-                  </Link>
-                ))}
+      <Disclosure summary={`دفتر اعتبار (${faNum(user.creditEvents.length)} رویداد اخیر)`}>
+        {user.creditEvents.length === 0 ? (
+          <EmptyState title="رویداد اعتباری ثبت نشده است." />
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {user.creditEvents.map((event) => (
+              <div key={event.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm first:pt-0 last:pb-0">
+                <span className="flex min-w-0 items-center gap-3">
+                  <span className={`w-12 shrink-0 font-semibold tabular-nums ${event.delta >= 0 ? "text-emerald-700" : "text-rose-700"}`} dir="ltr">
+                    {event.delta > 0 ? `+${faNum(event.delta)}` : faNum(event.delta)}
+                  </span>
+                  <span className="truncate text-xs text-slate-500">{event.reason}</span>
+                </span>
+                <span className="flex shrink-0 items-center gap-3 text-xs text-slate-400">
+                  <span className="tabular-nums" dir="ltr">
+                    {faNum(event.balanceBefore)} ← {faNum(event.balanceAfter)}
+                  </span>
+                  {formatAdminDate(event.createdAt)}
+                </span>
               </div>
-            </div>
-            <div>
-              <h3 className="mb-2 text-xs font-semibold text-muted">دارایی‌ها</h3>
-              <div className="divide-y divide-border/60 rounded-[var(--radius-md)] border border-border/70">
-                {user.assets.length === 0 ? <p className="p-3 text-xs text-muted">دارایی‌ای ندارد.</p> : user.assets.map((asset) => (
-                  <Link key={asset.id} href={`/admin/assets?q=${asset.id}`} className="block px-3 py-2 hover:bg-surface-soft/45">
-                    <p className="truncate text-sm font-semibold text-foreground">{asset.title || asset.originalName || "تصویر بدون نام"}</p>
-                    <p className="truncate text-xs text-muted" dir="ltr">{asset.storageKey}</p>
-                  </Link>
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
-        </AdminPanel>
-      </div>
-    </>
+        )}
+      </Disclosure>
+    </div>
+  );
+}
+
+function ActivityTab({ user }: { user: UserWithRelations }) {
+  return (
+    <div className="grid items-start gap-5 lg:grid-cols-2">
+      <Surface className="p-5">
+        <h2 className="mb-3 text-sm font-semibold text-navy-950">پروژه‌ها</h2>
+        {user.projects.length === 0 ? (
+          <EmptyState title="پروژه‌ای ندارد." />
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {user.projects.map((project) => (
+              <Link key={project.id} href={`/admin/projects/${project.id}`} className="flex items-center justify-between gap-3 py-2.5 transition first:pt-0 last:pb-0 hover:opacity-70">
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium text-navy-950">{project.title || "پروژه بدون عنوان"}</span>
+                  <span className="block text-xs text-slate-400">
+                    {project.style.name} · {formatAdminDate(project.createdAt)}
+                  </span>
+                </span>
+                <StatusDot status={project.status} />
+              </Link>
+            ))}
+          </div>
+        )}
+      </Surface>
+      <Surface className="p-5">
+        <h2 className="mb-3 text-sm font-semibold text-navy-950">دارایی‌های گالری</h2>
+        {user.assets.length === 0 ? (
+          <EmptyState title="دارایی‌ای ندارد." />
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {user.assets.map((asset) => (
+              <Link key={asset.id} href={`/admin/assets?q=${asset.id}`} className="block py-2.5 transition first:pt-0 last:pb-0 hover:opacity-70">
+                <span className="block truncate text-sm font-medium text-navy-950">
+                  {asset.title || asset.originalName || "تصویر بدون نام"}
+                </span>
+                <span className="block truncate text-xs text-slate-400" dir="ltr">
+                  {asset.storageKey}
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </Surface>
+    </div>
+  );
+}
+
+function SecurityTab({ user }: { user: UserWithRelations }) {
+  return (
+    <div className="grid max-w-2xl gap-4">
+      <Surface className="p-5">
+        <h2 className="mb-4 text-sm font-semibold text-navy-950">ویرایش مشخصات</h2>
+        <form action={updateAdminUserIdentityAction} className="grid gap-3">
+          <input type="hidden" name="userId" value={user.id} />
+          <Field label="نام یا فروشگاه">
+            <input name="name" required minLength={2} maxLength={80} defaultValue={user.name ?? ""} className={fieldClass} />
+          </Field>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="ایمیل">
+              <input name="email" type="email" dir="ltr" defaultValue={user.email ?? ""} className={`${fieldClass} text-left`} />
+            </Field>
+            <Field label="موبایل">
+              <input name="phone" inputMode="tel" dir="ltr" defaultValue={user.phone ?? ""} className={`${fieldClass} text-left`} />
+            </Field>
+          </div>
+          <div>
+            <button className={btnPrimary}>
+              <UserEdit className="h-4 w-4" />
+              ذخیره مشخصات
+            </button>
+          </div>
+        </form>
+      </Surface>
+
+      <Disclosure
+        summary={
+          <>
+            <Key className="h-4 w-4 text-slate-400" />
+            تغییر رمز عبور
+          </>
+        }
+      >
+        <form action={updateAdminUserPasswordAction} className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+          <input type="hidden" name="userId" value={user.id} />
+          <Field label="رمز جدید">
+            <input name="password" required minLength={6} type="password" dir="ltr" className={`${fieldClass} text-left`} />
+          </Field>
+          <button className={btnSecondary}>ثبت رمز جدید</button>
+        </form>
+      </Disclosure>
+
+      <Disclosure
+        tone="danger"
+        summary={
+          <>
+            <ShieldTick className="h-4 w-4 text-rose-400" />
+            تغییر نقش (عملیات حساس)
+          </>
+        }
+      >
+        <form action={updateUserRoleAction} className="grid gap-3">
+          <input type="hidden" name="userId" value={user.id} />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="نقش">
+              <select name="role" defaultValue={user.role} className={fieldClass}>
+                <option value="USER">کاربر</option>
+                <option value="ADMIN">ادمین</option>
+              </select>
+            </Field>
+            <Field label="تایید" hint="برای تایید بنویسید: تایید">
+              <input name="confirmRoleChange" required className={fieldClass} />
+            </Field>
+          </div>
+          <div>
+            <button className={btnDanger}>اعمال تغییر نقش</button>
+          </div>
+        </form>
+      </Disclosure>
+    </div>
   );
 }

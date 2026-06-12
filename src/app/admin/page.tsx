@@ -1,19 +1,18 @@
 import Link from "next/link";
-import { ReceiptText, Refresh, TickCircle } from "vuesax-icons-react";
+import { ReceiptText, Refresh } from "vuesax-icons-react";
 import {
-  adminDangerActionClass,
-  adminPrimaryActionClass,
-  adminTableCellClass,
-  AdminDataTable,
-  AdminEmptyState,
-  AdminKpi,
-  AdminKpiStrip,
-  AdminPageHeader,
-  AdminPanel,
-  AdminStatus,
+  btnDanger,
+  btnPrimary,
+  cellClass,
+  ConsoleHeader,
+  ConsoleTable,
+  EmptyState,
   formatAdminDate,
   formatIrr,
-} from "@/features/admin/components/admin-ui";
+  StatBar,
+  StatusDot,
+  Surface,
+} from "@/features/admin/components/console";
 import { approvePurchaseRequestAction, rejectPurchaseRequestAction, retryAdminProjectAction } from "@/features/admin/actions";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { db } from "@/lib/db";
@@ -26,8 +25,6 @@ export default async function AdminPage() {
   today.setHours(0, 0, 0, 0);
 
   const [
-    userCount,
-    activeSubscriptionCount,
     pendingPurchaseCount,
     openTicketCount,
     activeGenerationCount,
@@ -35,13 +32,8 @@ export default async function AdminPage() {
     providerFailureTodayCount,
     pendingPurchases,
     failedProjects,
-    activeProjects,
     openTickets,
-    lowCreditUsers,
-    recentAuditEvents,
   ] = await Promise.all([
-    db.user.count(),
-    db.userSubscription.count({ where: { status: "ACTIVE", currentPeriodEnd: { gt: new Date() } } }),
     db.purchaseRequest.count({ where: { status: "PENDING" } }),
     db.supportTicket.count({ where: { status: { not: "CLOSED" } } }),
     db.project.count({ where: { status: { in: ["QUEUED", "PROCESSING"] }, archivedAt: null } }),
@@ -59,216 +51,159 @@ export default async function AdminPage() {
       take: 6,
       include: { user: true, style: { select: { name: true } } },
     }),
-    db.project.findMany({
-      where: { status: { in: ["QUEUED", "PROCESSING"] }, archivedAt: null },
-      orderBy: { updatedAt: "desc" },
-      take: 6,
-      include: { user: true, style: { select: { name: true } } },
-    }),
     db.supportTicket.findMany({
       where: { status: { not: "CLOSED" } },
       orderBy: { updatedAt: "desc" },
-      take: 5,
+      take: 6,
       include: { user: { select: { name: true, email: true, phone: true } } },
-    }),
-    db.user.findMany({
-      where: { credits: { lte: 1 } },
-      orderBy: { updatedAt: "desc" },
-      take: 6,
-      include: { _count: { select: { projects: true, assets: true } } },
-    }),
-    db.adminAuditEvent.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 6,
-      include: { actorAdmin: { select: { name: true, email: true, phone: true } } },
     }),
   ]);
 
+  const allClear =
+    pendingPurchaseCount === 0 && failedGenerationCount === 0 && openTicketCount === 0;
+
   return (
     <>
-      <AdminPageHeader
-        title="نمای کلی عملیات"
-        description="اولویت این صفحه تشخیص سریع ریسک است: پرداخت‌های منتظر، تولیدهای گیرکرده، خطای provider، تیکت‌های باز و عملیات اخیر."
-        actions={
-          <>
-            <Link href="/admin/health" className={adminPrimaryActionClass}>
-              <TickCircle aria-hidden="true" className="h-4 w-4" />
-              سلامت سیستم
-            </Link>
-            <Link href="/admin/audit" className={adminSecondaryLinkClass}>
-              Audit
-            </Link>
-          </>
+      <ConsoleHeader
+        title="نمای کلی"
+        meta={
+          allClear ? (
+            <span className="font-medium text-emerald-700">همه‌چیز آرام است؛ موردی منتظر اقدام نیست.</span>
+          ) : (
+            <span>مواردی منتظر اقدام شماست.</span>
+          )
         }
       />
 
-      <AdminKpiStrip>
-        <AdminKpi label="کاربران" value={userCount} />
-        <AdminKpi label="اشتراک فعال" value={activeSubscriptionCount} />
-        <AdminKpi label="رسید در انتظار" value={pendingPurchaseCount} tone={pendingPurchaseCount ? "attention" : "neutral"} />
-        <AdminKpi label="تیکت باز" value={openTicketCount} tone={openTicketCount ? "attention" : "neutral"} />
-        <AdminKpi label="صف/پردازش" value={activeGenerationCount} tone={activeGenerationCount ? "attention" : "neutral"} />
-        <AdminKpi label="شکست فعال" value={failedGenerationCount} tone={failedGenerationCount ? "danger" : "neutral"} hint={`${providerFailureTodayCount.toLocaleString("fa-IR")} خطای provider امروز`} />
-      </AdminKpiStrip>
+      <StatBar
+        items={[
+          { label: "رسید در انتظار", value: pendingPurchaseCount, tone: pendingPurchaseCount ? "attention" : "neutral", href: "/admin/billing" },
+          { label: "شکست تولید", value: failedGenerationCount, tone: failedGenerationCount ? "danger" : "neutral", href: "/admin/projects?status=FAILED" },
+          { label: "تیکت باز", value: openTicketCount, tone: openTicketCount ? "attention" : "neutral", href: "/admin/support" },
+          { label: "در صف تولید", value: activeGenerationCount, href: "/admin/projects" },
+          { label: "خطای Provider امروز", value: providerFailureTodayCount, tone: providerFailureTodayCount ? "danger" : "neutral", href: "/admin/ai" },
+        ]}
+      />
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)]">
-        <AdminPanel
-          title="رسیدهای خرید"
-          description="تایید رسید، اعتبار یا اشتراک را برای کاربر فعال می‌کند."
-          actions={<Link href="/admin/billing" className={adminSecondaryLinkClass}>همه پرداخت‌ها</Link>}
-        >
-          <AdminDataTable
-            headers={["درخواست", "کاربر", "مبلغ", "رسید", "عملیات"]}
-            empty={<AdminEmptyState title="رسید منتظر تایید نداریم." />}
-          >
-            {pendingPurchases.map((request) => (
+      <Surface>
+        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5">
+          <h2 className="text-sm font-semibold text-navy-950">رسیدهای منتظر تایید</h2>
+          <Link href="/admin/billing" className="text-xs font-medium text-navy-700 hover:underline">
+            همه پرداخت‌ها
+          </Link>
+        </div>
+        <ConsoleTable head={["بسته", "کاربر", "مبلغ", "رسید", ""]} empty={<EmptyState title="رسید منتظر تایید نداریم." />}>
+          {pendingPurchases.map((request) => {
+            const receiptUrl = storageUrlFromKeyOrUrl(request.receiptStorageKey, request.receiptImageUrl);
+            return (
               <tr key={request.id}>
-                <td className={adminTableCellClass}>
-                  <p className="font-semibold text-foreground">{request.package.title}</p>
-                  <p className="text-xs text-muted">{formatAdminDate(request.createdAt)}</p>
+                <td className={cellClass}>
+                  <p className="font-medium">{request.package.title}</p>
+                  <p className="text-xs text-slate-400">{formatAdminDate(request.createdAt)}</p>
                 </td>
-                <td className={adminTableCellClass}>
-                  <Link href={`/admin/users/${request.userId}`} className="font-semibold text-foreground hover:underline">
+                <td className={cellClass}>
+                  <Link href={`/admin/users/${request.userId}`} className="font-medium hover:text-navy-700 hover:underline">
                     {getUserDisplayName(request.user)}
                   </Link>
-                  <p className="text-xs text-muted" dir="ltr">{getUserIdentifier(request.user)}</p>
+                  <p className="text-xs text-slate-400" dir="ltr">
+                    {getUserIdentifier(request.user)}
+                  </p>
                 </td>
-                <td className={adminTableCellClass}>{formatIrr(request.amount, request.currency)}</td>
-                <td className={adminTableCellClass}>
-                  {storageUrlFromKeyOrUrl(request.receiptStorageKey, request.receiptImageUrl) ? (
-                    <a href={storageUrlFromKeyOrUrl(request.receiptStorageKey, request.receiptImageUrl) ?? ""} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-accent-deep">
+                <td className={`${cellClass} tabular-nums`}>{formatIrr(request.amount, request.currency)}</td>
+                <td className={cellClass}>
+                  {receiptUrl ? (
+                    <a href={receiptUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-medium text-navy-700 hover:underline">
                       <ReceiptText className="h-3.5 w-3.5" />
                       مشاهده
                     </a>
                   ) : (
-                    <span className="text-xs text-danger">بدون رسید</span>
+                    <span className="text-xs text-rose-600">بدون رسید</span>
                   )}
                 </td>
-                <td className={adminTableCellClass}>
-                  <div className="flex flex-wrap gap-2">
+                <td className={cellClass}>
+                  <div className="flex justify-end gap-1.5">
                     <form action={approvePurchaseRequestAction}>
                       <input type="hidden" name="requestId" value={request.id} />
-                      <button className={adminPrimaryActionClass}>تایید</button>
+                      <button className={btnPrimary}>تایید</button>
                     </form>
                     <form action={rejectPurchaseRequestAction}>
                       <input type="hidden" name="requestId" value={request.id} />
-                      <button className={adminDangerActionClass}>رد</button>
+                      <button className={btnDanger}>رد</button>
                     </form>
                   </div>
                 </td>
               </tr>
-            ))}
-          </AdminDataTable>
-        </AdminPanel>
+            );
+          })}
+        </ConsoleTable>
+      </Surface>
 
-        <AdminPanel title="شکست‌های تولید" description="مواردی که باید قبل از لانچ علت‌یابی شوند.">
-          <div className="divide-y divide-border/60">
-            {failedProjects.length === 0 ? (
-              <div className="p-4"><AdminEmptyState title="پروژه ناموفق فعال وجود ندارد." /></div>
-            ) : (
-              failedProjects.map((project) => (
-                <div key={project.id} className="grid gap-3 px-4 py-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+      <div className="grid items-start gap-5 xl:grid-cols-2">
+        <Surface>
+          <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5">
+            <h2 className="text-sm font-semibold text-navy-950">شکست‌های تولید</h2>
+            <Link href="/admin/projects?status=FAILED" className="text-xs font-medium text-navy-700 hover:underline">
+              همه شکست‌ها
+            </Link>
+          </div>
+          {failedProjects.length === 0 ? (
+            <div className="px-5 py-8">
+              <EmptyState title="پروژه ناموفق فعالی وجود ندارد." />
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {failedProjects.map((project) => (
+                <div key={project.id} className="flex items-center justify-between gap-3 px-5 py-3">
                   <div className="min-w-0">
-                    <Link href={`/admin/projects/${project.id}`} className="font-semibold text-foreground hover:underline">
+                    <Link href={`/admin/projects/${project.id}`} className="block truncate text-sm font-medium text-navy-950 hover:text-navy-700 hover:underline">
                       {project.title || "پروژه بدون عنوان"}
                     </Link>
-                    <p className="truncate text-xs text-muted">{getUserDisplayName(project.user)} · {project.style.name}</p>
-                    <p className="truncate text-xs text-danger">{project.errorMessage || "خطای ثبت‌شده ندارد"}</p>
+                    <p className="truncate text-xs text-slate-400">
+                      {getUserDisplayName(project.user)} · {project.style.name}
+                    </p>
+                    <p className="truncate text-xs text-rose-600">{project.errorMessage || "خطای ثبت‌شده ندارد"}</p>
                   </div>
-                  <form action={retryAdminProjectAction}>
+                  <form action={retryAdminProjectAction} className="shrink-0">
                     <input type="hidden" name="projectId" value={project.id} />
-                    <button className={adminPrimaryActionClass}>
+                    <button className={btnPrimary}>
                       <Refresh className="h-3.5 w-3.5" />
                       تلاش دوباره
                     </button>
                   </form>
                 </div>
-              ))
-            )}
-          </div>
-        </AdminPanel>
-      </div>
+              ))}
+            </div>
+          )}
+        </Surface>
 
-      <div className="grid gap-4 xl:grid-cols-3">
-        <AdminPanel title="صف تولید" description="آخرین پروژه‌های در صف یا پردازش.">
-          <div className="divide-y divide-border/60">
-            {activeProjects.length === 0 ? (
-              <div className="p-4"><AdminEmptyState title="صف تولید خالی است." /></div>
-            ) : (
-              activeProjects.map((project) => (
-                <div key={project.id} className="px-4 py-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <Link href={`/admin/projects/${project.id}`} className="font-semibold text-foreground hover:underline">
-                        {project.title || "پروژه بدون عنوان"}
-                      </Link>
-                      <p className="truncate text-xs text-muted">{getUserDisplayName(project.user)} · {formatAdminDate(project.updatedAt)}</p>
-                    </div>
-                    <AdminStatus status={project.status} />
-                  </div>
-                </div>
-              ))
-            )}
+        <Surface>
+          <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5">
+            <h2 className="text-sm font-semibold text-navy-950">تیکت‌های باز</h2>
+            <Link href="/admin/support" className="text-xs font-medium text-navy-700 hover:underline">
+              صندوق پشتیبانی
+            </Link>
           </div>
-        </AdminPanel>
-
-        <AdminPanel title="تیکت‌های باز" description="آخرین درخواست‌های پشتیبانی.">
-          <div className="divide-y divide-border/60">
-            {openTickets.length === 0 ? (
-              <div className="p-4"><AdminEmptyState title="تیکت باز وجود ندارد." /></div>
-            ) : (
-              openTickets.map((ticket) => (
-                <Link key={ticket.id} href={`/admin/support?ticketId=${ticket.id}`} className="block px-4 py-3 hover:bg-surface-soft/45">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold text-foreground">{ticket.subject}</p>
-                      <p className="truncate text-xs text-muted">{getUserDisplayName(ticket.user)} · {formatAdminDate(ticket.updatedAt)}</p>
-                    </div>
-                    <AdminStatus status={ticket.status} />
-                  </div>
+          {openTickets.length === 0 ? (
+            <div className="px-5 py-8">
+              <EmptyState title="تیکت بازی وجود ندارد." />
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {openTickets.map((ticket) => (
+                <Link key={ticket.id} href={`/admin/support?ticketId=${ticket.id}`} className="flex items-center justify-between gap-3 px-5 py-3 transition hover:bg-navy-25">
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium text-navy-950">{ticket.subject}</span>
+                    <span className="block truncate text-xs text-slate-400">
+                      {getUserDisplayName(ticket.user)} · {formatAdminDate(ticket.updatedAt)}
+                    </span>
+                  </span>
+                  <StatusDot status={ticket.status} />
                 </Link>
-              ))
-            )}
-          </div>
-        </AdminPanel>
-
-        <AdminPanel title="کاربران کم‌اعتبار" description="نشانه‌های friction قبل از خرید یا تولید.">
-          <div className="divide-y divide-border/60">
-            {lowCreditUsers.length === 0 ? (
-              <div className="p-4"><AdminEmptyState title="کاربر کم‌اعتبار فوری نداریم." /></div>
-            ) : (
-              lowCreditUsers.map((user) => (
-                <Link key={user.id} href={`/admin/users/${user.id}`} className="block px-4 py-3 hover:bg-surface-soft/45">
-                  <p className="truncate font-semibold text-foreground">{getUserDisplayName(user)}</p>
-                  <p className="truncate text-xs text-muted" dir="ltr">{getUserIdentifier(user)}</p>
-                  <p className="mt-1 text-xs text-muted">
-                    {user.credits.toLocaleString("fa-IR")} اعتبار · {user._count.projects.toLocaleString("fa-IR")} پروژه · {user._count.assets.toLocaleString("fa-IR")} دارایی
-                  </p>
-                </Link>
-              ))
-            )}
-          </div>
-        </AdminPanel>
+              ))}
+            </div>
+          )}
+        </Surface>
       </div>
-
-      <AdminPanel title="عملیات اخیر ادمین" description="آخرین تغییرات حساس ثبت‌شده در سیستم.">
-        <AdminDataTable headers={["عملیات", "هدف", "ادمین", "زمان"]} empty={<AdminEmptyState title="هنوز رویداد audit ثبت نشده است." />}>
-          {recentAuditEvents.map((event) => (
-            <tr key={event.id}>
-              <td className={adminTableCellClass}>
-                <p className="font-semibold text-foreground" dir="ltr">{event.action}</p>
-                <p className="text-xs text-muted">{event.summary}</p>
-              </td>
-              <td className={adminTableCellClass} dir="ltr">{event.targetType}/{event.targetId}</td>
-              <td className={adminTableCellClass}>{event.actorAdmin ? getUserDisplayName(event.actorAdmin) : "سیستم"}</td>
-              <td className={adminTableCellClass}>{formatAdminDate(event.createdAt)}</td>
-            </tr>
-          ))}
-        </AdminDataTable>
-      </AdminPanel>
     </>
   );
 }
-
-const adminSecondaryLinkClass =
-  "inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-xs font-semibold text-foreground transition hover:border-border-strong hover:bg-surface-soft";
