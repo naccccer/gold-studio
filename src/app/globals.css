@@ -437,49 +437,366 @@ h1,h2,h3,h4,h5,h6 {
   }
 }
 
-@keyframes ovala-auth-concept-reveal {
-  0%, 100% { clip-path: inset(0 56% 0 0); }
-  50% { clip-path: inset(0 18% 0 0); }
+/* صحنه ورود: سیکلوراما و مدال اووالا */
+@property --ov-sweep {
+  syntax: "<angle>";
+  inherits: true;
+  initial-value: 220deg;
 }
 
-@keyframes ovala-auth-concept-divider {
-  0%, 100% { left: 44%; }
-  50% { left: 82%; }
+.ov-stage {
+  --drag-x: 0px;
+  --drag-p: 0;
+  --drag-abs: 0;
+  touch-action: pan-y;
 }
 
-.ov-auth-concept-after {
-  animation: ovala-auth-concept-reveal 6.4s ease-in-out infinite;
+.ov-cyclorama {
+  background: linear-gradient(180deg, #fdf9f2 0%, #f7f0e3 50%, #efe4cf 76%, #e7dac3 100%);
 }
 
-.ov-auth-concept-divider {
-  animation: ovala-auth-concept-divider 6.4s ease-in-out infinite;
+.ov-floor {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 36%;
+  background: radial-gradient(130% 100% at 50% 108%, rgba(154, 103, 42, 0.12) 0%, rgba(154, 103, 42, 0) 62%);
 }
 
-.ov-auth-concept-divider::after {
+.ov-parallax {
+  transform: translateX(calc(var(--drag-x) * -0.08));
+}
+
+.ov-echo {
   position: absolute;
   left: 50%;
   top: 50%;
-  height: 2rem;
-  width: 2rem;
+  width: 540px;
+  height: 660px;
+  border: 1px solid rgba(178, 139, 82, 0.18);
+  border-radius: 50%;
+  transform: translate(-50%, -52%) rotate(14deg);
+}
+
+.ov-pool {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: 340px;
+  height: 230px;
   transform: translate(-50%, -50%);
-  border-radius: 999px;
-  border: 1px solid rgba(255, 253, 249, 0.75);
-  background: rgba(23, 20, 17, 0.68);
-  box-shadow: 0 18px 34px -22px rgba(23, 20, 17, 0.8);
+  background: radial-gradient(50% 50% at 50% 50%, rgba(248, 223, 159, 0.5) 0%, rgba(248, 223, 159, 0) 70%);
+}
+
+.ov-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 120px 120px;
+  opacity: 0.05;
+}
+
+.ov-sweepband {
+  position: absolute;
+  inset: -12% -45%;
+  background: linear-gradient(100deg, rgba(248, 223, 159, 0) 34%, rgba(248, 223, 159, 0.32) 50%, rgba(248, 223, 159, 0) 66%);
+  opacity: 0;
+  transform: translateX(-130%);
+  pointer-events: none;
+}
+
+.ov-stage[data-commit="login"] .ov-sweepband {
+  animation: ovSweepToRight 460ms var(--motion-ease-standard) 60ms both;
+}
+
+.ov-stage[data-commit="signup"] .ov-sweepband {
+  animation: ovSweepToLeft 460ms var(--motion-ease-standard) 60ms both;
+}
+
+.ov-scene {
+  perspective: 1100px;
+}
+
+.ov-medallion-grip {
+  touch-action: none;
+  cursor: grab;
+}
+
+.ov-stage[data-dragging="true"] .ov-medallion-grip {
+  cursor: grabbing;
+}
+
+.ov-medallion-track {
+  transform: translateX(calc(var(--drag-x) * 0.85)) rotateY(calc(var(--drag-p) * 16deg))
+    rotateZ(calc(var(--drag-p) * 2deg)) scale(calc(1 + var(--drag-abs) * 0.04));
+  transition:
+    filter var(--motion-duration-standard) var(--motion-ease-state),
+    opacity var(--motion-duration-standard) var(--motion-ease-state);
+}
+
+.ov-stage[data-dragging="true"] .ov-medallion-track {
+  will-change: transform;
+}
+
+.ov-stage[data-commit] .ov-medallion-track {
+  filter: blur(6px);
+  opacity: 0;
+}
+
+.ov-medallion-float {
+  animation: ovMedallionFloat 6s ease-in-out infinite;
+}
+
+.ov-medallion {
+  position: relative;
+  width: 212px;
+  height: 268px;
+  border-radius: 50% / 47%;
+  background: radial-gradient(125% 92% at 50% 16%, #fffefb 0%, #fdf8ee 48%, #efe5d2 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -16px 30px rgba(178, 139, 82, 0.15),
+    0 32px 64px -40px rgba(23, 20, 17, 0.55);
+  animation: ovRimSweep 12s linear infinite;
+}
+
+.ov-medallion::before {
   content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 3px;
+  background: conic-gradient(
+    from calc(var(--ov-sweep) + var(--drag-p) * 45deg),
+    var(--gold-gradient-end),
+    var(--gold-gradient-start) 16%,
+    var(--gold-gradient-mid) 34%,
+    var(--accent-deep) 52%,
+    #f3d691 70%,
+    var(--accent) 86%,
+    var(--gold-gradient-end)
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+.ov-medallion::after {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border-radius: inherit;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 40%);
+  transform: translateX(calc(var(--drag-p) * -14px));
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.ov-contact-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: -2.4rem;
+  width: 178px;
+  height: 32px;
+  border-radius: 50%;
+  background: radial-gradient(50% 50% at 50% 50%, rgba(23, 20, 17, 0.34) 0%, rgba(23, 20, 17, 0) 70%);
+  transform: translateX(-50%) translateX(calc(var(--drag-x) * 0.6)) scaleX(calc(1 + var(--drag-abs) * 0.25));
+  opacity: calc(0.9 - var(--drag-abs) * 0.5);
+  transition: opacity var(--motion-duration-standard) var(--motion-ease-state);
+}
+
+.ov-stage[data-commit] .ov-contact-shadow {
+  opacity: 0;
+}
+
+.ov-dir-zone {
+  position: absolute;
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.85rem 0.7rem;
+  border-radius: var(--radius-xl);
+  border: 1px solid transparent;
+  color: var(--muted-strong);
+  transition: color var(--motion-duration-micro) var(--motion-ease-state);
+}
+
+.ov-dir-zone:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.ov-dir-login {
+  right: 0.4rem;
+  transform: translateY(-50%) scale(calc(1 + max(var(--drag-p), 0) * 0.12));
+  opacity: calc(1 - max(calc(var(--drag-p) * -1), 0) * 0.6);
+}
+
+.ov-dir-signup {
+  left: 0.4rem;
+  transform: translateY(-50%) scale(calc(1 + max(calc(var(--drag-p) * -1), 0) * 0.12));
+  opacity: calc(1 - max(var(--drag-p), 0) * 0.6);
+}
+
+.ov-stage[data-armed="login"] .ov-dir-login,
+.ov-stage[data-armed="signup"] .ov-dir-signup {
+  color: var(--accent-deep);
+  animation: ovArmTick 200ms var(--motion-ease-interactive);
+}
+
+.ov-chevrons {
+  color: var(--accent);
+}
+
+.ov-chevron {
+  opacity: 0.25;
+  animation: ovChevronPulse 1.7s ease-in-out infinite;
+}
+
+.ov-chevrons .ov-chevron:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.ov-chevrons .ov-chevron:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.ov-chevrons-reverse .ov-chevron:nth-child(1) {
+  animation-delay: 0.4s;
+}
+
+.ov-chevrons-reverse .ov-chevron:nth-child(3) {
+  animation-delay: 0s;
+}
+
+.ov-stage[data-armed="login"] .ov-dir-login .ov-chevron,
+.ov-stage[data-armed="signup"] .ov-dir-signup .ov-chevron {
+  animation: none;
+  opacity: 1;
+}
+
+.ov-stage[data-dir="right"] .ov-dir-signup .ov-chevron,
+.ov-stage[data-dir="left"] .ov-dir-login .ov-chevron {
+  animation-play-state: paused;
+}
+
+.ov-hint-tap {
+  display: none;
+}
+
+.ov-scrim {
+  animation: ovScrimIn var(--motion-duration-standard) var(--motion-ease-state) both;
+}
+
+.ov-scrim-leave {
+  animation: ovScrimOut 200ms var(--motion-ease-interactive) forwards;
+}
+
+.ov-sheet {
+  transform-origin: 50% 100%;
+  animation: ovSheetIn 440ms cubic-bezier(0.16, 1, 0.3, 1) 140ms backwards;
+}
+
+.ov-sheet-leave {
+  animation: ovSheetOut 200ms var(--motion-ease-interactive) forwards;
+}
+
+.ov-swap-from-right {
+  animation: ovSwapFromRight 280ms var(--motion-ease-standard) both;
+}
+
+.ov-swap-from-left {
+  animation: ovSwapFromLeft 280ms var(--motion-ease-standard) both;
+}
+
+@keyframes ovMedallionFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes ovRimSweep {
+  from { --ov-sweep: 220deg; }
+  to { --ov-sweep: 580deg; }
+}
+
+@keyframes ovChevronPulse {
+  0%, 100% { opacity: 0.2; }
+  35% { opacity: 1; }
+}
+
+@keyframes ovArmTick {
+  50% { filter: brightness(1.25); }
+}
+
+@keyframes ovSweepToRight {
+  from { transform: translateX(-130%); opacity: 1; }
+  to { transform: translateX(130%); opacity: 0; }
+}
+
+@keyframes ovSweepToLeft {
+  from { transform: translateX(130%); opacity: 1; }
+  to { transform: translateX(-130%); opacity: 0; }
+}
+
+@keyframes ovScrimIn {
+  from { opacity: 0; }
+}
+
+@keyframes ovScrimOut {
+  to { opacity: 0; }
+}
+
+@keyframes ovSheetIn {
+  from { opacity: 0; transform: translateY(48px) scale(0.95); filter: blur(8px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes ovSheetOut {
+  to { opacity: 0; transform: translateY(40px) scale(0.97); filter: blur(5px); }
+}
+
+@keyframes ovSwapFromRight {
+  from { opacity: 0; transform: translateX(24px); filter: blur(4px); }
+  to { opacity: 1; transform: translateX(0); filter: blur(0); }
+}
+
+@keyframes ovSwapFromLeft {
+  from { opacity: 0; transform: translateX(-24px); filter: blur(4px); }
+  to { opacity: 1; transform: translateX(0); filter: blur(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ov-auth-concept-after,
-  .ov-auth-concept-divider {
-    animation: none;
+  .ov-medallion,
+  .ov-medallion-float,
+  .ov-chevron,
+  .ov-sweepband {
+    animation: none !important;
   }
 
-  .ov-auth-concept-after {
-    clip-path: inset(0 32% 0 0);
+  .ov-chevron {
+    opacity: 0.85;
   }
 
-  .ov-auth-concept-divider {
-    left: 68%;
+  .ov-scrim,
+  .ov-scrim-leave,
+  .ov-sheet,
+  .ov-sheet-leave,
+  .ov-swap-from-right,
+  .ov-swap-from-left {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+
+  .ov-dir-zone {
+    border-color: var(--border-strong);
+    background: rgba(255, 253, 249, 0.75);
+  }
+
+  .ov-hint-drag {
+    display: none;
+  }
+
+  .ov-hint-tap {
+    display: inline;
   }
 }

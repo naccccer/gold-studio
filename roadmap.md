@@ -10,7 +10,7 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 
 ## Current Status
 
-- Auth, password login, phone OTP signup, phone OTP password reset, account, billing, gallery, project creation, project status, result review, support, FAQ, and admin routes are implemented in the single Next.js app; auth screens now share a cleaner mobile-first image-led redesign.
+- Auth, password login, phone OTP signup, phone OTP password reset, account, billing, gallery, project creation, project status, result review, support, FAQ, and admin routes are implemented in the single Next.js app; the login/signup entry is a swipe-driven "studio stage" scene (draggable Ovala medallion with a 3D depth transition into the form sheet, tap and reduced-motion fallbacks included).
 - User navigation is organized around Home, Gallery, New Project, Projects, and Account.
 - Gallery owns uploaded source product photos. Projects owns generated outputs and generation status.
 - `/billing` owns packages, standalone credits, card-to-card payment details, purchase status, and receipt upload.

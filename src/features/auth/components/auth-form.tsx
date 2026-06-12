@@ -37,14 +37,6 @@ type OtpAuthFormProps = {
   verifyAction: (prevState: OtpFormState, formData: FormData) => Promise<OtpFormState>;
 };
 
-type AuthEntryProps = {
-  loginAction: (prevState: AuthFormState, formData: FormData) => Promise<AuthFormState>;
-  sendSignupAction: (prevState: OtpFormState, formData: FormData) => Promise<OtpFormState>;
-  verifySignupAction: (prevState: OtpFormState, formData: FormData) => Promise<OtpFormState>;
-};
-
-type AuthPanel = "login" | "signup";
-
 const INITIAL_AUTH_STATE: AuthFormState = {};
 const INITIAL_OTP_STATE: OtpFormState = { step: "phone" };
 const PASSWORD_MIN_LENGTH = 6;
@@ -199,72 +191,7 @@ function SubmitButton({
   );
 }
 
-function AuthChoiceButton({
-  onClick,
-  children,
-  variant = "primary",
-}: {
-  onClick: () => void;
-  children: ReactNode;
-  variant?: "primary" | "secondary";
-}) {
-  const classes =
-    variant === "primary"
-      ? "bg-foreground text-surface shadow-[0_18px_34px_-28px_rgba(17,16,14,0.9)] hover:bg-[#27231f]"
-      : "border border-border bg-white text-foreground hover:bg-surface-soft";
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        "motion-press flex h-[3.35rem] w-full items-center justify-center rounded-[var(--radius-md)] text-sm font-semibold transition focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
-        classes,
-      ].join(" ")}
-    >
-      {children}
-    </button>
-  );
-}
-
-function AuthModal({
-  title,
-  onClose,
-  children,
-}: {
-  title: string;
-  onClose: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <div className="absolute inset-0 z-20 flex items-center px-5 py-5">
-      <button
-        type="button"
-        aria-label="بستن"
-        onClick={onClose}
-        className="absolute inset-0 bg-[#171411]/24"
-      />
-      <div className="motion-reveal-soft relative z-10 w-full rounded-[var(--radius-lg)] border border-white/85 bg-surface/98 p-4 shadow-[0_18px_38px_-28px_rgba(23,20,17,0.72)]">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h1 className="text-right text-[1.2rem] font-semibold leading-8 text-foreground">
-            {title}
-          </h1>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-9 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-semibold text-muted transition hover:bg-surface-soft hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
-          >
-            بازگشت
-            <ArrowLeft aria-hidden="true" size={14} color="currentColor" variant="Linear" />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function LoginFormContent({
+export function LoginFormContent({
   action,
   state,
   pending,
@@ -301,7 +228,7 @@ function LoginFormContent({
   );
 }
 
-function SignupFormContent({
+export function SignupFormContent({
   sendAction,
   verifyAction,
   sendState,
@@ -386,55 +313,6 @@ function SignupFormContent({
         icon={UserAdd}
       />
     </form>
-  );
-}
-
-export function AuthEntry({ loginAction, sendSignupAction, verifySignupAction }: AuthEntryProps) {
-  const [activePanel, setActivePanel] = useState<AuthPanel | null>(null);
-  const [loginState, loginFormAction, loginPending] = useActionState(loginAction, INITIAL_AUTH_STATE);
-  const [sendState, sendFormAction, sendPending] = useActionState(sendSignupAction, INITIAL_OTP_STATE);
-  const [verifyState, verifyFormAction, verifyPending] = useActionState(verifySignupAction, INITIAL_OTP_STATE);
-
-  return (
-    <main className="flex min-h-svh justify-center overflow-hidden bg-[#eee5d8] text-right text-foreground md:bg-[radial-gradient(circle_at_top,#fffaf3_0%,#f5efe5_48%,#e7dccc_100%)] md:py-6">
-      <section className="relative isolate flex min-h-svh w-full max-w-[430px] flex-col overflow-hidden bg-[#f4eee5] px-5 pb-5 pt-5 md:min-h-[820px] md:rounded-[1.5rem] md:border md:border-white/75 md:shadow-[0_18px_42px_-32px_rgba(23,20,17,0.62)]">
-        <AuthImageBackdrop src={authHeroImage} priority imageClassName="object-[50%_34%]" />
-
-        <header className="relative z-10 flex h-[92px] items-start justify-center pt-4">
-          <BrandLogo variant="primary" priority />
-        </header>
-
-        <div className="relative z-10 flex flex-1 items-center pb-[max(0rem,env(safe-area-inset-bottom))]">
-          <div className="motion-reveal-soft w-full rounded-[var(--radius-lg)] border border-white/85 bg-surface/95 p-4 shadow-[0_14px_30px_-26px_rgba(23,20,17,0.55)]">
-            <div className="grid gap-3">
-              <AuthChoiceButton onClick={() => setActivePanel("login")}>ورود</AuthChoiceButton>
-              <AuthChoiceButton onClick={() => setActivePanel("signup")} variant="secondary">
-                ثبت‌نام
-              </AuthChoiceButton>
-            </div>
-          </div>
-        </div>
-
-        {activePanel === "login" ? (
-          <AuthModal title="ورود" onClose={() => setActivePanel(null)}>
-            <LoginFormContent action={loginFormAction} state={loginState} pending={loginPending} />
-          </AuthModal>
-        ) : null}
-
-        {activePanel === "signup" ? (
-          <AuthModal title="ثبت‌نام" onClose={() => setActivePanel(null)}>
-            <SignupFormContent
-              sendAction={sendFormAction}
-              verifyAction={verifyFormAction}
-              sendState={sendState}
-              verifyState={verifyState}
-              sendPending={sendPending}
-              verifyPending={verifyPending}
-            />
-          </AuthModal>
-        ) : null}
-      </section>
-    </main>
   );
 }
 
