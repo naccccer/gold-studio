@@ -32,11 +32,11 @@ export function validateEmail(value: string) {
   return EMAIL_PATTERN.test(value);
 }
 
-function normalizeDigits(value: string) {
+export function normalizeDigits(value: string) {
   return value.replace(/[۰-۹٠-٩]/g, (digit) => digitMap[digit] ?? digit);
 }
 
-function normalizePhone(value: string) {
+export function normalizePhone(value: string) {
   const compact = normalizeDigits(value).replace(/[\s().-]/g, "");
   let phone = compact;
 

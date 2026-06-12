@@ -1,16 +1,13 @@
-import { AuthForm } from "@/features/auth/components/auth-form";
-import { signupAction } from "@/features/auth/actions";
+import { OtpAuthForm } from "@/features/auth/components/auth-form";
+import { completeSignupAction, sendSignupOtpAction } from "@/features/auth/actions";
 
 export default function SignupPage() {
   return (
-    <AuthForm
-      title="ساخت حساب"
-      action={signupAction}
-      submitLabel="ساخت حساب"
+    <OtpAuthForm
       mode="signup"
-      secondaryHref="/login"
-      secondaryLabel="ورود"
-      secondaryPrefix="قبلا حساب دارید؟"
+      title="ثبت‌نام"
+      sendAction={sendSignupOtpAction}
+      verifyAction={completeSignupAction}
     />
   );
 }

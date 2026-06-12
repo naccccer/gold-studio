@@ -10,7 +10,8 @@ function getDatabaseUrl() {
   if (!url) {
     throw new Error("DATABASE_URL env var is required.");
   }
-  return url;
+
+  return url.replace(/^mysql:\/\//, "mariadb://");
 }
 
 export const db =

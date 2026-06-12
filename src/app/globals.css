@@ -154,6 +154,27 @@ h1,h2,h3,h4,h5,h6 {
 
 .text-ui { font-family: var(--font-vazirmatn), Tahoma, sans-serif; }
 
+.auth-text-input,
+.auth-text-input:focus {
+  appearance: none;
+  background-color: transparent !important;
+  background-image: none !important;
+  color: var(--foreground);
+}
+
+.auth-text-input:-webkit-autofill,
+.auth-text-input:-webkit-autofill:hover,
+.auth-text-input:-webkit-autofill:focus,
+.auth-text-input:-webkit-autofill:active {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: var(--foreground) !important;
+  caret-color: var(--foreground) !important;
+  transition: background-color 999999s ease-out 0s, color 999999s ease-out 0s;
+}
+
 @keyframes ovalaMotionReveal {
   0% { opacity: 0; transform: translateY(10px) scale(0.992); filter: blur(4px); }
   100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
