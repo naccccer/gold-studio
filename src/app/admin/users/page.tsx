@@ -11,6 +11,7 @@ import {
   faNum,
   Field,
   fieldClass,
+  inlineFieldClass,
   formatAdminDate,
   SegmentedLinks,
   StatusDot,
@@ -93,7 +94,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
         <form className="flex items-center gap-2">
           {role ? <input type="hidden" name="role" value={role} /> : null}
           {credit ? <input type="hidden" name="credit" value={credit} /> : null}
-          <input name="q" defaultValue={q} placeholder="نام، ایمیل، موبایل، شناسه یا کد معرف" className={`${fieldClass} h-8 w-64 text-xs`} />
+          <input name="q" defaultValue={q} placeholder="نام، ایمیل، موبایل، شناسه یا کد معرف" className={`${inlineFieldClass} w-64`} />
           <button className={`${btnSecondary} h-8`} aria-label="جست‌وجو">
             <SearchNormal1 className="h-3.5 w-3.5" />
           </button>

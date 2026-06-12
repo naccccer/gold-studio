@@ -6,7 +6,7 @@ import {
   ConsoleHeader,
   EmptyState,
   faNum,
-  fieldClass,
+  inlineFieldClass,
   formatAdminFullDate,
   KeyValueList,
   StatusDot,
@@ -96,7 +96,7 @@ export default async function AdminOutputsPage({ searchParams }: AdminOutputsPag
       />
 
       <form className="flex items-center gap-2">
-        <input name="q" defaultValue={q} placeholder="عنوان پروژه، کاربر یا سبک" className={`${fieldClass} h-8 w-64 text-xs`} />
+        <input name="q" defaultValue={q} placeholder="عنوان پروژه، کاربر یا سبک" className={`${inlineFieldClass} w-64`} />
         <button className={`${btnSecondary} h-8`}>جست‌وجو</button>
       </form>
 

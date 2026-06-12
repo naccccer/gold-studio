@@ -6,7 +6,7 @@ import {
   ConsoleHeader,
   EmptyState,
   faNum,
-  fieldClass,
+  inlineFieldClass,
   formatAdminFullDate,
   KeyValueList,
   SegmentedLinks,
@@ -108,7 +108,7 @@ export default async function AdminReferenceAssetsPage({ searchParams }: AdminRe
         <form className="flex items-center gap-2">
           <input type="hidden" name="status" value={status} />
           {vision ? <input type="hidden" name="vision" value={vision} /> : null}
-          <input name="q" defaultValue={q} placeholder="شناسه، مالک، صحنه، نور یا پس‌زمینه" className={`${fieldClass} h-8 w-64 text-xs`} />
+          <input name="q" defaultValue={q} placeholder="شناسه، مالک، صحنه، نور یا پس‌زمینه" className={`${inlineFieldClass} w-64`} />
           <button className={`${btnSecondary} h-8`}>جست‌وجو</button>
         </form>
       </div>

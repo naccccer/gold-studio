@@ -10,6 +10,7 @@ import {
   faNum,
   Field,
   fieldClass,
+  inlineFieldClass,
   formatAdminDate,
   SegmentedLinks,
   StatusDot,
@@ -145,7 +146,7 @@ export default async function AdminSupportPage({ searchParams }: AdminSupportPag
                 </div>
                 <form action={updateSupportTicketStatusAction} className="flex shrink-0 items-center gap-1.5">
                   <input type="hidden" name="ticketId" value={selectedTicket.id} />
-                  <select name="status" defaultValue={selectedTicket.status} className={`${fieldClass} h-8 w-32 text-xs`}>
+                  <select name="status" defaultValue={selectedTicket.status} className={`${inlineFieldClass} w-32`}>
                     <option value="OPEN">باز</option>
                     <option value="ANSWERED">پاسخ داده‌شده</option>
                     <option value="CLOSED">بسته</option>

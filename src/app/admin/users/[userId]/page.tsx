@@ -14,6 +14,7 @@ import {
   faNum,
   Field,
   fieldClass,
+  inlineFieldClass,
   formatAdminDate,
   formatAdminFullDate,
   formatIrr,
@@ -292,7 +293,7 @@ function BillingTab({
                 <div className="flex flex-wrap justify-end gap-1.5">
                   <form action={updateSubscriptionStatusAction} className="flex gap-1.5">
                     <input type="hidden" name="subscriptionId" value={subscription.id} />
-                    <select name="status" defaultValue={subscription.status} className={`${fieldClass} h-8 w-28 text-xs`}>
+                    <select name="status" defaultValue={subscription.status} className={`${inlineFieldClass} w-28`}>
                       <option value="ACTIVE">فعال</option>
                       <option value="PAUSED">متوقف</option>
                       <option value="CANCELED">لغوشده</option>

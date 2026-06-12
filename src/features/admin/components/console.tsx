@@ -12,6 +12,10 @@ import Link from "next/link";
 export const fieldClass =
   "h-9 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 text-sm text-navy-950 outline-none transition placeholder:text-slate-400 focus:border-navy-600 focus:ring-2 focus:ring-navy-100 disabled:bg-slate-50 disabled:text-slate-400";
 
+/** کنترل فشرده نوار ابزار: عرض ثابت، بدون w-full تا کنار هم در یک ردیف بنشینند. */
+export const inlineFieldClass =
+  "h-8 shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-navy-950 outline-none transition placeholder:text-slate-400 focus:border-navy-600 focus:ring-2 focus:ring-navy-100";
+
 export const textareaClass =
   "min-h-24 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm leading-7 text-navy-950 outline-none transition placeholder:text-slate-400 focus:border-navy-600 focus:ring-2 focus:ring-navy-100";
 

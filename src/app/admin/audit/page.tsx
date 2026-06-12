@@ -5,7 +5,7 @@ import {
   ConsoleTable,
   EmptyState,
   faNum,
-  fieldClass,
+  inlineFieldClass,
   formatAdminDate,
   Surface,
 } from "@/features/admin/components/console";
@@ -55,8 +55,8 @@ export default async function AdminAuditPage({ searchParams }: AdminAuditPagePro
       <ConsoleHeader title="ردپای تغییرات" meta={<span>{faNum(events.length)} رویداد اخیر</span>} />
 
       <form className="flex flex-wrap items-center gap-2">
-        <input name="q" defaultValue={q} placeholder="جست‌وجو در عملیات، هدف یا ادمین" className={`${fieldClass} h-8 w-64 text-xs`} />
-        <select name="targetType" defaultValue={targetType ?? ""} className={`${fieldClass} h-8 w-40 text-xs`}>
+        <input name="q" defaultValue={q} placeholder="جست‌وجو در عملیات، هدف یا ادمین" className={`${inlineFieldClass} w-64`} />
+        <select name="targetType" defaultValue={targetType ?? ""} className={`${inlineFieldClass} w-40`}>
           <option value="">همه هدف‌ها</option>
           {targetTypes.map((item) => (
             <option key={item.targetType} value={item.targetType}>
@@ -64,7 +64,7 @@ export default async function AdminAuditPage({ searchParams }: AdminAuditPagePro
             </option>
           ))}
         </select>
-        <input name="action" defaultValue={action} placeholder="package.update" dir="ltr" className={`${fieldClass} h-8 w-44 text-left text-xs`} />
+        <input name="action" defaultValue={action} placeholder="package.update" dir="ltr" className={`${inlineFieldClass} w-44 text-left`} />
         <button className={`${btnSecondary} h-8`}>اعمال</button>
       </form>
 

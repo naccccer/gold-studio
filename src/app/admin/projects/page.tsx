@@ -8,7 +8,7 @@ import {
   ConsoleTable,
   EmptyState,
   faNum,
-  fieldClass,
+  inlineFieldClass,
   formatAdminDate,
   SegmentedLinks,
   StatusDot,
@@ -115,8 +115,8 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
         />
         <form className="flex flex-wrap items-center gap-2">
           {status !== "ALL" ? <input type="hidden" name="status" value={status} /> : null}
-          <input name="q" defaultValue={q} placeholder="جست‌وجو در پروژه‌ها و کاربران" className={`${fieldClass} h-8 w-56 text-xs`} />
-          <select name="styleId" defaultValue={styleId ?? ""} className={`${fieldClass} h-8 w-36 text-xs`}>
+          <input name="q" defaultValue={q} placeholder="جست‌وجو در پروژه‌ها و کاربران" className={`${inlineFieldClass} w-56`} />
+          <select name="styleId" defaultValue={styleId ?? ""} className={`${inlineFieldClass} w-36`}>
             <option value="">همه سبک‌ها</option>
             {styles.map((style) => (
               <option key={style.id} value={style.id}>
@@ -124,7 +124,7 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
               </option>
             ))}
           </select>
-          <select name="archived" defaultValue={includeArchived ? "all" : "active"} className={`${fieldClass} h-8 w-28 text-xs`}>
+          <select name="archived" defaultValue={includeArchived ? "all" : "active"} className={`${inlineFieldClass} w-28`}>
             <option value="active">فعال</option>
             <option value="all">با آرشیو</option>
           </select>
