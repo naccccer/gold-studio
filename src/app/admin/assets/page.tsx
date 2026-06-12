@@ -90,14 +90,15 @@ export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageP
   return (
     <>
       <ConsoleHeader
-        title="دارایی‌ها"
-        meta={<span>بازبینی تصاویری که کاربران آپلود کرده‌اند؛ کیفیت، تحلیل Vision و آرشیو.</span>}
+        title="تصاویر"
+        meta={<span>منبع، نمونه و خروجی در یک‌جا؛ کیفیت، تحلیل Vision و آرشیو.</span>}
       />
 
       <TabNav
         tabs={[
           { href: "/admin/assets", label: "تصاویر منبع کاربران", active: true },
           { href: "/admin/assets/references", label: "عکس‌های نمونه کاربران", active: false },
+          { href: "/admin/assets/outputs", label: "خروجی‌ها", active: false },
         ]}
       />
 
@@ -120,7 +121,7 @@ export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageP
 
       {assets.length === 0 ? (
         <Surface className="p-8">
-          <EmptyState title="دارایی‌ای با این فیلتر پیدا نشد." />
+          <EmptyState title="تصویری با این فیلتر پیدا نشد." />
         </Surface>
       ) : (
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
