@@ -131,7 +131,7 @@ export default async function AdminSupportPage({ searchParams }: AdminSupportPag
               <EmptyState title="یک تیکت از فهرست انتخاب کنید." />
             </Surface>
           ) : (
-            <Surface>
+            <Surface key={selectedTicket.id}>
               <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
                 <div className="min-w-0">
                   <h2 className="truncate text-sm font-semibold text-navy-950">{selectedTicket.subject}</h2>

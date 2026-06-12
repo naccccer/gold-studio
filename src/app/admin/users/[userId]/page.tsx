@@ -150,6 +150,7 @@ export default async function AdminUserDetailPage({ params, searchParams }: Admi
 
       {activeTab === "billing" ? (
         <BillingTab
+          key={user.id}
           user={user}
           subscriptionPackages={subscriptionPackages}
           creditPackages={creditPackages}
@@ -157,7 +158,7 @@ export default async function AdminUserDetailPage({ params, searchParams }: Admi
       ) : null}
 
       {activeTab === "activity" ? <ActivityTab user={user} /> : null}
-      {activeTab === "security" ? <SecurityTab user={user} /> : null}
+      {activeTab === "security" ? <SecurityTab key={user.id} user={user} /> : null}
     </>
   );
 }

@@ -128,7 +128,7 @@ export default async function AdminStylesPage({ searchParams }: AdminStylesPageP
         {creating ? (
           <CreateStylePanel nextSortOrder={styles.length * 10 + 10} />
         ) : selected ? (
-          <StyleDetail style={selected} activeTab={activeTab} />
+          <StyleDetail key={selected.id} style={selected} activeTab={activeTab} />
         ) : (
           <Surface className="p-8">
             <EmptyState title="سبکی برای نمایش نیست.">برای شروع یک سبک جدید بسازید.</EmptyState>
