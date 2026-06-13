@@ -71,7 +71,7 @@ export function DashboardMasthead({ userLabel, remainingCredits }: DashboardMast
           logoVariant={isHome ? "primary" : isProjectDarkSurface ? "mark-light" : "logo"}
           tone={isProjectDarkSurface ? "dark" : "light"}
           action={!isHome && !isProjectDarkSurface ? <CreditBadge credits={remainingCredits} /> : undefined}
-          className={isHome ? "mb-4 px-4" : isProjectDarkSurface ? "mx-4 mb-3" : "mx-4 mb-4"}
+          className={isHome ? "mb-1 px-4" : isProjectDarkSurface ? "mx-4 mb-3" : "mx-4 mb-4"}
         />
       ) : null}
 

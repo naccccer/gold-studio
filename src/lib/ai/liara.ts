@@ -29,7 +29,8 @@ const RETRYABLE_NETWORK_PATTERNS = [
 ];
 const GENERATION_PROMPT_SUFFIX = [
   "Return one final premium studio product image based on the input product photo.",
-  "The input product is the strict identity reference. Preserve the exact product shape, proportions, silhouette, metal color, gemstone count and placement, chain or clasp design, watch face, engravings, material finish, and all visible jewelry details.",
+  "The input product is the strict identity reference. Preserve the exact product shape, proportions, silhouette, metal color, gemstone count and placement, visible chain or front-facing clasp design when naturally visible, watch face, engravings, material finish, and all visible jewelry details.",
+  "Do not expose, invent, duplicate, or relocate hidden backs, rear clasps, closures, posts, undersides, or hardware just to show construction details.",
   "Do not redesign, simplify, add, remove, replace, resize, recolor, or hallucinate product parts.",
   "Do not default every output to a tight close-up. Prefer balanced studio framing with clean negative space around the product, while allowing closer detail framing when it clearly benefits the product or selected style.",
   "Make the image look like a real high-end studio photograph with natural optics, believable lighting, realistic reflections, and true material texture.",

@@ -31,6 +31,7 @@ const navGroups = [
     label: "محصول",
     items: [
       { href: "/admin/users", label: "کاربران", icon: Profile2User },
+      { href: "/admin/home", label: "خانه اپ", icon: Home2 },
       { href: "/admin/styles", label: "سبک‌ها", icon: Category },
       { href: "/admin/assets", label: "تصاویر", icon: Image },
       { href: "/admin/referrals", label: "معرفی و فروش", icon: Gift },
@@ -49,6 +50,7 @@ const navGroups = [
 const titleBySegment: Record<string, string> = {
   admin: "کنسول",
   users: "کاربران",
+  home: "خانه اپ",
   billing: "پرداخت",
   projects: "پروژه‌ها",
   assets: "تصاویر",

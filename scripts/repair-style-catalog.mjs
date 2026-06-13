@@ -31,9 +31,9 @@ const pool = mariadb.createPool({
 const categories = [
   ["style_cat_model", "model", "با مدل", 10],
   ["style_cat_catalog", "catalog", "پس زمینه", 20],
-  ["style_cat_social", "social", "شبکه اجتماعی", 30],
-  ["style_cat_editorial", "editorial", "ادیتوریال", 40],
-  ["style_cat_cinematic", "cinematic", "سینماتیک", 50],
+  ["style_cat_social", "social", "با جای متن", 30],
+  ["style_cat_editorial", "editorial", "با دکور", 40],
+  ["style_cat_cinematic", "cinematic", "سینمایی", 50],
   ["style_cat_luxury", "luxury", "آرشیو", 90],
 ];
 
@@ -42,8 +42,8 @@ const styles = [
     "style_with_model",
     "style_cat_model",
     "با مدل",
-    "نمای محصول روی مدل جوان و شیک، با تمرکز کامل روی خود محصول.",
-    "Act as a senior jewelry and fashion product photographer. Create a premium product-area image on an elegant young adult human model, generally 25 to 35 years old, choosing hands, wrist, neck, ears, or a partial portrait crop only as appropriate for the product. For women, when hands or wrists are visible, use professional jewelry hand-model hands: slender natural fingers, graceful relaxed posing, neat short-to-medium natural nails, clean cuticles, refined feminine proportions, soft but realistic skin, and elegant wrist posture. Avoid rough, swollen, masculine, aged, dry, cracked, work-worn, overly wrinkled, distorted, or awkward hands. The model should look modern, fresh, refined, and natural; avoid elderly, childlike, teen, overly aged, tired, or heavily wrinkled faces and hands. The jewelry or accessory remains the hero and must match the input exactly: shape, proportions, metal tone, stones, clasp, chain, watch face, engravings, and material finish. Use natural skin texture with visible pores, subtle fine lines, realistic hands, neck, ears, and skin tone variation. Avoid waxy, porcelain, airbrushed, doll-like, plastic, or AI-smoothed skin. Tasteful, non-sexual, refined, realistic, and product-first.",
+    "نمای محصول روی مدل با تنظیمات قابل انتخاب برای ظاهر، کادر، پوشش و فضای عکس.",
+    "Act as a senior jewelry and fashion product photographer. Create a product-area image on an adult human model, generally 25 to 35 years old, using hands, wrist, neck, ears, or a portrait crop only as appropriate for the selected controls and product. The jewelry or accessory remains the commercial hero and must match the input product exactly in visible identity: shape, proportions, metal tone, stones, chain, watch face, engravings, material finish, and front-facing design details. Use natural skin texture with visible pores, subtle fine lines, realistic hands, neck, ears, and skin tone variation. Avoid waxy, porcelain, airbrushed, doll-like, plastic, or AI-smoothed skin. Keep the image tasteful, non-sexual, realistic, and product-first.",
     "/images/placeholders/jewelry/style-editorial.webp",
     10,
     true,
@@ -63,7 +63,7 @@ const styles = [
   [
     "style_social_media",
     "style_cat_social",
-    "شبکه اجتماعی",
+    "با جای متن",
     "تصویر واضح، جذاب و فروش محور برای پست و استوری.",
     "Act as a senior commercial art director for premium social commerce jewelry campaigns. Create a polished, high-impact social media product image for posts and stories, clearly distinct from a white catalog photo. Always reserve clean designed negative space for adding short text later: keep the product off-center on one side or lower corner, modest in scale, and leave the opposite side open and uncluttered. Use a designed tonal editorial background with refined lighting, subtle depth, tasteful shadow, and campaign-style atmosphere. The background must not be plain white, pure white, empty catalog white, or a generic e-commerce cutout unless the user explicitly selected a white-background style. Keep the product readable but not oversized: avoid a huge centered close-up, avoid edge-to-edge product crops, and generally keep the product closer to campaign scale than catalog hero scale so the composition has room to breathe. Keep the composition modern, sales-ready, and visually engaging, but still minimal and premium. Preserve the exact product from the input: shape, proportions, color, metal finish, stones, chain or clasp, watch face, engravings, and small details. Make it eye-catching without looking synthetic. No AI gloss, no fake sparkle, no over-saturated color, no distracting props, no perfume/fragrance styling, no redesign, no altered materials.",
     "/images/placeholders/jewelry/style-natural.webp",
@@ -74,7 +74,7 @@ const styles = [
   [
     "style_soft_editorial",
     "style_cat_editorial",
-    "ادیتوریال",
+    "با دکور",
     "فضای مجله ای، خوش استایل و آرام برای تصویر برندمحور.",
     "Act as an editorial still-life jewelry photographer. Create a magazine-style product image with refined composition, considered styling, calm premium surfaces, gentle depth, and product-first luxury direction. Preserve the exact input product identity: shape, scale, material, metal color, stones, clasps, chain details, engravings, and visible craftsmanship. Use realistic reflections, tasteful negative space, and an understated editorial mood. No over-polished AI look, no creamy blur hiding details, no fake props overpowering the product, no redesign, no added or missing parts.",
     "/images/placeholders/jewelry/style-natural.webp",
@@ -85,7 +85,7 @@ const styles = [
   [
     "style_dramatic_dark",
     "style_cat_cinematic",
-    "سینماتیک",
+    "سینمایی",
     "نورپردازی نمایشی و لوکس با کنتراست کنترل شده و جزئیات واضح.",
     "Act as a professional jewelry advertising photographer. Create a cinematic premium product shot with controlled contrast, precise rim light, deep elegant shadows, atmospheric depth, and realistic highlights. The lighting may feel dramatic, but the product must stay readable and faithful to the input: preserve silhouette, proportions, metal color, gemstone layout, chain or clasp, watch face, engravings, surface texture, and small design details. Make the scene cinematic but physically believable. Avoid crushed details, exaggerated sparkle, CGI render style, plastic surfaces, distorted geometry, added parts, or any redesign.",
     "/images/placeholders/jewelry/style-dark.webp",
@@ -119,7 +119,10 @@ const styles = [
 
 const controls = [
   ["control_model_gender", "style_with_model", "modelGender", "جنسیت مدل", "CHOICE", JSON.stringify([{ value: "woman", label: "زن" }, { value: "man", label: "مرد" }]), "woman", null, null, 10, true],
-  ["control_modesty", "style_with_model", "modesty", "پوشیدگی", "RANGE", null, "65", 0, 90, 20, true],
+  ["control_model_nationality", "style_with_model", "modelNationality", "ملیت/ظاهر", "CHOICE", JSON.stringify([{ value: "iranian", label: "ایرانی" }, { value: "middleEastern", label: "خاورمیانه‌ای" }, { value: "european", label: "اروپایی" }]), "iranian", null, null, 20, true],
+  ["control_face_framing", "style_with_model", "faceFraming", "کادر چهره", "CHOICE", JSON.stringify([{ value: "productArea", label: "ناحیه محصول" }, { value: "partialFace", label: "نیم‌چهره" }, { value: "fullFace", label: "چهره کامل" }]), "productArea", null, null, 30, true],
+  ["control_model_scene_style", "style_with_model", "modelSceneStyle", "فضای عکس", "CHOICE", JSON.stringify([{ value: "amateurHome", label: "خانگی آماتور" }, { value: "studio", label: "استودیویی" }, { value: "outdoor", label: "فضای بیرون" }]), "studio", null, null, 40, true],
+  ["control_full_hijab", "style_with_model", "fullHijab", "حجاب کامل", "BOOLEAN", null, "false", null, null, 50, true],
   ["control_background_type", "style_clean_white", "backgroundType", "نوع پس زمینه", "CHOICE", JSON.stringify([{ value: "simple", label: "ساده" }, { value: "fabric", label: "پارچه" }, { value: "leather", label: "چرم" }, { value: "stone", label: "سنگ" }, { value: "paper", label: "کاغذ استودیویی" }]), "simple", null, null, 10, true],
   ["control_background_color", "style_clean_white", "backgroundColor", "رنگ پس زمینه", "CHOICE", JSON.stringify([{ value: "white", label: "سفید نرم" }, { value: "cream", label: "کرم شامپاینی" }, { value: "lightGray", label: "طوسی روشن" }, { value: "blush", label: "رز خیلی ملایم" }, { value: "navy", label: "سرمه ای" }, { value: "charcoal", label: "ذغالی" }, { value: "softBlack", label: "مشکی نرم" }, { value: "forest", label: "سبز تیره" }, { value: "burgundy", label: "زرشکی تیره" }, { value: "espresso", label: "قهوه ای اسپرسو" }]), "white", null, null, 20, true],
   ["control_social_background_tone", "style_social_media", "socialBackgroundTone", "پس زمینه", "CHOICE", JSON.stringify([{ value: "light", label: "روشن" }, { value: "dark", label: "تیره" }]), "light", null, null, 10, true],

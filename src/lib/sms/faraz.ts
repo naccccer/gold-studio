@@ -26,7 +26,7 @@ function getFarazSmsConfig() {
   const lineNumber = envValue("FARAZSMS_LINE_NUMBER");
   const otpVariableName = envValue("FARAZSMS_OTP_VARIABLE_NAME") ?? "code";
 
-  if (!apiKey || !patternCode) {
+  if (!apiKey || !patternCode || !lineNumber) {
     throw new FarazSmsConfigError("FarazSMS is not configured.");
   }
 
@@ -42,12 +42,9 @@ export async function sendFarazOtpSms({ phone, code }: FarazPatternInput) {
       [config.otpVariableName]: code,
     },
     recipient: phone,
+    line_number: config.lineNumber,
     number_format: "english",
   };
-
-  if (config.lineNumber) {
-    body.line_number = config.lineNumber;
-  }
 
   const response = await fetch(FARAZ_PATTERN_URL, {
     method: "POST",

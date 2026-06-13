@@ -3,8 +3,10 @@ import {
   type StyleReferenceVisionMetadata,
   visionModel,
 } from "@/lib/ai/vision";
+import { getProviderSettings } from "@/lib/ai/provider-settings";
 import { db } from "@/lib/db";
 import { readStoredUpload } from "@/lib/uploads";
+import type { ImageProvider } from "@/lib/ai/provider";
 
 const MIN_REFERENCE_CONFIDENCE = 0.35;
 
@@ -55,7 +57,8 @@ export function buildSampleReferencePromptContext(input?: StyleReferencePromptMe
 
   const promptParts = [
     "Strict sample-photo replacement mode:",
-    `Use ${productImageLabel} as the absolute product identity source. Preserve the user's product shape, proportions, silhouette, metal color, gemstone count and placement, chain or clasp design, watch face, engravings, material finish, and all visible details.`,
+    `Use ${productImageLabel} as the absolute product identity source. Preserve the user's product shape, proportions, silhouette, metal color, gemstone count and placement, visible chain or front-facing clasp design when naturally visible, watch face, engravings, material finish, and all visible details.`,
+    "Do not expose, invent, duplicate, or relocate hidden backs, rear clasps, closures, posts, undersides, or hardware just to show construction details.",
     `Use image ${sampleImageNumber} only as the scene/style template. Preserve its setup, camera angle, perspective, product placement, framing, surface, background, props, lighting direction, shadow behavior, reflections, color palette, and mood as closely as possible.`,
     `Remove, ignore, and do not copy the sample product identity from image ${sampleImageNumber}. Place the user's product from ${productImageLabel} exactly where the sample product/subject sits in image ${sampleImageNumber}, adapted only as needed for realistic scale, contact shadows, perspective, and material reflections.`,
     "The result should look as if the user's product was physically photographed in the sample environment with the same lighting and camera setup.",
@@ -85,7 +88,7 @@ export function buildSampleReferenceVisionPromptContext(input?: StyleReferencePr
   ].filter(Boolean).join("\n");
 }
 
-function metadataToUpdate(metadata: StyleReferenceVisionMetadata) {
+function metadataToUpdate(metadata: StyleReferenceVisionMetadata, provider?: ImageProvider) {
   return {
     visionSceneDescription: metadata.sceneDescription,
     visionCameraAngle: metadata.cameraAngle,
@@ -93,7 +96,7 @@ function metadataToUpdate(metadata: StyleReferenceVisionMetadata) {
     visionBackground: metadata.background,
     visionSubjectDescription: metadata.subjectDescription,
     visionConfidence: metadata.confidence,
-    visionModel: visionModel(),
+    visionModel: visionModel(provider),
     visionAnalyzedAt: new Date(),
     visionError: null,
   };
@@ -113,22 +116,27 @@ export async function analyzeAndStoreStyleReferenceVision(referenceAssetId: stri
     return null;
   }
 
+  const providerSettings = await getProviderSettings();
+  const visionProvider = providerSettings.imageProvider;
+  const usedVisionModel = visionModel(visionProvider);
+
   try {
     const source = await readStoredUpload(asset.storageKey, asset.mimeType);
     const metadata = await analyzeStyleReferenceImageWithLiara({
       sourceBuffer: source.buffer,
       mimeType: source.mimeType,
+      provider: visionProvider,
     });
 
     return await db.styleReferenceAsset.update({
       where: { id: asset.id },
-      data: metadataToUpdate(metadata),
+      data: metadataToUpdate(metadata, visionProvider),
     });
   } catch (error) {
     await db.styleReferenceAsset.updateMany({
       where: { id: asset.id },
       data: {
-        visionModel: visionModel(),
+        visionModel: usedVisionModel,
         visionAnalyzedAt: new Date(),
         visionError: errorText(error),
       },
@@ -150,10 +158,21 @@ export async function ensureStyleReferenceVision(referenceAssetId: string) {
       visionSubjectDescription: true,
       visionConfidence: true,
       visionAnalyzedAt: true,
+      visionError: true,
+      visionModel: true,
     },
   });
 
-  if (!asset || asset.visionAnalyzedAt) {
+  if (!asset) {
+    return asset;
+  }
+
+  if (asset.visionAnalyzedAt && !asset.visionError) {
+    return asset;
+  }
+
+  const providerSettings = await getProviderSettings();
+  if (asset.visionAnalyzedAt && asset.visionError && asset.visionModel === visionModel(providerSettings.imageProvider)) {
     return asset;
   }
 

@@ -18,6 +18,21 @@ const controlInstructions: Record<string, Record<string, string>> = {
     woman: "Use an elegant adult woman model, generally 25 to 35 years old, when a human model is needed. If hands or wrists are visible, they must look like professional jewelry hand-model hands: slender natural fingers, graceful relaxed pose, neat natural nails, clean cuticles, refined feminine proportions, realistic skin texture, and no rough, swollen, masculine, aged, dry, cracked, or work-worn hands.",
     man: "Use an elegant adult man model, generally 25 to 35 years old, when a human model is needed.",
   },
+  modelNationality: {
+    iranian: "Model casting: use a natural contemporary Iranian-looking model with Middle Eastern features, without ethnic exaggeration, costume styling, or stereotypes.",
+    middleEastern: "Model casting: use a natural contemporary Middle Eastern-looking model with regionally plausible features and skin tone variation, without stereotypes or costume styling.",
+    european: "Model casting: use a natural contemporary European-looking model only because this option was selected; keep the styling product-first and realistic.",
+  },
+  faceFraming: {
+    productArea: "Face framing: prioritize the product area rather than a full face. For necklaces show the neck, collarbone, and possibly the lower face; for earrings show the ear and partial profile; for rings, bracelets, and watches focus on hands or wrists. Do not force a full-face portrait.",
+    partialFace: "Face framing: a partial face or cropped portrait is allowed when it supports the product, but the jewelry remains the clear hero and the face must not dominate.",
+    fullFace: "Face framing: a full-face portrait is allowed, but the jewelry or accessory must still be the commercial hero with readable product detail.",
+  },
+  modelSceneStyle: {
+    amateurHome: "Model scene style: create an authentic amateur mobile-photo / UGC-style image in a real home-like setting, with casual natural light, handheld phone-camera feel, and less polished production. Keep it usable for selling: the space should be tidy, the clothing clean, and the product readable. Avoid pajamas, sloppy loungewear, messy rooms, beds, laundry, clutter, low-quality dark lighting, or awkward domestic distractions.",
+    studio: "Model scene style: use a clean studio or controlled indoor setup with refined styling, neat modern wardrobe, flattering soft light, and a premium product-photo feel.",
+    outdoor: "Model scene style: use a controlled outdoor setting with clean natural light, quiet background, tasteful modern wardrobe, and no crowding, street clutter, harsh sun, or distractions from the product.",
+  },
   decorSurface: {
     stone: "Decor surface: use a restrained matte stone or marble-like surface.",
     geometric: "Decor surface: use simple geometric blocks and clean sculptural planes.",
@@ -113,6 +128,10 @@ function getModestyInstruction(value: number) {
 
 function booleanInstruction(key: string, enabled: boolean) {
   const map: Record<string, [string, string]> = {
+    fullHijab: [
+      "Full hijab styling: for a woman model, use full elegant hijab and refined modest fashion styling. Keep it contemporary, natural, non-costume, non-stereotyped, and product-first.",
+      "",
+    ],
     surfaceReflection: [
       "Use a subtle realistic surface reflection under the product.",
       "Avoid mirror-like surface reflections; keep the surface clean and matte.",
@@ -147,9 +166,14 @@ function rangeInstruction(key: string, value: number) {
 
 export function buildStyleControlPrompt(style: { controls?: StyleControl[] }, formData: FormData) {
   const instructions: string[] = [];
+  const modelGender = String(formData.get("styleControl_modelGender") ?? "woman").trim();
 
   for (const control of style.controls ?? []) {
     const value = String(formData.get(`styleControl_${control.key}`) ?? control.defaultValue ?? "").trim();
+
+    if (control.key === "fullHijab" && modelGender !== "woman") {
+      continue;
+    }
 
     if (control.type === "CHOICE") {
       const options = parseOptions(control.optionsJson);
@@ -168,7 +192,10 @@ export function buildStyleControlPrompt(style: { controls?: StyleControl[] }, fo
     }
 
     if (control.type === "BOOLEAN") {
-      instructions.push(booleanInstruction(control.key, value === "true" || value === "on" || value === "1"));
+      const instruction = booleanInstruction(control.key, value === "true" || value === "on" || value === "1");
+      if (instruction) {
+        instructions.push(instruction);
+      }
     }
   }
 
@@ -176,5 +203,30 @@ export function buildStyleControlPrompt(style: { controls?: StyleControl[] }, fo
 }
 
 export function hasHumanModelStyleControls(style: { controls?: StyleControl[] }) {
-  return style.controls?.some((control) => control.key === "modelGender" || control.key === "modesty") ?? false;
+  return style.controls?.some((control) => ["modelGender", "modelNationality", "faceFraming", "modelSceneStyle", "fullHijab", "modesty"].includes(control.key)) ?? false;
+}
+
+export function buildHumanModelProductWearPrompt(productType?: string | null) {
+  const base = [
+    "Worn product realism: when jewelry or accessories are shown on a human body, prioritize physically plausible wearing over exposing every construction detail.",
+    "Do not twist the body, rotate the product, duplicate parts, or use impossible angles just to reveal clasps, backs, closures, or hidden hardware.",
+  ];
+
+  if (productType === "گردنبند") {
+    base.push(
+      "For a necklace worn on the neck, treat rear clasps and back closures as hidden hardware: they normally sit behind the neck and must not be visible from the front or natural three-quarter view unless the original product clearly has a decorative front clasp or front closure.",
+      "Do not move a normal rear clasp to the front, side-front, collarbone, or pendant area just to prove it exists. If the source photo shows a back clasp, preserve it as part of product identity but let it be naturally hidden behind the neck in the worn model photo.",
+      "Keep the chain naturally resting around the neck and collarbone; preserve the pendant, visible chain shape, metal tone, and front-facing design details.",
+    );
+  } else if (productType === "گوشواره") {
+    base.push("For earrings, do not force the backing or post behind the ear into view unless it is naturally visible from the selected angle.");
+  } else if (productType === "دستبند" || productType === "ساعت") {
+    base.push("For bracelets and watches, show the clasp only if it naturally falls on the visible side of the wrist; do not use an awkward wrist twist just to reveal it.");
+  } else if (productType === "انگشتر") {
+    base.push("For rings, do not force hidden underside or back-of-band details into view while worn; keep the natural top and side view readable.");
+  } else {
+    base.push("If body, hair, ear, neck, or hand naturally hides a small hardware detail, let it be hidden rather than creating an unnatural product display.");
+  }
+
+  return base.join("\n");
 }

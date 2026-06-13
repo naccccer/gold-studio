@@ -296,6 +296,17 @@ h1,h2,h3,h4,h5,h6 {
   68%, 94% { opacity: 1; transform: scale(1); }
 }
 
+@keyframes ovalaCarouselImageDrift {
+  0% { transform: scale(1.01) translate3d(0, 0, 0); }
+  100% { transform: scale(1.055) translate3d(-1.2%, -0.8%, 0); }
+}
+
+.ovala-carousel-image-active {
+  animation: ovalaCarouselImageDrift 6.4s var(--motion-ease-standard) both;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
 @keyframes ovalaProcessingStep {
   0%, 4% { opacity: 0; transform: translateY(10px) scale(.98); }
   10%, 30% { opacity: 1; transform: translateY(0) scale(1); }
@@ -422,6 +433,7 @@ h1,h2,h3,h4,h5,h6 {
   .animate-\[ovalaHeroSlideA_12s_ease-in-out_infinite\],
   .animate-\[ovalaHeroSlideB_12s_ease-in-out_infinite\],
   .animate-\[ovalaHeroSlideC_12s_ease-in-out_infinite\],
+  .ovala-carousel-image-active,
   .animate-\[ovalaProcessingScan_3s_ease-in-out_infinite\],
   .animate-\[ovalaLoadingPulse_2\.4s_ease-in-out_infinite\],
   .animate-\[ovalaLoadingPulse_2\.4s_ease-in-out_infinite_600ms\] {

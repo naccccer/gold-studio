@@ -49,14 +49,14 @@ const logoConfig: Record<BrandLogoVariant, { src: string; width: number; height:
     width: 174,
     height: 58,
     alt: "OVALA Studio",
-    className: "h-[58px] w-[174px] translate-x-[10px] translate-y-[4px]",
+    className: "h-[58px] w-[174px]",
   },
   "primary-light": {
     src: "/brand/ovala-primary-light.svg",
     width: 174,
     height: 58,
     alt: "OVALA Studio",
-    className: "h-[58px] w-[174px] translate-x-[10px] translate-y-[4px]",
+    className: "h-[58px] w-[174px]",
   },
   "primary-on-dark": {
     src: "/brand/ovala-primary-light-transparent.svg",
@@ -70,7 +70,7 @@ const logoConfig: Record<BrandLogoVariant, { src: string; width: number; height:
     width: 174,
     height: 58,
     alt: "OVALA Studio",
-    className: "h-[58px] w-[174px] translate-x-[10px] translate-y-[4px]",
+    className: "h-[58px] w-[174px]",
   },
 };
 

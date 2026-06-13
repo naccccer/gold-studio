@@ -1,0 +1,38 @@
+import { db } from "@/lib/db";
+import { homeHero, styleSamples } from "@/lib/placeholders/jewelry-images";
+import { storageUrlFromKeyOrUrl } from "@/lib/storage";
+
+export type HomeCarouselImage = {
+  src: string;
+  alt: string;
+  beforeSrc?: string;
+  beforeAlt?: string;
+};
+
+export function fallbackHomeCarouselImages(): HomeCarouselImage[] {
+  return [
+    { src: homeHero.src, alt: homeHero.alt, beforeSrc: styleSamples[1]?.src, beforeAlt: styleSamples[1]?.alt },
+    { src: styleSamples[0].src, alt: styleSamples[0].alt, beforeSrc: styleSamples[3]?.src, beforeAlt: styleSamples[3]?.alt },
+    { src: styleSamples[2].src, alt: styleSamples[2].alt, beforeSrc: styleSamples[4]?.src, beforeAlt: styleSamples[4]?.alt },
+    { src: styleSamples[4].src, alt: styleSamples[4].alt, beforeSrc: homeHero.src, beforeAlt: homeHero.alt },
+  ];
+}
+
+export async function getActiveHomeCarouselImages(): Promise<HomeCarouselImage[]> {
+  const slides = await db.homeCarouselSlide.findMany({
+    where: { isActive: true },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    take: 8,
+  });
+
+  if (slides.length === 0) {
+    return fallbackHomeCarouselImages();
+  }
+
+  return slides.map((slide) => ({
+    src: storageUrlFromKeyOrUrl(slide.afterStorageKey, slide.afterImageUrl) || slide.afterImageUrl,
+    alt: slide.afterAlt || slide.title || "نمونه خروجی اوالا",
+    beforeSrc: storageUrlFromKeyOrUrl(slide.beforeStorageKey, slide.beforeImageUrl) || slide.beforeImageUrl,
+    beforeAlt: slide.beforeAlt || (slide.title ? `${slide.title} قبل` : "تصویر قبل از ادیت"),
+  }));
+}

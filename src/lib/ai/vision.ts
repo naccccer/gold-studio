@@ -33,6 +33,7 @@ export type StyleReferenceVisionMetadata = {
 type AnalyzeProductImageInput = {
   sourceBuffer: Buffer;
   mimeType: string;
+  provider?: ImageProvider;
 };
 
 type ChatCompletionResponse = {
@@ -54,12 +55,12 @@ function readEnv(primaryName: string, fallbackNames: string[] = []) {
   return undefined;
 }
 
-function visionProvider(): ImageProvider {
-  return normalizeImageProvider(process.env.VISION_PROVIDER || imageProvider());
+function visionProvider(providerOverride?: ImageProvider): ImageProvider {
+  return normalizeImageProvider(process.env.VISION_PROVIDER || providerOverride || imageProvider());
 }
 
-function getVisionConfig() {
-  if (visionProvider() === "avalai") {
+function getVisionConfig(providerOverride?: ImageProvider) {
+  if (visionProvider(providerOverride) === "avalai") {
     const apiKey = readEnv("AVALAI_API_KEY");
     if (!apiKey) {
       throw new Error("AVALAI_API_KEY env var is required.");
@@ -92,8 +93,8 @@ function getVisionConfig() {
   };
 }
 
-export function visionModel() {
-  if (visionProvider() === "avalai") {
+export function visionModel(providerOverride?: ImageProvider) {
+  if (visionProvider(providerOverride) === "avalai") {
     return process.env.AVALAI_VISION_MODEL?.trim() || DEFAULT_AVALAI_VISION_MODEL;
   }
 
@@ -227,8 +228,9 @@ function parseStyleReferenceVisionMetadata(content: unknown) {
 export async function analyzeProductImageWithLiara({
   sourceBuffer,
   mimeType,
+  provider: providerOverride,
 }: AnalyzeProductImageInput): Promise<ProductVisionMetadata> {
-  const { apiKey, baseURL, model, provider } = getVisionConfig();
+  const { apiKey, baseURL, model, provider } = getVisionConfig(providerOverride);
   const imageUrl = `data:${mimeType};base64,${sourceBuffer.toString("base64")}`;
   const prompt = [
     "You are a vision assistant for Ovala, a Persian RTL jewelry product-photo app.",
@@ -287,8 +289,9 @@ export async function analyzeProductImageWithLiara({
 export async function analyzeStyleReferenceImageWithLiara({
   sourceBuffer,
   mimeType,
+  provider: providerOverride,
 }: AnalyzeProductImageInput): Promise<StyleReferenceVisionMetadata> {
-  const { apiKey, baseURL, model, provider } = getVisionConfig();
+  const { apiKey, baseURL, model, provider } = getVisionConfig(providerOverride);
   const imageUrl = `data:${mimeType};base64,${sourceBuffer.toString("base64")}`;
   const prompt = [
     "You are a vision assistant for Ovala, a Persian RTL jewelry product-photo app.",

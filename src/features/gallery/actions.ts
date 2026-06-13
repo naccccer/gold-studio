@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
-import { buildStyleControlPrompt } from "@/lib/ai/style-controls";
+import { buildHumanModelProductWearPrompt, buildStyleControlPrompt, hasHumanModelStyleControls } from "@/lib/ai/style-controls";
 import { buildVisionPromptContext } from "@/lib/ai/vision";
 import { requireUserSession } from "@/lib/auth/session";
 import {
@@ -17,7 +17,7 @@ import { db } from "@/lib/db";
 import { processGenerationBatch } from "@/lib/generation/jobs";
 import { getOutputPresetSpec, normalizeOutputPreset } from "@/lib/output-presets";
 import { analyzeAndStoreProductAssetVision, ensureProductAssetVision, pickVisionTitle } from "@/lib/product-vision";
-import { normalizeProductType } from "@/lib/product-types";
+import { DEFAULT_PRODUCT_TYPE, normalizeProductType } from "@/lib/product-types";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { deleteStorageObject } from "@/lib/storage";
 import { getStyleForGeneration } from "@/lib/styles";
@@ -170,6 +170,7 @@ export async function createBatchFromGalleryAction(formData: FormData) {
 
   const reservations: string[] = [];
   const styleControlPrompt = buildStyleControlPrompt(style, formData);
+  const includesHumanModel = hasHumanModelStyleControls(style);
   const batch = await db.generationBatch.create({
     data: {
       userId: session.userId,
@@ -192,6 +193,10 @@ export async function createBatchFromGalleryAction(formData: FormData) {
 
       const analyzedAsset = await ensureProductAssetVision(asset.id);
       const submittedProductType = normalizeProductType(formData.get(`productType_${asset.id}`));
+      const effectiveProductType =
+        submittedProductType === DEFAULT_PRODUCT_TYPE && analyzedAsset?.productType
+          ? normalizeProductType(analyzedAsset.productType)
+          : submittedProductType;
       if (asset.productType !== submittedProductType) {
         await db.productAsset.updateMany({
           where: { id: asset.id, userId: session.userId, status: "READY", archivedAt: null },
@@ -199,7 +204,7 @@ export async function createBatchFromGalleryAction(formData: FormData) {
         });
       }
       const visionContext = buildVisionPromptContext({
-        productType: submittedProductType || analyzedAsset?.productType,
+        productType: effectiveProductType,
         visionDescription: analyzedAsset?.visionDescription,
         visionConfidence: analyzedAsset?.visionConfidence,
       });
@@ -220,6 +225,7 @@ export async function createBatchFromGalleryAction(formData: FormData) {
             style.prompt,
             getOutputPresetSpec(outputPreset).instruction,
             styleControlPrompt,
+            includesHumanModel ? buildHumanModelProductWearPrompt(effectiveProductType) : "",
             style.id === "style_sample_reference" ? buildSampleReferencePromptContext() : "",
             getEditorialBackgroundDecorInstruction(style.id),
             visionContext,

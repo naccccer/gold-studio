@@ -204,7 +204,8 @@ export function isAllowedStorageKey(key: string) {
 }
 
 export function isPublicStorageKey(key: string) {
-  return normalizeKey(key).startsWith("uploads/style-previews/");
+  const normalized = normalizeKey(key);
+  return normalized.startsWith("uploads/style-previews/") || normalized.startsWith("uploads/home-carousel/");
 }
 
 export async function saveStorageObject(input: SaveObjectInput) {

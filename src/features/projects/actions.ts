@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { db } from "@/lib/db";
-import { buildStyleControlPrompt, hasHumanModelStyleControls } from "@/lib/ai/style-controls";
+import { buildHumanModelProductWearPrompt, buildStyleControlPrompt, hasHumanModelStyleControls } from "@/lib/ai/style-controls";
 import { buildVisionPromptContext } from "@/lib/ai/vision";
 import { requireUserSession } from "@/lib/auth/session";
 import {
@@ -16,7 +16,7 @@ import {
 import { processImageProject, processTextProject } from "@/lib/generation/jobs";
 import { getOutputPresetSpec, normalizeOutputPreset } from "@/lib/output-presets";
 import { pickVisionTitle, retryProjectVisionTitle } from "@/lib/product-vision";
-import { normalizeProductType } from "@/lib/product-types";
+import { DEFAULT_PRODUCT_TYPE, normalizeProductType } from "@/lib/product-types";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { readStorageObject } from "@/lib/storage";
 import { getStyleForGeneration, type StyleForGeneration } from "@/lib/styles";
@@ -146,11 +146,18 @@ function getEditorialBackgroundDecorInstruction(styleId: string) {
   return "Editorial background decor: always include a restrained designed background decor element such as simple geometric volume, matte stone plane, soft fabric plane, plinth, or subtle editorial surface layering. Keep it premium, uncluttered, product-first, and avoid a plain empty catalog background.";
 }
 
-function getFineDetailInstruction(productType?: string | null) {
+function getFineDetailInstruction(productType?: string | null, options?: { isHumanModelStyle?: boolean }) {
   if (productType === "ساعت") {
     return [
       "Fine detail priority: preserve the watch face layout, display structure, bezel markings, button placement, engravings, and case edges.",
       "Keep small functional details crisp and believable; do not blur, simplify, repaint, or replace them with generic shapes.",
+    ].join("\n");
+  }
+
+  if (options?.isHumanModelStyle && productType === "گردنبند") {
+    return [
+      "Fine detail priority for a necklace on a model: preserve pendant shape, visible chain links, metal tone, stone settings, engravings, and front-facing design cues.",
+      "Do not expose, invent, duplicate, or relocate a normal rear necklace clasp in the visible neck or collarbone area; hidden back hardware may stay hidden when worn.",
     ].join("\n");
   }
 
@@ -201,8 +208,9 @@ function buildPrompt(
   const visionContext = vision ? buildVisionPromptContext(vision) : "";
   const styleControlPrompt = buildStyleControlPrompt(style, formData);
   const includesHumanModel = hasHumanModelStyleControls(style);
-  const submittedProductType = String(formData.get("productType") ?? "").trim();
-  const productType = vision?.productType ?? (submittedProductType || null);
+  const submittedProductType = normalizeProductType(formData.get("productType"));
+  const visionProductType = vision?.productType ? normalizeProductType(vision.productType) : null;
+  const productType = visionProductType && visionProductType !== DEFAULT_PRODUCT_TYPE ? visionProductType : submittedProductType;
 
   if (includesHumanModel) {
     promptParts.push(
@@ -214,6 +222,7 @@ function buildPrompt(
     promptParts.push(
       "Human realism: preserve natural skin texture, visible pores, subtle fine lines, realistic hands, neck, ears, and skin tone variation. Avoid waxy, porcelain, airbrushed, plastic, doll-like, or AI-smoothed skin.",
     );
+    promptParts.push(buildHumanModelProductWearPrompt(productType));
   }
 
   if (styleControlPrompt) {
@@ -241,7 +250,7 @@ function buildPrompt(
   }
 
   promptParts.push(getCompositionInstruction(productType, vision?.visionAngle));
-  promptParts.push(getFineDetailInstruction(productType));
+  promptParts.push(getFineDetailInstruction(productType, { isHumanModelStyle: includesHumanModel }));
 
   if (visionContext) {
     promptParts.push(visionContext);

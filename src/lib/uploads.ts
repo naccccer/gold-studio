@@ -8,6 +8,7 @@ const RESULT_UPLOAD_DIR = path.join("uploads", "result");
 const RECEIPT_UPLOAD_DIR = path.join("uploads", "receipts");
 const STYLE_PREVIEW_UPLOAD_DIR = path.join("uploads", "style-previews");
 const STYLE_REFERENCE_UPLOAD_DIR = path.join("uploads", "style-references");
+const HOME_CAROUSEL_UPLOAD_DIR = path.join("uploads", "home-carousel");
 const NORMALIZED_UPLOAD_MIME_TYPE = "image/jpeg";
 const NORMALIZED_UPLOAD_EXTENSION = "jpg";
 const MAX_SOURCE_INPUT_BYTES = 15 * 1024 * 1024;
@@ -267,6 +268,25 @@ export async function saveStylePreviewFile(file: File) {
     invalidImageMessage: "عکس سبک معتبر نیست یا قابل پردازش نبود.",
   });
   const storageKey = buildStorageKey(STYLE_PREVIEW_UPLOAD_DIR, normalized.extension);
+  const publicUrl = await saveStorageObject({
+    buffer: normalized.buffer,
+    contentType: normalized.mimeType,
+    key: storageKey,
+  });
+
+  return { publicUrl, storageKey };
+}
+
+export async function saveHomeCarouselFile(file: File) {
+  const normalized = await normalizeUploadImage(file, {
+    maxInputBytes: MAX_RECEIPT_INPUT_BYTES,
+    maxEdge: 1800,
+    quality: 86,
+    invalidTypeMessage: "فرمت عکس کاروسل باید JPG، PNG یا WEBP باشد.",
+    tooLargeMessage: "حجم عکس کاروسل باید کمتر از ۱۰ مگابایت باشد.",
+    invalidImageMessage: "عکس کاروسل معتبر نیست یا قابل پردازش نبود.",
+  });
+  const storageKey = buildStorageKey(HOME_CAROUSEL_UPLOAD_DIR, normalized.extension);
   const publicUrl = await saveStorageObject({
     buffer: normalized.buffer,
     contentType: normalized.mimeType,

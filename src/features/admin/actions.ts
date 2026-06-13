@@ -18,7 +18,8 @@ import {
   grantReferralRewardAfterFirstPurchase,
   referralCodeFromUserId,
 } from "@/lib/referrals";
-import { saveStylePreviewFile } from "@/lib/uploads";
+import { deleteStorageObject } from "@/lib/storage";
+import { saveHomeCarouselFile, saveStylePreviewFile } from "@/lib/uploads";
 
 function text(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -126,9 +127,25 @@ function revalidateAdmin() {
   revalidatePath("/admin/projects");
   revalidatePath("/admin/ai");
   revalidatePath("/admin/styles");
+  revalidatePath("/admin/home");
   revalidatePath("/admin/referrals");
+  revalidatePath("/dashboard");
   revalidatePath("/account");
   revalidatePath("/billing");
+}
+
+async function getCarouselImageInput(formData: FormData, fileKey: string, urlKey: string, fallbackUrl = "", fallbackStorageKey: string | null = null) {
+  const image = formData.get(fileKey);
+  if (image instanceof File && image.size > 0) {
+    return await saveHomeCarouselFile(image);
+  }
+
+  const url = text(formData, urlKey);
+  if (url) {
+    return { publicUrl: url, storageKey: null };
+  }
+
+  return { publicUrl: fallbackUrl, storageKey: fallbackStorageKey };
 }
 
 export async function updateProviderSettingsAction(formData: FormData) {
@@ -163,6 +180,132 @@ export async function updateProviderSettingsAction(formData: FormData) {
   });
   revalidatePath("/admin/ai");
   redirect("/admin/ai");
+}
+
+export async function createHomeCarouselSlideAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const before = await getCarouselImageInput(formData, "beforeImage", "beforeImageUrl");
+  const afterImage = await getCarouselImageInput(formData, "afterImage", "afterImageUrl");
+
+  if (!before.publicUrl || !afterImage.publicUrl) {
+    return;
+  }
+
+  const slide = await db.homeCarouselSlide.create({
+    data: {
+      title: text(formData, "title") || null,
+      beforeImageUrl: before.publicUrl,
+      beforeStorageKey: before.storageKey,
+      afterImageUrl: afterImage.publicUrl,
+      afterStorageKey: afterImage.storageKey,
+      beforeAlt: text(formData, "beforeAlt") || null,
+      afterAlt: text(formData, "afterAlt") || null,
+      sortOrder: integer(formData, "sortOrder", 0),
+      isActive: formData.has("isActive"),
+    },
+  });
+
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: "home_carousel.create",
+    targetType: "HomeCarouselSlide",
+    targetId: slide.id,
+    summary: "اسلاید کاروسل خانه ساخته شد.",
+    metadata: { title: slide.title, sortOrder: slide.sortOrder, isActive: slide.isActive },
+  });
+
+  revalidatePath("/admin/home");
+  revalidatePath("/dashboard");
+  redirect(`/admin/home?slide=${slide.id}`);
+}
+
+export async function updateHomeCarouselSlideAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const slideId = text(formData, "slideId");
+  if (!slideId) return;
+
+  const current = await db.homeCarouselSlide.findUnique({ where: { id: slideId } });
+  if (!current) return;
+
+  const before = await getCarouselImageInput(
+    formData,
+    "beforeImage",
+    "beforeImageUrl",
+    current.beforeImageUrl,
+    current.beforeStorageKey,
+  );
+  const afterImage = await getCarouselImageInput(
+    formData,
+    "afterImage",
+    "afterImageUrl",
+    current.afterImageUrl,
+    current.afterStorageKey,
+  );
+
+  if (!before.publicUrl || !afterImage.publicUrl) {
+    return;
+  }
+
+  const slide = await db.homeCarouselSlide.update({
+    where: { id: slideId },
+    data: {
+      title: text(formData, "title") || null,
+      beforeImageUrl: before.publicUrl,
+      beforeStorageKey: before.storageKey,
+      afterImageUrl: afterImage.publicUrl,
+      afterStorageKey: afterImage.storageKey,
+      beforeAlt: text(formData, "beforeAlt") || null,
+      afterAlt: text(formData, "afterAlt") || null,
+      sortOrder: integer(formData, "sortOrder", current.sortOrder),
+      isActive: formData.has("isActive"),
+    },
+  });
+
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: "home_carousel.update",
+    targetType: "HomeCarouselSlide",
+    targetId: slide.id,
+    summary: "اسلاید کاروسل خانه به‌روزرسانی شد.",
+    metadata: { title: slide.title, sortOrder: slide.sortOrder, isActive: slide.isActive },
+  });
+
+  revalidatePath("/admin/home");
+  revalidatePath("/dashboard");
+  redirect(`/admin/home?slide=${slide.id}`);
+}
+
+export async function deleteHomeCarouselSlideAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const slideId = text(formData, "slideId");
+  if (!slideId) return;
+
+  const slide = await db.homeCarouselSlide.findUnique({ where: { id: slideId } });
+  if (!slide) return;
+
+  await db.homeCarouselSlide.delete({ where: { id: slideId } });
+
+  after(() => {
+    for (const storageKey of [slide.beforeStorageKey, slide.afterStorageKey]) {
+      if (!storageKey) continue;
+      deleteStorageObject(storageKey).catch((error) => {
+        console.error("[home-carousel-file-delete-failed]", { storageKey, error });
+      });
+    }
+  });
+
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: "home_carousel.delete",
+    targetType: "HomeCarouselSlide",
+    targetId: slide.id,
+    summary: "اسلاید کاروسل خانه حذف شد.",
+    metadata: { title: slide.title },
+  });
+
+  revalidatePath("/admin/home");
+  revalidatePath("/dashboard");
+  redirect("/admin/home");
 }
 
 function isAvailableToUsers(formData: FormData) {
