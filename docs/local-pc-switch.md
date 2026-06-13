@@ -87,7 +87,7 @@ npm run dev
 If the admin user is missing or the password is unknown, reset it intentionally:
 
 ```powershell
-npm run admin:bootstrap -- --email "admin@example.com" --password "new-strong-password" --name "Admin"
+npm run admin:bootstrap -- --email "nacerzafar@gmail.com" --password "new-strong-password" --name "Admin"
 ```
 
 If the email already exists, this promotes it to `ADMIN` and resets the password.

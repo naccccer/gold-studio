@@ -1,31 +1,31 @@
-# ساخت نسخه تست روی test.ovala.ir
+# ساخت نسخه staging روی test.ovala.ir
 
-فرض این راهنما:
+این راهنما برای بالا آوردن نسخه تست روی `https://test.ovala.ir` است، بدون اینکه نسخه اصلی روی `https://ovala.ir` دست بخورد.
 
-- نسخه اصلی الان روی `https://ovala.ir` فعال است.
-- نسخه تست هنوز وجود ندارد.
-- می‌خواهیم نسخه تست را روی `https://test.ovala.ir` بالا بیاوریم.
-- نسخه اصلی نباید دست بخورد.
+## 1. DNS را تنظیم کن
 
-## 1. DNS ساب‌دامین را وصل کن
-
-در پنل دامنه، یک رکورد بساز:
+در پنل دامنه یک رکورد بساز:
 
 ```text
 Type: A
 Name: test
-Value: IP سرور VPS
+Value: IP عمومی VPS
+TTL: 1 ساعت
+Proxy: DNS فقط
 ```
 
-بعد چند دقیقه روی VPS تست کن:
+برای راه اندازی اولیه، پروکسی/CDN را خاموش نگه دار. اگر رکورد پشت پروکسی باشد، `dig` ممکن است IP پروکسی مثل `185.x.x.x` بدهد و عیب یابی Nginx و Certbot سخت می شود.
+
+روی VPS چک کن:
 
 ```bash
-ping test.ovala.ir
+resolvectl flush-caches
+dig test.ovala.ir +short
 ```
 
-اگر IP سرور را نشان داد، برو مرحله بعد.
+خروجی باید IP عمومی VPS باشد، نه IP خصوصی مثل `10.x.x.x` و نه IP پروکسی.
 
-## 2. کد نسخه تست را جدا clone کن
+## 2. کد را clone کن
 
 روی VPS:
 
@@ -35,7 +35,21 @@ git clone https://github.com/naccccer/gold-studio.git gold-studio-test
 cd /var/www/gold-studio-test
 ```
 
-## 3. دیتابیس تست بساز
+اگر GitHub از VPS باز نشد، مستقیم اول تست کن:
+
+```bash
+curl -I --connect-timeout 15 https://github.com
+```
+
+اگر timeout شد و روی VPS Xray داری، proxy را فقط برای دستور Git استفاده کن:
+
+```bash
+git -c http.proxy=socks5h://127.0.0.1:10808 clone --depth 1 https://github.com/naccccer/gold-studio.git gold-studio-test
+```
+
+جزئیات proxy در `docs/proxy.md` است. برای درخواست های local مثل health check از proxy استفاده نکن.
+
+## 3. دیتابیس staging را بساز
 
 ```bash
 mysql -u root -p
@@ -44,11 +58,15 @@ mysql -u root -p
 داخل MySQL:
 
 ```sql
-CREATE DATABASE gold_studio_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS gold_studio_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS 'gold_studio_user'@'127.0.0.1' IDENTIFIED BY 'CHANGE_THIS_PASSWORD';
+ALTER USER 'gold_studio_user'@'127.0.0.1' IDENTIFIED BY 'CHANGE_THIS_PASSWORD';
 GRANT ALL PRIVILEGES ON gold_studio_test.* TO 'gold_studio_user'@'127.0.0.1';
 FLUSH PRIVILEGES;
 EXIT;
 ```
+
+پسورد را ساده و URL-safe انتخاب کن؛ برای مثال در پسورد از `@`، `#` و `%` استفاده نکن مگر اینکه آن را encode کنی.
 
 ## 4. فایل env تست را بساز
 
@@ -60,7 +78,7 @@ nano .env
 این مقدارها را حتما درست کن:
 
 ```bash
-DATABASE_URL="mysql://gold_studio_user:DB_PASSWORD@127.0.0.1:3306/gold_studio_test?allowPublicKeyRetrieval=true"
+DATABASE_URL="mysql://gold_studio_user:CHANGE_THIS_PASSWORD@127.0.0.1:3306/gold_studio_test?allowPublicKeyRetrieval=true"
 AUTH_SECRET="یک_متن_طولانی_تصادفی"
 ALLOW_INSECURE_COOKIES="false"
 
@@ -70,7 +88,13 @@ GENERATION_WORKER_URL="http://127.0.0.1:3001/api/internal/generation/worker"
 STORAGE_DRIVER="local"
 ```
 
-کلیدهای واقعی `LIARA_*` و `FARAZSMS_*` را هم مثل نسخه اصلی پر کن.
+کلیدهای واقعی `LIARA_*` و `FARAZSMS_*` را هم مثل production پر کن.
+
+اتصال دیتابیس را قبل از build تست کن:
+
+```bash
+mysql -u gold_studio_user -p -h 127.0.0.1 gold_studio_test -e "SELECT 1;"
+```
 
 ## 5. پوشه آپلود تست را بساز
 
@@ -79,7 +103,9 @@ mkdir -p .local-storage/uploads
 chmod -R 775 .local-storage
 ```
 
-## 6. نسخه تست را build کن
+## 6. نصب، migration و build
+
+اگر برای npm یا Prisma به proxy نیاز شد، فقط همان دستورها را با proxy اجرا کن و بعد برای تست local آن را unset کن.
 
 ```bash
 npm install
@@ -87,7 +113,7 @@ npm run db:deploy
 npm run build
 ```
 
-## 7. نسخه تست را با PM2 روی پورت 3001 بالا بیاور
+## 7. PM2 را روی پورت 3001 بالا بیاور
 
 ```bash
 pm2 start npm --name gold-studio-test -- start -- -p 3001
@@ -95,25 +121,41 @@ pm2 start npm --name gold-studio-test-worker -- run worker:generation
 pm2 save
 ```
 
-چک کن روشن شده:
+اگر قبلش proxy env فعال کرده بودی:
+
+```bash
+unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
+export no_proxy="127.0.0.1,localhost"
+export NO_PROXY="127.0.0.1,localhost"
+```
+
+چک کن:
 
 ```bash
 pm2 status
-curl -I http://127.0.0.1:3001/api/health
+curl --noproxy '*' -i http://127.0.0.1:3001/api/health
+```
+
+خروجی health باید `{"ok":true}` باشد. اگر `503` شد، معمولاً `DATABASE_URL` یا permission دیتابیس اشتباه است:
+
+```bash
+pm2 logs gold-studio-test --lines 80
+grep DATABASE_URL .env
 ```
 
 ## 8. Nginx را برای test.ovala.ir تنظیم کن
 
-یک فایل Nginx بساز:
+فایل Nginx را بساز:
 
 ```bash
 nano /etc/nginx/sites-available/test.ovala.ir
 ```
 
-این را داخلش بگذار:
+محتوا:
 
 ```nginx
 server {
+    listen 80;
     server_name test.ovala.ir;
 
     location / {
@@ -132,12 +174,21 @@ server {
 فعال کن:
 
 ```bash
-ln -s /etc/nginx/sites-available/test.ovala.ir /etc/nginx/sites-enabled/test.ovala.ir
+ln -sf /etc/nginx/sites-available/test.ovala.ir /etc/nginx/sites-enabled/test.ovala.ir
 nginx -t
 systemctl reload nginx
 ```
 
-## 9. SSL برای test.ovala.ir بگیر
+مطمئن شو `test.ovala.ir` واقعاً به پورت `3001` وصل است:
+
+```bash
+nginx -T | grep -A25 -B5 "server_name test.ovala.ir"
+curl -I http://test.ovala.ir
+```
+
+اگر `nginx -T` چیزی نشان نداد، یعنی staging هنوز route اختصاصی ندارد و احتمالاً default/production را می بینی.
+
+## 9. SSL بگیر
 
 اگر certbot نصب نیست:
 
@@ -151,25 +202,32 @@ apt install -y certbot python3-certbot-nginx
 certbot --nginx -d test.ovala.ir
 ```
 
-## 10. آدرس تست
+بعد از SSL:
 
-حالا نسخه تست اینجاست:
-
-```text
-https://test.ovala.ir
+```bash
+curl -I https://test.ovala.ir
 ```
 
-نسخه اصلی همچنان اینجاست:
+## 10. آپدیت staging در دفعات بعد
 
-```text
-https://ovala.ir
+```bash
+cd /var/www/gold-studio-test
+git -c http.proxy=socks5h://127.0.0.1:10808 pull --ff-only origin main
+npm install
+npm run db:deploy
+rm -rf .next
+npm run build
+pm2 restart gold-studio-test --update-env
+pm2 restart gold-studio-test-worker --update-env
 ```
 
-## 11. تست کن
+اگر GitHub مستقیم کار می کند، بخش `-c http.proxy=...` را حذف کن.
 
-در `https://test.ovala.ir` این‌ها را تست کن:
+## 11. تست های دستی
 
-- ثبت‌نام با پیامک
+در `https://test.ovala.ir` این ها را تست کن:
+
+- ثبت نام با پیامک
 - ورود
 - فراموشی رمز
 - آپلود عکس
@@ -183,7 +241,7 @@ https://ovala.ir
 pm2 logs gold-studio-test-worker --lines 100
 ```
 
-## 12. اگر تست اوکی بود، نسخه اصلی را آپدیت کن
+## 12. اگر staging درست بود، production را آپدیت کن
 
 ```bash
 cd /var/www/gold-studio
