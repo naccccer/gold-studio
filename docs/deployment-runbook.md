@@ -1,168 +1,101 @@
-# Deployment Runbook
+# Deploy Ovala
 
-Short VPS guide for deploying, updating, restoring, and debugging Ovala.
+این راهنما برای آپدیت نسخه جدید روی VPS است.
 
-## Baseline
+## 1. قبل از deploy
 
-Recommended server:
-
-- Ubuntu 24.04
-- Node.js 20+
-- MySQL
-- Nginx
-- PM2
-- writable app directory for `.local-storage/uploads` when `STORAGE_DRIVER="local"`
-
-Install base packages:
+روی سرور برو داخل پروژه:
 
 ```bash
-apt update
-apt install -y git nginx mysql-server unzip
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-apt install -y nodejs
-npm install -g pm2
-```
-
-## First Deploy
-
-Clone the app:
-
-```bash
-cd /var/www
-git clone https://github.com/naccccer/gold-studio.git
 cd /var/www/gold-studio
-npm install
 ```
 
-Create MySQL database and user:
+فایل `.env` باید این مقدارها را داشته باشد:
 
-```sql
-CREATE DATABASE gold_studio CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'gold_studio_user'@'127.0.0.1' IDENTIFIED BY 'CHANGE_THIS_DB_PASSWORD';
-GRANT ALL PRIVILEGES ON gold_studio.* TO 'gold_studio_user'@'127.0.0.1';
-FLUSH PRIVILEGES;
+```bash
+DATABASE_URL="mysql://gold_studio_user:DB_PASSWORD@127.0.0.1:3306/gold_studio?allowPublicKeyRetrieval=true"
+AUTH_SECRET="یک_متن_طولانی_و_تصادفی"
+ALLOW_INSECURE_COOKIES="false"
+
+IMAGE_PROVIDER="liara"
+GENERATION_WORKER_SECRET="یک_متن_طولانی_و_تصادفی_دیگر"
+GENERATION_WORKER_URL="http://127.0.0.1:3000/api/internal/generation/worker"
+GENERATION_WORKER_INTERVAL_MS="15000"
+GENERATION_WORKER_LIMIT="1"
+GENERATION_STALE_PROCESSING_MINUTES="45"
+
+LIARA_API_KEY="..."
+LIARA_VISION_API_KEY="..."
+FARAZSMS_API_KEY="..."
+FARAZSMS_PATTERN_CODE="..."
+FARAZSMS_LINE_NUMBER="..."
+
+STORAGE_DRIVER="local"
 ```
 
-Create `.env` from `.env.example` and fill real values. Never commit `.env`.
-
-For local VPS storage:
+اگر `STORAGE_DRIVER="local"` است، این پوشه باید وجود داشته باشد:
 
 ```bash
 mkdir -p .local-storage/uploads
 chmod -R 775 .local-storage
 ```
 
-Build and migrate:
+## 2. آپدیت نسخه
+
+همین دستورها را به ترتیب بزن:
 
 ```bash
-npm run db:generate
+git pull
+npm install
 npm run db:deploy
 npm run build
+pm2 restart gold-studio
 ```
 
-Bootstrap the first admin once:
+اگر worker قبلا ساخته شده:
 
 ```bash
-npm run admin:bootstrap -- --email "admin@example.com" --password "strong-password" --name "Admin"
+pm2 restart gold-studio-worker
 ```
 
-Start with PM2:
+اگر worker هنوز وجود ندارد:
 
 ```bash
-pm2 start npm --name gold-studio -- start
 pm2 start npm --name gold-studio-worker -- run worker:generation
 pm2 save
 ```
 
-Minimal Nginx site:
-
-```nginx
-server {
-    server_name ovala.ir www.ovala.ir;
-
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
-}
-```
-
-Enable and test:
-
-```bash
-nginx -t
-systemctl reload nginx
-curl -I http://127.0.0.1:3000
-```
-
-## Update Existing VPS
-
-```bash
-cd /var/www/gold-studio
-git pull
-npm install
-npm run db:generate
-npm run db:deploy
-npm run build
-pm2 restart gold-studio
-pm2 restart gold-studio-worker
-```
-
-Preserve `.env` and `.local-storage/uploads`. Do not replace or delete uploads during zip or folder-based deploys.
-
-## Restore Local DB To VPS
-
-On local Windows:
-
-```powershell
-cd C:\xampp\htdocs\gold-studio
-npm run db:export-local
-scp "$env:USERPROFILE\Desktop\gold_studio_local.sql" root@SERVER_IP:/root/gold_studio_local.sql
-```
-
-On VPS:
-
-```bash
-cd /var/www/gold-studio
-mysql -h 127.0.0.1 -u gold_studio_user -p gold_studio < /root/gold_studio_local.sql
-npm run db:deploy
-npm run build
-pm2 restart gold-studio
-```
-
-If restoring into a fresh clone, copy uploads before switching traffic:
-
-```bash
-mkdir -p /var/www/gold-studio/.local-storage
-cp -a /path/to/old/.local-storage/uploads /var/www/gold-studio/.local-storage/
-chmod -R 775 /var/www/gold-studio/.local-storage
-```
-
-## Health And Debug
-
-Useful commands:
+## 3. چک بعد از deploy
 
 ```bash
 pm2 status
-pm2 logs gold-studio --lines 100
-pm2 logs gold-studio-worker --lines 100
-journalctl -u nginx --since "30 min ago"
-curl -I http://127.0.0.1:3000
-curl -I https://ovala.ir
-npm run db:deploy
-npm run build
+curl -I http://127.0.0.1:3000/api/health
+pm2 logs gold-studio --lines 50
+pm2 logs gold-studio-worker --lines 50
 ```
 
-Common notes:
+بعد داخل سایت این‌ها را تست کن:
 
-- `npm run db:generate` only regenerates Prisma Client.
-- `npm run db:deploy` applies committed migrations.
-- `npm run worker:generation` polls the internal generation worker endpoint and recovers stale queued jobs; keep `gold-studio-worker` running in PM2.
-- Use `docs/proxy.md` only when GitHub, npm, Prisma, or Liara access is blocked.
-- If login says the admin password is wrong after a DB restore, reset it with `npm run admin:bootstrap`.
+- ثبت‌نام با پیامک
+- ورود
+- فراموشی رمز
+- آپلود یک عکس در گالری
+- ساخت یک پروژه و گرفتن خروجی
+- آپلود رسید خرید
+- تایید خرید از ادمین
+
+## 4. اگر خروجی تصویر گیر کرد
+
+ادمین را باز کن و پروژه‌ها را ببین. اگر پروژه‌ای روی `QUEUED` یا `PROCESSING` ماند:
+
+```bash
+pm2 logs gold-studio-worker --lines 100
+```
+
+اگر worker خاموش بود:
+
+```bash
+pm2 restart gold-studio-worker
+```
+
+اگر باز هم درست نشد، از پنل ادمین همان پروژه را retry کن.
