@@ -20,6 +20,7 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 - Image generation uses the provider boundary in `src/lib/ai`, with Liara as the default path and an admin-controlled Avalai path for Gemini image testing.
 - DB-backed rate limits, credit reservations, manual purchase review, sales referral codes, support tickets, FAQ, and admin billing operations are present.
 - Batch generation starts from Gallery, creates one project per selected source photo, and reserves generation credit until each output succeeds.
+- Generation now has a DB-backed recovery worker (`npm run worker:generation`) that polls queued projects, resumes stale `PROCESSING` jobs, and should run as a separate PM2 process in production.
 - New project creation supports optional supporting product photos for complicated products: one primary source plus up to two extra product angles still creates one project and one output.
 - Home now uses an admin-managed before/after carousel (`/admin/home`) with fallback placeholder slides until active slides are uploaded.
 - Curated style labels are simplified for users: social is "با جای متن", editorial is "با دکور", and cinematic is "سینمایی".
@@ -27,7 +28,7 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 
 ## Next Priorities
 
-- Production hardening: verify real Liara/Avalai generation, retry behavior, storage display URLs, provider cost, and failed-state recovery on the deployment target.
+- Production hardening: verify real Liara/Avalai generation, worker recovery behavior, storage display URLs, provider cost, and failed-state recovery on the deployment target.
 - Release readiness: route QA across auth, home, gallery, new project, project detail, projects, account, billing, support, settings, and admin.
 - Mobile polish: check the `393x852` mobile layout target for Farsi wrapping, RTL controls, bottom navigation, action placement, calm motion, and accidental scrolling.
 - Admin operations QA: review the rebuilt navy/white console with real data across overview, health, audit, users, billing, projects, AI, assets, styles, support/FAQ, and referrals.

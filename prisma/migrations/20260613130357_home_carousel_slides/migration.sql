@@ -1,15 +1,15 @@
 -- AlterTable
-ALTER TABLE `billingpackage` ALTER COLUMN `updatedAt` DROP DEFAULT;
+ALTER TABLE `BillingPackage` ALTER COLUMN `updatedAt` DROP DEFAULT;
 
 -- AlterTable
-ALTER TABLE `paymentsettings` ALTER COLUMN `updatedAt` DROP DEFAULT;
+ALTER TABLE `PaymentSettings` ALTER COLUMN `updatedAt` DROP DEFAULT;
 
 -- AlterTable
-ALTER TABLE `providersettings` MODIFY `id` VARCHAR(191) NOT NULL DEFAULT 'default',
+ALTER TABLE `ProviderSettings` MODIFY `id` VARCHAR(191) NOT NULL DEFAULT 'default',
     MODIFY `imageProvider` VARCHAR(191) NULL;
 
 -- AlterTable
-ALTER TABLE `purchaserequest` ALTER COLUMN `updatedAt` DROP DEFAULT;
+ALTER TABLE `PurchaseRequest` ALTER COLUMN `updatedAt` DROP DEFAULT;
 
 -- AlterTable
-ALTER TABLE `usersubscription` ALTER COLUMN `updatedAt` DROP DEFAULT;
+ALTER TABLE `UserSubscription` ALTER COLUMN `updatedAt` DROP DEFAULT;

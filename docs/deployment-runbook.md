@@ -70,6 +70,7 @@ Start with PM2:
 
 ```bash
 pm2 start npm --name gold-studio -- start
+pm2 start npm --name gold-studio-worker -- run worker:generation
 pm2 save
 ```
 
@@ -110,6 +111,7 @@ npm run db:generate
 npm run db:deploy
 npm run build
 pm2 restart gold-studio
+pm2 restart gold-studio-worker
 ```
 
 Preserve `.env` and `.local-storage/uploads`. Do not replace or delete uploads during zip or folder-based deploys.
@@ -149,6 +151,7 @@ Useful commands:
 ```bash
 pm2 status
 pm2 logs gold-studio --lines 100
+pm2 logs gold-studio-worker --lines 100
 journalctl -u nginx --since "30 min ago"
 curl -I http://127.0.0.1:3000
 curl -I https://ovala.ir
@@ -160,5 +163,6 @@ Common notes:
 
 - `npm run db:generate` only regenerates Prisma Client.
 - `npm run db:deploy` applies committed migrations.
+- `npm run worker:generation` polls the internal generation worker endpoint and recovers stale queued jobs; keep `gold-studio-worker` running in PM2.
 - Use `docs/proxy.md` only when GitHub, npm, Prisma, or Liara access is blocked.
 - If login says the admin password is wrong after a DB restore, reset it with `npm run admin:bootstrap`.
