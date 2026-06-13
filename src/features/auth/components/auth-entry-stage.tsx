@@ -4,15 +4,19 @@ import Image from "next/image";
 import { useActionState, useCallback, useEffect, useId, useRef, useState } from "react";
 import { ArrowLeft } from "vuesax-icons-react";
 import { BrandLogo } from "@/components/ui/brand-logo";
-import { LoginFormContent, SignupFormContent } from "@/features/auth/components/auth-form";
+import { LoginFormContent, ResetFormContent, SignupFormContent } from "@/features/auth/components/auth-form";
 import type { AuthFormState, OtpFormState } from "@/features/auth/actions";
 
-type AuthPanel = "login" | "signup";
+type AuthPanel = "login" | "signup" | "reset";
+
+type OtpAction = (prevState: OtpFormState, formData: FormData) => Promise<OtpFormState>;
 
 type AuthEntryStageProps = {
   loginAction: (prevState: AuthFormState, formData: FormData) => Promise<AuthFormState>;
-  sendSignupAction: (prevState: OtpFormState, formData: FormData) => Promise<OtpFormState>;
-  verifySignupAction: (prevState: OtpFormState, formData: FormData) => Promise<OtpFormState>;
+  sendSignupAction: OtpAction;
+  verifySignupAction: OtpAction;
+  sendResetAction?: OtpAction;
+  verifyResetAction?: OtpAction;
   initialPanel?: AuthPanel | null;
 };
 
@@ -26,6 +30,8 @@ type DragState = {
 
 const INITIAL_AUTH_STATE: AuthFormState = {};
 const INITIAL_OTP_STATE: OtpFormState = { step: "phone" };
+// جای خالی اکشن بازیابی وقتی صفحه بدون آن رندر می‌شود (ورود/ثبت‌نام)
+const NOOP_OTP_ACTION: OtpAction = async (state) => state;
 
 // فاصله خروج مدال نسبت به عرض صحنه؛ بالاتر از ۰٫۵ یعنی کارت کامل از کادر بیرون می‌رود
 const COMMIT_PROGRESS = 0.62;
@@ -74,6 +80,8 @@ export function AuthEntryStage({
   loginAction,
   sendSignupAction,
   verifySignupAction,
+  sendResetAction,
+  verifyResetAction,
   initialPanel = null,
 }: AuthEntryStageProps) {
   const [panel, setPanel] = useState<AuthPanel | null>(initialPanel);
@@ -84,6 +92,14 @@ export function AuthEntryStage({
   const [loginState, loginFormAction, loginPending] = useActionState(loginAction, INITIAL_AUTH_STATE);
   const [sendState, sendFormAction, sendPending] = useActionState(sendSignupAction, INITIAL_OTP_STATE);
   const [verifyState, verifyFormAction, verifyPending] = useActionState(verifySignupAction, INITIAL_OTP_STATE);
+  const [resetSendState, resetSendFormAction, resetSendPending] = useActionState(
+    sendResetAction ?? NOOP_OTP_ACTION,
+    INITIAL_OTP_STATE,
+  );
+  const [resetVerifyState, resetVerifyFormAction, resetVerifyPending] = useActionState(
+    verifyResetAction ?? NOOP_OTP_ACTION,
+    INITIAL_OTP_STATE,
+  );
 
   const stageRef = useRef<HTMLDivElement | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
@@ -156,7 +172,7 @@ export function AuthEntryStage({
 
   const commitTargetX = useCallback((target: AuthPanel) => {
     const width = stageRef.current?.offsetWidth ?? FALLBACK_HALF_WIDTH * 2;
-    return (target === "login" ? 1 : -1) * width * COMMIT_PROGRESS;
+    return (target === "signup" ? -1 : 1) * width * COMMIT_PROGRESS;
   }, []);
 
   const openPanel = useCallback(
@@ -174,7 +190,7 @@ export function AuthEntryStage({
 
   const closePanel = useCallback(() => {
     if (!panelRef.current || closingRef.current) return;
-    const returnFocus = panelRef.current === "login" ? loginZoneRef.current : signupZoneRef.current;
+    const returnFocus = panelRef.current === "signup" ? signupZoneRef.current : loginZoneRef.current;
     const finish = () => {
       closingRef.current = false;
       setPanel(null);
@@ -402,7 +418,7 @@ export function AuthEntryStage({
             >
               <div className="mb-4 flex items-center justify-between gap-3">
                 <h1 id={titleId} className="text-right text-[1.2rem] font-semibold leading-8 text-foreground">
-                  {panel === "login" ? "ورود" : "ثبت‌نام"}
+                  {panel === "login" ? "ورود" : panel === "signup" ? "ثبت‌نام" : "بازیابی رمز عبور"}
                 </h1>
                 <button
                   type="button"
@@ -416,11 +432,16 @@ export function AuthEntryStage({
 
               <div
                 key={panel}
-                className={swapDir ? (swapDir === "login" ? "ov-swap-from-right" : "ov-swap-from-left") : undefined}
+                className={swapDir ? (swapDir === "signup" ? "ov-swap-from-left" : "ov-swap-from-right") : undefined}
               >
                 {panel === "login" ? (
-                  <LoginFormContent action={loginFormAction} state={loginState} pending={loginPending} />
-                ) : (
+                  <LoginFormContent
+                    action={loginFormAction}
+                    state={loginState}
+                    pending={loginPending}
+                    onForgotPassword={sendResetAction ? () => switchPanel("reset") : undefined}
+                  />
+                ) : panel === "signup" ? (
                   <SignupFormContent
                     sendAction={sendFormAction}
                     verifyAction={verifyFormAction}
@@ -428,6 +449,15 @@ export function AuthEntryStage({
                     verifyState={verifyState}
                     sendPending={sendPending}
                     verifyPending={verifyPending}
+                  />
+                ) : (
+                  <ResetFormContent
+                    sendAction={resetSendFormAction}
+                    verifyAction={resetVerifyFormAction}
+                    sendState={resetSendState}
+                    verifyState={resetVerifyState}
+                    sendPending={resetSendPending}
+                    verifyPending={resetVerifyPending}
                   />
                 )}
 
@@ -443,7 +473,7 @@ export function AuthEntryStage({
                         ثبت‌نام
                       </button>
                     </>
-                  ) : (
+                  ) : panel === "signup" ? (
                     <>
                       حساب دارید؟{" "}
                       <button
@@ -454,6 +484,14 @@ export function AuthEntryStage({
                         ورود
                       </button>
                     </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => switchPanel("login")}
+                      className="text-foreground transition hover:text-accent-deep focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+                    >
+                      ورود با رمز عبور
+                    </button>
                   )}
                 </p>
               </div>
