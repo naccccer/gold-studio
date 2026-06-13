@@ -28,7 +28,12 @@ import {
 } from "@/features/gallery/client-upload-store";
 import { GalleryCropScreen } from "@/features/gallery/screens/gallery-crop-screen";
 import type { ProjectFormState } from "@/features/projects/actions";
-import { StyleChoiceControl } from "@/features/projects/components/style-choice-control";
+import {
+  StyleChoiceControl,
+  StyleRangeControl,
+  StyleSegmentedChoiceControl,
+  StyleToggleControl,
+} from "@/features/projects/components/style-choice-control";
 import type { StyleControlOption, StyleOption } from "@/features/projects/presets";
 import { NO_CREDITS_ERROR } from "@/lib/credits";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
@@ -168,6 +173,18 @@ function getInitialStyleControlValues(style?: StyleOption) {
   return Object.fromEntries((style?.controls ?? []).map((control) => [control.key, getControlDefaultValue(control)]));
 }
 
+function shouldShowStyleControl(control: StyleControl, values: Record<string, string>) {
+  return control.key !== "fullHijab" || (values.modelGender ?? "woman") === "woman";
+}
+
+function getResolvedStyleControlValue(control: StyleControl, values: Record<string, string>) {
+  if (control.key === "fullHijab" && !shouldShowStyleControl(control, values)) {
+    return "false";
+  }
+
+  return values[control.key] ?? getControlDefaultValue(control);
+}
+
 export function NewProjectForm({
   action,
   galleryAssets,
@@ -205,6 +222,7 @@ export function NewProjectForm({
   const [selectedReference, setSelectedReference] = useState<StyleReferenceOption | null>(null);
   const [referenceUploadPreview, setReferenceUploadPreview] = useState<string | null>(null);
   const [styleControlValues, setStyleControlValues] = useState<Record<string, string>>(() => getInitialStyleControlValues(defaultStyle));
+  const [openStyleControl, setOpenStyleControl] = useState<string | null>(null);
   const [productType, setProductType] = useState(normalizeProductType(explicitSelectedAsset?.productType));
   const [sourcePreparing, setSourcePreparing] = useState(false);
   const [sourceError, setSourceError] = useState<string | null>(null);
@@ -354,6 +372,7 @@ export function NewProjectForm({
   function selectStyle(style: StyleOption) {
     setSelectedStyle(style.id);
     setStyleControlValues(getInitialStyleControlValues(style));
+    setOpenStyleControl(null);
   }
 
   function selectReference(reference: StyleReferenceOption) {
@@ -366,7 +385,14 @@ export function NewProjectForm({
   }
 
   function setStyleControlValue(key: string, value: string) {
-    setStyleControlValues((current) => ({ ...current, [key]: value }));
+    setStyleControlValues((current) => ({
+      ...current,
+      [key]: value,
+      ...(key === "modelGender" && value !== "woman" ? { fullHijab: "false" } : {}),
+    }));
+    if (key === "modelGender") {
+      setOpenStyleControl(null);
+    }
   }
 
   function handleTopBarBack() {
@@ -422,7 +448,7 @@ export function NewProjectForm({
       <input type="hidden" name="generationMode" value="image" />
       <input type="hidden" name="outputPreset" value={outputPreset} />
       {styleControls.map((control) => (
-        <input key={control.key} type="hidden" name={`styleControl_${control.key}`} value={styleControlValues[control.key] ?? getControlDefaultValue(control)} />
+        <input key={control.key} type="hidden" name={`styleControl_${control.key}`} value={getResolvedStyleControlValue(control, styleControlValues)} />
       ))}
       {freeVariantParentId ? <input type="hidden" name="freeVariantParentId" value={freeVariantParentId} /> : null}
       {selectedAsset ? <input type="hidden" name="sourceAssetId" value={selectedAsset.id} /> : null}
@@ -832,12 +858,25 @@ export function NewProjectForm({
           </div>
 
           {styleControls.length > 0 ? (
-            <section className="space-y-3 rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-3">
-              {styleControls.map((control) => {
-                const value = styleControlValues[control.key] ?? getControlDefaultValue(control);
+            <section className="grid grid-cols-2 gap-2 rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-3">
+              {styleControls.filter((control) => shouldShowStyleControl(control, styleControlValues)).map((control) => {
+                const value = getResolvedStyleControlValue(control, styleControlValues);
                 const choiceOptions = parseChoiceOptions(control.optionsJson);
 
                 if (control.type === "CHOICE" && choiceOptions.length > 0) {
+                  if (control.key === "modelGender") {
+                    return (
+                      <StyleSegmentedChoiceControl
+                        key={control.key}
+                        controlKey={control.key}
+                        label={control.label}
+                        options={choiceOptions}
+                        value={value}
+                        onChange={(nextValue) => setStyleControlValue(control.key, nextValue)}
+                      />
+                    );
+                  }
+
                   return (
                     <StyleChoiceControl
                       key={control.key}
@@ -845,42 +884,37 @@ export function NewProjectForm({
                       label={control.label}
                       options={choiceOptions}
                       value={value}
+                      open={openStyleControl === control.key}
                       onChange={(nextValue) => setStyleControlValue(control.key, nextValue)}
+                      onOpenChange={(open) => setOpenStyleControl(open ? control.key : null)}
                     />
                   );
                 }
 
                 if (control.type === "RANGE") {
                   return (
-                    <label key={control.key} className="block space-y-2">
-                      <span className="flex items-center justify-between gap-3 text-xs text-surface/72">
-                        <span>{control.label}</span>
-                        <span className="rounded-full border border-white/14 bg-white/[0.05] px-2 py-0.5 text-[10px]" dir="ltr">
-                          {value}
-                        </span>
-                      </span>
-                      <input
-                        type="range"
-                        min={control.minValue ?? 0}
-                        max={control.maxValue ?? 100}
-                        value={value}
-                        onChange={(event) => setStyleControlValue(control.key, event.target.value)}
-                        className="w-full accent-accent-bright"
-                      />
-                    </label>
+                    <StyleRangeControl
+                      key={control.key}
+                      controlKey={control.key}
+                      label={control.label}
+                      value={value}
+                      min={control.minValue ?? 0}
+                      max={control.maxValue ?? 100}
+                      open={openStyleControl === control.key}
+                      onChange={(nextValue) => setStyleControlValue(control.key, nextValue)}
+                      onOpenChange={(open) => setOpenStyleControl(open ? control.key : null)}
+                    />
                   );
                 }
 
                 return (
-                  <label key={control.key} className="flex min-h-11 items-center justify-between gap-3 rounded-[0.9rem] border border-white/14 bg-white/[0.04] px-3 py-2 text-sm text-surface/84">
-                    <span>{control.label}</span>
-                    <input
-                      type="checkbox"
-                      checked={value === "true"}
-                      onChange={(event) => setStyleControlValue(control.key, event.target.checked ? "true" : "false")}
-                      className="h-4 w-4 accent-accent-bright"
-                    />
-                  </label>
+                  <StyleToggleControl
+                    key={control.key}
+                    controlKey={control.key}
+                    label={control.label}
+                    active={value === "true"}
+                    onChange={(active) => setStyleControlValue(control.key, active ? "true" : "false")}
+                  />
                 );
               })}
             </section>

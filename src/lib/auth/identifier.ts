@@ -3,7 +3,7 @@ export type LoginIdentifier =
   | { kind: "phone"; value: string };
 
 const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
-const PHONE_MIN_DIGITS = 5;
+const IRAN_MOBILE_PATTERN = /^09\d{9}$/;
 
 const digitMap: Record<string, string> = {
   "۰": "0",
@@ -32,11 +32,11 @@ export function validateEmail(value: string) {
   return EMAIL_PATTERN.test(value);
 }
 
-function normalizeDigits(value: string) {
+export function normalizeDigits(value: string) {
   return value.replace(/[۰-۹٠-٩]/g, (digit) => digitMap[digit] ?? digit);
 }
 
-function normalizePhone(value: string) {
+export function normalizePhone(value: string) {
   const compact = normalizeDigits(value).replace(/[\s().-]/g, "");
   let phone = compact;
 
@@ -51,7 +51,7 @@ function normalizePhone(value: string) {
   }
 
   const digitsOnly = phone.replace(/\D/g, "");
-  return digitsOnly.length >= PHONE_MIN_DIGITS ? digitsOnly : null;
+  return IRAN_MOBILE_PATTERN.test(digitsOnly) ? digitsOnly : null;
 }
 
 export function normalizeLoginIdentifier(value: FormDataEntryValue | null): LoginIdentifier | null {

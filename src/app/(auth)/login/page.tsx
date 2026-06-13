@@ -1,16 +1,20 @@
-import { AuthForm } from "@/features/auth/components/auth-form";
-import { loginAction } from "@/features/auth/actions";
+import { AuthEntryStage } from "@/features/auth/components/auth-entry-stage";
+import {
+  completeSignupAction,
+  loginAction,
+  resetPasswordWithOtpAction,
+  sendPasswordResetOtpAction,
+  sendSignupOtpAction,
+} from "@/features/auth/actions";
 
 export default function LoginPage() {
   return (
-    <AuthForm
-      title="ورود"
-      action={loginAction}
-      submitLabel="ورود به استودیو"
-      mode="login"
-      secondaryHref="/signup"
-      secondaryLabel="ساخت حساب"
-      secondaryPrefix="حساب ندارید؟"
+    <AuthEntryStage
+      loginAction={loginAction}
+      sendSignupAction={sendSignupOtpAction}
+      verifySignupAction={completeSignupAction}
+      sendResetAction={sendPasswordResetOtpAction}
+      verifyResetAction={resetPasswordWithOtpAction}
     />
   );
 }

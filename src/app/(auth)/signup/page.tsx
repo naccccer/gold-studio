@@ -1,16 +1,21 @@
-import { AuthForm } from "@/features/auth/components/auth-form";
-import { signupAction } from "@/features/auth/actions";
+import { AuthEntryStage } from "@/features/auth/components/auth-entry-stage";
+import {
+  completeSignupAction,
+  loginAction,
+  resetPasswordWithOtpAction,
+  sendPasswordResetOtpAction,
+  sendSignupOtpAction,
+} from "@/features/auth/actions";
 
 export default function SignupPage() {
   return (
-    <AuthForm
-      title="ساخت حساب"
-      action={signupAction}
-      submitLabel="ساخت حساب"
-      mode="signup"
-      secondaryHref="/login"
-      secondaryLabel="ورود"
-      secondaryPrefix="قبلا حساب دارید؟"
+    <AuthEntryStage
+      initialPanel="signup"
+      loginAction={loginAction}
+      sendSignupAction={sendSignupOtpAction}
+      verifySignupAction={completeSignupAction}
+      sendResetAction={sendPasswordResetOtpAction}
+      verifyResetAction={resetPasswordWithOtpAction}
     />
   );
 }

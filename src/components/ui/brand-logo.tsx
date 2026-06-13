@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-type BrandLogoVariant = "logo" | "mark" | "mark-light" | "wordmark" | "horizontal" | "primary" | "primary-light" | "primary-dark";
+type BrandLogoVariant = "logo" | "mark" | "mark-light" | "wordmark" | "horizontal" | "primary" | "primary-light" | "primary-dark" | "primary-on-dark";
 
 type BrandLogoProps = {
   variant?: BrandLogoVariant;
@@ -49,21 +49,28 @@ const logoConfig: Record<BrandLogoVariant, { src: string; width: number; height:
     width: 174,
     height: 58,
     alt: "OVALA Studio",
-    className: "h-[58px] w-[174px] translate-x-[10px] translate-y-[4px]",
+    className: "h-[58px] w-[174px]",
   },
   "primary-light": {
     src: "/brand/ovala-primary-light.svg",
     width: 174,
     height: 58,
     alt: "OVALA Studio",
-    className: "h-[58px] w-[174px] translate-x-[10px] translate-y-[4px]",
+    className: "h-[58px] w-[174px]",
+  },
+  "primary-on-dark": {
+    src: "/brand/ovala-primary-light-transparent.svg",
+    width: 174,
+    height: 58,
+    alt: "OVALA Studio",
+    className: "h-[58px] w-[174px]",
   },
   "primary-dark": {
     src: "/brand/ovala-primary-dark.svg",
     width: 174,
     height: 58,
     alt: "OVALA Studio",
-    className: "h-[58px] w-[174px] translate-x-[10px] translate-y-[4px]",
+    className: "h-[58px] w-[174px]",
   },
 };
 

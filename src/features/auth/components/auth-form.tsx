@@ -1,153 +1,361 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
-import { ArrowLeft, Eye, EyeSlash, LoginCurve, UserAdd, UserSearch, type Icon } from "vuesax-icons-react";
-import { AuthImageBackdrop } from "@/components/ui/auth-image-backdrop";
-import { BrandLogo } from "@/components/ui/brand-logo";
+import { useState, type InputHTMLAttributes } from "react";
+import {
+  Eye,
+  EyeSlash,
+  Key,
+  Lock,
+  LoginCurve,
+  Mobile,
+  PasswordCheck,
+  UserAdd,
+  type Icon,
+} from "vuesax-icons-react";
 import { Button } from "@/components/ui/button";
-import type { AuthFormState } from "@/features/auth/actions";
+import type { AuthFormState, OtpFormState } from "@/features/auth/actions";
 
-type AuthFormProps = {
-  title: string;
-  action: (prevState: AuthFormState, formData: FormData) => Promise<AuthFormState>;
-  submitLabel: string;
-  mode: "login" | "signup";
-  secondaryHref: string;
-  secondaryLabel: string;
-  secondaryPrefix: string;
-};
-
-const INITIAL_STATE: AuthFormState = {};
 const PASSWORD_MIN_LENGTH = 6;
-const authHeroImage = "/images/placeholders/jewelry/auth-hero-ring-01.webp";
 
-type AuthFieldProps = {
+type AuthFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
   name: string;
   type: string;
   autoComplete: string;
-  placeholder?: string;
   dir?: "rtl" | "ltr";
   icon: Icon;
 };
 
+type OtpFlowProps = {
+  sendAction: (formData: FormData) => void;
+  verifyAction: (formData: FormData) => void;
+  sendState: OtpFormState;
+  verifyState: OtpFormState;
+  sendPending: boolean;
+  verifyPending: boolean;
+};
+
 function AuthField({ label, icon: Icon, dir = "rtl", ...props }: AuthFieldProps) {
   return (
-    <label className="block rounded-[1.05rem] border border-white/76 bg-surface/68 px-3.5 py-3 shadow-[0_16px_36px_-34px_rgba(17,16,14,0.65)]">
-      <span className="mb-1.5 block text-right text-[11px] font-medium text-[#918575]">
+    <label className="block rounded-[var(--radius-md)] border border-border bg-white px-3.5 py-3 transition focus-within:border-accent focus-within:shadow-[var(--shadow-focus)]">
+      <span className="mb-2 block text-right text-xs font-semibold leading-none text-muted-strong">
         {label}
       </span>
-      <span className="flex h-7 items-center gap-2" dir="ltr">
-        <Icon aria-hidden="true" size={16} color="#9a8f80" variant="Linear" className="shrink-0" />
+      <span className="flex h-8 items-center gap-2.5" dir="ltr">
+        <Icon aria-hidden="true" size={18} color="#837868" variant="Linear" className="shrink-0" />
         <input
           {...props}
           dir={dir}
-          className="h-full min-w-0 flex-1 bg-transparent text-sm font-semibold leading-none text-[#24201b] outline-none placeholder:font-normal placeholder:text-[#8b8173]"
+          className={[
+            "auth-text-input h-full min-w-0 flex-1 bg-transparent text-sm font-semibold leading-none text-foreground outline-none placeholder:font-normal placeholder:text-muted",
+            dir === "ltr" ? "text-left" : "text-right",
+          ].join(" ")}
         />
       </span>
     </label>
   );
 }
 
-export function AuthForm({
-  action,
-  submitLabel,
-  mode,
-  secondaryHref,
-  secondaryLabel,
-  secondaryPrefix,
-}: AuthFormProps) {
-  const [state, formAction, pending] = useActionState(action, INITIAL_STATE);
+function PasswordField({
+  label,
+  name,
+  autoComplete,
+}: {
+  label: string;
+  name: string;
+  autoComplete: string;
+}) {
   const [showPassword, setShowPassword] = useState(false);
-  const isSignup = mode === "signup";
-  const SubmitIcon = isSignup ? UserAdd : LoginCurve;
 
   return (
-    <main className="flex min-h-svh justify-center overflow-hidden bg-[#efe6d8] text-right text-foreground md:bg-[radial-gradient(circle_at_top,#fffaf0_0%,#f6f1e8_42%,#e8dece_100%)] md:py-6">
-      <section className="relative flex h-svh w-full max-w-[393px] flex-col overflow-hidden bg-[#11100e] px-5 pb-5 pt-5 md:h-[calc(100svh-3rem)] md:max-w-[430px] md:rounded-[2rem] md:border md:border-white/80 md:shadow-[0_30px_80px_-52px_rgba(23,20,17,0.65)]">
-        <AuthImageBackdrop src={authHeroImage} priority imageClassName="object-[50%_38%]" />
-        <div className="relative z-10 flex h-[86px] items-center justify-center pt-10">
-          <BrandLogo variant="primary" priority />
-        </div>
-
-        <form action={formAction} className="relative z-10 mt-auto space-y-3 pb-1">
-          <AuthField
-            label="موبایل / ایمیل"
-            name="loginIdentifier"
-            type="text"
-            autoComplete="username"
-            placeholder="0912 456 7890"
-            dir="ltr"
-            icon={UserSearch}
-          />
-
-          <div className="rounded-[1.05rem] border border-white/76 bg-surface/68 px-3.5 py-3 shadow-[0_16px_36px_-34px_rgba(17,16,14,0.65)]">
-            <div className="mb-1.5 text-right text-[11px] font-medium text-[#918575]">
-              رمز عبور
-            </div>
-            <div className="flex h-7 items-center gap-2" dir="ltr">
-              <button
-                type="button"
-                onClick={() => setShowPassword((value) => !value)}
-                aria-label={showPassword ? "پنهان کردن رمز عبور" : "نمایش رمز عبور"}
-                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#8b8173] transition hover:bg-[#eee7dc] hover:text-[#24201b]"
-              >
-                {showPassword ? (
-                  <EyeSlash aria-hidden="true" size={16} color="currentColor" variant="Linear" />
-                ) : (
-                  <Eye aria-hidden="true" size={16} color="currentColor" variant="Linear" />
-                )}
-              </button>
-              <input
-                required
-                name="password"
-                minLength={PASSWORD_MIN_LENGTH}
-                type={showPassword ? "text" : "password"}
-                autoComplete={isSignup ? "new-password" : "current-password"}
-                dir="ltr"
-                className="h-full min-w-0 flex-1 bg-transparent text-left text-sm font-semibold leading-none text-[#24201b] outline-none"
-              />
-            </div>
-          </div>
-
-          {state.error ? (
-            <p className="rounded-[1rem] border border-danger/30 bg-danger-soft/92 px-3 py-2 text-sm text-danger">
-              {state.error}
-            </p>
-          ) : null}
-
-          <div className="pt-1">
-            <Button type="submit" disabled={pending} size="full" className="h-12 rounded-[1rem]">
-              {pending ? "چند لحظه..." : submitLabel}
-              <SubmitIcon aria-hidden="true" size={16} color="currentColor" variant="Linear" />
-            </Button>
-          </div>
-
-          {mode === "login" ? (
-            <div className="flex items-center justify-between px-1 text-xs font-medium text-surface/78">
-              <Link href={secondaryHref} className="inline-flex items-center gap-1 text-surface transition hover:text-surface/82">
-                <span>{secondaryLabel}</span>
-                <ArrowLeft aria-hidden="true" size={14} color="currentColor" variant="Linear" />
-              </Link>
-              <span className="text-surface/72">فراموشی رمز</span>
-            </div>
+    <div className="rounded-[var(--radius-md)] border border-border bg-white px-3.5 py-3 transition focus-within:border-accent focus-within:shadow-[var(--shadow-focus)]">
+      <div className="mb-2 text-right text-xs font-semibold leading-none text-muted-strong">
+        {label}
+      </div>
+      <div className="flex h-8 items-center gap-2.5" dir="ltr">
+        <Lock aria-hidden="true" size={18} color="#837868" variant="Linear" className="shrink-0" />
+        <input
+          required
+          name={name}
+          minLength={PASSWORD_MIN_LENGTH}
+          type={showPassword ? "text" : "password"}
+          autoComplete={autoComplete}
+          dir="ltr"
+          className="auth-text-input h-full min-w-0 flex-1 bg-transparent text-left text-sm font-semibold leading-none text-foreground outline-none"
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword((value) => !value)}
+          aria-label={showPassword ? "پنهان کردن رمز عبور" : "نمایش رمز عبور"}
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-surface-soft hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+        >
+          {showPassword ? (
+            <EyeSlash aria-hidden="true" size={17} color="currentColor" variant="Linear" />
           ) : (
-            <div className="space-y-2 pt-1">
-              <p className="text-center text-[11px] leading-5 text-surface/78">
-                رمز عبور باید حداقل ۶ کاراکتر باشد.
-              </p>
-              <p className="text-center text-xs font-medium text-surface/82">
-                {secondaryPrefix}{" "}
-                <Link href={secondaryHref} className="inline-flex items-center gap-1 text-surface">
-                  {secondaryLabel}
-                  <ArrowLeft aria-hidden="true" size={14} color="currentColor" variant="Linear" />
-                </Link>
-              </p>
-            </div>
+            <Eye aria-hidden="true" size={17} color="currentColor" variant="Linear" />
           )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function FormMessage({ state }: { state: AuthFormState | OtpFormState }) {
+  if (state.error) {
+    return (
+      <p aria-live="polite" className="rounded-[var(--radius-md)] border border-danger/25 bg-danger-soft px-3 py-2 text-sm font-medium leading-6 text-danger">
+        {state.error}
+      </p>
+    );
+  }
+
+  if ("message" in state && state.message) {
+    return (
+      <p aria-live="polite" className="rounded-[var(--radius-md)] border border-accent/18 bg-accent-wash px-3 py-2 text-sm font-medium leading-6 text-accent-deep">
+        {state.message}
+      </p>
+    );
+  }
+
+  return null;
+}
+
+function SubmitButton({
+  pending,
+  pendingLabel,
+  label,
+  icon: Icon,
+}: {
+  pending: boolean;
+  pendingLabel: string;
+  label: string;
+  icon: Icon;
+}) {
+  return (
+    <Button type="submit" disabled={pending} size="full" className="h-[3.25rem] rounded-[var(--radius-md)]">
+      <span className="text-center">{pending ? pendingLabel : label}</span>
+      <Icon aria-hidden="true" size={18} color="currentColor" variant="Linear" />
+    </Button>
+  );
+}
+
+function ResendForm({
+  phone,
+  sendAction,
+  sendPending,
+}: {
+  phone: string;
+  sendAction: (formData: FormData) => void;
+  sendPending: boolean;
+}) {
+  return (
+    <form action={sendAction} className="px-1 text-xs font-semibold text-muted">
+      <input type="hidden" name="phone" value={phone} />
+      <button type="submit" disabled={sendPending} className="transition hover:text-foreground disabled:opacity-60">
+        {sendPending ? "در حال ارسال..." : "ارسال دوباره کد"}
+      </button>
+    </form>
+  );
+}
+
+export function LoginFormContent({
+  action,
+  state,
+  pending,
+  onForgotPassword,
+}: {
+  action: (formData: FormData) => void;
+  state: AuthFormState;
+  pending: boolean;
+  onForgotPassword?: () => void;
+}) {
+  return (
+    <form action={action} className="space-y-3">
+      <AuthField
+        label="موبایل"
+        name="loginIdentifier"
+        type="text"
+        autoComplete="username"
+        placeholder="0912 456 7890"
+        dir="ltr"
+        icon={Mobile}
+        required
+      />
+
+      <PasswordField label="رمز عبور" name="password" autoComplete="current-password" />
+
+      <FormMessage state={state} />
+
+      <SubmitButton pending={pending} pendingLabel="چند لحظه..." label="ورود" icon={LoginCurve} />
+
+      <div className="px-1 pt-1 text-left text-xs font-semibold text-muted">
+        {onForgotPassword ? (
+          <button type="button" onClick={onForgotPassword} className="transition hover:text-foreground">
+            فراموشی رمز
+          </button>
+        ) : (
+          <Link href="/forgot-password" className="transition hover:text-foreground">
+            فراموشی رمز
+          </Link>
+        )}
+      </div>
+    </form>
+  );
+}
+
+export function SignupFormContent({
+  sendAction,
+  verifyAction,
+  sendState,
+  verifyState,
+  sendPending,
+  verifyPending,
+}: OtpFlowProps) {
+  const activeState = verifyState.step === "verify" ? verifyState : sendState;
+  const phone = activeState.phone ?? sendState.phone ?? "";
+
+  if (activeState.step === "verify" && phone) {
+    return (
+      <div className="space-y-3">
+        <p className="rounded-[var(--radius-md)] bg-surface-soft px-3 py-2 text-xs font-medium leading-6 text-muted-strong">
+          کد تایید برای <span dir="ltr" className="inline-block font-semibold text-foreground">{phone}</span> ارسال شده است.
+        </p>
+
+        <form action={verifyAction} className="space-y-3">
+          <input type="hidden" name="phone" value={phone} />
+          <AuthField
+            label="کد تایید"
+            name="code"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            placeholder="123456"
+            dir="ltr"
+            icon={Key}
+            required
+          />
+          <PasswordField label="رمز عبور" name="password" autoComplete="new-password" />
+          <PasswordField label="تکرار رمز عبور" name="confirmPassword" autoComplete="new-password" />
+
+          <FormMessage state={activeState} />
+
+          <SubmitButton
+            pending={verifyPending}
+            pendingLabel="چند لحظه..."
+            label="تکمیل ثبت‌نام"
+            icon={PasswordCheck}
+          />
         </form>
-      </section>
-    </main>
+
+        <ResendForm phone={phone} sendAction={sendAction} sendPending={sendPending} />
+      </div>
+    );
+  }
+
+  return (
+    <form action={sendAction} className="space-y-3">
+      <AuthField
+        label="موبایل"
+        name="phone"
+        type="tel"
+        inputMode="tel"
+        autoComplete="tel"
+        placeholder="0912 456 7890"
+        defaultValue={phone}
+        dir="ltr"
+        icon={Mobile}
+        required
+      />
+
+      <FormMessage state={activeState} />
+
+      <SubmitButton
+        pending={sendPending}
+        pendingLabel="در حال ارسال..."
+        label="دریافت کد تایید"
+        icon={UserAdd}
+      />
+    </form>
+  );
+}
+
+export function ResetFormContent({
+  sendAction,
+  verifyAction,
+  sendState,
+  verifyState,
+  sendPending,
+  verifyPending,
+}: OtpFlowProps) {
+  const activeState = verifyState.step === "verify" ? verifyState : sendState;
+  const phone = activeState.phone ?? sendState.phone ?? "";
+
+  if (activeState.step === "verify" && phone) {
+    return (
+      <div className="space-y-3">
+        <p className="rounded-[var(--radius-md)] bg-surface-soft px-3 py-2 text-xs font-medium leading-6 text-muted-strong">
+          کد تایید برای <span dir="ltr" className="inline-block font-semibold text-foreground">{phone}</span> ارسال شده است.
+        </p>
+
+        <form action={verifyAction} className="space-y-3">
+          <input type="hidden" name="phone" value={phone} />
+          <AuthField
+            label="کد تایید"
+            name="code"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            placeholder="123456"
+            dir="ltr"
+            icon={Key}
+            required
+          />
+          <PasswordField label="رمز جدید" name="password" autoComplete="new-password" />
+          <PasswordField label="تکرار رمز جدید" name="confirmPassword" autoComplete="new-password" />
+
+          <FormMessage state={activeState} />
+
+          <SubmitButton
+            pending={verifyPending}
+            pendingLabel="چند لحظه..."
+            label="تغییر رمز عبور"
+            icon={PasswordCheck}
+          />
+        </form>
+
+        <ResendForm phone={phone} sendAction={sendAction} sendPending={sendPending} />
+      </div>
+    );
+  }
+
+  return (
+    <form action={sendAction} className="space-y-3">
+      <AuthField
+        label="موبایل"
+        name="phone"
+        type="tel"
+        inputMode="tel"
+        autoComplete="tel"
+        placeholder="0912 456 7890"
+        defaultValue={phone}
+        dir="ltr"
+        icon={Mobile}
+        required
+      />
+
+      <FormMessage state={activeState} />
+
+      <SubmitButton
+        pending={sendPending}
+        pendingLabel="در حال ارسال..."
+        label="دریافت کد تایید"
+        icon={Key}
+      />
+
+      <p className="text-center text-xs font-medium leading-6 text-muted">
+        بعد از تایید موبایل، رمز جدید را وارد می‌کنید.
+      </p>
+    </form>
   );
 }

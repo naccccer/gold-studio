@@ -7,6 +7,10 @@ import { db } from "@/lib/db";
 import { buildSampleReferenceVisionPromptContext, ensureStyleReferenceVision } from "@/lib/style-reference-vision";
 import { readStoredUpload, saveGeneratedImage } from "@/lib/uploads";
 
+const DEFAULT_STALE_PROCESSING_MS = 45 * 60 * 1000;
+const DEFAULT_WORKER_LIMIT = 1;
+const MAX_WORKER_LIMIT = 3;
+
 function collectErrorText(error: unknown, depth = 0): string {
   if (depth > 3 || error === null || error === undefined) {
     return "";
@@ -93,6 +97,13 @@ function attemptLabel(attempt: ProviderModelAttempt) {
   return `${attempt.provider}/${attempt.model}`;
 }
 
+async function touchProcessingProject(projectId: string) {
+  await db.project.updateMany({
+    where: { id: projectId, status: "PROCESSING" },
+    data: { errorMessage: null },
+  });
+}
+
 function allModelsFailedError(errors: Array<{ attempt: ProviderModelAttempt; error: unknown }>) {
   const details = errors
     .map(({ attempt, error }) => `${attemptLabel(attempt)}: ${technicalErrorMessage(error, "generation failed")}`)
@@ -128,6 +139,7 @@ async function generateImageWithModelFallback({
 
   for (const [index, attempt] of attempts.entries()) {
     try {
+      await touchProcessingProject(projectId);
       const providerLabel = imageProviderLabel(attempt.provider);
       const generate = attempt.provider === "avalai" ? generateStyledImageWithAvalai : generateStyledImageWithLiara;
       const generatedImage = await generate({
@@ -188,6 +200,7 @@ async function generateTextImageWithModelFallback({
 
   for (const [index, attempt] of attempts.entries()) {
     try {
+      await touchProcessingProject(projectId);
       const providerLabel = imageProviderLabel(attempt.provider);
       const generate = attempt.provider === "avalai" ? generateTextImageWithAvalai : generateTextImageWithLiara;
       const generatedImage = await generate({
@@ -234,6 +247,100 @@ async function claimQueuedProject(projectId: string) {
   });
 
   return claimed.count > 0;
+}
+
+function normalizeWorkerLimit(limit?: number | null) {
+  if (!Number.isFinite(limit ?? NaN)) {
+    return DEFAULT_WORKER_LIMIT;
+  }
+
+  return Math.min(MAX_WORKER_LIMIT, Math.max(1, Math.trunc(limit ?? DEFAULT_WORKER_LIMIT)));
+}
+
+function normalizeStaleProcessingMs(staleProcessingMs?: number | null) {
+  if (!Number.isFinite(staleProcessingMs ?? NaN) || (staleProcessingMs ?? 0) < 5 * 60 * 1000) {
+    return DEFAULT_STALE_PROCESSING_MS;
+  }
+
+  return staleProcessingMs ?? DEFAULT_STALE_PROCESSING_MS;
+}
+
+export async function recoverStaleGenerationJobs({
+  staleProcessingMs,
+}: {
+  staleProcessingMs?: number | null;
+} = {}) {
+  const cutoff = new Date(Date.now() - normalizeStaleProcessingMs(staleProcessingMs));
+  const [projects, batches] = await Promise.all([
+    db.project.updateMany({
+      where: {
+        status: "PROCESSING",
+        updatedAt: { lt: cutoff },
+        resultImageUrl: null,
+      },
+      data: {
+        status: "QUEUED",
+        errorMessage: null,
+      },
+    }),
+    db.generationBatch.updateMany({
+      where: {
+        status: "PROCESSING",
+        updatedAt: { lt: cutoff },
+      },
+      data: { status: "QUEUED" },
+    }),
+  ]);
+
+  return {
+    recoveredProjects: projects.count,
+    recoveredBatches: batches.count,
+  };
+}
+
+async function nextQueuedDurableProject() {
+  return db.project.findFirst({
+    where: {
+      status: "QUEUED",
+      archivedAt: null,
+      sourceAssetId: { not: null },
+      OR: [
+        { variantParentId: { not: null } },
+        { creditReservations: { some: { status: "RESERVED" } } },
+      ],
+    },
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
+}
+
+export async function processQueuedGenerationJobs({
+  limit,
+  staleProcessingMs,
+}: {
+  limit?: number | null;
+  staleProcessingMs?: number | null;
+} = {}) {
+  const recovery = await recoverStaleGenerationJobs({ staleProcessingMs });
+  const safeLimit = normalizeWorkerLimit(limit);
+  let processedProjects = 0;
+
+  for (let index = 0; index < safeLimit; index += 1) {
+    const project = await nextQueuedDurableProject();
+    if (!project) {
+      break;
+    }
+
+    const processed = await processImageProject(project.id);
+    if (processed) {
+      processedProjects += 1;
+    }
+  }
+
+  return {
+    ...recovery,
+    processedProjects,
+  };
 }
 
 async function resolveBatchStatus(batchId: string) {
@@ -302,7 +409,7 @@ async function enrichPromptWithReferenceVision(project: {
 export async function processImageProject(projectId: string) {
   const claimed = await claimQueuedProject(projectId);
   if (!claimed) {
-    return;
+    return false;
   }
 
   try {
@@ -381,6 +488,7 @@ export async function processImageProject(projectId: string) {
     }
     await captureGenerationCreditReservation({ projectId });
     await refreshGenerationBatchesForProject(projectId);
+    return true;
   } catch (error) {
     await releaseGenerationCreditReservation({ projectId });
     await db.project.update({
@@ -401,6 +509,7 @@ export async function processImageProject(projectId: string) {
       });
     }
     await refreshGenerationBatchesForProject(projectId);
+    return true;
   }
 }
 
@@ -415,7 +524,7 @@ export async function processTextProject({
 }) {
   const claimed = await claimQueuedProject(projectId);
   if (!claimed) {
-    return;
+    return false;
   }
 
   try {
@@ -433,6 +542,7 @@ export async function processTextProject({
     });
     await captureGenerationCreditReservation({ projectId });
     await refreshGenerationBatchesForProject(projectId);
+    return true;
   } catch (error) {
     await releaseGenerationCreditReservation({ projectId });
     await db.project.update({
@@ -442,6 +552,7 @@ export async function processTextProject({
         errorMessage: userErrorMessage(error, "تست متن به تصویر کامل نشد. جزئیات بیشتر در بخش ادمین و رویدادهای provider ثبت شد."),
       },
     });
+    return true;
   }
 }
 

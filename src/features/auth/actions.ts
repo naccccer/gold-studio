@@ -1,63 +1,81 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { normalizeLoginIdentifier } from "@/lib/auth/identifier";
+import { normalizeLoginIdentifier, normalizePhone } from "@/lib/auth/identifier";
+import { createOtpChallenge, getOtpResendDelaySeconds, verifyOtpChallenge, type OtpPurpose } from "@/lib/auth/otp";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { clearSession, createSession } from "@/lib/auth/session";
 import { INITIAL_SIGNUP_CREDITS } from "@/lib/credits";
 import { db } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { referralCodeFromUserId } from "@/lib/referrals";
+import { FarazSmsConfigError, FarazSmsSendError } from "@/lib/sms/faraz";
 
 export type AuthFormState = {
   error?: string;
 };
 
+export type OtpFormState = {
+  step: "phone" | "verify";
+  phone?: string;
+  error?: string;
+  message?: string;
+};
+
 const PASSWORD_MIN_LENGTH = 6;
-const INVALID_IDENTIFIER_ERROR = "ایمیل یا موبایل را درست وارد کنید.";
-const DUPLICATE_ACCOUNT_ERROR = "این حساب قبلا ساخته شده است.";
+const INVALID_PHONE_ERROR = "شماره موبایل را درست وارد کنید.";
+const DUPLICATE_ACCOUNT_ERROR = "این شماره قبلا ثبت شده است. از صفحه ورود استفاده کنید.";
 const BAD_LOGIN_ERROR = "اطلاعات ورود درست نیست.";
+const PASSWORD_LENGTH_ERROR = "رمز عبور باید حداقل ۶ کاراکتر باشد.";
+const PASSWORD_CONFIRM_ERROR = "تکرار رمز عبور با رمز جدید یکسان نیست.";
+const SMS_CONFIG_ERROR = "ارسال پیامک هنوز تنظیم نشده است. کلید API و کد الگوی فراز اس‌ام‌اس را در env وارد کنید.";
+const SMS_SEND_ERROR = "ارسال پیامک ناموفق بود. چند دقیقه دیگر دوباره تلاش کنید.";
+const OTP_SENT_MESSAGE = "کد تایید ارسال شد. اگر پیامک با تاخیر رسید، کد تا ۱۰ دقیقه معتبر است.";
 
-export async function signupAction(
-  _prevState: AuthFormState,
-  formData: FormData,
-): Promise<AuthFormState> {
-  const identifier = normalizeLoginIdentifier(formData.get("loginIdentifier"));
-  const password = String(formData.get("password") ?? "");
+function friendlySmsError(error: unknown) {
+  if (error instanceof FarazSmsConfigError) return SMS_CONFIG_ERROR;
+  if (error instanceof FarazSmsSendError) return error.publicMessage;
+  return SMS_SEND_ERROR;
+}
 
-  if (!identifier) {
-    return { error: INVALID_IDENTIFIER_ERROR };
-  }
+function normalizeFormPhone(value: FormDataEntryValue | null) {
+  return normalizePhone(String(value ?? ""));
+}
 
+async function ensureCanSendOtp({
+  phone,
+  purpose,
+  scope,
+}: {
+  phone: string;
+  purpose: OtpPurpose;
+  scope: string;
+}) {
   const limited = await checkRateLimit({
-    scope: "auth:signup",
-    identifier: identifier.value,
+    scope,
+    identifier: phone,
     limit: 5,
     windowMs: 10 * 60 * 1000,
   });
-  if (!limited.ok) {
-    return { error: limited.error };
+  if (!limited.ok) return { ok: false as const, error: limited.error };
+
+  const resendDelaySeconds = await getOtpResendDelaySeconds({ phone, purpose });
+  if (resendDelaySeconds > 0) {
+    return {
+      ok: false as const,
+      error: `کد قبلی هنوز معتبر است. ${resendDelaySeconds} ثانیه دیگر برای ارسال کد جدید صبر کنید.`,
+    };
   }
 
-  if (password.length < PASSWORD_MIN_LENGTH) {
-    return { error: "رمز عبور حداقل ۶ کاراکتر باشد." };
-  }
+  return { ok: true as const };
+}
 
-  const existing = await db.user.findFirst({
-    where: identifier.kind === "email" ? { email: identifier.value } : { phone: identifier.value },
-  });
-  if (existing) {
-    return { error: DUPLICATE_ACCOUNT_ERROR };
-  }
-
+async function createUserWithPhonePassword(phone: string, password: string) {
   const passwordHash = await hashPassword(password);
-  const email = identifier.kind === "email" ? identifier.value : null;
-  const phone = identifier.kind === "phone" ? identifier.value : null;
 
-  const user = await db.$transaction(async (tx) => {
+  return db.$transaction(async (tx) => {
     const created = await tx.user.create({
       data: {
-        email,
         phone,
         passwordHash,
         role: "USER",
@@ -82,6 +100,115 @@ export async function signupAction(
     });
 
     return created;
+  });
+}
+
+export async function sendSignupOtpAction(
+  _prevState: OtpFormState,
+  formData: FormData,
+): Promise<OtpFormState> {
+  const phone = normalizeFormPhone(formData.get("phone"));
+  if (!phone) return { step: "phone", error: INVALID_PHONE_ERROR };
+
+  const existing = await db.user.findUnique({ where: { phone }, select: { id: true } });
+  if (existing) return { step: "phone", phone, error: DUPLICATE_ACCOUNT_ERROR };
+
+  const canSend = await ensureCanSendOtp({ phone, purpose: "SIGNUP", scope: "auth:otp:signup:send" });
+  if (!canSend.ok) return { step: "verify", phone, error: canSend.error };
+
+  try {
+    await createOtpChallenge({ phone, purpose: "SIGNUP" });
+  } catch (error) {
+    return { step: "phone", phone, error: friendlySmsError(error) };
+  }
+
+  return { step: "verify", phone, message: OTP_SENT_MESSAGE };
+}
+
+export async function completeSignupAction(
+  _prevState: OtpFormState,
+  formData: FormData,
+): Promise<OtpFormState> {
+  const phone = normalizeFormPhone(formData.get("phone"));
+  const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
+
+  if (!phone) return { step: "phone", error: INVALID_PHONE_ERROR };
+  if (password.length < PASSWORD_MIN_LENGTH) return { step: "verify", phone, error: PASSWORD_LENGTH_ERROR };
+  if (password !== confirmPassword) return { step: "verify", phone, error: PASSWORD_CONFIRM_ERROR };
+
+  const limited = await checkRateLimit({
+    scope: "auth:otp:signup:verify",
+    identifier: phone,
+    limit: 10,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!limited.ok) return { step: "verify", phone, error: limited.error };
+
+  const existing = await db.user.findUnique({ where: { phone }, select: { id: true } });
+  if (existing) return { step: "phone", phone, error: DUPLICATE_ACCOUNT_ERROR };
+
+  const otp = await verifyOtpChallenge({ phone, purpose: "SIGNUP", code: formData.get("code") });
+  if (!otp.ok) return { step: "verify", phone, error: otp.error };
+
+  const user = await createUserWithPhonePassword(phone, password);
+
+  await createSession({ userId: user.id, role: user.role });
+  redirect(user.role === "ADMIN" ? "/admin" : "/dashboard");
+}
+
+export async function sendPasswordResetOtpAction(
+  _prevState: OtpFormState,
+  formData: FormData,
+): Promise<OtpFormState> {
+  const phone = normalizeFormPhone(formData.get("phone"));
+  if (!phone) return { step: "phone", error: INVALID_PHONE_ERROR };
+
+  const user = await db.user.findUnique({ where: { phone }, select: { id: true } });
+  if (!user) return { step: "phone", phone, error: "حسابی با این شماره پیدا نشد." };
+
+  const canSend = await ensureCanSendOtp({ phone, purpose: "PASSWORD_RESET", scope: "auth:otp:password-reset:send" });
+  if (!canSend.ok) return { step: "verify", phone, error: canSend.error };
+
+  try {
+    await createOtpChallenge({ phone, purpose: "PASSWORD_RESET" });
+  } catch (error) {
+    return { step: "phone", phone, error: friendlySmsError(error) };
+  }
+
+  return { step: "verify", phone, message: OTP_SENT_MESSAGE };
+}
+
+export async function resetPasswordWithOtpAction(
+  _prevState: OtpFormState,
+  formData: FormData,
+): Promise<OtpFormState> {
+  const phone = normalizeFormPhone(formData.get("phone"));
+  const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
+
+  if (!phone) return { step: "phone", error: INVALID_PHONE_ERROR };
+  if (password.length < PASSWORD_MIN_LENGTH) return { step: "verify", phone, error: PASSWORD_LENGTH_ERROR };
+  if (password !== confirmPassword) return { step: "verify", phone, error: PASSWORD_CONFIRM_ERROR };
+
+  const limited = await checkRateLimit({
+    scope: "auth:otp:password-reset:verify",
+    identifier: phone,
+    limit: 10,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!limited.ok) return { step: "verify", phone, error: limited.error };
+
+  const otp = await verifyOtpChallenge({ phone, purpose: "PASSWORD_RESET", code: formData.get("code") });
+  if (!otp.ok) return { step: "verify", phone, error: otp.error };
+
+  const existing = await db.user.findUnique({ where: { phone }, select: { id: true, role: true } });
+  if (!existing) return { step: "phone", phone, error: "حسابی با این شماره پیدا نشد." };
+
+  const user = await db.user.update({
+    where: { id: existing.id },
+    data: { passwordHash: await hashPassword(password) },
+    select: { id: true, role: true },
   });
 
   await createSession({ userId: user.id, role: user.role });

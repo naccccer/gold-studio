@@ -154,6 +154,27 @@ h1,h2,h3,h4,h5,h6 {
 
 .text-ui { font-family: var(--font-vazirmatn), Tahoma, sans-serif; }
 
+.auth-text-input,
+.auth-text-input:focus {
+  appearance: none;
+  background-color: transparent !important;
+  background-image: none !important;
+  color: var(--foreground);
+}
+
+.auth-text-input:-webkit-autofill,
+.auth-text-input:-webkit-autofill:hover,
+.auth-text-input:-webkit-autofill:focus,
+.auth-text-input:-webkit-autofill:active {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: var(--foreground) !important;
+  caret-color: var(--foreground) !important;
+  transition: background-color 999999s ease-out 0s, color 999999s ease-out 0s;
+}
+
 @keyframes ovalaMotionReveal {
   0% { opacity: 0; transform: translateY(10px) scale(0.992); filter: blur(4px); }
   100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
@@ -273,6 +294,17 @@ h1,h2,h3,h4,h5,h6 {
 @keyframes ovalaHeroSlideC {
   0%, 60%, 100% { opacity: 0; transform: scale(1.03); }
   68%, 94% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes ovalaCarouselImageDrift {
+  0% { transform: scale(1.01) translate3d(0, 0, 0); }
+  100% { transform: scale(1.055) translate3d(-1.2%, -0.8%, 0); }
+}
+
+.ovala-carousel-image-active {
+  animation: ovalaCarouselImageDrift 6.4s var(--motion-ease-standard) both;
+  transform-origin: 50% 50%;
+  will-change: transform;
 }
 
 @keyframes ovalaProcessingStep {
@@ -401,6 +433,7 @@ h1,h2,h3,h4,h5,h6 {
   .animate-\[ovalaHeroSlideA_12s_ease-in-out_infinite\],
   .animate-\[ovalaHeroSlideB_12s_ease-in-out_infinite\],
   .animate-\[ovalaHeroSlideC_12s_ease-in-out_infinite\],
+  .ovala-carousel-image-active,
   .animate-\[ovalaProcessingScan_3s_ease-in-out_infinite\],
   .animate-\[ovalaLoadingPulse_2\.4s_ease-in-out_infinite\],
   .animate-\[ovalaLoadingPulse_2\.4s_ease-in-out_infinite_600ms\] {
@@ -416,49 +449,348 @@ h1,h2,h3,h4,h5,h6 {
   }
 }
 
-@keyframes ovala-auth-concept-reveal {
-  0%, 100% { clip-path: inset(0 56% 0 0); }
-  50% { clip-path: inset(0 18% 0 0); }
+/* صحنه ورود: استودیوی تاریک و کارت اووالا */
+.ov-stage {
+  --drag-x: 0px;
+  --drag-p: 0;
+  --drag-abs: 0;
+  touch-action: pan-y;
 }
 
-@keyframes ovala-auth-concept-divider {
-  0%, 100% { left: 44%; }
-  50% { left: 82%; }
+.ov-cyclorama {
+  background:
+    radial-gradient(130% 80% at 50% -10%, #322a1f 0%, rgba(50, 42, 31, 0) 55%),
+    radial-gradient(120% 60% at 50% 62%, #1d1812 0%, rgba(29, 24, 18, 0) 70%),
+    linear-gradient(180deg, #14110e 0%, #0d0c0a 55%, #070605 100%);
 }
 
-.ov-auth-concept-after {
-  animation: ovala-auth-concept-reveal 6.4s ease-in-out infinite;
+.ov-floor {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 30%;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.55) 100%);
 }
 
-.ov-auth-concept-divider {
-  animation: ovala-auth-concept-divider 6.4s ease-in-out infinite;
+.ov-parallax {
+  transform: translateX(calc(var(--drag-x) * -0.08));
 }
 
-.ov-auth-concept-divider::after {
+.ov-pool {
   position: absolute;
   left: 50%;
-  top: 50%;
-  height: 2rem;
-  width: 2rem;
+  top: 54%;
+  width: 400px;
+  height: 460px;
   transform: translate(-50%, -50%);
-  border-radius: 999px;
-  border: 1px solid rgba(255, 253, 249, 0.75);
-  background: rgba(23, 20, 17, 0.68);
-  box-shadow: 0 18px 34px -22px rgba(23, 20, 17, 0.8);
+  background: radial-gradient(50% 50% at 50% 50%, rgba(248, 223, 159, 0.09) 0%, rgba(248, 223, 159, 0) 70%);
+}
+
+.ov-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 120px 120px;
+  opacity: 0.07;
+}
+
+.ov-sweepband {
+  position: absolute;
+  inset: -12% -45%;
+  background: linear-gradient(100deg, rgba(248, 223, 159, 0) 34%, rgba(248, 223, 159, 0.16) 50%, rgba(248, 223, 159, 0) 66%);
+  opacity: 0;
+  transform: translateX(-130%);
+  pointer-events: none;
+}
+
+.ov-stage[data-commit="login"] .ov-sweepband {
+  animation: ovSweepToRight 460ms var(--motion-ease-standard) 60ms both;
+}
+
+.ov-stage[data-commit="signup"] .ov-sweepband {
+  animation: ovSweepToLeft 460ms var(--motion-ease-standard) 60ms both;
+}
+
+.ov-scene {
+  perspective: 1100px;
+}
+
+.ov-card-grip {
+  touch-action: none;
+  cursor: grab;
+}
+
+.ov-stage[data-dragging="true"] .ov-card-grip {
+  cursor: grabbing;
+}
+
+.ov-card-track {
+  transform: translateX(calc(var(--drag-x) * 0.85)) rotateY(calc(var(--drag-p) * 16deg))
+    rotateZ(calc(var(--drag-p) * 2deg)) scale(calc(1 + var(--drag-abs) * 0.04));
+  transition:
+    filter var(--motion-duration-standard) var(--motion-ease-state),
+    opacity var(--motion-duration-standard) var(--motion-ease-state);
+}
+
+.ov-stage[data-dragging="true"] .ov-card-track {
+  will-change: transform;
+}
+
+.ov-stage[data-commit] .ov-card-track {
+  filter: blur(6px);
+  opacity: 0;
+}
+
+.ov-card-float {
+  animation: ovCardFloat 6s ease-in-out infinite;
+}
+
+.ov-card {
+  position: relative;
+  width: 148px;
+  height: 212px;
+  border-radius: 1.15rem;
+}
+
+.ov-card-face {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(165deg, #27211a 0%, #17130f 38%, #0f0d0b 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 242, 214, 0.22),
+    inset 1px 0 0 rgba(255, 242, 214, 0.07),
+    inset -1px 0 0 rgba(255, 242, 214, 0.04),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.7);
+}
+
+.ov-card-reflection {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 0;
+  right: 0;
+  height: 52%;
+  border-radius: 1.6rem;
+  background: linear-gradient(165deg, #221d17 0%, #14110d 60%);
+  transform: scaleY(-1);
+  opacity: calc(0.18 - var(--drag-abs) * 0.1);
+  filter: blur(2px);
+  -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0) 78%);
+  mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0) 78%);
+  pointer-events: none;
+}
+
+.ov-ground-glow {
+  position: absolute;
+  left: 50%;
+  bottom: -2.6rem;
+  width: 170px;
+  height: 44px;
+  transform: translateX(-50%) translateX(calc(var(--drag-x) * 0.6)) scaleX(calc(1 + var(--drag-abs) * 0.25));
+  opacity: calc(0.9 - var(--drag-abs) * 0.4);
+  transition: opacity var(--motion-duration-standard) var(--motion-ease-state);
+}
+
+.ov-ground-glow::before {
   content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(50% 50% at 50% 50%, rgba(216, 165, 82, 0.14) 0%, rgba(216, 165, 82, 0) 78%);
+  animation: ovShadowBreath 6s ease-in-out infinite;
+}
+
+.ov-stage[data-commit] .ov-ground-glow {
+  opacity: 0;
+}
+
+.ov-dir-zone {
+  position: absolute;
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.85rem 0.7rem;
+  border-radius: var(--radius-xl);
+  border: 1px solid transparent;
+  color: #e9e1d2;
+  transition: color var(--motion-duration-micro) var(--motion-ease-state);
+}
+
+.ov-dir-zone:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(216, 165, 82, 0.35);
+}
+
+.ov-dir-login {
+  left: calc(50% + 90px);
+  transform: translateY(-50%) scale(calc(1 + max(var(--drag-p), 0) * 0.12));
+  opacity: calc(1 - max(calc(var(--drag-p) * -1), 0) * 0.6);
+}
+
+.ov-dir-signup {
+  right: calc(50% + 90px);
+  transform: translateY(-50%) scale(calc(1 + max(calc(var(--drag-p) * -1), 0) * 0.12));
+  opacity: calc(1 - max(var(--drag-p), 0) * 0.6);
+}
+
+.ov-stage[data-armed="login"] .ov-dir-login,
+.ov-stage[data-armed="signup"] .ov-dir-signup {
+  color: var(--gold-gradient-start);
+  animation: ovArmTick 200ms var(--motion-ease-interactive);
+}
+
+.ov-chevrons {
+  color: var(--gold-gradient-mid);
+}
+
+.ov-chevron {
+  opacity: 0.3;
+  animation: ovChevronPulse 1.7s ease-in-out infinite;
+}
+
+.ov-chevrons .ov-chevron:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.ov-chevrons .ov-chevron:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.ov-chevrons-reverse .ov-chevron:nth-child(1) {
+  animation-delay: 0.4s;
+}
+
+.ov-chevrons-reverse .ov-chevron:nth-child(3) {
+  animation-delay: 0s;
+}
+
+.ov-stage[data-armed="login"] .ov-dir-login .ov-chevron,
+.ov-stage[data-armed="signup"] .ov-dir-signup .ov-chevron {
+  animation: none;
+  opacity: 1;
+}
+
+.ov-stage[data-dir="right"] .ov-dir-signup .ov-chevron,
+.ov-stage[data-dir="left"] .ov-dir-login .ov-chevron {
+  animation-play-state: paused;
+}
+
+.ov-hint-tap {
+  display: none;
+}
+
+.ov-scrim {
+  animation: ovScrimIn var(--motion-duration-standard) var(--motion-ease-state) both;
+}
+
+.ov-scrim-leave {
+  animation: ovScrimOut 200ms var(--motion-ease-interactive) forwards;
+}
+
+.ov-sheet {
+  transform-origin: 50% 100%;
+  animation: ovSheetIn 440ms cubic-bezier(0.16, 1, 0.3, 1) 140ms backwards;
+}
+
+.ov-sheet-leave {
+  animation: ovSheetOut 200ms var(--motion-ease-interactive) forwards;
+}
+
+.ov-swap-from-right {
+  animation: ovSwapFromRight 280ms var(--motion-ease-standard) both;
+}
+
+.ov-swap-from-left {
+  animation: ovSwapFromLeft 280ms var(--motion-ease-standard) both;
+}
+
+@keyframes ovCardFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes ovShadowBreath {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.94); opacity: 0.78; }
+}
+
+@keyframes ovChevronPulse {
+  0%, 100% { opacity: 0.22; }
+  35% { opacity: 1; }
+}
+
+@keyframes ovArmTick {
+  50% { filter: brightness(1.25); }
+}
+
+@keyframes ovSweepToRight {
+  from { transform: translateX(-130%); opacity: 1; }
+  to { transform: translateX(130%); opacity: 0; }
+}
+
+@keyframes ovSweepToLeft {
+  from { transform: translateX(130%); opacity: 1; }
+  to { transform: translateX(-130%); opacity: 0; }
+}
+
+@keyframes ovScrimIn {
+  from { opacity: 0; }
+}
+
+@keyframes ovScrimOut {
+  to { opacity: 0; }
+}
+
+@keyframes ovSheetIn {
+  from { opacity: 0; transform: translateY(48px) scale(0.95); filter: blur(8px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes ovSheetOut {
+  to { opacity: 0; transform: translateY(40px) scale(0.97); filter: blur(5px); }
+}
+
+@keyframes ovSwapFromRight {
+  from { opacity: 0; transform: translateX(24px); filter: blur(4px); }
+  to { opacity: 1; transform: translateX(0); filter: blur(0); }
+}
+
+@keyframes ovSwapFromLeft {
+  from { opacity: 0; transform: translateX(-24px); filter: blur(4px); }
+  to { opacity: 1; transform: translateX(0); filter: blur(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ov-auth-concept-after,
-  .ov-auth-concept-divider {
-    animation: none;
+  .ov-card-float,
+  .ov-ground-glow::before,
+  .ov-chevron,
+  .ov-sweepband {
+    animation: none !important;
   }
 
-  .ov-auth-concept-after {
-    clip-path: inset(0 32% 0 0);
+  .ov-chevron {
+    opacity: 0.85;
   }
 
-  .ov-auth-concept-divider {
-    left: 68%;
+  .ov-scrim,
+  .ov-scrim-leave,
+  .ov-sheet,
+  .ov-sheet-leave,
+  .ov-swap-from-right,
+  .ov-swap-from-left {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+
+  .ov-dir-zone {
+    border-color: var(--studio-border);
+    background: rgba(255, 253, 249, 0.06);
+  }
+
+  .ov-hint-drag {
+    display: none;
+  }
+
+  .ov-hint-tap {
+    display: inline;
   }
 }

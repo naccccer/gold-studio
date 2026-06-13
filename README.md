@@ -22,8 +22,10 @@ Copy-Item .env.example .env
 Edit `.env` with local values. A typical local database URL is:
 
 ```env
-DATABASE_URL="mysql://root@127.0.0.1:3306/gold_studio"
+DATABASE_URL="mysql://root@127.0.0.1:3306/gold_studio?allowPublicKeyRetrieval=true"
 ```
+
+Keep the `mysql://` scheme in `.env` so Prisma CLI commands keep working. The app normalizes it internally for the MariaDB JS adapter at runtime.
 
 Create the database if needed:
 

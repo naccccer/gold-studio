@@ -47,7 +47,7 @@ export function AppTopBar({
 
   if (centeredLogo) {
     return (
-      <header className={["relative mb-4 flex h-16 items-center justify-center overflow-hidden", frameClassName, className].filter(Boolean).join(" ")}>
+      <header className={["relative mb-1 flex h-16 items-center justify-center overflow-hidden", frameClassName, className].filter(Boolean).join(" ")}>
         {action ? <div className="absolute right-0 top-1/2 -translate-y-1/2">{action}</div> : null}
         <Link href={logoHref} aria-label="OVALA Studio" className="inline-flex">
           <BrandLogo variant={logoVariant} priority />

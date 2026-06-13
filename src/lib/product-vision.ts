@@ -1,4 +1,5 @@
 import { analyzeProductImageWithLiara, serializeQualityIssues, visionModel } from "@/lib/ai/vision";
+import { getProviderSettings } from "@/lib/ai/provider-settings";
 import { db } from "@/lib/db";
 import { readStoredUpload } from "@/lib/uploads";
 
@@ -30,11 +31,16 @@ export async function analyzeAndStoreProductAssetVision(assetId: string) {
     return null;
   }
 
+  const providerSettings = await getProviderSettings();
+  const visionProvider = providerSettings.imageProvider;
+  const usedVisionModel = visionModel(visionProvider);
+
   try {
     const source = await readStoredUpload(asset.storageKey, asset.mimeType);
     const metadata = await analyzeProductImageWithLiara({
       sourceBuffer: source.buffer,
       mimeType: source.mimeType,
+      provider: visionProvider,
     });
 
     try {
@@ -47,7 +53,7 @@ export async function analyzeAndStoreProductAssetVision(assetId: string) {
           visionAngle: metadata.detectedAngle,
           visionQualityIssues: serializeQualityIssues(metadata.qualityIssues),
           visionConfidence: metadata.confidence,
-          visionModel: visionModel(),
+          visionModel: usedVisionModel,
           visionAnalyzedAt: new Date(),
           visionError: null,
         },
@@ -63,7 +69,7 @@ export async function analyzeAndStoreProductAssetVision(assetId: string) {
     await db.productAsset.updateMany({
       where: { id: asset.id },
       data: {
-        visionModel: visionModel(),
+        visionModel: usedVisionModel,
         visionAnalyzedAt: new Date(),
         visionError: errorText(error),
       },
@@ -83,10 +89,21 @@ export async function ensureProductAssetVision(assetId: string) {
       visionDescription: true,
       visionConfidence: true,
       visionAnalyzedAt: true,
+      visionError: true,
+      visionModel: true,
     },
   });
 
-  if (!asset || asset.visionAnalyzedAt) {
+  if (!asset) {
+    return asset;
+  }
+
+  if (asset.visionAnalyzedAt && !asset.visionError) {
+    return asset;
+  }
+
+  const providerSettings = await getProviderSettings();
+  if (asset.visionAnalyzedAt && asset.visionError && asset.visionModel === visionModel(providerSettings.imageProvider)) {
     return asset;
   }
 

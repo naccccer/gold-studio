@@ -47,6 +47,10 @@ function referralCodeFromUserId(userId) {
   return userId.slice(-5).toLowerCase();
 }
 
+function mariaDbAdapterUrl(url) {
+  return url.replace(/^mysql:\/\//, "mariadb://");
+}
+
 async function hashPassword(password) {
   const salt = randomBytes(16).toString("hex");
   const derived = await scrypt(password, salt, KEY_LENGTH);
@@ -71,7 +75,7 @@ async function main() {
     process.exit(1);
   }
 
-  const db = new PrismaClient({ adapter: new PrismaMariaDb(process.env.DATABASE_URL) });
+  const db = new PrismaClient({ adapter: new PrismaMariaDb(mariaDbAdapterUrl(process.env.DATABASE_URL)) });
 
   try {
     const existing = await db.user.findUnique({ where: { email } });
