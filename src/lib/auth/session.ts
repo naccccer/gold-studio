@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { sessionCookieName } from "@/lib/auth/session-cookie";
 
 export const SESSION_COOKIE = sessionCookieName();
-const ONE_WEEK_SECONDS = 60 * 60 * 24 * 7;
+const PERSISTENT_SESSION_SECONDS = 60 * 60 * 24 * 90;
 
 type SessionPayload = {
   userId: string;
@@ -42,7 +42,7 @@ function encode(payload: SessionTokenPayload) {
   const signedPayload: SignedSessionPayload = {
     ...payload,
     iat: now,
-    exp: now + ONE_WEEK_SECONDS,
+    exp: now + PERSISTENT_SESSION_SECONDS,
   };
   const body = Buffer.from(JSON.stringify(signedPayload), "utf8").toString("base64url");
   const signature = sign(body);
@@ -93,7 +93,7 @@ export async function createSession(payload: SessionPayload) {
     httpOnly: true,
     secure: shouldUseSecureCookies(),
     sameSite: "lax",
-    maxAge: ONE_WEEK_SECONDS,
+    maxAge: PERSISTENT_SESSION_SECONDS,
     path: "/",
   });
 }

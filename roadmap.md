@@ -19,7 +19,7 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 - Prisma uses MySQL, keeps `DATABASE_URL` on the Prisma-compatible `mysql://` scheme, and normalizes it for the MariaDB JS adapter at runtime.
 - Image generation uses the provider boundary in `src/lib/ai`, with Liara as the default path and an admin-controlled Avalai path for Gemini image testing.
 - DB-backed rate limits, credit reservations, manual purchase review, sales referral codes, support tickets, FAQ, and admin billing operations are present.
-- Pre-launch security hardening now includes identifier-based auth throttling, signed session expiry/revocation, global security headers, and guarded storage responses for non-display objects.
+- Pre-launch security hardening now includes identifier-based auth throttling, long-lived signed session revocation, global security headers, and guarded storage responses for non-display objects.
 - Batch generation starts from Gallery, creates one project per selected source photo, and reserves generation credit until each output succeeds.
 - Generation now has a DB-backed recovery worker (`npm run worker:generation`) that polls queued projects, resumes stale `PROCESSING` jobs, and should run as a separate PM2 process in production.
 - New project creation supports optional supporting product photos for complicated products: one primary source plus up to two extra product angles still creates one project and one output.
