@@ -215,7 +215,45 @@ certbot --nginx -d test.ovala.ir
 curl -I https://test.ovala.ir
 ```
 
-## 10. آپدیت staging در دفعات بعد
+## 10. smoke test سریع را اجرا کن
+
+Smoke test یک چک سریع برای نسخه در حال اجرا است. این تست وارد حساب کاربری نمی شود و به AI، پرداخت، پیامک یا ساخت پروژه دست نمی زند؛ فقط مطمئن می شود deploy از بیرون زنده است و مسیرهای پایه درست رفتار می کنند.
+
+چیزهایی که چک می کند:
+
+- `/api/health` باید `200` و `{"ok":true}` بدهد.
+- صفحه های عمومی `/`، `/login`، `/signup` و `/forgot-password` باید render شوند.
+- صفحه های محافظت شده مثل `/dashboard`، `/gallery`، `/projects`، `/account` و `/admin` باید کاربر ناشناس را به `/login` بفرستند.
+- مسیر قدیمی `/uploads/...` باید بسته باشد.
+- فایل private از `/api/storage/...` بدون session نباید خوانده شود.
+- چند security header پایه را فقط به صورت هشدار چک می کند.
+
+بعد از بالا آمدن staging:
+
+```bash
+cd /var/www/gold-studio-test
+npm run smoke -- https://test.ovala.ir
+```
+
+یا:
+
+```bash
+SMOKE_BASE_URL=https://test.ovala.ir npm run smoke
+```
+
+اگر همه چیز درست باشد، خروجی باید `0 failed` داشته باشد. `WARN` شکست deploy حساب نمی شود، ولی اگر مربوط به headerهای امنیتی بود قبل لانچ بررسی کن. اگر `FAIL` دیدی، همان endpoint را دستی با `curl -I` چک کن و بعد لاگ app را ببین:
+
+```bash
+pm2 logs gold-studio-test --lines 80
+```
+
+برای production هم بعد از deploy می توانی همین را اجرا کنی:
+
+```bash
+npm run smoke -- https://ovala.ir
+```
+
+## 11. آپدیت staging در دفعات بعد
 
 ```bash
 cd /var/www/gold-studio-test
@@ -226,11 +264,12 @@ rm -rf .next
 npm run build
 pm2 restart gold-studio-test --update-env
 pm2 restart gold-studio-test-worker --update-env
+npm run smoke -- https://test.ovala.ir
 ```
 
 اگر GitHub مستقیم کار می کند، بخش `-c http.proxy=...` را حذف کن.
 
-## 11. تست های دستی
+## 12. تست های دستی
 
 در `https://test.ovala.ir` این ها را تست کن:
 
@@ -270,7 +309,7 @@ pm2 restart gold-studio-test --update-env
 
 3. در مرورگر، cookieهای `test.ovala.ir` را پاک کن و دوباره لاگین کن.
 
-## 12. اگر staging درست بود، production را آپدیت کن
+## 13. اگر staging درست بود، production را آپدیت کن
 
 ```bash
 cd /var/www/gold-studio
@@ -280,6 +319,7 @@ npm run db:deploy
 npm run build
 pm2 restart gold-studio
 pm2 restart gold-studio-worker
+npm run smoke -- https://ovala.ir
 ```
 
 بعد نسخه اصلی را چک کن:
