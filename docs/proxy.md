@@ -7,8 +7,9 @@ Use proxy only when direct access fails for:
 - npm package downloads
 - Prisma downloads
 - GitHub access
-- blocked AI/API calls
 - S3-compatible storage only if the storage endpoint is blocked
+
+Do not leave proxy enabled for PM2 app or worker processes. Ovala uses Iran-accessible providers such as Liara, Avalai, and FarazSMS so production and staging generation should normally run direct.
 
 ## Liara
 
@@ -60,4 +61,4 @@ Clear proxy variables:
 Remove-Item Env:http_proxy, Env:HTTP_PROXY, Env:https_proxy, Env:HTTPS_PROXY -ErrorAction SilentlyContinue
 ```
 
-Only keep proxy enabled for `npm run dev` when testing generation and direct Liara access fails.
+Only keep proxy enabled for a single command that needs it, such as GitHub pull or manual Certbot access. Clear it before starting or restarting PM2 app and worker processes.

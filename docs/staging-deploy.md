@@ -130,10 +130,13 @@ pm2 start npm --name gold-studio-test-worker -- run worker:generation
 pm2 save
 ```
 
-اگر قبلش proxy env فعال کرده بودی:
+اگر قبلش proxy env فعال کرده بودی، app و worker را با env تمیز بالا بیاور. Proxy فقط برای دستورهایی مثل GitHub یا Certbot استفاده شود، نه برای PM2 app/worker:
 
 ```bash
-unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
+export http_proxy=""
+export https_proxy=""
+export HTTP_PROXY=""
+export HTTPS_PROXY=""
 export no_proxy="127.0.0.1,localhost"
 export NO_PROXY="127.0.0.1,localhost"
 ```
@@ -205,10 +208,58 @@ curl -I http://test.ovala.ir
 apt install -y certbot python3-certbot-nginx
 ```
 
-بعد:
+اگر `certbot --nginx` از شبکه سرور کار می کند:
 
 ```bash
 certbot --nginx -d test.ovala.ir
+```
+
+اگر به خاطر محدودیت شبکه کار نکرد، DNS challenge دستی بگیر:
+
+```bash
+certbot certonly --manual --preferred-challenges dns -d test.ovala.ir
+```
+
+Certbot یک TXT می دهد. در DNS دامنه این رکورد را بساز و تا وقتی `dig` مقدار را نشان نداده Enter نزن:
+
+```bash
+dig TXT _acme-challenge.test.ovala.ir +short
+```
+
+بعد از گرفتن certificate، فایل Nginx تست باید هم HTTP را به HTTPS ببرد و هم HTTPS را به پورت `3001` وصل کند:
+
+```nginx
+server {
+    listen 80;
+    server_name test.ovala.ir;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name test.ovala.ir;
+
+    ssl_certificate /etc/letsencrypt/live/test.ovala.ir/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/test.ovala.ir/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+```
+
+فعال کن:
+
+```bash
+nginx -t
+systemctl reload nginx
 ```
 
 بعد از SSL:
@@ -216,6 +267,8 @@ certbot --nginx -d test.ovala.ir
 ```bash
 curl -I https://test.ovala.ir
 ```
+
+گواهی manual خودکار تمدید نمی شود. قبل از تاریخ انقضا باید همین DNS challenge را تکرار کنی.
 
 ## 10. smoke test سریع را اجرا کن
 
@@ -270,6 +323,17 @@ npm run smoke -- https://test.ovala.ir
 ```
 
 اگر GitHub مستقیم کار می کند، بخش `-c http.proxy=...` را حذف کن.
+
+بعد از restart مطمئن شو proxy وارد PM2 نشده است:
+
+```bash
+pm2 env 1 | grep -i proxy
+pm2 env 2 | grep -i proxy
+```
+
+اگر idهای PM2 فرق داشت، عددهای `1` و `2` را از خروجی `pm2 status` برای `gold-studio-test` و `gold-studio-test-worker` بردار.
+
+`http_proxy` و `https_proxy` باید خالی باشند. Liara، Avalai و FarazSMS باید direct کار کنند.
 
 ## 12. تست های دستی
 
