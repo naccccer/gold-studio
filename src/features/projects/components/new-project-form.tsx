@@ -119,11 +119,13 @@ function SourceActionButton({
   htmlFor,
   href,
   featured = false,
+  guideTarget,
 }: {
   children: React.ReactNode;
   htmlFor?: string;
   href?: string;
   featured?: boolean;
+  guideTarget?: string;
 }) {
   const className =
     featured
@@ -132,14 +134,14 @@ function SourceActionButton({
 
   if (href) {
     return (
-      <ButtonLink href={href} variant="studio-secondary" className={className}>
+      <ButtonLink href={href} variant="studio-secondary" className={className} data-start-guide-target={guideTarget}>
         {children}
       </ButtonLink>
     );
   }
 
   return (
-    <label htmlFor={htmlFor} className={buttonClasses({ variant: featured ? "light" : "studio-secondary", className })}>
+    <label htmlFor={htmlFor} data-start-guide-target={guideTarget} className={buttonClasses({ variant: featured ? "light" : "studio-secondary", className })}>
       {children}
     </label>
   );
@@ -504,7 +506,7 @@ export function NewProjectForm({
       {step === "source" ? (
         <StepScrollPanel>
           <div className="grid grid-cols-3 gap-3">
-            <SourceActionButton htmlFor="project-file-input" featured>
+            <SourceActionButton htmlFor="project-file-input" featured guideTarget="project-upload">
               <DocumentUpload aria-hidden={true} className="h-4 w-4" />
               <span>آپلود</span>
             </SourceActionButton>

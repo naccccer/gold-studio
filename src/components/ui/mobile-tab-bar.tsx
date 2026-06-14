@@ -47,6 +47,7 @@ export function MobileTabBar({ tabs, centerAction }: MobileTabBarProps) {
               <Link
                 key={tab.href}
                 href={tab.href}
+                data-start-guide-target={tab.href === "/gallery" ? "gallery" : undefined}
                 aria-current={active ? "page" : undefined}
                 className={`motion-nav-item flex min-h-12 flex-col items-center justify-center gap-1 rounded-[1rem] text-[10px] leading-none ${
                   active ? "bg-surface-soft text-foreground" : "text-muted/58 hover:text-foreground"
@@ -60,6 +61,7 @@ export function MobileTabBar({ tabs, centerAction }: MobileTabBarProps) {
 
           <Link
             href={centerAction.href}
+            data-start-guide-target="new-project"
             aria-label={centerAction.label}
             aria-current={centerActive ? "page" : undefined}
             className={[
@@ -78,6 +80,7 @@ export function MobileTabBar({ tabs, centerAction }: MobileTabBarProps) {
               <Link
                 key={tab.href}
                 href={tab.href}
+                data-start-guide-target={tab.href === "/projects" ? "projects" : undefined}
                 aria-current={active ? "page" : undefined}
                 className={`motion-nav-item flex min-h-12 flex-col items-center justify-center gap-1 rounded-[1rem] text-[10px] leading-none ${
                   active ? "bg-surface-soft text-foreground" : "text-muted/58 hover:text-foreground"

@@ -20,6 +20,7 @@ export type OtpFormState = {
   phone?: string;
   error?: string;
   message?: string;
+  resendDelaySeconds?: number;
 };
 
 const PASSWORD_MIN_LENGTH = 6;
@@ -30,7 +31,7 @@ const PASSWORD_LENGTH_ERROR = "رمز عبور باید حداقل ۶ کاراک
 const PASSWORD_CONFIRM_ERROR = "تکرار رمز عبور با رمز جدید یکسان نیست.";
 const SMS_CONFIG_ERROR = "ارسال پیامک هنوز تنظیم نشده است. کلید API و کد الگوی فراز اس‌ام‌اس را در env وارد کنید.";
 const SMS_SEND_ERROR = "ارسال پیامک ناموفق بود. چند دقیقه دیگر دوباره تلاش کنید.";
-const OTP_SENT_MESSAGE = "کد تایید ارسال شد. اگر پیامک با تاخیر رسید، کد تا ۱۰ دقیقه معتبر است.";
+const OTP_SENT_MESSAGE = "کد تایید ارسال شد. کد تا ۱۰ دقیقه معتبر است.";
 
 function friendlySmsError(error: unknown) {
   if (error instanceof FarazSmsConfigError) return SMS_CONFIG_ERROR;
@@ -57,13 +58,14 @@ async function ensureCanSendOtp({
     limit: 5,
     windowMs: 10 * 60 * 1000,
   });
-  if (!limited.ok) return { ok: false as const, error: limited.error };
+  if (!limited.ok) return { ok: false as const, error: limited.error, resendDelaySeconds: 0 };
 
   const resendDelaySeconds = await getOtpResendDelaySeconds({ phone, purpose });
   if (resendDelaySeconds > 0) {
     return {
       ok: false as const,
       error: `کد قبلی هنوز معتبر است. ${resendDelaySeconds} ثانیه دیگر برای ارسال کد جدید صبر کنید.`,
+      resendDelaySeconds,
     };
   }
 
@@ -114,7 +116,7 @@ export async function sendSignupOtpAction(
   if (existing) return { step: "phone", phone, error: DUPLICATE_ACCOUNT_ERROR };
 
   const canSend = await ensureCanSendOtp({ phone, purpose: "SIGNUP", scope: "auth:otp:signup:send" });
-  if (!canSend.ok) return { step: "verify", phone, error: canSend.error };
+  if (!canSend.ok) return { step: "verify", phone, error: canSend.error, resendDelaySeconds: canSend.resendDelaySeconds };
 
   try {
     await createOtpChallenge({ phone, purpose: "SIGNUP" });
@@ -122,7 +124,7 @@ export async function sendSignupOtpAction(
     return { step: "phone", phone, error: friendlySmsError(error) };
   }
 
-  return { step: "verify", phone, message: OTP_SENT_MESSAGE };
+  return { step: "verify", phone, message: OTP_SENT_MESSAGE, resendDelaySeconds: 60 };
 }
 
 export async function completeSignupAction(
@@ -168,7 +170,7 @@ export async function sendPasswordResetOtpAction(
   if (!user) return { step: "phone", phone, error: "حسابی با این شماره پیدا نشد." };
 
   const canSend = await ensureCanSendOtp({ phone, purpose: "PASSWORD_RESET", scope: "auth:otp:password-reset:send" });
-  if (!canSend.ok) return { step: "verify", phone, error: canSend.error };
+  if (!canSend.ok) return { step: "verify", phone, error: canSend.error, resendDelaySeconds: canSend.resendDelaySeconds };
 
   try {
     await createOtpChallenge({ phone, purpose: "PASSWORD_RESET" });
@@ -176,7 +178,7 @@ export async function sendPasswordResetOtpAction(
     return { step: "phone", phone, error: friendlySmsError(error) };
   }
 
-  return { step: "verify", phone, message: OTP_SENT_MESSAGE };
+  return { step: "verify", phone, message: OTP_SENT_MESSAGE, resendDelaySeconds: 60 };
 }
 
 export async function resetPasswordWithOtpAction(

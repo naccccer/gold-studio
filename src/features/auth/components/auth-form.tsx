@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type InputHTMLAttributes } from "react";
+import { useEffect, useState, type InputHTMLAttributes } from "react";
 import {
   Eye,
   EyeSlash,
@@ -17,6 +17,34 @@ import { Button } from "@/components/ui/button";
 import type { AuthFormState, OtpFormState } from "@/features/auth/actions";
 
 const PASSWORD_MIN_LENGTH = 6;
+
+function useSecondCountdown(initialSeconds = 0) {
+  const [remaining, setRemaining] = useState(initialSeconds);
+
+  useEffect(() => {
+    if (remaining <= 0) return;
+
+    const interval = window.setInterval(() => {
+      setRemaining((value) => Math.max(0, value - 1));
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, [remaining]);
+
+  return remaining;
+}
+
+function LiveOtpDelayMessage({ initialSeconds, fallback }: { initialSeconds: number; fallback: string }) {
+  const remaining = useSecondCountdown(initialSeconds);
+
+  return (
+    <>
+      {remaining > 0
+        ? `کد قبلی هنوز معتبر است. ${remaining.toLocaleString("fa-IR")} ثانیه دیگر برای ارسال کد جدید صبر کنید.`
+        : fallback}
+    </>
+  );
+}
 
 type AuthFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
@@ -102,10 +130,20 @@ function PasswordField({
 }
 
 function FormMessage({ state }: { state: AuthFormState | OtpFormState }) {
+  const resendDelaySeconds = "resendDelaySeconds" in state ? (state.resendDelaySeconds ?? 0) : 0;
+
   if (state.error) {
     return (
       <p aria-live="polite" className="rounded-[var(--radius-md)] border border-danger/25 bg-danger-soft px-3 py-2 text-sm font-medium leading-6 text-danger">
-        {state.error}
+        {resendDelaySeconds > 0 ? (
+          <LiveOtpDelayMessage
+            key={`${"phone" in state ? state.phone ?? "" : ""}:${resendDelaySeconds}`}
+            initialSeconds={resendDelaySeconds}
+            fallback={state.error}
+          />
+        ) : (
+          state.error
+        )}
       </p>
     );
   }
@@ -140,21 +178,36 @@ function SubmitButton({
   );
 }
 
+function ResendButton({ initialSeconds, sendPending }: { initialSeconds: number; sendPending: boolean }) {
+  const remaining = useSecondCountdown(initialSeconds);
+  const disabled = sendPending || remaining > 0;
+
+  return (
+    <button type="submit" disabled={disabled} className="transition hover:text-foreground disabled:opacity-60">
+      {sendPending
+        ? "در حال ارسال..."
+        : remaining > 0
+          ? `ارسال دوباره کد (${remaining.toLocaleString("fa-IR")} ثانیه)`
+          : "ارسال دوباره کد"}
+    </button>
+  );
+}
+
 function ResendForm({
   phone,
   sendAction,
   sendPending,
+  resendDelaySeconds = 0,
 }: {
   phone: string;
   sendAction: (formData: FormData) => void;
   sendPending: boolean;
+  resendDelaySeconds?: number;
 }) {
   return (
     <form action={sendAction} className="px-1 text-xs font-semibold text-muted">
       <input type="hidden" name="phone" value={phone} />
-      <button type="submit" disabled={sendPending} className="transition hover:text-foreground disabled:opacity-60">
-        {sendPending ? "در حال ارسال..." : "ارسال دوباره کد"}
-      </button>
+      <ResendButton key={`${phone}:${resendDelaySeconds}`} initialSeconds={resendDelaySeconds} sendPending={sendPending} />
     </form>
   );
 }
@@ -214,6 +267,7 @@ export function SignupFormContent({
 }: OtpFlowProps) {
   const activeState = verifyState.step === "verify" ? verifyState : sendState;
   const phone = activeState.phone ?? sendState.phone ?? "";
+  const resendDelaySeconds = sendState.resendDelaySeconds ?? activeState.resendDelaySeconds ?? 0;
 
   if (activeState.step === "verify" && phone) {
     return (
@@ -248,7 +302,7 @@ export function SignupFormContent({
           />
         </form>
 
-        <ResendForm phone={phone} sendAction={sendAction} sendPending={sendPending} />
+        <ResendForm phone={phone} sendAction={sendAction} sendPending={sendPending} resendDelaySeconds={resendDelaySeconds} />
       </div>
     );
   }
@@ -290,6 +344,7 @@ export function ResetFormContent({
 }: OtpFlowProps) {
   const activeState = verifyState.step === "verify" ? verifyState : sendState;
   const phone = activeState.phone ?? sendState.phone ?? "";
+  const resendDelaySeconds = sendState.resendDelaySeconds ?? activeState.resendDelaySeconds ?? 0;
 
   if (activeState.step === "verify" && phone) {
     return (
@@ -324,7 +379,7 @@ export function ResetFormContent({
           />
         </form>
 
-        <ResendForm phone={phone} sendAction={sendAction} sendPending={sendPending} />
+        <ResendForm phone={phone} sendAction={sendAction} sendPending={sendPending} resendDelaySeconds={resendDelaySeconds} />
       </div>
     );
   }

@@ -4,12 +4,14 @@ import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { DashboardMasthead } from "@/components/ui/dashboard-masthead";
 import { OnboardingNameModal } from "@/components/ui/onboarding-name-modal";
+import { StartGuide } from "@/components/ui/start-guide";
 
 type DashboardFrameProps = {
   children: ReactNode;
   userLabel: string;
   remainingCredits: number;
   needsNameOnboarding: boolean;
+  showStartGuide: boolean;
 };
 
 export function DashboardFrame({
@@ -17,6 +19,7 @@ export function DashboardFrame({
   userLabel,
   remainingCredits,
   needsNameOnboarding,
+  showStartGuide,
 }: DashboardFrameProps) {
   const pathname = usePathname();
   const isHome = pathname === "/dashboard";
@@ -54,6 +57,7 @@ export function DashboardFrame({
         {children}
       </div>
       {needsNameOnboarding ? <OnboardingNameModal /> : null}
+      {showStartGuide && (!isProjectDarkSurface || pathname === "/projects/new") ? <StartGuide /> : null}
     </div>
   );
 }

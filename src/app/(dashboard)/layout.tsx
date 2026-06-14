@@ -14,19 +14,21 @@ export default async function DashboardLayout({
   const [user, creditSummary] = await Promise.all([
     db.user.findUnique({
       where: { id: session.userId },
-      select: { name: true, email: true, phone: true },
+      select: { name: true, email: true, phone: true, startGuideSeenAt: true },
     }),
     getUserCreditSummary(session.userId),
   ]);
 
   const quietName = user ? getUserDisplayName(user) : "حساب کاربری";
   const needsNameOnboarding = !user?.name?.trim();
+  const showStartGuide = !needsNameOnboarding && !user?.startGuideSeenAt;
 
   return (
     <DashboardFrame
       userLabel={quietName}
       remainingCredits={creditSummary.totalAvailableCredits}
       needsNameOnboarding={needsNameOnboarding}
+      showStartGuide={showStartGuide}
     >
       {children}
     </DashboardFrame>

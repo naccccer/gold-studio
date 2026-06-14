@@ -226,6 +226,17 @@ export async function completeOnboardingNameAction(
   return { success: true };
 }
 
+export async function dismissStartGuideAction() {
+  const session = await requireUserSession();
+
+  await db.user.update({
+    where: { id: session.userId },
+    data: { startGuideSeenAt: new Date() },
+  });
+
+  revalidatePath("/dashboard");
+}
+
 export async function updateOutputSettingsAction(formData: FormData) {
   const session = await requireUserSession();
   const defaultOutputPreset = ["post", "story", "banner"].includes(text(formData, "defaultOutputPreset"))

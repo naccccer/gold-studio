@@ -136,6 +136,7 @@ model User {
   auditEvents           AdminAuditEvent[]  @relation("AdminAuditActor")
   createdSalesReferralCodes SalesReferralCode[] @relation("SalesReferralCodeAdmin")
   redeemedSalesReferralCodes SalesReferralCode[] @relation("SalesReferralCodeRedeemer")
+  startGuideSeenAt     DateTime?
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
 }
