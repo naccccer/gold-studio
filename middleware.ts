@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { sessionCookieName } from "@/lib/auth/session-cookie";
 
-const COOKIE_NAME = "gold_session";
+const COOKIE_NAME = sessionCookieName();
 
 export function middleware(request: NextRequest) {
   const hasSession = Boolean(request.cookies.get(COOKIE_NAME)?.value);

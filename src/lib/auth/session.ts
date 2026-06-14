@@ -2,8 +2,9 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { sessionCookieName } from "@/lib/auth/session-cookie";
 
-export const SESSION_COOKIE = "gold_session";
+export const SESSION_COOKIE = sessionCookieName();
 const ONE_WEEK_SECONDS = 60 * 60 * 24 * 7;
 
 type SessionPayload = {

@@ -81,6 +81,7 @@ nano .env
 DATABASE_URL="mysql://gold_studio_user:CHANGE_THIS_PASSWORD@127.0.0.1:3306/gold_studio_test?allowPublicKeyRetrieval=true"
 AUTH_SECRET="یک_متن_طولانی_تصادفی"
 ALLOW_INSECURE_COOKIES="false"
+SESSION_COOKIE_NAME="gold_session_test"
 
 GENERATION_WORKER_SECRET="یک_متن_طولانی_تصادفی_دیگر"
 GENERATION_WORKER_URL="http://127.0.0.1:3001/api/internal/generation/worker"
@@ -89,6 +90,12 @@ STORAGE_DRIVER="local"
 ```
 
 کلیدهای واقعی `LIARA_*` و `FARAZSMS_*` را هم مثل production پر کن.
+
+مهم: `SESSION_COOKIE_NAME` در staging باید با production فرق داشته باشد. برای staging همین مقدار را بگذار:
+
+```bash
+SESSION_COOKIE_NAME="gold_session_test"
+```
 
 اتصال دیتابیس را قبل از build تست کن:
 
@@ -240,6 +247,28 @@ pm2 restart gold-studio-test-worker --update-env
 ```bash
 pm2 logs gold-studio-test-worker --lines 100
 ```
+
+اگر بعد از لاگین با کلیک روی هر دکمه بیرون پریدی:
+
+1. داخل `.env` تست این مقدار را چک کن:
+
+```bash
+grep SESSION_COOKIE_NAME .env
+```
+
+باید این باشد:
+
+```bash
+SESSION_COOKIE_NAME="gold_session_test"
+```
+
+2. بعد app تست را با env جدید restart کن:
+
+```bash
+pm2 restart gold-studio-test --update-env
+```
+
+3. در مرورگر، cookieهای `test.ovala.ir` را پاک کن و دوباره لاگین کن.
 
 ## 12. اگر staging درست بود، production را آپدیت کن
 
