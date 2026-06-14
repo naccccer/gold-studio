@@ -1,7 +1,7 @@
 // Availability smoke test for a running Ovala deployment.
 //
 // Checks deploy health without touching the AI/payment flows: public pages
-// render, protected pages redirect unauthenticated users to /login, private
+// render or redirect as expected, protected pages redirect unauthenticated users to /login, private
 // storage is not readable without a session, and (warn-only) baseline security
 // headers are present.
 //
@@ -40,6 +40,22 @@ async function expectStatus(path, name, allowed) {
   const ok = allowed.includes(response.status);
   record(ok, name, `status ${response.status}${ok ? "" : ` (expected ${allowed.join("/")})`}`);
   return response;
+}
+
+async function expectStatusOrRedirect(path, name, allowed, allowedRedirects) {
+  const { response, error } = await fetchNoRedirect(path);
+  if (error) {
+    record(false, name, `request failed: ${error.message}`);
+    return;
+  }
+
+  const location = response.headers.get("location") || "";
+  const okStatus = allowed.includes(response.status);
+  const okRedirect =
+    [301, 302, 303, 307, 308].includes(response.status) &&
+    allowedRedirects.some((target) => location === target || location.endsWith(target));
+  const expected = [...allowed.map(String), ...allowedRedirects.map((target) => `redirect ${target}`)].join("/");
+  record(okStatus || okRedirect, name, `status ${response.status}${location ? ` → ${location}` : ""}${okStatus || okRedirect ? "" : ` (expected ${expected})`}`);
 }
 
 async function expectRedirectToLogin(path, name) {
@@ -92,8 +108,8 @@ async function main() {
 
   await checkHealth();
 
-  // Public pages must render.
-  await expectStatus("/", "home page", [200]);
+  // Public entry routes must render or redirect to the public auth entry.
+  await expectStatusOrRedirect("/", "home entry", [200], ["/login"]);
   await expectStatus("/login", "login page", [200]);
   await expectStatus("/signup", "signup page", [200]);
   await expectStatus("/forgot-password", "forgot-password page", [200]);

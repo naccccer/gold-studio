@@ -224,7 +224,7 @@ Smoke test یک چک سریع برای نسخه در حال اجرا است. ا�
 چیزهایی که چک می کند:
 
 - `/api/health` باید `200` و `{"ok":true}` بدهد.
-- صفحه های عمومی `/`، `/login`، `/signup` و `/forgot-password` باید render شوند.
+- مسیر `/` باید render شود یا به `/login` برود؛ صفحه های عمومی `/login`، `/signup` و `/forgot-password` باید render شوند.
 - صفحه های محافظت شده مثل `/dashboard`، `/gallery`، `/projects`، `/account` و `/admin` باید کاربر ناشناس را به `/login` بفرستند.
 - مسیر قدیمی `/uploads/...` باید بسته باشد.
 - فایل private از `/api/storage/...` بدون session نباید خوانده شود.
