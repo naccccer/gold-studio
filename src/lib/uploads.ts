@@ -349,7 +349,7 @@ export async function saveStyleReferenceFromStoredObject({
 }
 
 export async function saveTextPromptSourceImage(prompt: string) {
-  const storageKey = buildStorageKey(SOURCE_UPLOAD_DIR, "svg");
+  const storageKey = buildStorageKey(SOURCE_UPLOAD_DIR, NORMALIZED_UPLOAD_EXTENSION);
   const safePrompt = escapeSvgText(prompt);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">
   <rect width="800" height="800" fill="#f6f1e8"/>
@@ -357,10 +357,16 @@ export async function saveTextPromptSourceImage(prompt: string) {
   <text x="400" y="340" text-anchor="middle" font-family="Tahoma, Arial, sans-serif" font-size="28" font-weight="700" fill="#171411">Text to image test</text>
   <text x="400" y="402" text-anchor="middle" font-family="Tahoma, Arial, sans-serif" font-size="20" fill="#6d665d">${safePrompt}</text>
 </svg>`;
+  const buffer = await sharp(Buffer.from(svg, "utf8"))
+    .jpeg({
+      quality: SOURCE_JPEG_QUALITY,
+      mozjpeg: true,
+    })
+    .toBuffer();
 
   await saveStorageObject({
-    buffer: Buffer.from(svg, "utf8"),
-    contentType: "image/svg+xml",
+    buffer,
+    contentType: NORMALIZED_UPLOAD_MIME_TYPE,
     key: storageKey,
   });
   return storagePublicUrl(storageKey);

@@ -7,6 +7,7 @@ const RATE_LIMIT_EXCEEDED_ERROR = "درخواست‌ها بیش از حد مجا
 type RateLimitOptions = {
   scope: string;
   identifier?: string | null;
+  includeClientIp?: boolean;
   limit: number;
   windowMs: number;
 };
@@ -21,13 +22,21 @@ function cleanIdentifier(value?: string | null) {
   return value?.trim().toLowerCase().replace(/\s+/g, "") || "anonymous";
 }
 
+function trustsProxyHeaders() {
+  return process.env.TRUST_PROXY === "true";
+}
+
 function getClientIp(headerList: Headers) {
+  if (!trustsProxyHeaders()) {
+    return "unknown";
+  }
+
   const forwardedFor = headerList.get("x-forwarded-for")?.split(",")[0]?.trim();
   return (
-    forwardedFor ||
-    headerList.get("x-real-ip")?.trim() ||
     headerList.get("cf-connecting-ip")?.trim() ||
+    headerList.get("x-real-ip")?.trim() ||
     headerList.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
+    forwardedFor ||
     "unknown"
   );
 }
@@ -40,7 +49,13 @@ export async function checkRateLimit(options: RateLimitOptions) {
   const headerList = await headers();
   const now = new Date();
   const resetAt = new Date(now.getTime() + options.windowMs);
-  const key = rateLimitKey([options.scope, cleanIdentifier(options.identifier), getClientIp(headerList)]);
+  const keyParts = [options.scope, cleanIdentifier(options.identifier)];
+
+  if (options.includeClientIp) {
+    keyParts.push(getClientIp(headerList));
+  }
+
+  const key = rateLimitKey(keyParts);
 
   return db.$transaction(async (tx) => {
     await tx.$executeRaw`

@@ -113,6 +113,7 @@ model User {
   referralCode          String?            @unique
   passwordHash          String
   role                  UserRole           @default(USER)
+  sessionVersion        Int                @default(0)
   credits               Int                @default(1)
   reservedCredits       Int                @default(0)
   projects              Project[]

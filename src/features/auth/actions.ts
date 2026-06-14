@@ -207,7 +207,10 @@ export async function resetPasswordWithOtpAction(
 
   const user = await db.user.update({
     where: { id: existing.id },
-    data: { passwordHash: await hashPassword(password) },
+    data: {
+      passwordHash: await hashPassword(password),
+      sessionVersion: { increment: 1 },
+    },
     select: { id: true, role: true },
   });
 

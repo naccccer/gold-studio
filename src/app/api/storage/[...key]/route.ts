@@ -3,8 +3,14 @@ import { getSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { isAllowedStorageKey, isPublicStorageKey, readStorageObject } from "@/lib/storage";
 
+const DISPLAY_IMAGE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+
 function storageKeyLookupValues(storageKey: string) {
   return Array.from(new Set([storageKey, storageKey.replace(/\//g, "\\")]));
+}
+
+function storageFileName(storageKey: string) {
+  return storageKey.split("/").pop()?.replace(/[^\w.-]/g, "_") || "download";
 }
 
 async function canReadStorageKey(storageKey: string) {
@@ -75,11 +81,14 @@ export async function GET(
     const cacheControl = isPublicStorageKey(storageKey)
       ? "public, max-age=31536000, immutable"
       : "private, max-age=3600";
+    const displayInline = DISPLAY_IMAGE_MIME_TYPES.has(storedObject.mimeType);
 
     return new Response(new Uint8Array(storedObject.buffer), {
       headers: {
         "Cache-Control": cacheControl,
-        "Content-Type": storedObject.mimeType,
+        "Content-Disposition": displayInline ? "inline" : `attachment; filename="${storageFileName(storageKey)}"`,
+        "Content-Type": displayInline ? storedObject.mimeType : "application/octet-stream",
+        "X-Content-Type-Options": "nosniff",
       },
     });
   } catch (error) {

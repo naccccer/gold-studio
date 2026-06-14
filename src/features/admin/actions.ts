@@ -773,7 +773,10 @@ export async function updateAdminUserPasswordAction(formData: FormData) {
 
   await db.user.update({
     where: { id: userId },
-    data: { passwordHash: await hashPassword(password) },
+    data: {
+      passwordHash: await hashPassword(password),
+      sessionVersion: { increment: 1 },
+    },
   });
 
   await logAdminAudit({

@@ -12,6 +12,15 @@ type SessionPayload = {
   role: "USER" | "ADMIN";
 };
 
+type SessionTokenPayload = SessionPayload & {
+  sessionVersion: number;
+};
+
+type SignedSessionPayload = SessionTokenPayload & {
+  iat: number;
+  exp: number;
+};
+
 function getSessionSecret() {
   const secret = process.env.AUTH_SECRET;
   if (!secret) {
@@ -28,13 +37,19 @@ function sign(value: string) {
   return createHmac("sha256", getSessionSecret()).update(value).digest("hex");
 }
 
-function encode(payload: SessionPayload) {
-  const body = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+function encode(payload: SessionTokenPayload) {
+  const now = Math.floor(Date.now() / 1000);
+  const signedPayload: SignedSessionPayload = {
+    ...payload,
+    iat: now,
+    exp: now + ONE_WEEK_SECONDS,
+  };
+  const body = Buffer.from(JSON.stringify(signedPayload), "utf8").toString("base64url");
   const signature = sign(body);
   return `${body}.${signature}`;
 }
 
-function decode(token: string): SessionPayload | null {
+function decode(token: string): SignedSessionPayload | null {
   const [body, signature] = token.split(".");
   if (!body || !signature) return null;
 
@@ -47,15 +62,32 @@ function decode(token: string): SessionPayload | null {
 
   try {
     const parsed = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
-    if (!parsed.userId || !parsed.role) return null;
-    return parsed as SessionPayload;
+    if (!parsed.userId || (parsed.role !== "USER" && parsed.role !== "ADMIN")) return null;
+    if (!Number.isInteger(parsed.sessionVersion)) return null;
+    if (!Number.isFinite(parsed.iat) || !Number.isFinite(parsed.exp)) return null;
+    if (parsed.exp <= Math.floor(Date.now() / 1000)) return null;
+    return {
+      userId: parsed.userId,
+      role: parsed.role,
+      sessionVersion: parsed.sessionVersion,
+      iat: parsed.iat,
+      exp: parsed.exp,
+    };
   } catch {
     return null;
   }
 }
 
 export async function createSession(payload: SessionPayload) {
-  const token = encode(payload);
+  const user = await db.user.findUnique({
+    where: { id: payload.userId },
+    select: { sessionVersion: true },
+  });
+  if (!user) {
+    throw new Error("Cannot create a session for a missing user.");
+  }
+
+  const token = encode({ ...payload, sessionVersion: user.sessionVersion });
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
@@ -68,6 +100,20 @@ export async function createSession(payload: SessionPayload) {
 
 export async function clearSession() {
   const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
+  const session = token ? decode(token) : null;
+
+  if (session) {
+    await db.user
+      .updateMany({
+        where: { id: session.userId, sessionVersion: session.sessionVersion },
+        data: { sessionVersion: { increment: 1 } },
+      })
+      .catch((error) => {
+        console.error("[session-revoke-failed]", { userId: session.userId, error });
+      });
+  }
+
   cookieStore.delete(SESSION_COOKIE);
 }
 
@@ -75,7 +121,16 @@ export async function getSession(): Promise<SessionPayload | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  return decode(token);
+  const session = decode(token);
+  if (!session) return null;
+
+  const user = await db.user.findUnique({
+    where: { id: session.userId },
+    select: { sessionVersion: true },
+  });
+  if (!user || user.sessionVersion !== session.sessionVersion) return null;
+
+  return { userId: session.userId, role: session.role };
 }
 
 export async function requireUserSession() {

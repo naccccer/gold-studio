@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { normalizeLoginIdentifier } from "@/lib/auth/identifier";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
-import { requireUserSession } from "@/lib/auth/session";
+import { createSession, requireUserSession } from "@/lib/auth/session";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { applyReferralOrSalesCodeForUser } from "@/lib/referrals";
 import { saveReceiptFile } from "@/lib/uploads";
@@ -274,9 +274,13 @@ export async function changePasswordAction(formData: FormData) {
 
   await db.user.update({
     where: { id: session.userId },
-    data: { passwordHash: await hashPassword(newPassword) },
+    data: {
+      passwordHash: await hashPassword(newPassword),
+      sessionVersion: { increment: 1 },
+    },
   });
 
+  await createSession({ userId: session.userId, role: session.role });
   revalidatePath("/account/profile");
 }
 
