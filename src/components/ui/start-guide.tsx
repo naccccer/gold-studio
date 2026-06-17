@@ -24,6 +24,10 @@ type TargetRect = {
 type GuideRects = {
   target: TargetRect | null;
   frame: TargetRect | null;
+  viewport: {
+    width: number;
+    height: number;
+  };
 };
 
 const steps: GuideStep[] = [
@@ -81,11 +85,18 @@ function getPhoneFrameRect(): TargetRect | null {
 }
 
 function useGuideRects(target: GuideStep["target"]) {
-  const [rects, setRects] = useState<GuideRects>({ target: null, frame: null });
+  const [rects, setRects] = useState<GuideRects>({ target: null, frame: null, viewport: { width: 393, height: 852 } });
 
   useEffect(() => {
     function updateRects() {
-      setRects({ target: getTargetRect(target), frame: getPhoneFrameRect() });
+      setRects({
+        target: getTargetRect(target),
+        frame: getPhoneFrameRect(),
+        viewport: {
+          width: window.innerWidth,
+          height: window.innerHeight,
+        },
+      });
     }
 
     updateRects();
@@ -103,22 +114,26 @@ function useGuideRects(target: GuideStep["target"]) {
   return rects;
 }
 
-export function StartGuide() {
+type StartGuideProps = {
+  enabled?: boolean;
+};
+
+export function StartGuide({ enabled = true }: StartGuideProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [stepIndex, setStepIndex] = useState(0);
   const [visible, setVisible] = useState(true);
   const [pending, startTransition] = useTransition();
-  const isProjectUploadGuide = pathname === "/projects/new";
+  const isProjectUploadGuide = pathname === "/projects/new" && searchParams.get("startGuide") === "upload";
   const step = isProjectUploadGuide ? uploadStep : steps[stepIndex];
-  const { target: rect, frame } = useGuideRects(step.target);
+  const { target: rect, frame, viewport } = useGuideRects(step.target);
   const isLastStep = !isProjectUploadGuide && stepIndex === steps.length - 1;
   const isUploadStep = step.target === "project-upload";
   const spotlightRect = rect
     ? {
         top: Math.max(frame?.top ?? 0, rect.top - 4),
-        right: Math.max(0, window.innerWidth - Math.min(frame?.right ?? window.innerWidth, rect.right + 4)),
+        right: Math.max(0, viewport.width - Math.min(frame?.right ?? viewport.width, rect.right + 4)),
         left: Math.max(frame?.left ?? 0, rect.left - 4),
         width: rect.width + 8,
         height: rect.height + 8,
@@ -128,16 +143,16 @@ export function StartGuide() {
 
   const bubbleStyle = useMemo<CSSProperties>(() => {
     const frameLeft = frame?.left ?? 16;
-    const frameRight = frame?.right ?? window.innerWidth - 16;
+    const frameRight = frame?.right ?? viewport.width - 16;
     const frameTop = frame?.top ?? 0;
-    const frameBottom = frame?.bottom ?? window.innerHeight;
-    const bubbleWidth = Math.min(334, frameRight - frameLeft - 24);
+    const frameBottom = frame?.bottom ?? viewport.height;
+    const bubbleWidth = isUploadStep ? Math.min(302, frameRight - frameLeft - 24) : Math.min(334, frameRight - frameLeft - 24);
 
     if (!rect) {
       return {
         width: bubbleWidth,
         left: frameLeft + 12,
-        bottom: window.innerHeight - frameBottom + 112,
+        bottom: viewport.height - frameBottom + 112,
       };
     }
 
@@ -146,7 +161,9 @@ export function StartGuide() {
     const estimatedBubbleHeight = 146;
     const gap = 14;
     const spaceAbove = rect.top - frameTop;
-    const top = spaceAbove >= estimatedBubbleHeight + gap
+    const top = isUploadStep
+      ? rect.bottom + 18
+      : spaceAbove >= estimatedBubbleHeight + gap
       ? rect.top - estimatedBubbleHeight - gap
       : Math.min(rect.bottom + gap, frameBottom - estimatedBubbleHeight - 12);
 
@@ -155,7 +172,18 @@ export function StartGuide() {
       left,
       top: Math.max(frameTop + 12, top),
     };
-  }, [frame, rect]);
+  }, [frame, isUploadStep, rect, viewport.height, viewport.width]);
+
+  const pointerStyle = useMemo<CSSProperties | null>(() => {
+    if (!rect || !frame) return null;
+
+    const bubbleLeft = typeof bubbleStyle.left === "number" ? bubbleStyle.left : frame.left + 12;
+    const targetCenter = rect.left + rect.width / 2;
+
+    return {
+      right: Math.max(22, (Number(bubbleStyle.width) || 302) - (targetCenter - bubbleLeft) - 7),
+    };
+  }, [bubbleStyle, frame, rect]);
 
   function markSeen(afterSeen?: () => void) {
     startTransition(() => {
@@ -180,6 +208,11 @@ export function StartGuide() {
     setStepIndex((value) => value + 1);
   }
 
+  function goToUploadGuide() {
+    setVisible(false);
+    router.push("/projects/new?startGuide=upload");
+  }
+
   function chooseUpload() {
     const target = document.querySelector<HTMLElement>('[data-start-guide-target="project-upload"]');
     setVisible(false);
@@ -189,7 +222,7 @@ export function StartGuide() {
     target?.click();
   }
 
-  if (!visible || (pathname === "/projects/new" && searchParams.get("startGuide") !== "upload")) return null;
+  if (!visible || (!enabled && !isProjectUploadGuide) || (pathname === "/projects/new" && !isProjectUploadGuide)) return null;
 
   return (
     <div dir="rtl" className="fixed inset-0 z-50 text-right">
@@ -233,7 +266,7 @@ export function StartGuide() {
               type="button"
               aria-label={isUploadStep ? "آپلود عکس محصول" : "شروع پروژه جدید"}
               disabled={pending}
-              onClick={isUploadStep ? chooseUpload : () => router.push("/projects/new?startGuide=upload")}
+              onClick={isUploadStep ? chooseUpload : goToUploadGuide}
               className="fixed rounded-full focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
               style={{
                 top: spotlightRect.top - 2,
@@ -251,6 +284,13 @@ export function StartGuide() {
         style={bubbleStyle}
         aria-live="polite"
       >
+        {isUploadStep && pointerStyle ? (
+          <span
+            aria-hidden="true"
+            className="absolute -top-1.5 h-3 w-3 rotate-45 border-r border-t border-white/78 bg-surface"
+            style={pointerStyle}
+          />
+        ) : null}
         <div className="flex items-start gap-3">
           <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-soft text-[#7b5d31]">
             <Magicpen aria-hidden={true} className="h-4.5 w-4.5" />
@@ -270,7 +310,7 @@ export function StartGuide() {
             onClick={isUploadStep ? chooseUpload : nextStep}
             className="min-w-24"
           >
-            {isUploadStep ? "آپلود عکس" : isLastStep ? "شروع" : "بعدی"}
+            {isUploadStep ? "انتخاب عکس" : isLastStep ? "شروع" : "بعدی"}
             {isLastStep || isUploadStep ? <Magicpen aria-hidden={true} className="h-4 w-4" /> : <ArrowLeft aria-hidden={true} className="h-4 w-4" />}
           </Button>
           <button

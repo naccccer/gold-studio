@@ -3,6 +3,7 @@ import { after } from "next/server";
 import { ProjectDetailScreen, type ProjectDetail } from "@/features/projects/screens/project-detail-screen";
 import { db } from "@/lib/db";
 import { requireUserSession } from "@/lib/auth/session";
+import { FREE_VARIANT_LIMIT } from "@/lib/credits";
 import { isRawImageFilenameTitle, retryProjectVisionTitle } from "@/lib/product-vision";
 import { readStorageObject, storagePublicUrl } from "@/lib/storage";
 
@@ -68,14 +69,28 @@ export default async function ProjectDetailPage({
   }
 
   let variantNumber: number | null = null;
+  let freeVariantRemaining: number | null = null;
   if (project.sourceAssetId) {
-    const sourceProjects = await db.project.findMany({
-      where: { userId: session.userId, sourceAssetId: project.sourceAssetId, archivedAt: null },
-      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-      select: { id: true },
-    });
+    const [sourceProjects, usedFreeVariantCount] = await Promise.all([
+      db.project.findMany({
+        where: { userId: session.userId, sourceAssetId: project.sourceAssetId, archivedAt: null },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        select: { id: true },
+      }),
+      project.variantParentId
+        ? Promise.resolve(0)
+        : db.project.count({
+            where: {
+              userId: session.userId,
+              variantParentId: project.id,
+              archivedAt: null,
+              status: "COMPLETED",
+            },
+          }),
+    ]);
     const variantIndex = sourceProjects.findIndex((item) => item.id === project.id);
     variantNumber = variantIndex >= 0 ? variantIndex + 1 : null;
+    freeVariantRemaining = Math.max(0, FREE_VARIANT_LIMIT - usedFreeVariantCount);
   }
 
   return (
@@ -92,6 +107,7 @@ export default async function ProjectDetailPage({
           productType: project.sourceAsset?.productType ?? null,
           titleRefreshPending,
           variantNumber,
+          freeVariantRemaining,
         } as ProjectDetail
       }
     />

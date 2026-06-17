@@ -13,6 +13,7 @@ import {
   releaseGenerationCreditReservation,
   reserveGenerationCredit,
 } from "@/lib/billing";
+import { FREE_VARIANT_LIMIT } from "@/lib/credits";
 import { processImageProject, processTextProject } from "@/lib/generation/jobs";
 import { getOutputPresetSpec, normalizeOutputPreset } from "@/lib/output-presets";
 import { pickVisionTitle, retryProjectVisionTitle } from "@/lib/product-vision";
@@ -425,13 +426,25 @@ export async function createProjectAction(
               sourceAssetId: asset.id,
               archivedAt: null,
               variantParentId: null,
-              freeVariantUsedAt: null,
               freeVariantProjectId: null,
             },
             select: { id: true },
           });
 
           if (!parent || !freeVariantId) {
+            return null;
+          }
+
+          const usedFreeVariants = await tx.project.count({
+            where: {
+              userId: session.userId,
+              variantParentId: parent.id,
+              archivedAt: null,
+              status: "COMPLETED",
+            },
+          });
+
+          if (usedFreeVariants >= FREE_VARIANT_LIMIT) {
             return null;
           }
 
@@ -443,7 +456,6 @@ export async function createProjectAction(
               sourceAssetId: asset.id,
               archivedAt: null,
               variantParentId: null,
-              freeVariantUsedAt: null,
               freeVariantProjectId: null,
             },
             data: { freeVariantProjectId: freeVariantId },

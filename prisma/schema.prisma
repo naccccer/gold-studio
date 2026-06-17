@@ -114,7 +114,7 @@ model User {
   passwordHash          String
   role                  UserRole           @default(USER)
   sessionVersion        Int                @default(0)
-  credits               Int                @default(1)
+  credits               Int                @default(3)
   reservedCredits       Int                @default(0)
   projects              Project[]
   assets                ProductAsset[]

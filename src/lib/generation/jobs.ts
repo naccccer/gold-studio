@@ -482,8 +482,8 @@ export async function processImageProject(projectId: string) {
     });
     if (project.variantParentId) {
       await db.project.updateMany({
-        where: { id: project.variantParentId, freeVariantProjectId: projectId, freeVariantUsedAt: null },
-        data: { freeVariantUsedAt: new Date() },
+        where: { id: project.variantParentId, freeVariantProjectId: projectId },
+        data: { freeVariantUsedAt: new Date(), freeVariantProjectId: null },
       });
     }
     await captureGenerationCreditReservation({ projectId });
@@ -504,7 +504,7 @@ export async function processImageProject(projectId: string) {
     });
     if (failedProject?.variantParentId) {
       await db.project.updateMany({
-        where: { id: failedProject.variantParentId, freeVariantProjectId: projectId, freeVariantUsedAt: null },
+        where: { id: failedProject.variantParentId, freeVariantProjectId: projectId },
         data: { freeVariantProjectId: null },
       });
     }

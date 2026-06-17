@@ -227,6 +227,7 @@ export type ProjectDetail = {
   createdAt?: Date | string;
   titleRefreshPending?: boolean;
   variantNumber?: number | null;
+  freeVariantRemaining?: number | null;
 };
 
 const failedCreditReassurance =
@@ -370,8 +371,8 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
     project.status === "COMPLETED" &&
     Boolean(project.sourceAssetId) &&
     !project.variantParentId &&
-    !project.freeVariantUsedAt &&
-    !project.freeVariantProjectId;
+    !project.freeVariantProjectId &&
+    (project.freeVariantRemaining ?? 0) > 0;
   const processingMoments = buildProcessingMoments(project.style.name);
   const errorPresentation = formatProjectError(visibleProject);
   const errorCopyText = [

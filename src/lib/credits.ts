@@ -1,4 +1,5 @@
-export const INITIAL_SIGNUP_CREDITS = 1;
+export const INITIAL_SIGNUP_CREDITS = 3;
+export const FREE_VARIANT_LIMIT = 2;
 export const REFERRAL_PURCHASE_REWARD_CREDITS = 5;
 export const SALES_CODE_BATCH_SIZE = 5;
 export const SALES_CODE_CREDITS = 5;

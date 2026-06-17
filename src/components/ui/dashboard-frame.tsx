@@ -57,7 +57,7 @@ export function DashboardFrame({
         {children}
       </div>
       {needsNameOnboarding ? <OnboardingNameModal /> : null}
-      {showStartGuide && (!isProjectDarkSurface || pathname === "/projects/new") ? <StartGuide /> : null}
+      {showStartGuide || pathname === "/projects/new" ? <StartGuide enabled={showStartGuide} /> : null}
     </div>
   );
 }
