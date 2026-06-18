@@ -44,7 +44,9 @@ chmod 600 .env
 ترتیب مهم است. قبل از restart حتما build بگیر، وگرنه `next start` می‌تواند با خطای نبودن production build بیفتد.
 
 ```bash
-git pull
+git fetch origin main
+git switch main
+git merge --ff-only origin/main
 npm install
 npm run db:deploy
 npm run build
