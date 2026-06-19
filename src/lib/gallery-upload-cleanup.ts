@@ -3,6 +3,7 @@ import { deleteStorageObject } from "@/lib/storage";
 
 const DEFAULT_TEMP_UPLOAD_TTL_HOURS = 24;
 const MAX_CLEANUP_LIMIT = 50;
+const TEMP_ARCHIVE_GRACE_MS = 5 * 60 * 1000;
 
 function parseTempUploadTtlHours() {
   const parsed = Number.parseInt(process.env.GALLERY_TEMP_UPLOAD_TTL_HOURS ?? "", 10);
@@ -36,18 +37,25 @@ export async function cleanupAbandonedGalleryUploads({
     take: safeLimit,
     select: {
       id: true,
+      archivedAt: true,
+      createdAt: true,
       storageKey: true,
     },
   });
 
   let deletedCount = 0;
   for (const asset of staleAssets) {
+    if (!asset.archivedAt || asset.archivedAt.getTime() - asset.createdAt.getTime() > TEMP_ARCHIVE_GRACE_MS) {
+      continue;
+    }
+
     const deleted = await db.productAsset.deleteMany({
       where: {
         id: asset.id,
         userId: userId || undefined,
         status: "ARCHIVED",
-        archivedAt: { lt: cutoff },
+        archivedAt: asset.archivedAt,
+        createdAt: asset.createdAt,
         projects: { none: {} },
         batchItems: { none: {} },
         supportingProjects: { none: {} },
