@@ -82,12 +82,13 @@ pm2 save
 ```bash
 pm2 status
 curl --noproxy '*' -i http://127.0.0.1:3000/api/health
+npm run smoke -- https://ovala.ir
 pm2 logs gold-studio --lines 80 --nostream
 pm2 logs gold-studio-worker --lines 80 --nostream
 pm2 logs gold-studio-watchdog --lines 80 --nostream
 ```
 
-خروجی health باید `200` و `{"ok":true}` باشد. داخل سایت هم این مسیرها را سریع تست کن:
+خروجی health باید `200`، `ok: true`، `database.ok: true` و بخش `generation` داشته باشد. داخل سایت هم این مسیرها را سریع تست کن:
 
 - ثبت‌نام با پیامک
 - ورود
@@ -116,19 +117,14 @@ npm run build
 pm2 restart gold-studio --update-env
 ```
 
-اگر health خطای Prisma pool timeout داد، معمولاً app زنده است ولی pool دیتابیس گیر کرده است. برای برگرداندن سایت:
-
-```bash
-pm2 restart gold-studio --update-env
-curl --noproxy '*' -i http://127.0.0.1:3000/api/health
-```
-
-بعدش علت را بررسی کن:
+اگر health خطای دیتابیس داد، اول وضعیت MySQL و تعداد اتصال‌ها را بررسی کن. اگر شواهد نشان داد app زنده است ولی اتصال دیتابیس گیر کرده، restart app آخرین اقدام عملیاتی است:
 
 ```bash
 mysql -NBe "SHOW GLOBAL STATUS LIKE 'Threads_connected'; SHOW GLOBAL STATUS LIKE 'Max_used_connections'; SHOW VARIABLES LIKE 'max_connections'; SHOW FULL PROCESSLIST;"
 pm2 logs gold-studio --lines 160 --nostream
 pm2 logs gold-studio-watchdog --lines 160 --nostream
+pm2 restart gold-studio --update-env
+curl --noproxy '*' -i http://127.0.0.1:3000/api/health
 ```
 
 ## 5. وقتی worker گیر می‌کند

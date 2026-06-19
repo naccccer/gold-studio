@@ -57,6 +57,9 @@ npm run admin:bootstrap -- --email "admin@example.com" --password "strong-passwo
 - `npm run check:mojibake`: detect corrupted Persian text.
 - `npm run lint`: run ESLint.
 - `npm run build`: generate Prisma Client and build the app.
+- `npm run smoke -- http://localhost:3000`: check a running app without logging in or touching AI/payment flows.
+- `npm run worker:generation`: run the queued generation worker.
+- `npm run watchdog:health`: run the PM2 health watchdog loop.
 - `npm run check:liara`: test direct Liara access from the local machine.
 
 Avoid `npx prisma migrate reset` unless you intentionally want to wipe and recreate local data.

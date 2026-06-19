@@ -22,7 +22,7 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 - Pre-launch security hardening now includes identifier-based auth throttling, long-lived signed session revocation, global security headers, and guarded storage responses for non-display objects.
 - Batch generation starts from Gallery, creates one project per selected source photo, and reserves generation credit until each output succeeds.
 - Generation now has a DB-backed recovery worker (`npm run worker:generation`) that polls queued projects, resumes stale `PROCESSING` jobs, and runs as a separate PM2 process in production.
-- Production availability now includes a PM2 health watchdog (`npm run watchdog:health`) that checks local `/api/health` and restarts the app after repeated failures; the MariaDB JS adapter pool layer was removed after production pool timeouts.
+- Production availability now includes a PM2 health watchdog (`npm run watchdog:health`) that checks local `/api/health` and restarts the app after repeated failures. The health endpoint reports DB status plus generation queue, processing, stale-processing, and recent failed counts.
 - New project creation supports optional supporting product photos for complicated products: one primary source plus up to two extra product angles still creates one project and one output.
 - Home now uses an admin-managed before/after carousel (`/admin/home`) with fallback placeholder slides until active slides are uploaded.
 - Curated style labels are simplified for users: social is "با جای متن", editorial is "با دکور", and cinematic is "سینمایی".
@@ -36,6 +36,7 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 - Admin operations QA: review the rebuilt navy/white console with real data across overview, health, audit, users, billing, projects, AI, assets, styles, support/FAQ, and referrals.
 - Documentation hygiene: keep docs short and current; update this file only when scope or active priorities change.
 - SMS readiness: add the approved FarazSMS pattern code and line number before testing phone verification with real users.
+- Backend reliability: keep generation worker recovery, credit reservation consistency, and health/smoke coverage under review as real production traffic grows.
 
 ## Local Database
 

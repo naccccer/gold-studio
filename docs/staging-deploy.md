@@ -148,7 +148,7 @@ pm2 status
 curl --noproxy '*' -i http://127.0.0.1:3001/api/health
 ```
 
-خروجی health باید `{"ok":true}` باشد. اگر `503` شد، معمولاً `DATABASE_URL` یا permission دیتابیس اشتباه است:
+خروجی health باید `ok: true`، `database.ok: true` و بخش `generation` داشته باشد. اگر `503` شد، معمولاً `DATABASE_URL` یا permission دیتابیس اشتباه است:
 
 ```bash
 pm2 logs gold-studio-test --lines 80
@@ -276,7 +276,7 @@ Smoke test یک چک سریع برای نسخه در حال اجرا است. ا�
 
 چیزهایی که چک می کند:
 
-- `/api/health` باید `200` و `{"ok":true}` بدهد.
+- `/api/health` باید `200`، `ok: true`، `database.ok: true` و بخش `generation` بدهد.
 - مسیر `/` باید render شود یا به `/login` برود؛ صفحه های عمومی `/login`، `/signup` و `/forgot-password` باید render شوند.
 - صفحه های محافظت شده مثل `/dashboard`، `/gallery`، `/projects`، `/account` و `/admin` باید کاربر ناشناس را به `/login` بفرستند.
 - مسیر قدیمی `/uploads/...` باید بسته باشد.
@@ -379,12 +379,13 @@ pm2 restart gold-studio-test --update-env
 
 ```bash
 cd /var/www/gold-studio
-git pull
+git pull --ff-only origin main
 npm install
 npm run db:deploy
 npm run build
-pm2 restart gold-studio
-pm2 restart gold-studio-worker
+pm2 restart gold-studio --update-env
+pm2 restart gold-studio-worker --update-env
+pm2 restart gold-studio-watchdog --update-env
 npm run smoke -- https://ovala.ir
 ```
 
