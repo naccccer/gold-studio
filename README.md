@@ -5,7 +5,7 @@ Ovala is a mobile-first Farsi RTL web app for turning low-quality jewelry, gold,
 ## Stack
 
 - Next.js App Router, React, TypeScript, Tailwind
-- Prisma with MySQL through the MariaDB JS adapter
+- Prisma with MySQL
 - Local filesystem storage by default, optional S3-compatible storage
 - Liara/OpenAI-compatible image and vision APIs
 - Vuesax icons for user-facing UI
@@ -25,7 +25,7 @@ Edit `.env` with local values. A typical local database URL is:
 DATABASE_URL="mysql://root@127.0.0.1:3306/gold_studio?allowPublicKeyRetrieval=true"
 ```
 
-Keep the `mysql://` scheme in `.env` so Prisma CLI commands keep working. The app normalizes it internally for the MariaDB JS adapter at runtime.
+Keep the `mysql://` scheme in `.env`; Prisma CLI commands and the app use it directly.
 
 Create the database if needed:
 

@@ -53,7 +53,7 @@ Restore `.env` into the project root. Current local default:
 DATABASE_URL="mysql://root@127.0.0.1:3306/gold_studio?allowPublicKeyRetrieval=true"
 ```
 
-Keep the `mysql://` scheme for Prisma CLI compatibility; the app converts it for the MariaDB JS adapter when it starts.
+Keep the `mysql://` scheme; Prisma CLI commands and the app use it directly.
 
 Create the database if needed:
 
