@@ -22,6 +22,13 @@ GENERATION_WORKER_INTERVAL_MS="15000"
 GENERATION_WORKER_LIMIT="1"
 GENERATION_STALE_PROCESSING_MINUTES="45"
 
+HEALTH_WATCHDOG_URL="http://127.0.0.1:3000/api/health"
+HEALTH_WATCHDOG_PM2_APP="gold-studio"
+HEALTH_WATCHDOG_INTERVAL_MS="30000"
+HEALTH_WATCHDOG_TIMEOUT_MS="10000"
+HEALTH_WATCHDOG_FAILURE_THRESHOLD="4"
+HEALTH_WATCHDOG_RESTART_COOLDOWN_MS="120000"
+
 LIARA_API_KEY="..."
 LIARA_VISION_API_KEY="..."
 FARAZSMS_API_KEY="..."
@@ -52,6 +59,7 @@ npm run db:deploy
 npm run build
 pm2 restart gold-studio --update-env
 pm2 restart gold-studio-worker --update-env
+pm2 restart gold-studio-watchdog --update-env
 pm2 save
 ```
 
@@ -62,6 +70,13 @@ pm2 start npm --name gold-studio-worker -- run worker:generation
 pm2 save
 ```
 
+اگر watchdog هنوز ساخته نشده:
+
+```bash
+pm2 start npm --name gold-studio-watchdog -- run watchdog:health
+pm2 save
+```
+
 ## 3. چک بعد از deploy
 
 ```bash
@@ -69,6 +84,7 @@ pm2 status
 curl --noproxy '*' -i http://127.0.0.1:3000/api/health
 pm2 logs gold-studio --lines 80 --nostream
 pm2 logs gold-studio-worker --lines 80 --nostream
+pm2 logs gold-studio-watchdog --lines 80 --nostream
 ```
 
 خروجی health باید `200` و `{"ok":true}` باشد. داخل سایت هم این مسیرها را سریع تست کن:
@@ -87,6 +103,7 @@ pm2 logs gold-studio-worker --lines 80 --nostream
 ```bash
 pm2 status
 pm2 logs gold-studio --lines 120 --nostream
+pm2 logs gold-studio-watchdog --lines 120 --nostream
 tail -n 160 /root/.pm2/pm2.log
 curl --noproxy '*' -i --max-time 10 http://127.0.0.1:3000/api/health
 journalctl -k --since "24 hours ago" --no-pager | egrep -i "oom|killed process|segfault|node|mysql"
@@ -111,6 +128,7 @@ curl --noproxy '*' -i http://127.0.0.1:3000/api/health
 ```bash
 mysql -NBe "SHOW GLOBAL STATUS LIKE 'Threads_connected'; SHOW GLOBAL STATUS LIKE 'Max_used_connections'; SHOW VARIABLES LIKE 'max_connections'; SHOW FULL PROCESSLIST;"
 pm2 logs gold-studio --lines 160 --nostream
+pm2 logs gold-studio-watchdog --lines 160 --nostream
 ```
 
 ## 5. وقتی worker گیر می‌کند

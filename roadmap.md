@@ -22,6 +22,7 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 - Pre-launch security hardening now includes identifier-based auth throttling, long-lived signed session revocation, global security headers, and guarded storage responses for non-display objects.
 - Batch generation starts from Gallery, creates one project per selected source photo, and reserves generation credit until each output succeeds.
 - Generation now has a DB-backed recovery worker (`npm run worker:generation`) that polls queued projects, resumes stale `PROCESSING` jobs, and runs as a separate PM2 process in production.
+- Production availability now includes a PM2 health watchdog (`npm run watchdog:health`) that checks local `/api/health` and restarts the app after repeated failures.
 - New project creation supports optional supporting product photos for complicated products: one primary source plus up to two extra product angles still creates one project and one output.
 - Home now uses an admin-managed before/after carousel (`/admin/home`) with fallback placeholder slides until active slides are uploaded.
 - Curated style labels are simplified for users: social is "با جای متن", editorial is "با دکور", and cinematic is "سینمایی".
@@ -29,7 +30,7 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 
 ## Next Priorities
 
-- Production hardening: deploy the Prisma/MariaDB pool hardening, keep the production worker secret present in `.env`, and verify real Liara/Avalai generation, storage display URLs, provider cost, and failed-state recovery on the deployment target.
+- Production hardening: keep the production worker/watchdog processes active in PM2, verify real Liara/Avalai generation, storage display URLs, provider cost, and failed-state recovery on the deployment target.
 - Release readiness: route QA across auth, home, gallery, new project, project detail, projects, account, billing, support, settings, and admin.
 - Mobile polish: check the `393x852` mobile layout target for Farsi wrapping, RTL controls, bottom navigation, action placement, calm motion, and accidental scrolling.
 - Admin operations QA: review the rebuilt navy/white console with real data across overview, health, audit, users, billing, projects, AI, assets, styles, support/FAQ, and referrals.
