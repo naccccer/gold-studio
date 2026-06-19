@@ -169,6 +169,7 @@ export async function createBatchFromGalleryAction(formData: FormData) {
   }
 
   const reservations: string[] = [];
+  const createdProjectIds: string[] = [];
   const styleControlPrompt = buildStyleControlPrompt(style, formData);
   const includesHumanModel = hasHumanModelStyleControls(style);
   const batch = await db.generationBatch.create({
@@ -234,6 +235,7 @@ export async function createBatchFromGalleryAction(formData: FormData) {
         },
         select: { id: true },
       });
+      createdProjectIds.push(project.id);
 
       await attachGenerationCreditReservation({
         reservationId: reservation.reservationId,
@@ -251,6 +253,19 @@ export async function createBatchFromGalleryAction(formData: FormData) {
     }
   } catch (error) {
     await Promise.all(reservations.map((reservationId) => releaseGenerationCreditReservation({ reservationId })));
+    if (createdProjectIds.length > 0) {
+      await db.project.updateMany({
+        where: {
+          id: { in: createdProjectIds },
+          userId: session.userId,
+          status: "QUEUED",
+        },
+        data: {
+          status: "FAILED",
+          errorMessage: "ساخت دسته‌ای کامل نشد و اعتبار رزروشده آزاد شد. لطفا دوباره تلاش کنید.",
+        },
+      });
+    }
     await db.generationBatch.delete({ where: { id: batch.id } }).catch(() => undefined);
     redirect(
       `/gallery/batches/new?assetIds=${encodeURIComponent(assetIds.join(","))}&error=${encodeURIComponent(

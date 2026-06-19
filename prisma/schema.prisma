@@ -171,6 +171,8 @@ model Project {
 
   @@index([userId, createdAt])
   @@index([userId, archivedAt])
+  @@index([status, createdAt])
+  @@index([status, updatedAt])
   @@index([sourceAssetId])
   @@index([referenceAssetId])
   @@index([styleId])
@@ -354,6 +356,7 @@ model GenerationBatch {
   updatedAt    DateTime              @updatedAt
 
   @@index([userId, createdAt])
+  @@index([status, updatedAt])
   @@index([styleId])
   @@index([referenceAssetId])
 }
