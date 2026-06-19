@@ -38,8 +38,15 @@ function workerUrl() {
 }
 
 function wait(ms) {
+  if (stopping) return Promise.resolve();
+
   return new Promise((resolve) => {
-    setTimeout(resolve, ms);
+    wakeSleep = resolve;
+    sleepTimer = setTimeout(() => {
+      sleepTimer = null;
+      wakeSleep = null;
+      resolve();
+    }, ms);
   });
 }
 
@@ -85,30 +92,54 @@ const url = workerUrl();
 const intervalMs = integerEnv("GENERATION_WORKER_INTERVAL_MS", 15000, 1000);
 const errorIntervalMs = integerEnv("GENERATION_WORKER_ERROR_INTERVAL_MS", 30000, 1000);
 const limit = integerEnv("GENERATION_WORKER_LIMIT", 1, 1);
-const staleMinutes = integerEnv("GENERATION_STALE_PROCESSING_MINUTES", 45, 5);
+const staleMinutes = integerEnv("GENERATION_STALE_PROCESSING_MINUTES", 90, 5);
 let stopping = false;
+let activeTick = false;
+let sleepTimer = null;
+let wakeSleep = null;
 
-process.on("SIGINT", () => {
+function requestShutdown(signal) {
+  if (stopping) return;
   stopping = true;
-});
+  console.log(
+    `[${nowLabel()}] Ovala generation worker shutdown requested (${signal}); ${
+      activeTick ? "waiting for current tick to finish" : "no active tick"
+    }.`,
+  );
 
-process.on("SIGTERM", () => {
-  stopping = true;
-});
+  if (sleepTimer) {
+    clearTimeout(sleepTimer);
+    sleepTimer = null;
+  }
+  if (wakeSleep) {
+    wakeSleep();
+    wakeSleep = null;
+  }
+}
 
-console.log(`[${nowLabel()}] Ovala generation worker started: ${url}`);
+process.on("SIGINT", () => requestShutdown("SIGINT"));
+process.on("SIGTERM", () => requestShutdown("SIGTERM"));
+
+console.log(
+  `[${nowLabel()}] Ovala generation worker started: ${url} interval=${intervalMs}ms errorInterval=${errorIntervalMs}ms limit=${limit} staleMinutes=${staleMinutes}`,
+);
 
 while (!stopping) {
   try {
+    activeTick = true;
     const result = await tick({ url, secret, limit, staleMinutes });
+    activeTick = false;
     const processed = result?.processedProjects ?? 0;
     const recovered = (result?.recoveredProjects ?? 0) + (result?.recoveredBatches ?? 0);
     if (processed > 0 || recovered > 0) {
       console.log(`[${nowLabel()}] generation tick`, JSON.stringify(result));
     }
+    if (stopping) break;
     await wait(intervalMs);
   } catch (error) {
+    activeTick = false;
     console.error(`[${nowLabel()}] generation worker error`, error);
+    if (stopping) break;
     await wait(errorIntervalMs);
   }
 }

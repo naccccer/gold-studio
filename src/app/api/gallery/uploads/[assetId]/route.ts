@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { after } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { cleanupAbandonedGalleryUploads } from "@/lib/gallery-upload-cleanup";
 import { deleteStorageObject } from "@/lib/storage";
 import { generateNumericSupportCode, logSupportError } from "@/lib/support-code";
 
@@ -12,6 +14,10 @@ export async function DELETE(
   if (!session) {
     return NextResponse.json({ error: "نشست کاربر معتبر نیست." }, { status: 401 });
   }
+
+  after(() => cleanupAbandonedGalleryUploads({ userId: session.userId }).catch((error) => {
+    console.error("[gallery-temp-upload-cleanup-failed]", error);
+  }));
 
   const { assetId } = await context.params;
   const asset = await db.productAsset.findFirst({
@@ -69,6 +75,10 @@ export async function PATCH(
   if (!session) {
     return NextResponse.json({ error: "نشست کاربر معتبر نیست." }, { status: 401 });
   }
+
+  after(() => cleanupAbandonedGalleryUploads({ userId: session.userId }).catch((error) => {
+    console.error("[gallery-temp-upload-cleanup-failed]", error);
+  }));
 
   const { assetId } = await context.params;
   const asset = await db.productAsset.findFirst({

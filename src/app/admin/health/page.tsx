@@ -14,6 +14,7 @@ import {
 import { imageProviderLabel } from "@/lib/ai/provider";
 import { getImageProviderAttemptOrder, getProviderSettings } from "@/lib/ai/provider-settings";
 import { db } from "@/lib/db";
+import { getDetailedHealthReport } from "@/lib/health";
 
 export const dynamic = "force-dynamic";
 
@@ -25,14 +26,8 @@ export default async function AdminHealthPage() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  let dbOk = true;
-  try {
-    await db.$queryRaw`SELECT 1`;
-  } catch {
-    dbOk = false;
-  }
-
-  const [providerSettings, successToday, failedToday, recentFailures, rateBuckets] = await Promise.all([
+  const [health, providerSettings, successToday, failedToday, recentFailures, rateBuckets] = await Promise.all([
+    getDetailedHealthReport(),
     getProviderSettings(),
     db.providerEvent.count({ where: { status: "SUCCESS", createdAt: { gte: today } } }),
     db.providerEvent.count({ where: { status: "FAILED", createdAt: { gte: today } } }),
@@ -51,6 +46,8 @@ export default async function AdminHealthPage() {
       ? ["AVALAI_API_KEY", "AVALAI_BASE_URL", "AVALAI_IMAGE_MODEL", "AVALAI_VISION_MODEL", "AVALAI_IMAGE_SIZE"]
       : ["LIARA_API_KEY", "LIARA_BASE_URL", "LIARA_IMAGE_MODEL", "LIARA_VISION_MODEL", "LIARA_IMAGE_SIZE"];
   const missingEnvCount = envNames.filter((name) => !envIsSet(name)).length;
+  const dbOk = health.database.ok;
+  const generation = health.generation;
 
   return (
     <>
@@ -72,6 +69,9 @@ export default async function AdminHealthPage() {
           { label: "موفق امروز", value: successToday, tone: "success" },
           { label: "ناموفق امروز", value: failedToday, tone: failedToday ? "danger" : "neutral" },
           { label: "متغیر محیطی ناقص", value: missingEnvCount, tone: missingEnvCount ? "danger" : "success" },
+          { label: "پروژه‌های در صف", value: generation?.queuedProjects ?? "n/a", tone: generation?.queuedProjects ? "attention" : "neutral" },
+          { label: "پروژه‌های در حال پردازش", value: generation?.processingProjects ?? "n/a", tone: generation?.staleProcessingProjects ? "danger" : "neutral" },
+          { label: "Storage", value: health.storage.driver },
         ]}
       />
 

@@ -71,17 +71,30 @@ export async function reserveGenerationCredit({
   projectId?: string | null;
   batchId?: string | null;
 }) {
-  const now = new Date();
+  return db.$transaction((tx) => reserveGenerationCreditInTransaction(tx, { userId, projectId, batchId }));
+}
 
-  return db.$transaction(async (tx) => {
-    const subscriptions = await tx.$queryRaw<
-      Array<{
-        id: string;
-        creditsPerPeriod: number;
-        creditsUsedThisPeriod: number;
-        reservedCredits: number;
-      }>
-    >`
+export async function reserveGenerationCreditInTransaction(
+  tx: Prisma.TransactionClient,
+  {
+    userId,
+    projectId,
+    batchId,
+  }: {
+    userId: string;
+    projectId?: string | null;
+    batchId?: string | null;
+  },
+) {
+  const now = new Date();
+  const subscriptions = await tx.$queryRaw<
+    Array<{
+      id: string;
+      creditsPerPeriod: number;
+      creditsUsedThisPeriod: number;
+      reservedCredits: number;
+    }>
+  >`
       SELECT id, creditsPerPeriod, creditsUsedThisPeriod, reservedCredits
       FROM \`UserSubscription\`
       WHERE userId = ${userId}
@@ -92,49 +105,17 @@ export async function reserveGenerationCredit({
       LIMIT 5
       FOR UPDATE
     `;
-    const subscription = subscriptions.find((item) => item.creditsUsedThisPeriod + item.reservedCredits < item.creditsPerPeriod);
+  const subscription = subscriptions.find((item) => item.creditsUsedThisPeriod + item.reservedCredits < item.creditsPerPeriod);
 
-    if (subscription) {
-      const updatedSubscription = await tx.userSubscription.updateMany({
-        where: {
-          id: subscription.id,
-          reservedCredits: subscription.reservedCredits,
-        },
-        data: { reservedCredits: { increment: 1 } },
-      });
-      if (updatedSubscription.count === 0) {
-        return { ok: false as const, error: NO_CREDITS_ERROR };
-      }
-      const reservation = await tx.generationCreditReservation.create({
-        data: {
-          userId,
-          projectId: projectId || null,
-          batchId: batchId || null,
-          source: "SUBSCRIPTION",
-          subscriptionId: subscription.id,
-        },
-      });
-
-      return { ok: true as const, reservationId: reservation.id, source: "SUBSCRIPTION" as const };
-    }
-
-    const [user] = await tx.$queryRaw<Array<{ id: string; credits: number; reservedCredits: number }>>`
-      SELECT id, credits, reservedCredits
-      FROM \`User\`
-      WHERE id = ${userId}
-      LIMIT 1
-      FOR UPDATE
-    `;
-
-    if (!user || user.credits - user.reservedCredits < 1) {
-      return { ok: false as const, error: NO_CREDITS_ERROR };
-    }
-
-    const updatedUser = await tx.user.updateMany({
-      where: { id: userId, reservedCredits: user.reservedCredits },
+  if (subscription) {
+    const updatedSubscription = await tx.userSubscription.updateMany({
+      where: {
+        id: subscription.id,
+        reservedCredits: subscription.reservedCredits,
+      },
       data: { reservedCredits: { increment: 1 } },
     });
-    if (updatedUser.count === 0) {
+    if (updatedSubscription.count === 0) {
       return { ok: false as const, error: NO_CREDITS_ERROR };
     }
     const reservation = await tx.generationCreditReservation.create({
@@ -142,12 +123,43 @@ export async function reserveGenerationCredit({
         userId,
         projectId: projectId || null,
         batchId: batchId || null,
-        source: "CREDIT_BALANCE",
+        source: "SUBSCRIPTION",
+        subscriptionId: subscription.id,
       },
     });
 
-    return { ok: true as const, reservationId: reservation.id, source: "CREDIT_BALANCE" as const };
+    return { ok: true as const, reservationId: reservation.id, source: "SUBSCRIPTION" as const };
+  }
+
+  const [user] = await tx.$queryRaw<Array<{ id: string; credits: number; reservedCredits: number }>>`
+      SELECT id, credits, reservedCredits
+      FROM \`User\`
+      WHERE id = ${userId}
+      LIMIT 1
+      FOR UPDATE
+    `;
+
+  if (!user || user.credits - user.reservedCredits < 1) {
+    return { ok: false as const, error: NO_CREDITS_ERROR };
+  }
+
+  const updatedUser = await tx.user.updateMany({
+    where: { id: userId, reservedCredits: user.reservedCredits },
+    data: { reservedCredits: { increment: 1 } },
   });
+  if (updatedUser.count === 0) {
+    return { ok: false as const, error: NO_CREDITS_ERROR };
+  }
+  const reservation = await tx.generationCreditReservation.create({
+    data: {
+      userId,
+      projectId: projectId || null,
+      batchId: batchId || null,
+      source: "CREDIT_BALANCE",
+    },
+  });
+
+  return { ok: true as const, reservationId: reservation.id, source: "CREDIT_BALANCE" as const };
 }
 
 export async function attachGenerationCreditReservation({

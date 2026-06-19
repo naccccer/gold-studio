@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { after } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { cleanupAbandonedGalleryUploads } from "@/lib/gallery-upload-cleanup";
 import { analyzeAndStoreProductAssetVision } from "@/lib/product-vision";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { generateNumericSupportCode, logSupportError } from "@/lib/support-code";
@@ -39,6 +40,10 @@ export async function POST(request: Request) {
   }
 
   try {
+    after(() => cleanupAbandonedGalleryUploads({ userId: session.userId }).catch((error) => {
+      console.error("[gallery-temp-upload-cleanup-failed]", error);
+    }));
+
     const uploaded = await saveUploadedFile(image);
     const asset = await db.productAsset.create({
       data: {

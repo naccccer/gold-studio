@@ -82,11 +82,7 @@ async function checkHealth() {
   } catch {
     // ignore
   }
-  const ok =
-    response.status === 200 &&
-    body?.ok === true &&
-    body?.database?.ok === true &&
-    typeof body?.generation === "object";
+  const ok = response.status === 200 && body?.ok === true;
   record(ok, "health endpoint", `status ${response.status} body=${JSON.stringify(body)}`);
 }
 

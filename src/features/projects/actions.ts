@@ -12,6 +12,7 @@ import {
   attachGenerationCreditReservation,
   releaseGenerationCreditReservation,
   reserveGenerationCredit,
+  reserveGenerationCreditInTransaction,
 } from "@/lib/billing";
 import { FREE_VARIANT_LIMIT } from "@/lib/credits";
 import { processImageProject, processTextProject } from "@/lib/generation/jobs";
@@ -34,6 +35,12 @@ export type ProjectFormState = {
 };
 
 const MAX_SUPPORTING_PRODUCT_IMAGES = 2;
+
+class RetryProjectClaimLostError extends Error {
+  constructor() {
+    super("Retry project claim was lost.");
+  }
+}
 
 async function getReadyUser(userId: string) {
   const user = await db.user.findUnique({ where: { id: userId } });
@@ -782,18 +789,36 @@ export async function retryProjectAction(formData: FormData) {
     }
   }
 
-  const reservation = await reserveGenerationCredit({ userId: session.userId, projectId: project.id });
-  if (!reservation.ok) {
-    redirect(`/billing?error=${encodeURIComponent(reservation.error)}`);
-  }
+  const retry = await db
+    .$transaction(async (tx) => {
+      const reservation = await reserveGenerationCreditInTransaction(tx, { userId: session.userId, projectId: project.id });
+      if (!reservation.ok) {
+        return reservation;
+      }
 
-  const updated = await db.project.updateMany({
-    where: { id: project.id, userId: session.userId, status: project.status, archivedAt: null },
-    data: { status: "QUEUED", errorMessage: null, resultImageUrl: null, resultStorageKey: null },
-  });
+      const updated = await tx.project.updateMany({
+        where: { id: project.id, userId: session.userId, status: project.status, archivedAt: null },
+        data: { status: "QUEUED", errorMessage: null, resultImageUrl: null, resultStorageKey: null },
+      });
 
-  if (updated.count === 0) {
-    await releaseGenerationCreditReservation({ reservationId: reservation.reservationId });
+      if (updated.count === 0) {
+        throw new RetryProjectClaimLostError();
+      }
+
+      return { ok: true as const };
+    })
+    .catch((error) => {
+      if (error instanceof RetryProjectClaimLostError) {
+        return { ok: false as const, error: "CLAIM_LOST" };
+      }
+
+      throw error;
+    });
+
+  if (!retry.ok) {
+    if (retry.error !== "CLAIM_LOST") {
+      redirect(`/billing?error=${encodeURIComponent(retry.error)}`);
+    }
     return;
   }
 

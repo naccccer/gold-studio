@@ -20,7 +20,7 @@ GENERATION_WORKER_SECRET="یک_متن_طولانی_و_تصادفی_دیگر"
 GENERATION_WORKER_URL="http://127.0.0.1:3000/api/internal/generation/worker"
 GENERATION_WORKER_INTERVAL_MS="15000"
 GENERATION_WORKER_LIMIT="1"
-GENERATION_STALE_PROCESSING_MINUTES="45"
+GENERATION_STALE_PROCESSING_MINUTES="90"
 
 HEALTH_WATCHDOG_URL="http://127.0.0.1:3000/api/health"
 HEALTH_WATCHDOG_PM2_APP="gold-studio"
@@ -88,7 +88,7 @@ pm2 logs gold-studio-worker --lines 80 --nostream
 pm2 logs gold-studio-watchdog --lines 80 --nostream
 ```
 
-خروجی health باید `200`، `ok: true`، `database.ok: true` و بخش `generation` داشته باشد. داخل سایت هم این مسیرها را سریع تست کن:
+خروجی public health باید `200` و `ok: true` داشته باشد. جزئیات دیتابیس و generation را از `/admin/health` ببین. داخل سایت هم این مسیرها را سریع تست کن:
 
 - ثبت‌نام با پیامک
 - ورود

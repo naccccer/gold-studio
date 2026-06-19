@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { processQueuedGenerationJobs } from "@/lib/generation/jobs";
+import { DEFAULT_STALE_PROCESSING_MINUTES } from "@/lib/health";
 
 export const dynamic = "force-dynamic";
 
 const DEFAULT_LIMIT = 1;
 const MAX_LIMIT = 3;
-const DEFAULT_STALE_MINUTES = 45;
+const DEFAULT_STALE_MINUTES = DEFAULT_STALE_PROCESSING_MINUTES;
 
 function workerSecret() {
   return process.env.GENERATION_WORKER_SECRET?.trim() || "";

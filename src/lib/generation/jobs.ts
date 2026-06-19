@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { buildSampleReferenceVisionPromptContext, ensureStyleReferenceVision } from "@/lib/style-reference-vision";
 import { readStoredUpload, saveGeneratedImage } from "@/lib/uploads";
 
-const DEFAULT_STALE_PROCESSING_MS = 45 * 60 * 1000;
+const DEFAULT_STALE_PROCESSING_MS = 90 * 60 * 1000;
 const DEFAULT_WORKER_LIMIT = 1;
 const MAX_WORKER_LIMIT = 3;
 
