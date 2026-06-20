@@ -16,9 +16,11 @@ type NewProjectScreenProps = {
   styleReferences: StyleReferenceOption[];
   styles: StyleOption[];
   selectedAssetId?: string;
+  selectedReferenceId?: string;
   freeVariantParentId?: string;
   defaultOutputPreset?: "post" | "story" | "banner";
   initialStep?: "source" | "size" | "style";
+  initialStyleId?: string;
 };
 
 export function NewProjectScreen({
@@ -27,9 +29,11 @@ export function NewProjectScreen({
   styleReferences,
   styles,
   selectedAssetId,
+  selectedReferenceId,
   freeVariantParentId,
   defaultOutputPreset,
   initialStep,
+  initialStyleId,
 }: NewProjectScreenProps) {
   return (
     <PageShell maxWidth="lg" minHeight={false} className="flex-1 space-y-5 overflow-hidden pb-0">
@@ -39,9 +43,11 @@ export function NewProjectScreen({
         styleReferences={styleReferences}
         styles={styles}
         selectedAssetId={selectedAssetId}
+        selectedReferenceId={selectedReferenceId}
         freeVariantParentId={freeVariantParentId}
         defaultOutputPreset={defaultOutputPreset}
         initialStep={initialStep}
+        initialStyleId={initialStyleId}
       />
     </PageShell>
   );

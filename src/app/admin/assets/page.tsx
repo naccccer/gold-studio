@@ -98,6 +98,7 @@ export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageP
         tabs={[
           { href: "/admin/assets", label: "تصاویر منبع کاربران", active: true },
           { href: "/admin/assets/references", label: "عکس‌های نمونه کاربران", active: false },
+          { href: "/admin/assets/samples", label: "نمونه‌های آماده", active: false },
           { href: "/admin/assets/outputs", label: "خروجی‌ها", active: false },
         ]}
       />

@@ -1,12 +1,18 @@
 "use server";
 
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUserSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { deleteStorageObject } from "@/lib/storage";
+import { getReadyStyleReferenceSample } from "@/lib/ready-style-reference-samples";
+import { buildStorageKey, deleteStorageObject, saveStorageObject } from "@/lib/storage";
 import { saveStyleReferenceFile } from "@/lib/uploads";
+
+const READY_SAMPLE_ORIGINAL_NAME_PREFIX = "ready-sample:";
+const STYLE_REFERENCE_UPLOAD_DIR = path.join("uploads", "style-references");
 
 export async function uploadStyleReferenceAction(formData: FormData) {
   const session = await requireUserSession();
@@ -47,6 +53,73 @@ export async function uploadStyleReferenceAction(formData: FormData) {
 
   revalidatePath("/account/style-references");
   redirect("/account/style-references");
+}
+
+export async function createStyleReferenceFromSampleAction(formData: FormData) {
+  const session = await requireUserSession();
+  const sampleId = String(formData.get("sampleId") ?? "").trim();
+  const sample = await getReadyStyleReferenceSample(sampleId);
+
+  if (!sample) {
+    redirect("/account/style-references");
+  }
+
+  const limited = await checkRateLimit({
+    scope: "style-reference:sample",
+    identifier: session.userId,
+    limit: 20,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!limited.ok) {
+    redirect(`/account/style-references?error=${encodeURIComponent(limited.error)}`);
+  }
+
+  const originalName = `${READY_SAMPLE_ORIGINAL_NAME_PREFIX}${sample.id}.webp`;
+  const existing = await db.styleReferenceAsset.findFirst({
+    where: {
+      userId: session.userId,
+      status: "READY",
+      archivedAt: null,
+      originalName,
+    },
+    select: { id: true },
+  });
+
+  if (existing) {
+    redirect(`/projects/new?styleId=style_sample_reference&referenceAssetId=${existing.id}`);
+  }
+
+  let assetId: string;
+
+  try {
+    const buffer = await readFile(sample.filePath);
+    const storageKey = buildStorageKey(STYLE_REFERENCE_UPLOAD_DIR, "webp");
+    const publicUrl = await saveStorageObject({
+      buffer,
+      contentType: "image/webp",
+      key: storageKey,
+    });
+    const asset = await db.styleReferenceAsset.create({
+      data: {
+        userId: session.userId,
+        fileUrl: publicUrl,
+        storageKey,
+        mimeType: "image/webp",
+        originalName,
+        title: sample.title,
+      },
+      select: { id: true },
+    });
+
+    revalidatePath("/account/style-references");
+    revalidatePath("/projects/new");
+    assetId = asset.id;
+  } catch (error) {
+    console.error("[ready-style-reference-create-failed]", { sampleId, error });
+    redirect(`/account/style-references?error=${encodeURIComponent("آماده‌سازی این نمونه کامل نشد. دوباره تلاش کنید.")}`);
+  }
+
+  redirect(`/projects/new?styleId=style_sample_reference&referenceAssetId=${assetId}`);
 }
 
 export async function renameStyleReferenceAction(formData: FormData) {

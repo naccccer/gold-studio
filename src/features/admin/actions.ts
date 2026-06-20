@@ -1,9 +1,13 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
+import { unlink, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import type { Prisma } from "@/generated/prisma";
+import sharp from "sharp";
 import { db } from "@/lib/db";
 import { requireAdminSession } from "@/lib/auth/session";
 import { normalizeProviderSettings, SUPPORTED_IMAGE_MODELS, updateProviderSettings } from "@/lib/ai/provider-settings";
@@ -14,6 +18,11 @@ import { normalizeBillingPlanColorPreset } from "@/lib/billing-plan-colors";
 import { INITIAL_SIGNUP_CREDITS } from "@/lib/credits";
 import { processImageProject } from "@/lib/generation/jobs";
 import {
+  ensureReadyStyleReferenceSampleDirectory,
+  getReadyStyleReferenceSample,
+  readyStyleReferenceSampleDirectory,
+} from "@/lib/ready-style-reference-samples";
+import {
   createSalesReferralCodeBatch,
   grantReferralRewardAfterFirstPurchase,
   referralCodeFromUserId,
@@ -23,6 +32,40 @@ import { saveHomeCarouselFile, saveStylePreviewFile } from "@/lib/uploads";
 
 function text(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
+}
+
+const READY_SAMPLE_ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const READY_SAMPLE_MAX_BYTES = 15 * 1024 * 1024;
+
+function slugFromFileName(fileName: string) {
+  const stem = path.basename(fileName, path.extname(fileName));
+  return stem.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "sample";
+}
+
+async function normalizeReadySampleImage(file: File) {
+  if (file.size > READY_SAMPLE_MAX_BYTES) {
+    throw new Error("حجم نمونه آماده باید کمتر از ۱۵ مگابایت باشد.");
+  }
+
+  if (file.type && !READY_SAMPLE_ALLOWED_TYPES.has(file.type)) {
+    throw new Error("فرمت نمونه آماده باید JPG، PNG یا WEBP باشد.");
+  }
+
+  try {
+    return await sharp(Buffer.from(await file.arrayBuffer()), { failOn: "none" })
+      .rotate()
+      .resize({ width: 1800, height: 1800, fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 86, effort: 4 })
+      .toBuffer();
+  } catch (error) {
+    console.error("[ready-style-reference-sample-normalize-failed]", {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+      error,
+    });
+    throw new Error("نمونه آماده معتبر نیست یا قابل پردازش نبود.");
+  }
 }
 
 function integer(formData: FormData, key: string, fallback = 0) {
@@ -129,6 +172,7 @@ function revalidateAdmin() {
   revalidatePath("/admin/styles");
   revalidatePath("/admin/home");
   revalidatePath("/admin/referrals");
+  revalidatePath("/admin/assets/samples");
   revalidatePath("/dashboard");
   revalidatePath("/account");
   revalidatePath("/billing");
@@ -146,6 +190,64 @@ async function getCarouselImageInput(formData: FormData, fileKey: string, urlKey
   }
 
   return { publicUrl: fallbackUrl, storageKey: fallbackStorageKey };
+}
+
+export async function uploadReadyStyleReferenceSampleAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const image = formData.get("image");
+  if (!(image instanceof File) || image.size === 0) {
+    redirect("/admin/assets/samples");
+  }
+
+  try {
+    const buffer = await normalizeReadySampleImage(image);
+    const fileName = `${slugFromFileName(image.name)}-${randomUUID().slice(0, 8)}.webp`;
+    await ensureReadyStyleReferenceSampleDirectory();
+    await writeFile(path.join(readyStyleReferenceSampleDirectory, fileName), buffer, { flag: "wx" });
+
+    await logAdminAudit({
+      actorAdminId: session.userId,
+      action: "ready_style_reference_sample.upload",
+      targetType: "ReadyStyleReferenceSample",
+      targetId: fileName,
+      summary: "نمونه آماده عمومی آپلود شد.",
+      metadata: { fileName, originalName: image.name || null },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "آپلود نمونه آماده کامل نشد.";
+    redirect(`/admin/assets/samples?error=${encodeURIComponent(message)}`);
+  }
+
+  revalidatePath("/admin/assets/samples");
+  revalidatePath("/account/style-references");
+  redirect("/admin/assets/samples");
+}
+
+export async function deleteReadyStyleReferenceSampleAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const sampleId = text(formData, "sampleId");
+  if (!sampleId) {
+    return;
+  }
+
+  const sample = await getReadyStyleReferenceSample(sampleId);
+  if (!sample) {
+    return;
+  }
+
+  await unlink(sample.filePath);
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: "ready_style_reference_sample.delete",
+    targetType: "ReadyStyleReferenceSample",
+    targetId: sample.fileName,
+    summary: "نمونه آماده عمومی حذف شد.",
+    metadata: { fileName: sample.fileName },
+  });
+
+  revalidatePath("/admin/assets/samples");
+  revalidatePath("/account/style-references");
+  redirect("/admin/assets/samples");
 }
 
 export async function updateProviderSettingsAction(formData: FormData) {

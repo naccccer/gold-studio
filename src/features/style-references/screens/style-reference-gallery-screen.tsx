@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Camera, CloseCircle, DocumentUpload, Edit2, TickCircle, Trash } from "vuesax-icons-react";
+import { useEffect, useRef, useState } from "react";
+import { Camera, CloseCircle, DocumentUpload, Edit2, Gallery, TickCircle, Trash } from "vuesax-icons-react";
 import { buttonClasses, Button, IconButton } from "@/components/ui/button";
 import { ConfirmAction } from "@/components/ui/confirm-action";
 import { EmptyState } from "@/components/ui/empty-state";
 import { fieldControlClassName } from "@/components/ui/field";
 import {
+  contextMenuItemClasses,
   contextMenuDangerItemClasses,
   ItemContextMenu,
 } from "@/components/ui/item-context-menu";
@@ -14,6 +15,7 @@ import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
 import {
   archiveStyleReferenceAction,
+  createStyleReferenceFromSampleAction,
   renameStyleReferenceAction,
   uploadStyleReferenceAction,
 } from "@/features/style-references/actions";
@@ -27,8 +29,15 @@ export type StyleReferenceGalleryItem = {
   createdAt: Date;
 };
 
+export type StyleReferenceEmptySample = {
+  id: string;
+  fileUrl: string;
+  title: string;
+};
+
 type StyleReferenceGalleryScreenProps = {
   assets: StyleReferenceGalleryItem[];
+  emptySamples?: StyleReferenceEmptySample[];
   error?: string | null;
 };
 
@@ -36,11 +45,28 @@ function assetTitle(asset: StyleReferenceGalleryItem) {
   return asset.title || asset.originalName || "عکس نمونه";
 }
 
-export function StyleReferenceGalleryScreen({ assets, error }: StyleReferenceGalleryScreenProps) {
+export function StyleReferenceGalleryScreen({ assets, emptySamples = [], error }: StyleReferenceGalleryScreenProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedSampleIds, setSelectedSampleIds] = useState<string[]>([]);
+  const [hiddenSampleIds, setHiddenSampleIds] = useState<string[]>([]);
+  const [previewSample, setPreviewSample] = useState<StyleReferenceEmptySample | null>(null);
   const fileFormRef = useRef<HTMLFormElement>(null);
   const cameraFormRef = useRef<HTMLFormElement>(null);
   const selectedCount = selectedIds.length;
+  const visibleEmptySamples = emptySamples.filter((sample) => !hiddenSampleIds.includes(sample.id));
+
+  useEffect(() => {
+    if (!previewSample) return;
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setPreviewSample(null);
+      }
+    }
+
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [previewSample]);
 
   function toggleAsset(assetId: string) {
     setSelectedIds((current) =>
@@ -48,12 +74,27 @@ export function StyleReferenceGalleryScreen({ assets, error }: StyleReferenceGal
     );
   }
 
+  function toggleReadySample(sampleId: string) {
+    setSelectedSampleIds((current) =>
+      current.includes(sampleId) ? current.filter((id) => id !== sampleId) : [...current, sampleId],
+    );
+  }
+
+  function hideReadySample(sampleId: string) {
+    setSelectedSampleIds((current) => current.filter((id) => id !== sampleId));
+    setHiddenSampleIds((current) => current.includes(sampleId) ? current : [...current, sampleId]);
+  }
+
   return (
     <>
       <PageShell maxWidth="lg" className="space-y-5 pb-[12.5rem]">
-        <header className="space-y-1">
-          <p className="text-xs font-semibold text-accent-deep">حساب</p>
-          <h1 className="text-xl font-semibold text-foreground">گالری نمونه‌ها</h1>
+        <header className="flex items-center gap-3 px-1">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-wash text-accent-deep">
+              <Gallery aria-hidden={true} className="h-4.5 w-4.5" />
+            </span>
+            <h1 className="truncate text-base font-semibold text-foreground">گالری نمونه‌ها</h1>
+          </div>
         </header>
 
         {error ? (
@@ -62,17 +103,19 @@ export function StyleReferenceGalleryScreen({ assets, error }: StyleReferenceGal
           </p>
         ) : null}
 
-        {assets.length === 0 ? (
-          <EmptyState
-            title="هنوز عکس نمونه‌ای ندارید."
-            className="pt-2"
-            media={
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={uploadPreview.src} alt={uploadPreview.alt} className="h-full w-full object-cover object-[46%_55%]" />
-            }
-          />
+        {assets.length === 0 && visibleEmptySamples.length === 0 ? (
+          <section className="space-y-4">
+            <EmptyState
+              title="هنوز عکس نمونه‌ای ندارید."
+              className="pt-2"
+              media={
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={uploadPreview.src} alt={uploadPreview.alt} className="h-full w-full object-cover object-[46%_55%]" />
+              }
+            />
+          </section>
         ) : (
-          <section className="grid grid-cols-2 gap-3">
+          <section className="grid grid-cols-3 gap-2">
             {assets.map((asset) => {
               const selected = selectedIds.includes(asset.id);
               const title = assetTitle(asset);
@@ -85,23 +128,22 @@ export function StyleReferenceGalleryScreen({ assets, error }: StyleReferenceGal
                     aria-label={`انتخاب ${title}`}
                     className="block w-full text-right"
                   >
-                    <JewelryImageFrame aspect="gallery" selected={selected} className="rounded-[var(--radius-lg)]">
+                    <JewelryImageFrame aspect="square" treatment="quiet" selected={selected} className="rounded-[0.9rem]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={asset.fileUrl} alt={title} className="h-full w-full object-cover" />
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/68 via-black/24 via-38% to-transparent px-2.5 pb-1.5 pt-5">
-                        <p className="relative z-10 flex min-h-11 items-center truncate pl-12 text-xs font-semibold text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)]">
-                          {title}
-                        </p>
-                      </div>
                       {selected ? (
-                        <span className="absolute left-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full bg-foreground text-surface">
-                          <TickCircle aria-hidden={true} className="h-4 w-4" />
+                        <span className="absolute left-1.5 top-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-surface">
+                          <TickCircle aria-hidden={true} className="h-3.5 w-3.5" />
                         </span>
                       ) : null}
                     </JewelryImageFrame>
                   </button>
-                  <div className="absolute bottom-1.5 left-1.5">
-                    <ItemContextMenu label={`منوی ${title}`} align="right">
+                  <div className="absolute left-1 top-1">
+                    <ItemContextMenu label={`منوی ${title}`} align="right" size="sm">
+                      <button type="button" onClick={() => toggleAsset(asset.id)} className={contextMenuItemClasses}>
+                        <TickCircle aria-hidden={true} className="h-3.5 w-3.5" />
+                        {selected ? "لغو انتخاب" : "انتخاب"}
+                      </button>
                       <form action={renameStyleReferenceAction} className="space-y-1.5 px-1 py-1.5">
                         <input type="hidden" name="assetId" value={asset.id} />
                         <label className="flex items-center gap-1.5 text-[11px] font-medium text-muted">
@@ -137,6 +179,53 @@ export function StyleReferenceGalleryScreen({ assets, error }: StyleReferenceGal
                           </button>
                         )}
                       />
+                    </ItemContextMenu>
+                  </div>
+                </article>
+              );
+            })}
+            {visibleEmptySamples.map((sample) => {
+              const selected = selectedSampleIds.includes(sample.id);
+
+              return (
+                <article key={sample.id} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewSample(sample)}
+                    aria-label={`مشاهده ${sample.title}`}
+                    className="block w-full text-right"
+                  >
+                    <JewelryImageFrame aspect="square" treatment="quiet" selected={selected} className="rounded-[0.9rem]">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={sample.fileUrl} alt={sample.title} className="h-full w-full object-cover" />
+                      {selected ? (
+                        <span className="absolute left-1.5 top-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-surface">
+                          <TickCircle aria-hidden={true} className="h-3.5 w-3.5" />
+                        </span>
+                      ) : null}
+                    </JewelryImageFrame>
+                  </button>
+                  <div className="absolute left-1 top-1">
+                    <ItemContextMenu label={`منوی ${sample.title}`} align="right" size="sm">
+                      <button type="button" onClick={() => setPreviewSample(sample)} className={contextMenuItemClasses}>
+                        <Camera aria-hidden={true} className="h-3.5 w-3.5" />
+                        مشاهده
+                      </button>
+                      <button type="button" onClick={() => toggleReadySample(sample.id)} className={contextMenuItemClasses}>
+                        <TickCircle aria-hidden={true} className="h-3.5 w-3.5" />
+                        {selected ? "لغو انتخاب" : "انتخاب"}
+                      </button>
+                      <form action={createStyleReferenceFromSampleAction}>
+                        <input type="hidden" name="sampleId" value={sample.id} />
+                        <button type="submit" className={contextMenuItemClasses}>
+                          <DocumentUpload aria-hidden={true} className="h-3.5 w-3.5" />
+                          تولید با این نمونه
+                        </button>
+                      </form>
+                      <button type="button" onClick={() => hideReadySample(sample.id)} className={contextMenuDangerItemClasses}>
+                        <Trash aria-hidden={true} className="h-3.5 w-3.5" />
+                        حذف از این لیست
+                      </button>
                     </ItemContextMenu>
                   </div>
                 </article>
@@ -215,6 +304,46 @@ export function StyleReferenceGalleryScreen({ assets, error }: StyleReferenceGal
           }}
         />
       </form>
+      {previewSample ? (
+        <div
+          className="fixed inset-0 z-[90] flex items-end justify-center bg-black/72 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-5 backdrop-blur-sm sm:items-center"
+          role="dialog"
+          aria-modal="true"
+          aria-label={previewSample.title}
+          dir="rtl"
+          onClick={() => setPreviewSample(null)}
+        >
+          <div
+            className="motion-reveal-soft w-full max-w-[24rem] overflow-hidden rounded-[1.25rem] border border-white/14 bg-[#17130f] text-surface shadow-[0_28px_70px_-34px_rgba(0,0,0,0.95)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="relative aspect-[4/5] bg-black">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={previewSample.fileUrl} alt={previewSample.title} className="h-full w-full object-cover" />
+              <button
+                type="button"
+                onClick={() => setPreviewSample(null)}
+                aria-label="بستن"
+                className="absolute left-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/18 bg-black/42 text-white backdrop-blur"
+              >
+                <CloseCircle aria-hidden={true} className="h-4.5 w-4.5" />
+              </button>
+            </div>
+            <div className="px-4 py-3">
+              <form action={createStyleReferenceFromSampleAction}>
+                <input type="hidden" name="sampleId" value={previewSample.id} />
+                <button
+                  type="submit"
+                  className={buttonClasses({ variant: "studio-primary", size: "full", className: "min-h-11 rounded-full text-xs" })}
+                >
+                  <DocumentUpload aria-hidden={true} className="h-4 w-4" />
+                  تولید
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

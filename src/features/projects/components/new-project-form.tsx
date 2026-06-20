@@ -64,10 +64,12 @@ type NewProjectFormProps = {
   galleryAssets: GalleryAssetOption[];
   styleReferences: StyleReferenceOption[];
   selectedAssetId?: string;
+  selectedReferenceId?: string;
   freeVariantParentId?: string;
   styles: StyleOption[];
   defaultOutputPreset?: OutputPresetId;
   initialStep?: WizardStep;
+  initialStyleId?: string;
 };
 
 type OutputPresetId = "post" | "story" | "banner";
@@ -192,16 +194,21 @@ export function NewProjectForm({
   galleryAssets,
   styleReferences,
   selectedAssetId,
+  selectedReferenceId,
   freeVariantParentId,
   styles,
   defaultOutputPreset = "post",
   initialStep,
+  initialStyleId,
 }: NewProjectFormProps) {
   const router = useRouter();
   const explicitSelectedAsset = selectedAssetId
     ? galleryAssets.find((asset) => asset.id === selectedAssetId) ?? null
     : null;
-  const defaultStyle = styles[0];
+  const defaultStyle = styles.find((style) => style.id === initialStyleId) ?? styles[0];
+  const explicitSelectedReference = selectedReferenceId
+    ? styleReferences.find((reference) => reference.id === selectedReferenceId) ?? null
+    : null;
   const [state, formAction, pending] = useActionState(action, INITIAL_STATE);
   const [step, setStep] = useState<WizardStep>(() => {
     if (initialStep === "size" && explicitSelectedAsset) {
@@ -221,7 +228,7 @@ export function NewProjectForm({
   const [cropUploadPurpose, setCropUploadPurpose] = useState<CropUploadPurpose>("source");
   const [outputPreset, setOutputPreset] = useState<OutputPresetId>(defaultOutputPreset);
   const [selectedStyle, setSelectedStyle] = useState(defaultStyle?.id ?? "");
-  const [selectedReference, setSelectedReference] = useState<StyleReferenceOption | null>(null);
+  const [selectedReference, setSelectedReference] = useState<StyleReferenceOption | null>(explicitSelectedReference);
   const [referenceUploadPreview, setReferenceUploadPreview] = useState<string | null>(null);
   const [styleControlValues, setStyleControlValues] = useState<Record<string, string>>(() => getInitialStyleControlValues(defaultStyle));
   const [openStyleControl, setOpenStyleControl] = useState<string | null>(null);

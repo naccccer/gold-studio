@@ -8,11 +8,11 @@ import { getUserVisibleStyles } from "@/lib/styles";
 export default async function NewProjectPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ assetId?: string; freeVariantParentId?: string; step?: string }>;
+  searchParams?: Promise<{ assetId?: string; freeVariantParentId?: string; referenceAssetId?: string; step?: string; styleId?: string }>;
 }) {
   const session = await requireUserSession();
   const params = await searchParams;
-  const [galleryAssets, styleReferences, styles, outputSettings] = await Promise.all([
+  const [galleryAssets, styleReferences, selectedStyleReference, styles, outputSettings] = await Promise.all([
     db.productAsset.findMany({
       where: { userId: session.userId, status: "READY", archivedAt: null },
       orderBy: { createdAt: "desc" },
@@ -37,6 +37,17 @@ export default async function NewProjectPage({
         originalName: true,
       },
     }),
+    params?.referenceAssetId
+      ? db.styleReferenceAsset.findFirst({
+          where: { id: params.referenceAssetId, userId: session.userId, status: "READY", archivedAt: null },
+          select: {
+            id: true,
+            storageKey: true,
+            title: true,
+            originalName: true,
+          },
+        })
+      : Promise.resolve(null),
     getUserVisibleStyles(),
     db.userOutputSettings.findUnique({ where: { userId: session.userId } }),
   ]);
@@ -47,17 +58,23 @@ export default async function NewProjectPage({
   const initialStep = params?.step === "source" || params?.step === "size" || params?.step === "style"
     ? params.step
     : undefined;
+  const resolvedStyleReferences =
+    selectedStyleReference && !styleReferences.some((asset) => asset.id === selectedStyleReference.id)
+      ? [selectedStyleReference, ...styleReferences]
+      : styleReferences;
 
   return (
     <NewProjectScreen
       action={createProjectAction}
       galleryAssets={galleryAssets.map((asset) => ({ ...asset, fileUrl: storagePublicUrl(asset.storageKey) }))}
-      styleReferences={styleReferences.map((asset) => ({ ...asset, fileUrl: storagePublicUrl(asset.storageKey) }))}
+      styleReferences={resolvedStyleReferences.map((asset) => ({ ...asset, fileUrl: storagePublicUrl(asset.storageKey) }))}
       styles={styles}
       selectedAssetId={params?.assetId}
+      selectedReferenceId={params?.referenceAssetId}
       freeVariantParentId={params?.freeVariantParentId}
       defaultOutputPreset={defaultOutputPreset}
       initialStep={initialStep}
+      initialStyleId={params?.styleId}
     />
   );
 }

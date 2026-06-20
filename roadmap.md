@@ -25,6 +25,7 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 - Production availability now includes a PM2 health watchdog (`npm run watchdog:health`) that checks local `/api/health` and restarts the app after repeated failures. Public health is minimal, while detailed DB, generation, and storage metrics live in `/admin/health`.
 - New project creation supports optional supporting product photos for complicated products: one primary source plus up to two extra product angles still creates one project and one output.
 - Home now uses an admin-managed before/after carousel (`/admin/home`) with fallback placeholder slides until active slides are uploaded.
+- Style reference empty-state samples now come from the ready sample folder and can be uploaded or removed from `/admin/assets/samples`.
 - Curated style labels are simplified for users: social is "با جای متن", editorial is "با دکور", and cinematic is "سینمایی".
 - With-model necklace prompts now treat rear clasps as hidden hardware, so normal back clasps should not be moved into the visible neck or collarbone area.
 

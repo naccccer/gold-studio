@@ -55,6 +55,7 @@ const titleBySegment: Record<string, string> = {
   projects: "پروژه‌ها",
   assets: "تصاویر",
   references: "عکس‌های نمونه",
+  samples: "نمونه‌های آماده",
   outputs: "خروجی‌ها",
   styles: "سبک‌ها",
   ai: "موتور AI",

@@ -20,7 +20,7 @@ import { getOutputPresetSpec, normalizeOutputPreset } from "@/lib/output-presets
 import { pickVisionTitle, retryProjectVisionTitle } from "@/lib/product-vision";
 import { DEFAULT_PRODUCT_TYPE, normalizeProductType } from "@/lib/product-types";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { readStorageObject } from "@/lib/storage";
+import { deleteStorageObject, readStorageObject } from "@/lib/storage";
 import { getStyleForGeneration, type StyleForGeneration } from "@/lib/styles";
 import { buildSampleReferencePromptContext } from "@/lib/style-reference-vision";
 import {
@@ -741,6 +741,53 @@ export async function restoreProjectAction(formData: FormData) {
   revalidatePath("/account/archive");
   revalidatePath("/projects");
   revalidatePath("/dashboard");
+}
+
+export async function deleteArchivedProjectAction(formData: FormData) {
+  const session = await requireUserSession();
+  const projectId = String(formData.get("projectId") ?? "").trim();
+
+  if (!projectId) {
+    return;
+  }
+
+  const project = await db.project.findFirst({
+    where: { id: projectId, userId: session.userId, archivedAt: { not: null } },
+    select: { id: true, resultStorageKey: true },
+  });
+
+  if (!project) {
+    return;
+  }
+
+  const resultStorageKey = project.resultStorageKey?.trim() || null;
+  const sharedResultCount = resultStorageKey
+    ? await db.project.count({
+        where: {
+          id: { not: project.id },
+          resultStorageKey,
+        },
+      })
+    : 0;
+
+  await db.project.delete({ where: { id: project.id } });
+
+  if (resultStorageKey && sharedResultCount === 0) {
+    after(() =>
+      deleteStorageObject(resultStorageKey).catch((error) => {
+        console.error("[project-result-file-delete-failed]", {
+          projectId: project.id,
+          storageKey: resultStorageKey,
+          error,
+        });
+      }),
+    );
+  }
+
+  revalidatePath("/account/archive");
+  revalidatePath("/projects");
+  revalidatePath("/dashboard");
+  redirect("/account/archive");
 }
 
 export async function retryProjectAction(formData: FormData) {

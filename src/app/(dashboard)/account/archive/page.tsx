@@ -1,11 +1,12 @@
 import { ArchiveBook, Refresh } from "vuesax-icons-react";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
+import { ConfirmAction } from "@/components/ui/confirm-action";
 import { EmptyState } from "@/components/ui/empty-state";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 import { accountCardClass } from "@/features/account/components/account-subpage";
-import { restoreProjectAction } from "@/features/projects/actions";
+import { deleteArchivedProjectAction, restoreProjectAction } from "@/features/projects/actions";
 import { requireUserSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { archiveItems } from "@/lib/placeholders/jewelry-images";
@@ -93,6 +94,21 @@ export default async function AccountArchivePage() {
                     بازگردانی
                   </button>
                 </form>
+                <ConfirmAction
+                  action={deleteArchivedProjectAction}
+                  fields={[{ name: "projectId", value: project.id }]}
+                  title="حذف دائمی پروژه؟"
+                  description="این پروژه از آرشیو حذف می‌شود و دیگر قابل بازگردانی نیست."
+                  confirmLabel="حذف دائمی"
+                  triggerLabel="حذف"
+                  triggerIcon="trash"
+                  triggerClassName={buttonClasses({
+                    variant: "danger",
+                    size: "sm",
+                    className:
+                      "absolute right-2 top-2 z-20 !h-7 !min-h-7 rounded-full border border-white/24 bg-danger-bright/92 px-2 text-[10px] leading-none shadow-[0_12px_24px_-18px_rgba(0,0,0,0.72)] backdrop-blur",
+                  })}
+                />
               </article>
             );
           })}
