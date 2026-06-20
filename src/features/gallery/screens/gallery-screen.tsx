@@ -316,7 +316,10 @@ export function GalleryScreen({ assets, styles, deleteNotice, undoAssetIds }: Ga
 
                       if (selectedCount > 0) {
                         toggleAsset(asset.id);
+                        return;
                       }
+
+                      selectAsset(asset.id);
                     }}
                     aria-label={`انتخاب ${title}`}
                     className="block w-full select-none text-right [touch-action:manipulation] [-webkit-touch-callout:none]"

@@ -32,6 +32,8 @@ type CropRect = {
 
 type ResizeHandle = "n" | "e" | "s" | "w" | "ne" | "nw" | "se" | "sw";
 
+const CROP_MIN_SIZE = 112;
+
 function ErrorNotice({
   title,
   message,
@@ -72,14 +74,14 @@ function getInitialCropRect(frameSize: FrameSize, imageBounds?: CropRect | null)
   return {
     x: base.x + inset,
     y: base.y + inset,
-    width: Math.max(84, base.width - inset * 2),
-    height: Math.max(84, base.height - inset * 2),
+    width: Math.max(CROP_MIN_SIZE, base.width - inset * 2),
+    height: Math.max(CROP_MIN_SIZE, base.height - inset * 2),
   };
 }
 
 function normalizeCropRect(rect: CropRect, frameSize: FrameSize) {
-  const width = clamp(rect.width, 84, frameSize.width);
-  const height = clamp(rect.height, 84, frameSize.height);
+  const width = clamp(rect.width, Math.min(CROP_MIN_SIZE, frameSize.width), frameSize.width);
+  const height = clamp(rect.height, Math.min(CROP_MIN_SIZE, frameSize.height), frameSize.height);
 
   return {
     x: clamp(rect.x, 0, Math.max(0, frameSize.width - width)),
@@ -292,6 +294,10 @@ export function GalleryCropScreen({ uploadId, onClose, progressLabel }: GalleryC
   }
 
   function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    if (cropDragStateRef.current) {
+      return;
+    }
+
     if (!frameSize.width || !frameSize.height || !naturalSize.width || !naturalSize.height) {
       return;
     }
@@ -323,7 +329,7 @@ export function GalleryCropScreen({ uploadId, onClose, progressLabel }: GalleryC
   }
 
   function resizeCropRect(startRect: CropRect, mode: "move" | ResizeHandle, deltaX: number, deltaY: number) {
-    const minimumSize = 84;
+    const minimumSize = Math.min(CROP_MIN_SIZE, frameSize.width, frameSize.height);
     const next = { ...startRect };
 
     if (mode === "move") {
@@ -370,7 +376,7 @@ export function GalleryCropScreen({ uploadId, onClose, progressLabel }: GalleryC
     event.currentTarget.setPointerCapture(event.pointerId);
   }
 
-  function handleCropPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+  function handleCropPointerMove(event: ReactPointerEvent<HTMLElement>) {
     const dragState = cropDragStateRef.current;
     if (!dragState) {
       return;
@@ -385,7 +391,7 @@ export function GalleryCropScreen({ uploadId, onClose, progressLabel }: GalleryC
     ));
   }
 
-  function handleCropPointerUp(event: ReactPointerEvent<HTMLDivElement>) {
+  function handleCropPointerUp(event: ReactPointerEvent<HTMLElement>) {
     cropDragStateRef.current = null;
     event.stopPropagation();
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
@@ -451,6 +457,34 @@ export function GalleryCropScreen({ uploadId, onClose, progressLabel }: GalleryC
     }
   }
 
+  function renderResizeHandle(handle: ResizeHandle, positionClassName: string, visualClassName: string) {
+    const labels: Record<ResizeHandle, string> = {
+      n: "تغییر اندازه از بالا",
+      e: "تغییر اندازه از راست",
+      s: "تغییر اندازه از پایین",
+      w: "تغییر اندازه از چپ",
+      ne: "تغییر اندازه از بالا راست",
+      nw: "تغییر اندازه از بالا چپ",
+      se: "تغییر اندازه از پایین راست",
+      sw: "تغییر اندازه از پایین چپ",
+    };
+
+    return (
+      <button
+        key={handle}
+        type="button"
+        aria-label={labels[handle]}
+        className={`absolute flex h-11 w-11 touch-none items-center justify-center rounded-full focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)] ${positionClassName}`}
+        onPointerDown={(event) => handleCropPointerDown(event, handle)}
+        onPointerMove={handleCropPointerMove}
+        onPointerUp={handleCropPointerUp}
+        onPointerCancel={handleCropPointerUp}
+      >
+        <span aria-hidden={true} className={visualClassName} />
+      </button>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-[999] flex items-start justify-center bg-[#11100e]/56 px-3 pb-3 pt-4 backdrop-blur-sm md:items-center md:p-6">
       <div
@@ -498,7 +532,7 @@ export function GalleryCropScreen({ uploadId, onClose, progressLabel }: GalleryC
               <section className="rounded-[1.35rem] border border-white/80 bg-[#efe7db] p-2.5 shadow-[0_28px_58px_-46px_rgba(17,16,14,0.32)] md:p-3">
                 <div
                   ref={frameRef}
-                  className="relative aspect-[4/3] overflow-hidden rounded-[1.15rem] bg-[#11100e]"
+                  className="relative aspect-[4/3] touch-none overflow-hidden rounded-[1.15rem] bg-[#11100e]"
                   onPointerDown={handlePointerDown}
                   onPointerMove={handlePointerMove}
                   onPointerUp={handlePointerUp}
@@ -554,38 +588,46 @@ export function GalleryCropScreen({ uploadId, onClose, progressLabel }: GalleryC
                             <span key={index} className="border border-white/18" />
                           ))}
                         </div>
-                        {[
-                          ["nw", "left-0 top-0 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize"],
-                          ["ne", "right-0 top-0 translate-x-1/2 -translate-y-1/2 cursor-nesw-resize"],
-                          ["sw", "bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-nesw-resize"],
-                          ["se", "bottom-0 right-0 translate-x-1/2 translate-y-1/2 cursor-nwse-resize"],
-                        ].map(([handle, className]) => (
-                          <span
-                            key={handle}
-                            aria-hidden={true}
-                            className={`absolute h-5 w-5 rounded-full border border-white/85 bg-[#f7f2ea] shadow-[0_8px_22px_-12px_rgba(0,0,0,0.85)] ${className}`}
-                            onPointerDown={(event) => handleCropPointerDown(event, handle as ResizeHandle)}
-                            onPointerMove={handleCropPointerMove}
-                            onPointerUp={handleCropPointerUp}
-                            onPointerCancel={handleCropPointerUp}
-                          />
-                        ))}
-                        {[
-                          ["n", "left-1/2 top-0 h-2.5 w-10 -translate-x-1/2 -translate-y-1/2 cursor-ns-resize"],
-                          ["s", "bottom-0 left-1/2 h-2.5 w-10 -translate-x-1/2 translate-y-1/2 cursor-ns-resize"],
-                          ["w", "left-0 top-1/2 h-10 w-2.5 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize"],
-                          ["e", "right-0 top-1/2 h-10 w-2.5 translate-x-1/2 -translate-y-1/2 cursor-ew-resize"],
-                        ].map(([handle, className]) => (
-                          <span
-                            key={handle}
-                            aria-hidden={true}
-                            className={`absolute rounded-full bg-white/78 shadow-[0_8px_22px_-14px_rgba(0,0,0,0.85)] ${className}`}
-                            onPointerDown={(event) => handleCropPointerDown(event, handle as ResizeHandle)}
-                            onPointerMove={handleCropPointerMove}
-                            onPointerUp={handleCropPointerUp}
-                            onPointerCancel={handleCropPointerUp}
-                          />
-                        ))}
+                        {renderResizeHandle(
+                          "nw",
+                          "left-0 top-0 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize",
+                          "h-5 w-5 rounded-full border border-white/85 bg-[#f7f2ea] shadow-[0_8px_22px_-12px_rgba(0,0,0,0.85)]",
+                        )}
+                        {renderResizeHandle(
+                          "ne",
+                          "right-0 top-0 translate-x-1/2 -translate-y-1/2 cursor-nesw-resize",
+                          "h-5 w-5 rounded-full border border-white/85 bg-[#f7f2ea] shadow-[0_8px_22px_-12px_rgba(0,0,0,0.85)]",
+                        )}
+                        {renderResizeHandle(
+                          "sw",
+                          "bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-nesw-resize",
+                          "h-5 w-5 rounded-full border border-white/85 bg-[#f7f2ea] shadow-[0_8px_22px_-12px_rgba(0,0,0,0.85)]",
+                        )}
+                        {renderResizeHandle(
+                          "se",
+                          "bottom-0 right-0 translate-x-1/2 translate-y-1/2 cursor-nwse-resize",
+                          "h-5 w-5 rounded-full border border-white/85 bg-[#f7f2ea] shadow-[0_8px_22px_-12px_rgba(0,0,0,0.85)]",
+                        )}
+                        {renderResizeHandle(
+                          "n",
+                          "left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 cursor-ns-resize",
+                          "h-2.5 w-11 rounded-full bg-white/78 shadow-[0_8px_22px_-14px_rgba(0,0,0,0.85)]",
+                        )}
+                        {renderResizeHandle(
+                          "s",
+                          "bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 cursor-ns-resize",
+                          "h-2.5 w-11 rounded-full bg-white/78 shadow-[0_8px_22px_-14px_rgba(0,0,0,0.85)]",
+                        )}
+                        {renderResizeHandle(
+                          "w",
+                          "left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize",
+                          "h-11 w-2.5 rounded-full bg-white/78 shadow-[0_8px_22px_-14px_rgba(0,0,0,0.85)]",
+                        )}
+                        {renderResizeHandle(
+                          "e",
+                          "right-0 top-1/2 translate-x-1/2 -translate-y-1/2 cursor-ew-resize",
+                          "h-11 w-2.5 rounded-full bg-white/78 shadow-[0_8px_22px_-14px_rgba(0,0,0,0.85)]",
+                        )}
                       </div>
                     </>
                   ) : null}

@@ -1,13 +1,12 @@
 "use server";
 
-import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUserSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { getReadyStyleReferenceSample } from "@/lib/ready-style-reference-samples";
+import { getReadyStyleReferenceSample, readReadyStyleReferenceSample } from "@/lib/ready-style-reference-samples";
 import { buildStorageKey, deleteStorageObject, saveStorageObject } from "@/lib/storage";
 import { saveStyleReferenceFile } from "@/lib/uploads";
 
@@ -92,7 +91,7 @@ export async function createStyleReferenceFromSampleAction(formData: FormData) {
   let assetId: string;
 
   try {
-    const buffer = await readFile(sample.filePath);
+    const buffer = await readReadyStyleReferenceSample(sample);
     const storageKey = buildStorageKey(STYLE_REFERENCE_UPLOAD_DIR, "webp");
     const publicUrl = await saveStorageObject({
       buffer,

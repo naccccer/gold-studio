@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useActionState, useCallback, useEffect, useId, useRef, useState } from "react";
-import { ArrowLeft } from "vuesax-icons-react";
+import { ArrowRight } from "vuesax-icons-react";
 import { BrandLogo } from "@/components/ui/brand-logo";
 import { LoginFormContent, ResetFormContent, SignupFormContent } from "@/features/auth/components/auth-form";
 import type { AuthFormState, OtpFormState } from "@/features/auth/actions";
@@ -114,6 +114,9 @@ export function AuthEntryStage({
   const closingRef = useRef(false);
 
   const titleId = useId();
+  const signupTitle =
+    verifyState.step === "password" ? "رمز عبور" : verifyState.step === "verify" || sendState.step === "verify" ? "کد تایید" : "ثبت‌نام";
+  const panelTitle = panel === "login" ? "ورود" : panel === "signup" ? signupTitle : "بازیابی رمز عبور";
 
   useEffect(() => {
     panelRef.current = panel;
@@ -416,18 +419,18 @@ export function AuthEntryStage({
                 closing ? "ov-sheet-leave" : "",
               ].join(" ")}
             >
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <h1 id={titleId} className="text-right text-[1.2rem] font-semibold leading-8 text-foreground">
-                  {panel === "login" ? "ورود" : panel === "signup" ? "ثبت‌نام" : "بازیابی رمز عبور"}
-                </h1>
+              <div dir="rtl" className="relative mb-4 flex h-10 items-center justify-start">
                 <button
                   type="button"
                   onClick={closePanel}
-                  className="inline-flex h-9 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-semibold text-muted transition hover:bg-surface-soft hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
+                  aria-label="بازگشت"
+                  className="relative z-10 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border/70 bg-surface-soft/80 text-muted-strong shadow-[0_12px_26px_-22px_rgba(17,16,14,0.75)] transition hover:border-border hover:bg-white hover:text-foreground focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
                 >
-                  بازگشت
-                  <ArrowLeft aria-hidden="true" size={14} color="currentColor" variant="Linear" />
+                  <ArrowRight aria-hidden="true" size={17} color="currentColor" variant="Linear" />
                 </button>
+                <h1 id={titleId} className="pointer-events-none absolute inset-x-16 text-center text-[1.15rem] font-semibold leading-10 text-foreground">
+                  {panelTitle}
+                </h1>
               </div>
 
               <div

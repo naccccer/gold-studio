@@ -58,7 +58,7 @@ export default async function AdminReadySamplesPage({ searchParams }: AdminReady
           </label>
           <button className={`${btnPrimary} h-9`}>
             <DocumentUpload aria-hidden="true" className="h-4 w-4" />
-            آپلود WebP
+            آپلود و تبدیل
           </button>
         </form>
         {params?.error ? <p className="mt-3 text-xs font-medium text-rose-700">{params.error}</p> : null}

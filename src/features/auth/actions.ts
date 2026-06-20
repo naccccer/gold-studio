@@ -1,5 +1,6 @@
 "use server";
 
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { redirect } from "next/navigation";
 import { normalizeLoginIdentifier, normalizePhone } from "@/lib/auth/identifier";
 import { createOtpChallenge, getOtpResendDelaySeconds, verifyOtpChallenge, type OtpPurpose } from "@/lib/auth/otp";
@@ -16,14 +17,16 @@ export type AuthFormState = {
 };
 
 export type OtpFormState = {
-  step: "phone" | "verify";
+  step: "phone" | "verify" | "password";
   phone?: string;
   error?: string;
   message?: string;
   resendDelaySeconds?: number;
+  signupProof?: string;
 };
 
 const PASSWORD_MIN_LENGTH = 6;
+const SIGNUP_PROOF_EXPIRES_MS = 10 * 60 * 1000;
 const INVALID_PHONE_ERROR = "شماره موبایل را درست وارد کنید.";
 const DUPLICATE_ACCOUNT_ERROR = "این شماره قبلا ثبت شده است. از صفحه ورود استفاده کنید.";
 const BAD_LOGIN_ERROR = "اطلاعات ورود درست نیست.";
@@ -31,7 +34,7 @@ const PASSWORD_LENGTH_ERROR = "رمز عبور باید حداقل ۶ کاراک
 const PASSWORD_CONFIRM_ERROR = "تکرار رمز عبور با رمز جدید یکسان نیست.";
 const SMS_CONFIG_ERROR = "ارسال پیامک هنوز تنظیم نشده است. کلید API و کد الگوی فراز اس‌ام‌اس را در env وارد کنید.";
 const SMS_SEND_ERROR = "ارسال پیامک ناموفق بود. چند دقیقه دیگر دوباره تلاش کنید.";
-const OTP_SENT_MESSAGE = "کد تایید ارسال شد. کد تا ۱۰ دقیقه معتبر است.";
+const OTP_SENT_MESSAGE = "کد تایید ارسال شد.";
 
 function friendlySmsError(error: unknown) {
   if (error instanceof FarazSmsConfigError) return SMS_CONFIG_ERROR;
@@ -41,6 +44,37 @@ function friendlySmsError(error: unknown) {
 
 function normalizeFormPhone(value: FormDataEntryValue | null) {
   return normalizePhone(String(value ?? ""));
+}
+
+function getAuthSecret() {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) {
+    throw new Error("AUTH_SECRET env var is required.");
+  }
+  return secret;
+}
+
+function signSignupProofPayload(payload: string) {
+  return createHmac("sha256", getAuthSecret()).update(payload).digest("base64url");
+}
+
+function createSignupProof(phone: string) {
+  const expiresAt = Date.now() + SIGNUP_PROOF_EXPIRES_MS;
+  const payload = `${phone}:${expiresAt}`;
+  return `${expiresAt}.${signSignupProofPayload(payload)}`;
+}
+
+function verifySignupProof({ phone, proof }: { phone: string; proof: string }) {
+  const [rawExpiresAt, signature] = proof.split(".");
+  const expiresAt = Number(rawExpiresAt);
+  if (!Number.isFinite(expiresAt) || expiresAt < Date.now() || !signature) {
+    return false;
+  }
+
+  const expected = signSignupProofPayload(`${phone}:${expiresAt}`);
+  const expectedBuffer = Buffer.from(expected);
+  const signatureBuffer = Buffer.from(signature);
+  return expectedBuffer.length === signatureBuffer.length && timingSafeEqual(expectedBuffer, signatureBuffer);
 }
 
 async function ensureCanSendOtp({
@@ -133,11 +167,26 @@ export async function completeSignupAction(
 ): Promise<OtpFormState> {
   const phone = normalizeFormPhone(formData.get("phone"));
   const password = String(formData.get("password") ?? "");
-  const confirmPassword = String(formData.get("confirmPassword") ?? "");
+  const signupProof = String(formData.get("signupProof") ?? "");
 
   if (!phone) return { step: "phone", error: INVALID_PHONE_ERROR };
-  if (password.length < PASSWORD_MIN_LENGTH) return { step: "verify", phone, error: PASSWORD_LENGTH_ERROR };
-  if (password !== confirmPassword) return { step: "verify", phone, error: PASSWORD_CONFIRM_ERROR };
+
+  if (signupProof) {
+    if (!verifySignupProof({ phone, proof: signupProof })) {
+      return { step: "verify", phone, error: "اعتبار تایید موبایل تمام شده است. دوباره کد بگیرید." };
+    }
+    if (password.length < PASSWORD_MIN_LENGTH) {
+      return { step: "password", phone, signupProof, error: PASSWORD_LENGTH_ERROR };
+    }
+
+    const existing = await db.user.findUnique({ where: { phone }, select: { id: true } });
+    if (existing) return { step: "phone", phone, error: DUPLICATE_ACCOUNT_ERROR };
+
+    const user = await createUserWithPhonePassword(phone, password);
+
+    await createSession({ userId: user.id, role: user.role });
+    redirect(user.role === "ADMIN" ? "/admin" : "/dashboard");
+  }
 
   const limited = await checkRateLimit({
     scope: "auth:otp:signup:verify",
@@ -153,10 +202,12 @@ export async function completeSignupAction(
   const otp = await verifyOtpChallenge({ phone, purpose: "SIGNUP", code: formData.get("code") });
   if (!otp.ok) return { step: "verify", phone, error: otp.error };
 
-  const user = await createUserWithPhonePassword(phone, password);
-
-  await createSession({ userId: user.id, role: user.role });
-  redirect(user.role === "ADMIN" ? "/admin" : "/dashboard");
+  return {
+    step: "password",
+    phone,
+    signupProof: createSignupProof(phone),
+    message: "شماره موبایل تایید شد. حالا رمز عبور را وارد کنید.",
+  };
 }
 
 export async function sendPasswordResetOtpAction(

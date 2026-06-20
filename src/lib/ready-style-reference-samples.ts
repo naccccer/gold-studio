@@ -1,12 +1,28 @@
 import "server-only";
 
-import { mkdir, readdir, stat } from "node:fs/promises";
+import { access, mkdir, readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 
 export const readyStyleReferenceSamplePublicBasePath = "/images/Samples";
 export const readyStyleReferenceSampleDirectory = path.join(process.cwd(), "public", "images", "Samples");
 
 const allowedSampleExtensions = new Set([".webp"]);
+
+const sampleFiles = [
+  "bw-ring-woman.webp",
+  "c0fb4190cd96c9391b843c31fac66b86.webp",
+  "Hand-Ring-under-water.webp",
+  "hand-ring-woman.webp",
+  "man-hand.webp",
+  "man-ring-hand-formal.webp",
+  "man-ring-hand.webp",
+  "Model-earing-hand.webp",
+  "Model-ring-hand.webp",
+  "neckless-editorial-wooddecor.webp",
+  "Ring-Redbg.webp",
+  "shadow.webp",
+  "wood-ring.webp",
+];
 
 const sampleMetadata: Record<string, { title: string; alt: string }> = {
   "bw-ring-woman": {
@@ -82,6 +98,40 @@ export type ReadyStyleReferenceSample = {
   updatedAt: Date;
 };
 
+async function listSampleDirectoryFiles() {
+  try {
+    return await readdir(readyStyleReferenceSampleDirectory);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return [];
+    }
+
+    throw error;
+  }
+}
+
+function samplePathCandidates(fileName: string) {
+  return [
+    path.join(process.cwd(), "public", "images", "Samples", fileName),
+    path.join(process.cwd(), "public", "images", "samples", fileName),
+    path.join(process.cwd(), ".next", "standalone", "public", "images", "Samples", fileName),
+    path.join(process.cwd(), ".next", "standalone", "public", "images", "samples", fileName),
+  ];
+}
+
+async function findExistingSampleFilePath(fileName: string) {
+  for (const candidate of samplePathCandidates(fileName)) {
+    try {
+      await access(candidate);
+      return candidate;
+    } catch {
+      // Try the next known deployment layout.
+    }
+  }
+
+  return path.join(readyStyleReferenceSampleDirectory, fileName);
+}
+
 function sampleIdFromFileName(fileName: string) {
   const stem = path.basename(fileName, path.extname(fileName));
   return legacyIdByStem[stem] ?? stem.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -100,41 +150,48 @@ export async function ensureReadyStyleReferenceSampleDirectory() {
 }
 
 export async function getReadyStyleReferenceSamples(): Promise<ReadyStyleReferenceSample[]> {
-  try {
-    const fileNames = await readdir(readyStyleReferenceSampleDirectory);
-    const samples = await Promise.all(
-      fileNames
-        .filter((fileName) => allowedSampleExtensions.has(path.extname(fileName).toLowerCase()))
-        .map(async (fileName) => {
-          const id = sampleIdFromFileName(fileName);
-          const metadata = sampleMetadata[id];
-          const filePath = path.join(readyStyleReferenceSampleDirectory, fileName);
-          const info = await stat(filePath);
+  const directoryFiles = await listSampleDirectoryFiles();
+  const fileNames = Array.from(new Set([...sampleFiles, ...directoryFiles]));
+  const samples = await Promise.all(
+    fileNames
+      .filter((fileName) => allowedSampleExtensions.has(path.extname(fileName).toLowerCase()))
+      .map(async (fileName) => {
+        const id = sampleIdFromFileName(fileName);
+        const metadata = sampleMetadata[id];
+        const filePath = await findExistingSampleFilePath(fileName);
+        const info = await stat(filePath).catch(() => null);
 
-          return {
-            id,
-            fileName,
-            filePath,
-            fileUrl: `${readyStyleReferenceSamplePublicBasePath}/${encodeURIComponent(fileName)}`,
-            title: metadata?.title ?? fallbackTitleFromId(id),
-            alt: metadata?.alt ?? "نمونه آماده عکس جواهر",
-            size: info.size,
-            updatedAt: info.mtime,
-          };
-        }),
-    );
+        return {
+          id,
+          fileName,
+          filePath,
+          fileUrl: `${readyStyleReferenceSamplePublicBasePath}/${encodeURIComponent(fileName)}`,
+          title: metadata?.title ?? fallbackTitleFromId(id),
+          alt: metadata?.alt ?? "نمونه آماده عکس جواهر",
+          size: info?.size ?? 0,
+          updatedAt: info?.mtime ?? new Date(0),
+        };
+      }),
+  );
 
-    return samples.sort((left, right) => left.fileName.localeCompare(right.fileName, "en"));
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return [];
-    }
-
-    throw error;
-  }
+  return samples.sort((left, right) => left.fileName.localeCompare(right.fileName, "en"));
 }
 
 export async function getReadyStyleReferenceSample(sampleId: string) {
   const samples = await getReadyStyleReferenceSamples();
   return samples.find((sample) => sample.id === sampleId) ?? null;
+}
+
+export async function readReadyStyleReferenceSample(sample: ReadyStyleReferenceSample) {
+  for (const candidate of samplePathCandidates(sample.fileName)) {
+    try {
+      return await readFile(candidate);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        throw error;
+      }
+    }
+  }
+
+  throw new Error(`Ready style reference sample file is missing: ${sample.fileName}`);
 }

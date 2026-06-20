@@ -50,7 +50,7 @@ export function OnboardingNameModal() {
             onClick={() => setShowReferralCode((value) => !value)}
             className="inline-flex items-center gap-1.5 px-1 py-1 text-[11px] font-medium text-muted transition hover:text-foreground"
           >
-            کد معرف یا تست دارم
+            اگر کد معرف یا هدیه دارید
             <ChevronDown
               aria-hidden="true"
               className={`h-3.5 w-3.5 transition ${showReferralCode ? "rotate-180" : ""}`}

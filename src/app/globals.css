@@ -162,6 +162,12 @@ h1,h2,h3,h4,h5,h6 {
   color: var(--foreground);
 }
 
+.auth-text-input::placeholder {
+  color: color-mix(in srgb, var(--muted-foreground) 58%, transparent);
+  font-weight: 400;
+  opacity: 1;
+}
+
 .auth-text-input:-webkit-autofill,
 .auth-text-input:-webkit-autofill:hover,
 .auth-text-input:-webkit-autofill:focus,
@@ -183,6 +189,13 @@ h1,h2,h3,h4,h5,h6 {
 @keyframes ovalaMotionRevealSoft {
   0% { opacity: 0; transform: translateY(6px); }
   100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ovalaAuthToast {
+  0% { opacity: 0; transform: translateY(-8px) scale(0.98); max-height: 0; margin-bottom: 0; }
+  12% { opacity: 1; transform: translateY(0) scale(1); max-height: 4rem; margin-bottom: 0.75rem; }
+  82% { opacity: 1; transform: translateY(0) scale(1); max-height: 4rem; margin-bottom: 0.75rem; }
+  100% { opacity: 0; transform: translateY(-6px) scale(0.99); max-height: 0; margin-bottom: 0; visibility: hidden; }
 }
 
 @keyframes ovalaPageTransition {
