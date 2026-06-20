@@ -28,6 +28,7 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 - Style reference empty-state samples now come from the ready sample folder and can be uploaded or removed from `/admin/assets/samples`.
 - Curated style labels are simplified for users: social is "با جای متن", editorial is "با دکور", and cinematic is "سینمایی".
 - With-model necklace prompts now treat rear clasps as hidden hardware, so normal back clasps should not be moved into the visible neck or collarbone area.
+- Product-only generation prompts now explicitly remove source-photo hands, wrists, people, clothing, and selfie reflections while preserving product identity; human context remains reserved for explicitly wearable/model styles.
 
 ## Next Priorities
 

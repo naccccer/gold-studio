@@ -21,6 +21,7 @@
     "check:avalai": "node scripts/check-avalai.mjs",
     "cleanup:archives": "node scripts/cleanup-archives.mjs",
     "check:mojibake": "node scripts/check-mojibake.mjs",
+    "check:prompts": "node scripts/check-prompt-policy.mjs",
     "smoke": "node scripts/smoke-test.mjs",
     "convert:placeholders": "node scripts/convert-placeholders-to-webp.mjs"
   },

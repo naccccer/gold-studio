@@ -3,8 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
-import { buildHumanModelProductWearPrompt, buildStyleControlPrompt, hasHumanModelStyleControls } from "@/lib/ai/style-controls";
-import { buildVisionPromptContext } from "@/lib/ai/vision";
 import { requireUserSession } from "@/lib/auth/session";
 import {
   attachGenerationCreditReservation,
@@ -14,23 +12,15 @@ import {
 } from "@/lib/billing";
 import { NO_CREDITS_ERROR } from "@/lib/credits";
 import { db } from "@/lib/db";
+import { buildGenerationPrompt } from "@/lib/ai/generation-prompt";
 import { processGenerationBatch } from "@/lib/generation/jobs";
-import { getOutputPresetSpec, normalizeOutputPreset } from "@/lib/output-presets";
+import { normalizeOutputPreset } from "@/lib/output-presets";
 import { analyzeAndStoreProductAssetVision, ensureProductAssetVision, pickVisionTitle } from "@/lib/product-vision";
 import { DEFAULT_PRODUCT_TYPE, normalizeProductType } from "@/lib/product-types";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { deleteStorageObject } from "@/lib/storage";
 import { getStyleForGeneration } from "@/lib/styles";
-import { buildSampleReferencePromptContext } from "@/lib/style-reference-vision";
 import { saveStyleReferenceFile, saveStyleReferenceFromStoredObject, saveUploadedFile } from "@/lib/uploads";
-
-function getEditorialBackgroundDecorInstruction(styleId: string) {
-  if (styleId !== "style_soft_editorial") {
-    return "";
-  }
-
-  return "Editorial background decor: always include a restrained designed background decor element such as simple geometric volume, matte stone plane, soft fabric plane, plinth, or subtle editorial surface layering. Keep it premium, uncluttered, product-first, and avoid a plain empty catalog background.";
-}
 
 async function resolveReferenceAssetForBatch(styleId: string, formData: FormData, userId: string) {
   if (styleId !== "style_sample_reference") {
@@ -170,8 +160,6 @@ export async function createBatchFromGalleryAction(formData: FormData) {
 
   const reservations: string[] = [];
   const createdProjectIds: string[] = [];
-  const styleControlPrompt = buildStyleControlPrompt(style, formData);
-  const includesHumanModel = hasHumanModelStyleControls(style);
   const batch = await db.generationBatch.create({
     data: {
       userId: session.userId,
@@ -204,10 +192,15 @@ export async function createBatchFromGalleryAction(formData: FormData) {
           data: { productType: submittedProductType },
         });
       }
-      const visionContext = buildVisionPromptContext({
-        productType: effectiveProductType,
-        visionDescription: analyzedAsset?.visionDescription,
-        visionConfidence: analyzedAsset?.visionConfidence,
+      const projectPrompt = buildGenerationPrompt({
+        style,
+        formData,
+        vision: {
+          productType: effectiveProductType,
+          visionDescription: analyzedAsset?.visionDescription,
+          visionConfidence: analyzedAsset?.visionConfidence,
+          visionAngle: analyzedAsset?.visionAngle,
+        },
       });
       const project = await db.project.create({
         data: {
@@ -222,15 +215,7 @@ export async function createBatchFromGalleryAction(formData: FormData) {
           outputPreset,
           styleId: style.id,
           referenceAssetId: referenceAsset?.id ?? null,
-          prompt: [
-            style.prompt,
-            getOutputPresetSpec(outputPreset).instruction,
-            styleControlPrompt,
-            includesHumanModel ? buildHumanModelProductWearPrompt(effectiveProductType) : "",
-            style.id === "style_sample_reference" ? buildSampleReferencePromptContext() : "",
-            getEditorialBackgroundDecorInstruction(style.id),
-            visionContext,
-          ].filter(Boolean).join("\n"),
+          prompt: projectPrompt,
           status: "QUEUED",
         },
         select: { id: true },

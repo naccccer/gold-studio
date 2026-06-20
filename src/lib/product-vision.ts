@@ -87,6 +87,7 @@ export async function ensureProductAssetVision(assetId: string) {
       productType: true,
       visionShortTitle: true,
       visionDescription: true,
+      visionAngle: true,
       visionConfidence: true,
       visionAnalyzedAt: true,
       visionError: true,

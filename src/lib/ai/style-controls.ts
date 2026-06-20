@@ -202,10 +202,6 @@ export function buildStyleControlPrompt(style: { controls?: StyleControl[] }, fo
   return instructions.join("\n");
 }
 
-export function hasHumanModelStyleControls(style: { controls?: StyleControl[] }) {
-  return style.controls?.some((control) => ["modelGender", "modelNationality", "faceFraming", "modelSceneStyle", "fullHijab", "modesty"].includes(control.key)) ?? false;
-}
-
 export function buildHumanModelProductWearPrompt(productType?: string | null) {
   const base = [
     "Worn product realism: when jewelry or accessories are shown on a human body, prioritize physically plausible wearing over exposing every construction detail.",
