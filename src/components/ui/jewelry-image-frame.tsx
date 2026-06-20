@@ -30,7 +30,9 @@ export function JewelryImageFrame({ children, className = "", aspect = "square",
       className={[
         "motion-selected relative overflow-hidden rounded-[var(--radius-2xl)]",
         treatmentClasses[treatment],
-        selected ? "border-accent-bright shadow-[0_18px_36px_-28px_rgba(17,16,14,0.58)] ring-1 ring-accent-bright/45" : "",
+        selected
+          ? "border-accent-bright shadow-[0_20px_42px_-26px_rgba(17,16,14,0.72)] ring-2 ring-accent-bright ring-offset-2 ring-offset-surface"
+          : "",
         disabled ? "grayscale-[35%] opacity-75" : "",
         aspectClasses[aspect],
         className,

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { CloseCircle, DocumentDownload, Edit2, Eye, GalleryAdd, Refresh, TickCircle, Trash } from "vuesax-icons-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActionDock } from "@/components/ui/action-dock";
 import { Button, IconButton, buttonClasses } from "@/components/ui/button";
 import { ConfirmAction } from "@/components/ui/confirm-action";
@@ -53,7 +53,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
     window.clearTimeout(longPressTimer.current ?? undefined);
     longPressTimer.current = window.setTimeout(() => {
       longPressTriggered.current = true;
-      toggleProject(projectId);
+      setSelectedIds((current) => (current.includes(projectId) ? current : [...current, projectId]));
     }, 420);
   }
 
@@ -61,6 +61,28 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
     window.clearTimeout(longPressTimer.current ?? undefined);
     longPressTimer.current = null;
   }
+
+  useEffect(() => {
+    if (selectedIds.length === 0) return;
+
+    function clearOnOutsidePointer(event: PointerEvent) {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+
+      if (
+        target.closest(
+          "[data-selection-card], [data-selection-controls], [data-item-context-menu], [role='dialog'], input, textarea, select, button, a",
+        )
+      ) {
+        return;
+      }
+
+      setSelectedIds([]);
+    }
+
+    document.addEventListener("pointerdown", clearOnOutsidePointer);
+    return () => document.removeEventListener("pointerdown", clearOnOutsidePointer);
+  }, [selectedIds.length]);
 
   return (
     <PageShell maxWidth="lg" className="space-y-5 pb-32">
@@ -92,7 +114,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
               const editing = editingProjectId === project.id;
 
               return (
-                <article key={project.id} className="relative">
+                <article key={project.id} className="relative" data-selection-card>
                   <div className="relative">
                     <JewelryImageFrame
                       aspect="gallery"
@@ -105,6 +127,10 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                         onPointerLeave={cancelProjectHold}
                         onPointerCancel={cancelProjectHold}
                         onPointerUp={cancelProjectHold}
+                        onContextMenu={(event) => {
+                          event.preventDefault();
+                          setSelectedIds((current) => (current.includes(project.id) ? current : [...current, project.id]));
+                        }}
                         onClick={(event) => {
                           if (selectedIds.length > 0) {
                             event.preventDefault();
@@ -117,7 +143,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                             longPressTriggered.current = false;
                           }
                         }}
-                        className="group absolute inset-0 z-0 block text-right"
+                        className="group absolute inset-0 z-0 block select-none text-right [touch-action:manipulation] [-webkit-touch-callout:none]"
                         aria-label={`مشاهده ${projectTitle}`}
                       >
                         <SafeJewelryImage
@@ -131,9 +157,12 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                         />
                       </Link>
                       {selected ? (
-                          <span className="motion-reveal-soft absolute right-2.5 top-2.5 z-20 inline-flex h-7 w-7 items-center justify-center rounded-full bg-foreground text-surface">
-                          <TickCircle aria-hidden={true} className="h-4 w-4" />
-                        </span>
+                        <>
+                          <span aria-hidden={true} className="pointer-events-none absolute inset-0 z-[1] bg-accent-bright/18" />
+                          <span className="motion-reveal-soft absolute right-2.5 top-2.5 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full bg-foreground text-surface shadow-[0_12px_24px_-14px_rgba(0,0,0,0.85)]">
+                            <TickCircle aria-hidden={true} className="h-4.5 w-4.5" />
+                          </span>
+                        </>
                       ) : null}
                       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/58 via-black/18 via-34% to-transparent px-3 pb-2.5 pt-5">
                         <div
@@ -188,6 +217,10 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                             </button>
                             <div className="pointer-events-auto flex justify-start">
                               <ItemContextMenu label={`منوی ${projectTitle}`} align="right" size="sm">
+                                <button type="button" onClick={() => toggleProject(project.id)} className={contextMenuItemClasses} data-close-context-menu>
+                                  <TickCircle aria-hidden={true} className="h-3.5 w-3.5" />
+                                  {selected ? "لغو انتخاب" : "انتخاب"}
+                                </button>
                                 <Link href={`/projects/${project.id}`} className={contextMenuItemClasses}>
                                   <Eye aria-hidden={true} className="h-3.5 w-3.5" />
                                   مشاهده نتیجه
@@ -273,7 +306,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
         )}
 
         {selectedIds.length > 0 ? (
-          <ActionDock sticky className="!grid-cols-[2.25rem_minmax(0,1fr)] items-center">
+          <ActionDock sticky className="!grid-cols-[2.25rem_minmax(0,1fr)] items-center" data-selection-controls>
             <>
               <ConfirmAction
                 action={archiveProjectAction}

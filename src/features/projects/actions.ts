@@ -227,15 +227,15 @@ export async function createProjectAction(
     try {
       const sourceImageUrl = await saveTextPromptSourceImage(textPrompt);
       project = await db.project.create({
-      data: {
-        userId: session.userId,
-        title: title || "تست داخلی متن به تصویر",
-        sourceImageUrl,
-        outputPreset,
-        styleId: style.id,
-        prompt: `${textPrompt}\n\n${stylePrompt}`,
-        status: "QUEUED",
-      },
+        data: {
+          userId: session.userId,
+          title: title || "تست داخلی متن به تصویر",
+          sourceImageUrl,
+          outputPreset,
+          styleId: style.id,
+          prompt: `${textPrompt}\n\n${stylePrompt}`,
+          status: "QUEUED",
+        },
         select: { id: true },
       });
       await attachGenerationCreditReservation({ reservationId: reserved.reservationId, projectId: project.id });

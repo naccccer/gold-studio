@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import {
   ArrowRotateLeft,
   ArrowLeft,
@@ -77,6 +77,8 @@ export function GalleryScreen({ assets, styles, deleteNotice, undoAssetIds }: Ga
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [cropQueue, setCropQueue] = useState<string[]>([]);
   const [pickerError, setPickerError] = useState<string | null>(null);
+  const longPressTimerRef = useRef<number | null>(null);
+  const longPressTriggeredRef = useRef(false);
   const cropUploadId = searchParams.get("cropUploadId");
   const selectedCount = selectedIds.length;
   const batchHref = `/gallery/batches/new?assetIds=${encodeURIComponent(selectedIds.join(","))}`;
@@ -102,10 +104,61 @@ export function GalleryScreen({ assets, styles, deleteNotice, undoAssetIds }: Ga
     return () => window.clearTimeout(timeout);
   }, [deleteNotice, router, searchParams]);
 
+  useEffect(() => {
+    if (selectedCount === 0) return;
+
+    function clearOnOutsidePointer(event: PointerEvent) {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+
+      if (
+        target.closest(
+          "[data-selection-card], [data-selection-controls], [data-item-context-menu], [role='dialog'], input, textarea, select, button, a",
+        )
+      ) {
+        return;
+      }
+
+      setSelectedIds([]);
+    }
+
+    document.addEventListener("pointerdown", clearOnOutsidePointer);
+    return () => document.removeEventListener("pointerdown", clearOnOutsidePointer);
+  }, [selectedCount]);
+
   function toggleAsset(assetId: string) {
     setSelectedIds((current) =>
       current.includes(assetId) ? current.filter((id) => id !== assetId) : [...current, assetId],
     );
+  }
+
+  function selectAsset(assetId: string) {
+    setSelectedIds((current) => (current.includes(assetId) ? current : [...current, assetId]));
+  }
+
+  function startAssetHold(assetId: string) {
+    longPressTriggeredRef.current = false;
+    window.clearTimeout(longPressTimerRef.current ?? undefined);
+    longPressTimerRef.current = window.setTimeout(() => {
+      longPressTriggeredRef.current = true;
+      selectAsset(assetId);
+    }, 460);
+  }
+
+  function cancelContextMenuHold() {
+    window.clearTimeout(longPressTimerRef.current ?? undefined);
+    longPressTimerRef.current = null;
+  }
+
+  function ignoreClickAfterLongPress(event: MouseEvent) {
+    if (!longPressTriggeredRef.current) {
+      return false;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    longPressTriggeredRef.current = false;
+    return true;
   }
 
   function beginCropFlow(files: File[], source: "camera" | "files") {
@@ -244,12 +297,28 @@ export function GalleryScreen({ assets, styles, deleteNotice, undoAssetIds }: Ga
               const title = asset.title || asset.originalName || "تصویر محصول";
 
               return (
-                <article key={asset.id} className="relative">
+                <article key={asset.id} className="relative" data-selection-card>
                   <button
                     type="button"
-                    onClick={() => toggleAsset(asset.id)}
+                    onPointerDown={() => startAssetHold(asset.id)}
+                    onPointerUp={cancelContextMenuHold}
+                    onPointerLeave={cancelContextMenuHold}
+                    onPointerCancel={cancelContextMenuHold}
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      selectAsset(asset.id);
+                    }}
+                    onClick={(event) => {
+                      if (ignoreClickAfterLongPress(event)) {
+                        return;
+                      }
+
+                      if (selectedCount > 0) {
+                        toggleAsset(asset.id);
+                      }
+                    }}
                     aria-label={`انتخاب ${title}`}
-                    className="block w-full text-right"
+                    className="block w-full select-none text-right [touch-action:manipulation] [-webkit-touch-callout:none]"
                   >
                     <JewelryImageFrame aspect="gallery" selected={selected} className="rounded-[var(--radius-lg)]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -269,14 +338,21 @@ export function GalleryScreen({ assets, styles, deleteNotice, undoAssetIds }: Ga
                         </p>
                       </div>
                       {selected ? (
-                        <span className="motion-reveal-soft absolute left-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full bg-foreground text-surface">
-                          <TickCircle aria-hidden={true} className="h-4 w-4" />
-                        </span>
+                        <>
+                          <span aria-hidden={true} className="absolute inset-0 bg-accent-bright/18" />
+                          <span className="motion-reveal-soft absolute left-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-foreground text-surface shadow-[0_12px_24px_-14px_rgba(0,0,0,0.85)]">
+                            <TickCircle aria-hidden={true} className="h-4.5 w-4.5" />
+                          </span>
+                        </>
                       ) : null}
                     </JewelryImageFrame>
                   </button>
                   <div className="absolute bottom-1.5 left-1.5">
                     <ItemContextMenu label={`منوی ${title}`} align="right">
+                      <button type="button" onClick={() => toggleAsset(asset.id)} className={contextMenuItemClasses} data-close-context-menu>
+                        <TickCircle aria-hidden={true} className="h-3.5 w-3.5" />
+                        {selected ? "لغو انتخاب" : "انتخاب"}
+                      </button>
                       <Link href={`/gallery/${asset.id}`} className={contextMenuItemClasses}>
                         <Eye aria-hidden={true} className="h-3.5 w-3.5" />
                         مشاهده جزئیات
@@ -342,7 +418,10 @@ export function GalleryScreen({ assets, styles, deleteNotice, undoAssetIds }: Ga
         </div>
       </PageShell>
 
-      <section className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+4.85rem)] z-30 mx-auto w-full max-w-[393px] px-4 md:max-w-[425px]">
+      <section
+        className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+4.85rem)] z-30 mx-auto w-full max-w-[393px] px-4 md:max-w-[425px]"
+        data-selection-controls
+      >
         {selectedCount === 0 ? (
           <div className="pointer-events-auto grid grid-cols-2 gap-3 rounded-[1.25rem] border border-dashed border-accent/58 bg-surface/95 p-3 shadow-[0_18px_42px_-30px_rgba(17,16,14,0.32)] backdrop-blur">
             <label htmlFor="gallery-file-input" className={buttonClasses({ className: "h-12 w-full rounded-[1rem]" })}>

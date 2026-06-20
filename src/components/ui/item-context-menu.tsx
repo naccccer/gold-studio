@@ -86,6 +86,7 @@ export function ItemContextMenu({ label, children, align = "left", tone = "dark"
       ref={wrapperRef}
       className="relative z-20"
       dir="rtl"
+      data-item-context-menu
       onClick={(event) => event.stopPropagation()}
       onPointerDown={(event) => event.stopPropagation()}
     >
@@ -108,7 +109,14 @@ export function ItemContextMenu({ label, children, align = "left", tone = "dark"
         <div
           ref={menuRef}
           dir="rtl"
-          onClick={(event) => event.stopPropagation()}
+          data-item-context-menu
+          onClick={(event) => {
+            event.stopPropagation();
+            const target = event.target as HTMLElement;
+            if (target.closest("[data-close-context-menu]")) {
+              setOpen(false);
+            }
+          }}
           onPointerDown={(event) => event.stopPropagation()}
           style={{ top: menuPosition.top, left: menuPosition.left }}
           className={[
