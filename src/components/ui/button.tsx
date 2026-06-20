@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from "react";
 
-type ButtonVariant = "primary" | "secondary" | "light" | "danger" | "ghost" | "studio-primary" | "studio-secondary" | "admin";
+type ButtonVariant = "primary" | "secondary" | "light" | "download" | "danger" | "ghost" | "studio-primary" | "studio-secondary" | "admin";
 type ButtonSize = "sm" | "md" | "full" | "icon";
 
 const variantClasses: Record<ButtonVariant, string> = {
@@ -11,7 +11,9 @@ const variantClasses: Record<ButtonVariant, string> = {
     "bg-surface-soft text-foreground shadow-[0_14px_28px_-24px_rgba(17,16,14,0.62),inset_0_1px_0_rgba(255,255,255,0.8)] hover:bg-surface",
   light:
     "border border-white bg-white text-[#171411] shadow-[0_18px_30px_-24px_rgba(255,255,255,0.82)] hover:bg-[#fff8ef]",
-  danger: "bg-danger-bright text-white shadow-[0_14px_26px_-18px_rgba(217,45,32,0.9)] hover:bg-danger-hover",
+  download:
+    "bg-[#0f6f43] text-white shadow-[0_16px_30px_-22px_rgba(15,111,67,0.95)] hover:bg-[#0b5f39]",
+  danger: "bg-[#8f241f] text-white shadow-[0_14px_26px_-20px_rgba(143,36,31,0.85)] hover:bg-[#741b18]",
   ghost: "text-muted hover:bg-surface-soft hover:text-foreground",
   "studio-primary":
     "border border-[#ffd98f]/45 bg-[linear-gradient(135deg,var(--gold-gradient-start)_0%,var(--gold-gradient-mid)_48%,var(--gold-gradient-end)_100%)] !text-studio-control shadow-[var(--shadow-gold-action)] hover:brightness-105",

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CloseCircle, DocumentDownload, Edit2, Eye, GalleryAdd, Refresh, TickCircle, Trash } from "vuesax-icons-react";
+import { ArrowDown2, CloseCircle, Edit2, Eye, GalleryAdd, Refresh, TickCircle, Trash } from "vuesax-icons-react";
 import { useEffect, useRef, useState } from "react";
 import { ActionDock } from "@/components/ui/action-dock";
 import { Button, IconButton, buttonClasses } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { fieldControlClassName } from "@/components/ui/field";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import {
   contextMenuDangerItemClasses,
+  contextMenuDownloadItemClasses,
   contextMenuItemClasses,
   ItemContextMenu,
 } from "@/components/ui/item-context-menu";
@@ -60,6 +61,12 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
   function cancelProjectHold() {
     window.clearTimeout(longPressTimer.current ?? undefined);
     longPressTimer.current = null;
+  }
+
+  function saveProjectResultAsReference(projectId: string) {
+    const formData = new FormData();
+    formData.set("projectId", projectId);
+    void saveProjectResultAsStyleReferenceAction(formData);
   }
 
   useEffect(() => {
@@ -226,19 +233,21 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
                                   مشاهده نتیجه
                                 </Link>
                                 {project.resultImageUrl ? (
-                                  <a href={project.resultImageUrl} download className={contextMenuItemClasses}>
-                                    <DocumentDownload aria-hidden={true} className="h-3.5 w-3.5" />
+                                  <a href={project.resultImageUrl} download className={contextMenuDownloadItemClasses}>
+                                    <ArrowDown2 aria-hidden={true} className="h-3.5 w-3.5 stroke-[2.3]" />
                                     دانلود خروجی
                                   </a>
                                 ) : null}
                                 {project.resultImageUrl ? (
-                                  <form action={saveProjectResultAsStyleReferenceAction}>
-                                    <input type="hidden" name="projectId" value={project.id} />
-                                    <button type="submit" className={contextMenuItemClasses}>
-                                      <GalleryAdd aria-hidden={true} className="h-3.5 w-3.5" />
-                                      ذخیره در نمونه‌ها
-                                    </button>
-                                  </form>
+                                  <button
+                                    type="button"
+                                    onClick={() => saveProjectResultAsReference(project.id)}
+                                    className={contextMenuItemClasses}
+                                    data-close-context-menu
+                                  >
+                                    <GalleryAdd aria-hidden={true} className="h-3.5 w-3.5" />
+                                    ذخیره در نمونه‌ها
+                                  </button>
                                 ) : null}
                                 <Link
                                   href={project.sourceAssetId ? `/projects/new?assetId=${project.sourceAssetId}` : "/projects/new"}

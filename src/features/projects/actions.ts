@@ -19,7 +19,7 @@ import { normalizeOutputPreset } from "@/lib/output-presets";
 import { pickVisionTitle, retryProjectVisionTitle } from "@/lib/product-vision";
 import { normalizeProductType } from "@/lib/product-types";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { deleteStorageObject, readStorageObject } from "@/lib/storage";
+import { deleteStorageObject, isAllowedStorageKey, readStorageObject } from "@/lib/storage";
 import { getStyleForGeneration } from "@/lib/styles";
 import {
   saveStyleReferenceFile,
@@ -507,44 +507,74 @@ export async function renameProjectAction(formData: FormData) {
   revalidatePath(`/projects/${projectId}`);
 }
 
+function resultStorageKeyFromUrl(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const pathname = value.startsWith("http") ? new URL(value).pathname : value;
+    const apiStoragePrefix = "/api/storage/";
+    const uploadsPrefix = "/uploads/";
+    const storageKey = pathname.startsWith(apiStoragePrefix)
+      ? decodeURIComponent(pathname.slice(apiStoragePrefix.length))
+      : pathname.startsWith(uploadsPrefix)
+        ? `uploads/${decodeURIComponent(pathname.slice(uploadsPrefix.length))}`
+        : null;
+
+    return storageKey && isAllowedStorageKey(storageKey) ? storageKey : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function saveProjectResultAsStyleReferenceAction(formData: FormData) {
   const session = await requireUserSession();
   const projectId = String(formData.get("projectId") ?? "").trim();
 
   if (!projectId) {
-    return;
+    return { ok: false, message: "پروژه پیدا نشد." };
   }
 
   const project = await db.project.findFirst({
     where: { id: projectId, userId: session.userId, status: "COMPLETED", archivedAt: null },
     select: {
       title: true,
+      resultImageUrl: true,
       resultStorageKey: true,
     },
   });
 
-  if (!project?.resultStorageKey) {
-    return;
+  const resultStorageKey = project?.resultStorageKey || resultStorageKeyFromUrl(project?.resultImageUrl);
+
+  if (!project || !resultStorageKey) {
+    return { ok: false, message: "فایل خروجی برای ذخیره در نمونه‌ها پیدا نشد." };
   }
 
-  const copied = await saveStyleReferenceFromStoredObject({
-    storageKey: project.resultStorageKey,
-    mimeType: "image/png",
-    originalName: project.title ? `${project.title}.png` : "project-result.png",
-  });
+  try {
+    const copied = await saveStyleReferenceFromStoredObject({
+      storageKey: resultStorageKey,
+      mimeType: "image/png",
+      originalName: project.title ? `${project.title}.png` : "project-result.png",
+    });
 
-  await db.styleReferenceAsset.create({
-    data: {
-      userId: session.userId,
-      fileUrl: copied.publicUrl,
-      storageKey: copied.storageKey,
-      mimeType: copied.mimeType,
-      originalName: copied.originalName,
-      title: project.title,
-    },
-  });
+    await db.styleReferenceAsset.create({
+      data: {
+        userId: session.userId,
+        fileUrl: copied.publicUrl,
+        storageKey: copied.storageKey,
+        mimeType: copied.mimeType,
+        originalName: copied.originalName,
+        title: project.title,
+      },
+    });
 
-  revalidatePath("/account/style-references");
+    revalidatePath("/account/style-references");
+    return { ok: true, message: "در گالری نمونه‌ها ذخیره شد." };
+  } catch (error) {
+    console.error("[project-result-save-as-style-reference-failed]", { projectId, resultStorageKey, error });
+    return { ok: false, message: "ذخیره در نمونه‌ها کامل نشد." };
+  }
 }
 
 export async function updateProjectProductTypeAction(formData: FormData) {

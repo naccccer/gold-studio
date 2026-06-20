@@ -19,16 +19,16 @@ Ovala is a mobile-first, Farsi RTL web app for turning low-quality jewelry, gold
 - Icons: Vuesax for user-facing UI; existing lucide usage remains until deliberately migrated.
 
 ## Common commands
-All scripts run via `npm run <name>`. `dev` and `build` automatically run `prisma generate` first.
+All scripts run via `npm run <name>`. `dev` and `build` ensure Prisma Client is current before starting.
 
 | Command | Purpose |
 |---|---|
-| `npm run dev` | Generate Prisma client + start Next dev server |
-| `npm run build` | Generate Prisma client + production build |
+| `npm run dev` | Ensure Prisma client is current + start Next dev server |
+| `npm run build` | Ensure Prisma client is current + production build |
 | `npm run start` | Run the built app |
 | `npm run lint` | ESLint |
 | `npm run check:mojibake` | Detect corrupted Persian text in source |
-| `npm run db:generate` | `prisma generate` into `src/generated/prisma` |
+| `npm run db:generate` | Safely run `prisma generate` into `src/generated/prisma` only when Prisma inputs changed |
 | `npm run db:deploy` | `prisma migrate deploy` |
 | `npm run db:start` / `db:stop` | Manage the isolated local MariaDB helper (`.local-mariadb`, usually `127.0.0.1:3307`) |
 | `npm run db:repair-access` | Repair DB role/permissions against the local MariaDB |

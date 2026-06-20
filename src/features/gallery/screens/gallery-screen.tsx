@@ -9,7 +9,7 @@ import {
   ArrowLeft,
   Camera,
   CloseCircle,
-  DocumentDownload,
+  ArrowDown2,
   DocumentUpload,
   Edit2,
   Eye,
@@ -24,6 +24,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { fieldControlClassName } from "@/components/ui/field";
 import {
   contextMenuDangerItemClasses,
+  contextMenuDownloadItemClasses,
   contextMenuItemClasses,
   ItemContextMenu,
 } from "@/components/ui/item-context-menu";
@@ -361,8 +362,8 @@ export function GalleryScreen({ assets, styles, deleteNotice, undoAssetIds }: Ga
                         <Magicpen aria-hidden={true} className="h-3.5 w-3.5" />
                         ساخت پروژه
                       </Link>
-                      <a href={asset.fileUrl} download className={contextMenuItemClasses}>
-                        <DocumentDownload aria-hidden={true} className="h-3.5 w-3.5" />
+                      <a href={asset.fileUrl} download className={contextMenuDownloadItemClasses}>
+                        <ArrowDown2 aria-hidden={true} className="h-3.5 w-3.5 stroke-[2.3]" />
                         دانلود عکس
                       </a>
                       <form action={saveGalleryAssetAsStyleReferenceAction}>

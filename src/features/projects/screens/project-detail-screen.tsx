@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Add,
+  ArrowDown2,
   CloseCircle,
   Copy,
-  DocumentDownload,
+  ExportCurve,
   Gallery,
+  GalleryAdd,
   Maximize4,
   Refresh,
   Scan,
@@ -17,11 +19,21 @@ import { ActionDock } from "@/components/ui/action-dock";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { ConfirmAction } from "@/components/ui/confirm-action";
 import { fieldControlClassName } from "@/components/ui/field";
+import {
+  contextMenuDangerItemClasses,
+  contextMenuItemClasses,
+  ItemContextMenu,
+} from "@/components/ui/item-context-menu";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
 import { ProcessingCanvas } from "@/components/ui/processing-canvas";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
-import { archiveProjectAction, renameProjectAction, retryProjectAction } from "@/features/projects/actions";
+import {
+  archiveProjectAction,
+  renameProjectAction,
+  retryProjectAction,
+  saveProjectResultAsStyleReferenceAction,
+} from "@/features/projects/actions";
 import { ProjectStatusRefresh } from "@/features/projects/components/project-status-refresh";
 import { resultHeroDark, uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { generateNumericSupportCode } from "@/lib/support-code";
@@ -137,10 +149,6 @@ function buildProcessingMoments(styleName: string) {
   );
 }
 
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
-}
-
 function stripVersionSuffix(title: string) {
   return title.replace(/\s*[-–]\s*نسخه\s+(?:دیگر|[0-9۰-۹٠-٩]+)\s*$/u, "").trim();
 }
@@ -233,7 +241,20 @@ export type ProjectDetail = {
 const failedCreditReassurance =
   "اگر پردازش این پروژه کامل نشود، اعتباری از حساب شما کسر نخواهد شد.";
 
+type ShareStatus = "idle" | "sharing" | "shared" | "copied" | "failed";
+type ReferenceSaveStatus = "idle" | "saving" | "saved" | "failed";
+
 type ProjectDetailScreenProps = { project: ProjectDetail };
+
+function shareFileExtension(mimeType: string) {
+  if (mimeType.includes("png")) return "png";
+  if (mimeType.includes("webp")) return "webp";
+  return "jpg";
+}
+
+function shareFileName(projectId: string, mimeType: string) {
+  return `ovala-${projectId.slice(0, 8)}.${shareFileExtension(mimeType)}`;
+}
 
 function DetailMeta({
   projectId,
@@ -339,16 +360,118 @@ function DetailMeta({
   );
 }
 
+function ResultHeader({
+  projectId,
+  title,
+  variantLabel,
+  styleName,
+  styleSettings,
+}: {
+  projectId: string;
+  title: string;
+  variantLabel?: string | null;
+  styleName: string;
+  styleSettings: string[];
+}) {
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [styleDetailsOpen, setStyleDetailsOpen] = useState(false);
+  const hasStyleSettings = styleSettings.length > 0;
+
+  return (
+    <header className="shrink-0 px-0.5 text-right">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          {editingTitle ? (
+            <form
+              action={renameProjectAction}
+              className="flex items-center gap-1.5"
+              onSubmit={() => {
+                setEditingTitle(false);
+              }}
+            >
+              <input type="hidden" name="projectId" value={projectId} />
+              <input
+                name="title"
+                defaultValue={title}
+                maxLength={80}
+                autoFocus
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") {
+                    event.preventDefault();
+                    setEditingTitle(false);
+                  }
+                }}
+                className={`${fieldControlClassName} min-h-9 flex-1 border-white/10 bg-white/[0.07] px-3 text-sm text-surface shadow-none placeholder:text-surface/40 focus-visible:shadow-none`}
+              />
+              <button
+                type="submit"
+                aria-label="تایید نام پروژه"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-wash text-accent-deep transition hover:bg-accent-soft"
+              >
+                <TickCircle aria-hidden={true} className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingTitle(false)}
+                aria-label="انصراف از ویرایش نام پروژه"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.08] text-surface/72 transition hover:bg-white/[0.12]"
+              >
+                <CloseCircle aria-hidden={true} className="h-4 w-4" />
+              </button>
+            </form>
+          ) : (
+            <div className="flex min-w-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setEditingTitle(true)}
+                className="min-w-0 truncate text-right text-base font-semibold leading-7 text-surface transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft"
+                aria-label="ویرایش نام پروژه"
+              >
+                {title}
+              </button>
+              {variantLabel ? (
+                <span className="shrink-0 rounded-full bg-white/[0.08] px-2 py-0.5 text-xs font-semibold leading-5 text-surface/84">
+                  {variantLabel}
+                </span>
+              ) : null}
+            </div>
+          )}
+        </div>
+
+        <div className="relative max-w-[38%] shrink-0">
+          <button
+            type="button"
+            onClick={() => setStyleDetailsOpen((current) => !current)}
+            className="inline-flex h-8 w-full items-center justify-center rounded-full bg-white/[0.08] px-3 text-[11px] font-semibold leading-none text-surface/78 transition hover:bg-white/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft"
+            aria-expanded={styleDetailsOpen}
+            aria-label="نمایش تنظیمات سبک"
+          >
+            <span className="truncate">{styleName}</span>
+          </button>
+          {styleDetailsOpen ? (
+            <div className="absolute left-0 top-[calc(100%+0.45rem)] z-30 w-52 rounded-[1rem] border border-white/12 bg-[#171411] p-2.5 text-right shadow-[0_20px_44px_-28px_rgba(0,0,0,0.9)]">
+              <div className="flex flex-wrap gap-1.5">
+                {(hasStyleSettings ? styleSettings : ["تنظیمات خاصی ثبت نشده"]).map((item) => (
+                  <span key={item} className="rounded-full bg-white/[0.07] px-2 py-1 text-[10px] leading-4 text-surface/76">
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </header>
+  );
+}
+
 export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
-  const fullscreenViewportRef = useRef<HTMLDivElement>(null);
-  const fullscreenDragStateRef = useRef<{ startX: number; startY: number; startPanX: number; startPanY: number } | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
   const [showBefore, setShowBefore] = useState(false);
   const [copiedError, setCopiedError] = useState(false);
+  const [shareStatus, setShareStatus] = useState<ShareStatus>("idle");
+  const [referenceSaveStatus, setReferenceSaveStatus] = useState<ReferenceSaveStatus>("idle");
   const [resultImageLoadFailed, setResultImageLoadFailed] = useState(false);
-  const [fullscreenZoom, setFullscreenZoom] = useState(1);
-  const [fullscreenPan, setFullscreenPan] = useState({ x: 0, y: 0 });
-  const [fullscreenViewport, setFullscreenViewport] = useState({ width: 0, height: 0 });
   const status = statusConfig[project.status] ?? {
     label: "ثبت شده",
     supportCopy: "وضعیت پروژه ثبت شد.",
@@ -388,82 +511,9 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
     : null;
   const styleSettings = extractStyleSettings(project.prompt);
   const titleRefreshPending = Boolean(project.titleRefreshPending);
-  const fullscreenPanLimitX = Math.max(0, (fullscreenViewport.width * (fullscreenZoom - 1)) / 2);
-  const fullscreenPanLimitY = Math.max(0, (fullscreenViewport.height * (fullscreenZoom - 1)) / 2);
-  const clampedFullscreenPanX = clamp(fullscreenPan.x, -fullscreenPanLimitX, fullscreenPanLimitX);
-  const clampedFullscreenPanY = clamp(fullscreenPan.y, -fullscreenPanLimitY, fullscreenPanLimitY);
-
-  const updateFullscreenViewport = useCallback(() => {
-    const element = fullscreenViewportRef.current;
-    if (!element) {
-      return;
-    }
-
-    setFullscreenViewport({
-      width: element.clientWidth,
-      height: element.clientHeight,
-    });
-  }, []);
-
-  const resetFullscreenView = useCallback(() => {
-    setFullscreenZoom(1);
-    setFullscreenPan({ x: 0, y: 0 });
-  }, []);
-
   const closeFullscreen = useCallback(() => {
-    resetFullscreenView();
     setFullscreen(false);
-  }, [resetFullscreenView]);
-
-  function applyFullscreenZoom(nextZoom: number) {
-    const zoom = clamp(nextZoom, 1, 3);
-    setFullscreenZoom(zoom);
-
-    if (zoom === 1) {
-      setFullscreenPan({ x: 0, y: 0 });
-      return;
-    }
-
-    const nextLimitX = Math.max(0, (fullscreenViewport.width * (zoom - 1)) / 2);
-    const nextLimitY = Math.max(0, (fullscreenViewport.height * (zoom - 1)) / 2);
-    setFullscreenPan((current) => ({
-      x: clamp(current.x, -nextLimitX, nextLimitX),
-      y: clamp(current.y, -nextLimitY, nextLimitY),
-    }));
-  }
-
-  function handleFullscreenPointerDown(event: React.PointerEvent<HTMLDivElement>) {
-    if (fullscreenZoom <= 1) {
-      return;
-    }
-
-    fullscreenDragStateRef.current = {
-      startX: event.clientX,
-      startY: event.clientY,
-      startPanX: clampedFullscreenPanX,
-      startPanY: clampedFullscreenPanY,
-    };
-    event.currentTarget.setPointerCapture(event.pointerId);
-  }
-
-  function handleFullscreenPointerMove(event: React.PointerEvent<HTMLDivElement>) {
-    const dragState = fullscreenDragStateRef.current;
-    if (!dragState) {
-      return;
-    }
-
-    setFullscreenPan({
-      x: clamp(dragState.startPanX + (event.clientX - dragState.startX), -fullscreenPanLimitX, fullscreenPanLimitX),
-      y: clamp(dragState.startPanY + (event.clientY - dragState.startY), -fullscreenPanLimitY, fullscreenPanLimitY),
-    });
-  }
-
-  function handleFullscreenPointerUp(event: React.PointerEvent<HTMLDivElement>) {
-    fullscreenDragStateRef.current = null;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-  }
+  }, []);
 
   async function handleCopyError() {
     try {
@@ -473,6 +523,81 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
     } catch {
       setCopiedError(false);
     }
+  }
+
+  async function shareResultUrl(url: string) {
+    const absoluteUrl = new URL(url, window.location.href).toString();
+    const shareData = {
+      title: projectTitle,
+      text: "خروجی آماده‌شده در اوالا",
+      url: absoluteUrl,
+    };
+
+    if (navigator.share) {
+      await navigator.share(shareData);
+      setShareStatus("shared");
+      window.setTimeout(() => setShareStatus("idle"), 1600);
+      return;
+    }
+
+    await navigator.clipboard.writeText(absoluteUrl);
+    setShareStatus("copied");
+    window.setTimeout(() => setShareStatus("idle"), 1600);
+  }
+
+  async function handleShareResult() {
+    if (!project.resultImageUrl || shareStatus === "sharing") {
+      return;
+    }
+
+    setShareStatus("sharing");
+
+    try {
+      if (navigator.share) {
+        const response = await fetch(project.resultImageUrl, { credentials: "include" });
+        if (response.ok) {
+          const blob = await response.blob();
+          const mimeType = blob.type || response.headers.get("Content-Type") || "image/jpeg";
+          const file = new File([blob], shareFileName(project.id, mimeType), { type: mimeType });
+          const fileShareData: ShareData = {
+            title: projectTitle,
+            text: "خروجی آماده‌شده در اوالا",
+            files: [file],
+          };
+
+          if (navigator.canShare?.(fileShareData)) {
+            await navigator.share(fileShareData);
+            setShareStatus("shared");
+            window.setTimeout(() => setShareStatus("idle"), 1600);
+            return;
+          }
+        }
+      }
+
+      await shareResultUrl(project.resultImageUrl);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        setShareStatus("idle");
+        return;
+      }
+
+      setShareStatus("failed");
+      window.setTimeout(() => setShareStatus("idle"), 1800);
+    }
+  }
+
+  async function handleSaveReference() {
+    if (referenceSaveStatus === "saving") {
+      return;
+    }
+
+    setReferenceSaveStatus("saving");
+    const formData = new FormData();
+    formData.set("projectId", project.id);
+
+    const result = await saveProjectResultAsStyleReferenceAction(formData);
+    setReferenceSaveStatus(result.ok ? "saved" : "failed");
+    window.setTimeout(() => setReferenceSaveStatus("idle"), result.ok ? 1800 : 2400);
   }
 
   useEffect(() => {
@@ -487,15 +612,12 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
     }
 
     document.body.style.overflow = "hidden";
-    updateFullscreenViewport();
     document.addEventListener("keydown", closeOnEscape);
-    window.addEventListener("resize", updateFullscreenViewport);
     return () => {
       document.body.style.overflow = "";
       document.removeEventListener("keydown", closeOnEscape);
-      window.removeEventListener("resize", updateFullscreenViewport);
     };
-  }, [closeFullscreen, fullscreen, updateFullscreenViewport]);
+  }, [closeFullscreen, fullscreen]);
 
   if (isActive) {
     return (
@@ -540,11 +662,11 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
 
   if (hasResult && project.status === "COMPLETED" && !resultImageError) {
     return (
-      <PageShell maxWidth="lg" className="h-[calc(100svh-9.8rem)] overflow-hidden pb-1 text-surface">
+      <PageShell maxWidth="lg" minHeight={false} className="h-[calc(100svh-9.25rem)] overflow-hidden pb-1 text-surface">
         <ProjectStatusRefresh active={titleRefreshPending} />
 
-        <section className="flex h-full flex-col gap-3 overflow-hidden">
-          <DetailMeta
+        <section className="flex h-full min-h-0 flex-col gap-2 overflow-hidden">
+          <ResultHeader
             projectId={project.id}
             title={projectTitle}
             variantLabel={variantLabel}
@@ -553,7 +675,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
           />
 
           <div
-            className="group relative min-h-0 flex-1 overflow-hidden rounded-[1.45rem] text-right"
+            className="group relative min-h-0 flex-1 overflow-hidden rounded-[1.25rem] text-right"
             role="button"
             tabIndex={0}
             aria-label="نمایش تمام صفحه خروجی"
@@ -565,7 +687,11 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               }
             }}
           >
-            <JewelryImageFrame aspect="portrait" treatment="dark" className="h-full w-full aspect-auto rounded-[1.45rem] bg-white">
+            <JewelryImageFrame
+              aspect="portrait"
+              treatment="dark"
+              className="h-full w-full aspect-auto rounded-[1.25rem] border-white/10 bg-surface-photo shadow-none"
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={resultImageSrc}
@@ -586,27 +712,11 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
                 fallbackAlt={uploadPreview.alt}
                 alt="تصویر اولیه"
                 fill
-                className={`pointer-events-none object-cover object-[46%_55%] transition duration-150 ${showBefore ? "opacity-100" : "opacity-0"}`}
+                className={`pointer-events-none object-cover object-center transition duration-150 ${showBefore ? "opacity-100" : "opacity-0"}`}
                 sizes="(max-width: 768px) 100vw, 760px"
               />
 
-              <div className="absolute inset-x-3 top-3 flex items-start justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setFullscreen(true);
-                  }}
-                  aria-label="نمایش تمام صفحه خروجی"
-                  className="relative z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-black/28 text-surface backdrop-blur"
-                >
-                  <Maximize4 aria-hidden={true} className="h-4.5 w-4.5" />
-                </button>
-              </div>
-
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/72 via-black/18 to-transparent" />
-              <div className="absolute bottom-4 right-4 z-10">
+              <div className="absolute inset-x-3 top-3 flex items-start justify-between gap-3">
                 <button
                   type="button"
                   onClick={(event) => {
@@ -616,67 +726,124 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
                   }}
                   aria-pressed={showBefore}
                   className={[
-                    "inline-flex min-h-9 whitespace-nowrap items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold backdrop-blur transition",
+                    "relative z-10 inline-flex min-h-9 whitespace-nowrap items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold backdrop-blur transition",
                     showBefore
-                      ? "border-accent-soft bg-accent-wash/92 text-accent-deep"
-                      : "border-white/18 bg-black/34 text-white/86",
+                      ? "bg-accent-wash text-accent-deep"
+                      : "bg-black/42 text-white/86",
                   ].join(" ")}
                 >
                   <Scan aria-hidden={true} className="h-4 w-4" />
-                  {showBefore ? "نمایش خروجی" : "دیدن عکس خام"}
+                  {showBefore ? "خروجی" : "عکس خام"}
+                </button>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setFullscreen(true);
+                  }}
+                  aria-label="نمایش تمام صفحه خروجی"
+                  className="relative z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/42 text-surface backdrop-blur transition hover:bg-black/56"
+                >
+                  <Maximize4 aria-hidden={true} className="h-4.5 w-4.5" />
                 </button>
               </div>
             </JewelryImageFrame>
           </div>
 
-          <ActionDock className="shrink-0 pb-1" columns={2}>
-            <div className="grid grid-cols-[3rem_minmax(0,1fr)] gap-2">
-              <ConfirmAction
-                action={archiveProjectAction}
-                fields={[{ name: "projectId", value: project.id }]}
-                title="آیا از انتقال پروژه به آرشیو مطمئنید؟"
-                confirmLabel="انتقال به آرشیو"
-                trigger={(open) => (
-                  <button
-                    type="button"
-                    onClick={open}
-                    aria-label="حذف پروژه"
-                    title="حذف"
-                    className={buttonClasses({
-                      variant: "danger",
-                      size: "icon",
-                      className: "h-12 w-12 rounded-[1rem]",
-                    })}
-                  >
-                    <Trash aria-hidden={true} className="h-4 w-4" />
-                  </button>
-                )}
-              />
+          <ActionDock className="shrink-0 pb-1">
+            <div className="grid grid-cols-[0.82fr_minmax(0,1.18fr)_3rem] gap-2">
               <a
                 href={project.resultImageUrl as string}
                 download
                 className={buttonClasses({
-                  className: "h-12 min-w-0 flex-1 rounded-[1rem]",
+                  variant: "download",
+                  className: "h-12 min-w-0 rounded-[0.95rem] px-2.5 text-sm",
                 })}
               >
-                <DocumentDownload aria-hidden={true} className="h-4 w-4" />
+                <ArrowDown2 aria-hidden={true} className="h-4.5 w-4.5 stroke-[2.3]" />
                 دانلود
               </a>
+              {canCreateFreeVariant ? (
+                <ButtonLink
+                  href={freeVariantHref}
+                  variant="ghost"
+                  className="h-12 min-w-0 whitespace-nowrap rounded-[0.95rem] bg-white/[0.08] px-2.5 text-sm !text-surface/88 hover:bg-white/[0.12] hover:!text-surface"
+                >
+                  <Refresh aria-hidden={true} className="h-4 w-4" />
+                  نسخه دیگر
+                  <span className="inline-flex min-h-5 shrink-0 items-center rounded-full bg-[#f2dfbd] px-1.5 text-[10px] font-bold leading-none text-[#6f4d20]">
+                    رایگان
+                  </span>
+                </ButtonLink>
+              ) : (
+                <ButtonLink
+                  href={newVersionHref}
+                  variant="ghost"
+                  className="h-12 min-w-0 whitespace-nowrap rounded-[0.95rem] bg-white/[0.08] px-2.5 text-sm !text-surface/88 hover:bg-white/[0.12] hover:!text-surface"
+                >
+                  <Refresh aria-hidden={true} className="h-4 w-4" />
+                  نسخه دیگر
+                </ButtonLink>
+              )}
+              <div className="flex justify-end">
+                <ItemContextMenu
+                  label="گزینه‌های خروجی"
+                  align="right"
+                  tone="light"
+                  buttonClassName="h-12 w-12 rounded-[0.95rem]"
+                  buttonInnerClassName="h-12 w-12 rounded-[0.95rem] border border-white/10 bg-white/[0.1] text-surface hover:bg-white/[0.16]"
+                  iconClassName="h-5 w-5"
+                >
+                  <button
+                    type="button"
+                    onClick={handleShareResult}
+                    disabled={shareStatus === "sharing"}
+                    className={contextMenuItemClasses}
+                    data-close-context-menu
+                  >
+                    {shareStatus === "shared" || shareStatus === "copied" ? (
+                      <TickCircle aria-hidden={true} className="h-3.5 w-3.5" />
+                    ) : (
+                      <ExportCurve aria-hidden={true} className="h-3.5 w-3.5" />
+                    )}
+                    اشتراک‌گذاری
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveReference}
+                    disabled={referenceSaveStatus === "saving"}
+                    className={contextMenuItemClasses}
+                    data-close-context-menu
+                  >
+                    {referenceSaveStatus === "saved" ? (
+                      <TickCircle aria-hidden={true} className="h-3.5 w-3.5 text-[#0f6f43]" />
+                    ) : (
+                      <GalleryAdd aria-hidden={true} className="h-3.5 w-3.5" />
+                    )}
+                    {referenceSaveStatus === "saving"
+                      ? "در حال ذخیره..."
+                      : referenceSaveStatus === "saved"
+                        ? "ذخیره شد"
+                        : referenceSaveStatus === "failed"
+                          ? "ذخیره نشد"
+                          : "ذخیره در نمونه‌ها"}
+                  </button>
+                  <ConfirmAction
+                    action={archiveProjectAction}
+                    fields={[{ name: "projectId", value: project.id }]}
+                    title="آیا از انتقال پروژه به آرشیو مطمئنید؟"
+                    confirmLabel="انتقال به آرشیو"
+                    trigger={(open) => (
+                      <button type="button" onClick={open} className={contextMenuDangerItemClasses}>
+                        <Trash aria-hidden={true} className="h-3.5 w-3.5" />
+                        حذف
+                      </button>
+                    )}
+                  />
+                </ItemContextMenu>
+              </div>
             </div>
-            {canCreateFreeVariant ? (
-              <ButtonLink href={freeVariantHref} variant="secondary" className="h-12 w-full rounded-[1rem] text-sm">
-                <Refresh aria-hidden={true} className="h-4 w-4" />
-                نسخه دیگر
-                <span className="inline-flex min-h-5 items-center rounded-full border border-accent-soft bg-accent-wash px-2 text-[10px] font-bold leading-none text-accent-deep">
-                  رایگان
-                </span>
-              </ButtonLink>
-            ) : (
-              <ButtonLink href={newVersionHref} variant="secondary" className="h-12 w-full rounded-[1rem] text-sm">
-                <Refresh aria-hidden={true} className="h-4 w-4" />
-                نسخه دیگر
-              </ButtonLink>
-            )}
           </ActionDock>
         </section>
 
@@ -687,117 +854,48 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
             aria-modal="true"
             onClick={(event) => {
               event.stopPropagation();
+              closeFullscreen();
             }}
           >
-            <button
-              type="button"
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                closeFullscreen();
-              }}
-              aria-label="بستن نمایش تمام صفحه"
-              className="absolute left-4 top-[calc(env(safe-area-inset-top)+1rem)] z-20 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/16 bg-white/10 text-white backdrop-blur"
-            >
-              <CloseCircle aria-hidden={true} className="h-5 w-5" />
-            </button>
-            <div className="pointer-events-none absolute inset-x-4 top-[calc(env(safe-area-inset-top)+1rem)] z-20 flex justify-center px-16">
-              <div className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/42 px-2 py-2 text-white/88 backdrop-blur">
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    applyFullscreenZoom(fullscreenZoom - 0.25);
-                  }}
-                  aria-label="کم کردن بزرگنمایی"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-base font-semibold transition hover:bg-white/18"
-                >
-                  -
-                </button>
-                <span dir="ltr" className="min-w-11 text-center text-xs font-semibold">
-                  {fullscreenZoom.toFixed(1)}x
-                </span>
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    applyFullscreenZoom(fullscreenZoom + 0.25);
-                  }}
-                  aria-label="زیاد کردن بزرگنمایی"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-base font-semibold transition hover:bg-white/18"
-                >
-                  +
-                </button>
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    resetFullscreenView();
-                  }}
-                  aria-label="بازنشانی بزرگنمایی"
-                  className="inline-flex min-h-8 items-center rounded-full bg-white/10 px-3 text-[11px] font-semibold transition hover:bg-white/18"
-                >
-                  بازنشانی
-                </button>
-              </div>
+            <div className="absolute inset-x-4 top-[calc(env(safe-area-inset-top)+1rem)] z-20 flex items-start justify-between gap-3">
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setShowBefore((current) => !current);
+                }}
+                aria-pressed={showBefore}
+                className={[
+                  "inline-flex min-h-9 whitespace-nowrap items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold backdrop-blur transition",
+                  showBefore
+                    ? "bg-accent-wash text-accent-deep"
+                    : "bg-black/42 text-white/86",
+                ].join(" ")}
+              >
+                <Scan aria-hidden={true} className="h-4 w-4" />
+                {showBefore ? "خروجی" : "عکس خام"}
+              </button>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  closeFullscreen();
+                }}
+                aria-label="بستن نمایش تمام صفحه"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/42 text-white backdrop-blur transition hover:bg-black/56"
+              >
+                <CloseCircle aria-hidden={true} className="h-4.5 w-4.5" />
+              </button>
             </div>
-            <div className="pointer-events-none absolute inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+1.5rem)] z-20 flex justify-center px-6">
-              <div className="pointer-events-auto w-full max-w-xs space-y-3">
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setShowBefore((current) => !current);
-                  }}
-                  aria-pressed={showBefore}
-                  className={[
-                    "pointer-events-auto inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold backdrop-blur transition",
-                    showBefore
-                      ? "border-accent-soft bg-accent-wash/92 text-accent-deep"
-                      : "border-white/18 bg-black/34 text-white/86",
-                  ].join(" ")}
-                >
-                  <Scan aria-hidden={true} className="h-4 w-4" />
-                  {showBefore ? "نمایش خروجی" : "دیدن عکس خام"}
-                </button>
-              </div>
-            </div>
-            <div
-              ref={fullscreenViewportRef}
-              className={`relative h-full w-full overflow-hidden ${fullscreenZoom > 1 ? "cursor-grab active:cursor-grabbing touch-none" : ""}`}
-              onDoubleClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                if (fullscreenZoom > 1) {
-                  resetFullscreenView();
-                } else {
-                  applyFullscreenZoom(2);
-                }
-              }}
-              onPointerDown={handleFullscreenPointerDown}
-              onPointerMove={handleFullscreenPointerMove}
-              onPointerUp={handleFullscreenPointerUp}
-              onPointerCancel={handleFullscreenPointerUp}
-              onWheel={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                applyFullscreenZoom(fullscreenZoom + (event.deltaY < 0 ? 0.15 : -0.15));
-              }}
-            >
+            <div className="relative h-full w-full overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={resultImageSrc}
                 alt={project.title || "خروجی نهایی محصول"}
                 draggable={false}
                 className={`absolute inset-0 h-full w-full bg-black object-contain object-center transition-opacity duration-150 ${showBefore ? "opacity-0" : "opacity-100"}`}
-                style={{
-                  transform: `translate(${clampedFullscreenPanX}px, ${clampedFullscreenPanY}px) scale(${fullscreenZoom})`,
-                  transformOrigin: "center center",
-                }}
                 decoding="async"
                 onError={() => {
                   console.error("[project-result-image-load-failed]", {
@@ -814,10 +912,6 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
                 alt="تصویر اولیه"
                 fill
                 className={`pointer-events-none object-contain transition duration-150 ${showBefore ? "opacity-100" : "opacity-0"}`}
-                style={{
-                  transform: `translate(${clampedFullscreenPanX}px, ${clampedFullscreenPanY}px) scale(${fullscreenZoom})`,
-                  transformOrigin: "center center",
-                }}
                 sizes="100vw"
               />
             </div>

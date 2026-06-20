@@ -94,7 +94,7 @@ If the email already exists, this promotes it to `ADMIN` and resets the password
 
 ## Important Notes
 
-- `npm run db:generate` does not reset your database. It only regenerates Prisma Client.
+- `npm run db:generate` does not reset your database. It only regenerates Prisma Client when Prisma inputs changed. If Windows is holding the Prisma DLL open, stop the running dev server or worker and run `npm run db:generate -- --force`.
 - `npx prisma migrate deploy` changes database structure by applying committed migrations.
 - `npx prisma migrate reset` can wipe local data; do not use it unless that is intentional.
 - Keep `.env` private and rotate any leaked API/storage keys before production use.

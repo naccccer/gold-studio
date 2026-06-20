@@ -51,12 +51,12 @@ npm run admin:bootstrap -- --email "admin@example.com" --password "strong-passwo
 
 ## Important Commands
 
-- `npm run db:generate`: regenerate Prisma Client only. It does not reset, migrate, or seed the database.
+- `npm run db:generate`: regenerate Prisma Client only when Prisma inputs changed. It does not reset, migrate, or seed the database. Use `npm run db:generate -- --force` to force regeneration after stopping running Node processes.
 - `npx prisma migrate deploy`: apply committed migrations to the current database.
 - `npm run db:export-local`: export the current local DB to `Desktop\gold_studio_local.sql`.
 - `npm run check:mojibake`: detect corrupted Persian text.
 - `npm run lint`: run ESLint.
-- `npm run build`: generate Prisma Client and build the app.
+- `npm run build`: ensure Prisma Client is current, then build the app.
 - `npm run smoke -- http://localhost:3000`: check a running app without logging in or touching AI/payment flows.
 - `npm run worker:generation`: run the queued generation worker.
 - `npm run watchdog:health`: run the PM2 health watchdog loop.

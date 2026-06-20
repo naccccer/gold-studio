@@ -2,7 +2,7 @@
 
 import { More } from "vuesax-icons-react";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 type ItemContextMenuProps = {
@@ -11,9 +11,21 @@ type ItemContextMenuProps = {
   align?: "left" | "right";
   tone?: "light" | "dark";
   size?: "md" | "sm";
+  buttonClassName?: string;
+  buttonInnerClassName?: string;
+  iconClassName?: string;
 };
 
-export function ItemContextMenu({ label, children, align = "left", tone = "dark", size = "md" }: ItemContextMenuProps) {
+export function ItemContextMenu({
+  label,
+  children,
+  align = "left",
+  tone = "dark",
+  size = "md",
+  buttonClassName = "",
+  buttonInnerClassName = "",
+  iconClassName = "",
+}: ItemContextMenuProps) {
   const [open, setOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -32,7 +44,7 @@ export function ItemContextMenu({ label, children, align = "left", tone = "dark"
     const frame = buttonRef.current?.closest("[data-ovala-phone-frame]")?.getBoundingClientRect();
     const horizontalMin = frame ? frame.left + viewportPadding : viewportPadding;
     const horizontalMax = frame ? frame.right - viewportPadding : window.innerWidth - viewportPadding;
-    const menuHeight = menuRef.current?.offsetHeight ?? 260;
+    const menuHeight = menuRef.current?.offsetHeight ?? 0;
     const preferredLeft = align === "left" ? rect.left : rect.right - menuWidth;
     const left = Math.min(Math.max(preferredLeft, horizontalMin), horizontalMax - menuWidth);
     const preferredTop = rect.bottom + gap;
@@ -44,12 +56,18 @@ export function ItemContextMenu({ label, children, align = "left", tone = "dark"
     setMenuPosition({ top, left });
   }, [align]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) {
       return;
     }
 
     updateMenuPosition();
+  }, [open, updateMenuPosition]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
 
     function closeOnOutside(event: PointerEvent) {
       const target = event.target as Node;
@@ -81,6 +99,16 @@ export function ItemContextMenu({ label, children, align = "left", tone = "dark"
       ? "border-white/22 bg-black/42 text-surface backdrop-blur hover:bg-black/58"
       : "border-border bg-surface/92 text-foreground shadow-[var(--shadow-soft)] backdrop-blur hover:bg-surface";
 
+  function toggleMenu() {
+    setOpen((current) => {
+      if (!current) {
+        setMenuPosition(null);
+      }
+
+      return !current;
+    });
+  }
+
   return (
     <div
       ref={wrapperRef}
@@ -95,17 +123,18 @@ export function ItemContextMenu({ label, children, align = "left", tone = "dark"
         type="button"
         aria-label={label}
         aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
+        onClick={toggleMenu}
         className={[
           "motion-press inline-flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
           size === "sm" ? "h-8 w-8" : "h-11 w-11",
+          buttonClassName,
         ].join(" ")}
       >
-        <span className={`motion-state inline-flex ${size === "sm" ? "h-7 w-7" : "h-7 w-7"} items-center justify-center rounded-full border ${buttonTone}`}>
-          <More aria-hidden={true} className="h-3 w-3" />
+        <span className={`motion-state inline-flex ${size === "sm" ? "h-7 w-7" : "h-7 w-7"} items-center justify-center rounded-full border ${buttonTone} ${buttonInnerClassName}`}>
+          <More aria-hidden={true} className={iconClassName || "h-3 w-3"} />
         </span>
       </button>
-      {open && menuPosition ? createPortal(
+      {open ? createPortal(
         <div
           ref={menuRef}
           dir="rtl"
@@ -118,7 +147,7 @@ export function ItemContextMenu({ label, children, align = "left", tone = "dark"
             }
           }}
           onPointerDown={(event) => event.stopPropagation()}
-          style={{ top: menuPosition.top, left: menuPosition.left }}
+          style={menuPosition ? { top: menuPosition.top, left: menuPosition.left } : { left: 0, top: 0, visibility: "hidden" }}
           className={[
             "motion-menu fixed z-50 w-52 overflow-hidden rounded-[var(--radius-lg)] border border-border/70 bg-surface p-1.5 text-right text-xs text-foreground shadow-[var(--shadow-menu)]",
           ].join(" ")}
@@ -135,4 +164,7 @@ export const contextMenuItemClasses =
   "motion-state flex min-h-11 w-full items-center justify-start gap-2 rounded-[var(--radius-md)] px-2.5 py-2 text-right text-xs font-semibold text-foreground hover:bg-surface-soft focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
 
 export const contextMenuDangerItemClasses =
-  "motion-state flex min-h-11 w-full items-center justify-start gap-2 rounded-[var(--radius-md)] px-2.5 py-2 text-right text-xs font-semibold text-danger hover:bg-danger-soft focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
+  "motion-state flex min-h-11 w-full items-center justify-start gap-2 rounded-[var(--radius-md)] px-2.5 py-2 text-right text-xs font-semibold text-[#8f241f] hover:bg-[#f4dfdc] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
+
+export const contextMenuDownloadItemClasses =
+  "motion-state flex min-h-11 w-full items-center justify-start gap-2 rounded-[var(--radius-md)] px-2.5 py-2 text-right text-xs font-semibold text-[#0f6f43] hover:bg-[#e2f3ea] focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]";
