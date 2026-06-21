@@ -94,7 +94,6 @@ export default async function AdminAiPage() {
       <Surface>
         <div className="border-b border-slate-100 px-5 py-3.5">
           <h2 className="text-sm font-semibold text-navy-950">پیکربندی تولید تصویر</h2>
-          <p className="mt-0.5 text-xs text-slate-500">تغییرات بدون نیاز به restart اعمال می‌شود.</p>
         </div>
         <form action={updateProviderSettingsAction} className="grid gap-4 p-5">
           <div className="grid max-w-2xl gap-4 sm:grid-cols-2">

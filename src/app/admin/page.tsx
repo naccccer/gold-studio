@@ -68,9 +68,9 @@ export default async function AdminPage() {
         title="نمای کلی"
         meta={
           allClear ? (
-            <span className="font-medium text-emerald-700">همه‌چیز آرام است؛ موردی منتظر اقدام نیست.</span>
+            <span className="font-medium text-emerald-700">بدون مورد فوری</span>
           ) : (
-            <span>مواردی منتظر اقدام شماست.</span>
+            <span>نیازمند اقدام</span>
           )
         }
       />

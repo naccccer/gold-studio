@@ -29,6 +29,9 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 - Curated style labels are simplified for users: social is "با جای متن", editorial is "با دکور", and cinematic is "سینمایی".
 - With-model necklace prompts now treat rear clasps as hidden hardware, so normal back clasps should not be moved into the visible neck or collarbone area.
 - Product-only generation prompts now explicitly remove source-photo hands, wrists, people, clothing, and selfie reflections while preserving product identity; human context remains reserved for explicitly wearable/model styles.
+- Image generation now routes hard user styles (`style_with_model` and `style_sample_reference`) to Pro image models first, keeps easier styles on Flash-first routing, and clamps configured 4K image settings back to 2K.
+- Admin style management now uploads style preview images directly with an inline preview instead of asking operators to paste image URLs.
+- Admin console copy is being kept terse and operational, with redundant helper text removed, style preview uploads in place, and style metrics moved into a focused admin stats tab.
 
 ## Next Priorities
 

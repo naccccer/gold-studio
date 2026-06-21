@@ -1,7 +1,13 @@
 import { generateStyledImageWithAvalai, generateTextImageWithAvalai } from "@/lib/ai/avalai";
 import { generateStyledImageWithLiara, generateTextImageWithLiara } from "@/lib/ai/liara";
 import { imageProviderLabel, type GeneratedImageResult } from "@/lib/ai/provider";
-import { getImageProviderAttemptOrder, getProviderSettings, type ProviderModelAttempt } from "@/lib/ai/provider-settings";
+import {
+  getImageProviderAttemptOrder,
+  getProviderSettings,
+  getRoutedImageProviderAttemptOrder,
+  resolveModelRoutingDecision,
+  type ProviderModelAttempt,
+} from "@/lib/ai/provider-settings";
 import { captureGenerationCreditReservation, logProviderEvent, releaseGenerationCreditReservation } from "@/lib/billing";
 import { db } from "@/lib/db";
 import { buildSampleReferenceVisionPromptContext, ensureStyleReferenceVision } from "@/lib/style-reference-vision";
@@ -114,6 +120,7 @@ function allModelsFailedError(errors: Array<{ attempt: ProviderModelAttempt; err
 
 async function generateImageWithModelFallback({
   projectId,
+  styleId,
   sourceBuffer,
   mimeType,
   supportingImages,
@@ -124,6 +131,7 @@ async function generateImageWithModelFallback({
   referenceUsed,
 }: {
   projectId: string;
+  styleId: string;
   sourceBuffer: Buffer;
   mimeType: string;
   supportingImages?: Array<{ buffer: Buffer; mimeType: string }> | null;
@@ -135,7 +143,15 @@ async function generateImageWithModelFallback({
 }): Promise<GeneratedImageResult> {
   const errors: Array<{ attempt: ProviderModelAttempt; error: unknown }> = [];
   const providerSettings = await getProviderSettings();
-  const attempts = getImageProviderAttemptOrder(providerSettings);
+  const routingContext = {
+    styleId,
+    referenceUsed,
+    supportingImageCount: supportingImages?.length ?? 0,
+    operation: "image.edit",
+  };
+  const routingDecision = resolveModelRoutingDecision(routingContext);
+  const routingDetail = `routing=${routingDecision.routing}; routingReason=${routingDecision.reason}`;
+  const attempts = getRoutedImageProviderAttemptOrder(providerSettings, routingContext);
 
   for (const [index, attempt] of attempts.entries()) {
     try {
@@ -159,7 +175,9 @@ async function generateImageWithModelFallback({
         status: "SUCCESS",
         model: generatedImage.model,
         retryCount: index,
-        statusDetail: `provider=${providerLabel}; outputPreset=${outputPreset}; supportingImages=${supportingImages?.length ?? 0}; reference=${referenceUsed ? "yes" : "no"}; fallbackAttempt=${index + 1}/${attempts.length}`,
+        statusDetail: `provider=${providerLabel}; outputPreset=${outputPreset}; supportingImages=${supportingImages?.length ?? 0}; reference=${
+          referenceUsed ? "yes" : "no"
+        }; ${routingDetail}; fallbackAttempt=${index + 1}/${attempts.length}`,
       });
       return generatedImage;
     } catch (error) {
@@ -172,7 +190,9 @@ async function generateImageWithModelFallback({
         status: "FAILED",
         model: attempt.model,
         retryCount: index,
-        statusDetail: `provider=${providerLabel}; supportingImages=${supportingImages?.length ?? 0}; fallbackAttempt=${index + 1}/${attempts.length}; next=${
+        statusDetail: `provider=${providerLabel}; supportingImages=${supportingImages?.length ?? 0}; ${routingDetail}; fallbackAttempt=${
+          index + 1
+        }/${attempts.length}; next=${
           index < attempts.length - 1 ? attemptLabel(attempts[index + 1]) : "none"
         }`,
         errorMessage: technicalErrorMessage(error, "خطا در تولید تصویر رخ داد."),
@@ -465,6 +485,7 @@ export async function processImageProject(projectId: string) {
     });
     const generatedImage = await generateImageWithModelFallback({
       projectId,
+      styleId: project.styleId,
       sourceBuffer: source.buffer,
       mimeType: source.mimeType,
       supportingImages,

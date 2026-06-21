@@ -135,9 +135,9 @@ export default async function AdminReferralsPage({ searchParams }: AdminReferral
                       </>
                     }
                   >
-                    <p className="mb-3 text-xs text-slate-500">
-                      {formatAdminDate(first.createdAt)} · سازنده {getUserDisplayName(first.createdByAdmin)}
-                      {first.note ? <span className="mt-1 block leading-6">{first.note}</span> : null}
+                    <p className="mb-3 truncate text-xs text-slate-500">
+                      {formatAdminDate(first.createdAt)} · {getUserDisplayName(first.createdByAdmin)}
+                      {first.note ? ` · ${first.note}` : ""}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {batchCodes.map((code) => (
@@ -201,7 +201,6 @@ export default async function AdminReferralsPage({ searchParams }: AdminReferral
         <Surface>
           <div className="border-b border-slate-100 px-5 py-3.5">
             <h2 className="text-sm font-semibold text-navy-950">معرفی کاربر به کاربر</h2>
-            <p className="mt-0.5 text-xs text-slate-500">پاداش دو طرف بعد از اولین خرید تاییدشده دعوت‌شده اعطا می‌شود.</p>
           </div>
           <ConsoleTable
             head={["دعوت‌کننده", "دعوت‌شده", "کد", "پاداش", "زمان"]}

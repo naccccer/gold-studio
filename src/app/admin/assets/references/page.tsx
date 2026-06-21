@@ -83,10 +83,7 @@ export default async function AdminReferenceAssetsPage({ searchParams }: AdminRe
 
   return (
     <>
-      <ConsoleHeader
-        title="عکس‌های نمونه کاربران"
-        meta={<span>تصاویر نمونه برای انتقال نور، زاویه و حال‌وهوا به خروجی.</span>}
-      />
+      <ConsoleHeader title="عکس‌های نمونه کاربران" />
 
       <TabNav
         tabs={[
@@ -109,7 +106,7 @@ export default async function AdminReferenceAssetsPage({ searchParams }: AdminRe
         <form className="flex items-center gap-2">
           <input type="hidden" name="status" value={status} />
           {vision ? <input type="hidden" name="vision" value={vision} /> : null}
-          <input name="q" defaultValue={q} placeholder="شناسه، مالک، صحنه، نور یا پس‌زمینه" className={`${inlineFieldClass} w-64`} />
+          <input name="q" defaultValue={q} placeholder="جست‌وجو" className={`${inlineFieldClass} w-64`} />
           <button className={`${btnSecondary} h-8`}>جست‌وجو</button>
         </form>
       </div>
@@ -189,7 +186,7 @@ function ReferenceDetailPanel({ asset }: { asset: ReferenceWithRelations }) {
         ) : asset.visionSceneDescription ? (
           <p className="rounded-lg bg-navy-25 px-3 py-2 text-xs leading-6 text-slate-600">{asset.visionSceneDescription}</p>
         ) : (
-          <p className="text-xs text-slate-400">هنوز با Vision تحلیل نشده است.</p>
+          <p className="text-xs text-slate-400">بدون تحلیل Vision</p>
         )}
 
         <KeyValueList

@@ -1,23 +1,19 @@
 import { db } from "@/lib/db";
 import { imageProvider, normalizeImageProvider, type ImageProvider } from "@/lib/ai/provider";
+import {
+  AVALAI_IMAGE_MODELS,
+  LIARA_IMAGE_MODELS,
+  providerImageModels,
+  providerImageModelsForRouting,
+  resolveModelRoutingDecision,
+  SUPPORTED_IMAGE_MODELS,
+  type ModelRoutingContext,
+  type ProviderModelAttempt,
+  type SupportedImageModel,
+} from "@/lib/ai/model-routing";
 
-export const LIARA_IMAGE_MODELS = [
-  "google/gemini-3-pro-image-preview",
-  "google/gemini-2.5-flash-image",
-  "openai/gpt-image-2",
-] as const;
-
-export const AVALAI_IMAGE_MODELS = [
-  "gemini-3-pro-image",
-  "gemini-3-pro-image-preview",
-  "gemini-3.1-flash-image",
-  "gemini-3.1-flash-image-preview",
-  "gpt-image-2",
-] as const;
-
-export const SUPPORTED_IMAGE_MODELS = [...LIARA_IMAGE_MODELS, ...AVALAI_IMAGE_MODELS] as const;
-
-export type SupportedImageModel = (typeof SUPPORTED_IMAGE_MODELS)[number];
+export { AVALAI_IMAGE_MODELS, LIARA_IMAGE_MODELS, resolveModelRoutingDecision, SUPPORTED_IMAGE_MODELS };
+export type { ModelRoutingContext, ProviderModelAttempt, SupportedImageModel };
 
 export type ProviderSettings = {
   imageProvider: ImageProvider;
@@ -59,10 +55,6 @@ async function ensureProviderSettingsTable() {
 function isProviderImageModel(value: string, provider: ImageProvider): value is SupportedImageModel {
   const models = provider === "avalai" ? AVALAI_IMAGE_MODELS : LIARA_IMAGE_MODELS;
   return (models as readonly string[]).includes(value);
-}
-
-function providerImageModels(provider: ImageProvider) {
-  return provider === "avalai" ? [...AVALAI_IMAGE_MODELS] : [...LIARA_IMAGE_MODELS];
 }
 
 function envImageModel(provider: ImageProvider) {
@@ -191,11 +183,6 @@ export function getImageModelAttemptOrder(settings: ProviderSettings) {
   return settings.autoFallback ? [settings.activeModel, ...settings.fallbackModels] : [settings.activeModel];
 }
 
-export type ProviderModelAttempt = {
-  provider: ImageProvider;
-  model: SupportedImageModel;
-};
-
 function isExpensiveGptModel(model: string) {
   return model.includes("gpt-image-2");
 }
@@ -218,6 +205,24 @@ export function getImageProviderAttemptOrder(settings: ProviderSettings): Provid
     provider: secondaryProvider,
     model,
   }));
+
+  return sortGptLast([...primaryAttempts, ...secondaryAttempts]);
+}
+
+function routedProviderAttempts(provider: ImageProvider, routing: ReturnType<typeof resolveModelRoutingDecision>["routing"]) {
+  return providerImageModelsForRouting(provider, routing).map((model) => ({
+    provider,
+    model,
+  }));
+}
+
+export function getRoutedImageProviderAttemptOrder(settings: ProviderSettings, context: ModelRoutingContext): ProviderModelAttempt[] {
+  const decision = resolveModelRoutingDecision(context);
+  const primaryAttempts = settings.autoFallback
+    ? routedProviderAttempts(settings.imageProvider, decision.routing)
+    : routedProviderAttempts(settings.imageProvider, decision.routing).slice(0, 1);
+  const secondaryProvider: ImageProvider = settings.imageProvider === "avalai" ? "liara" : "avalai";
+  const secondaryAttempts = routedProviderAttempts(secondaryProvider, decision.routing);
 
   return sortGptLast([...primaryAttempts, ...secondaryAttempts]);
 }

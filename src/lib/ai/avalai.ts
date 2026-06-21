@@ -1,4 +1,5 @@
 import { getOutputPresetSpec } from "@/lib/output-presets";
+import { clampNon4KImageSetting } from "@/lib/ai/model-routing";
 import type { GeneratedImageResult } from "@/lib/ai/provider";
 
 const DEFAULT_AVALAI_BASE_URL = "https://api.avalai.ir/v1";
@@ -118,7 +119,7 @@ function getAvalaiConfig() {
     apiKey,
     baseURL: readEnv("AVALAI_BASE_URL") || DEFAULT_AVALAI_BASE_URL,
     model: readEnv("AVALAI_IMAGE_MODEL") || DEFAULT_AVALAI_IMAGE_MODEL,
-    imageSize: readEnv("AVALAI_IMAGE_SIZE") || DEFAULT_AVALAI_IMAGE_SIZE,
+    imageSize: clampNon4KImageSetting(readEnv("AVALAI_IMAGE_SIZE"), DEFAULT_AVALAI_IMAGE_SIZE),
     openAIImageQuality: readEnv("AVALAI_OPENAI_IMAGE_QUALITY") || "high",
     responseFormat: readEnv("AVALAI_RESPONSE_FORMAT"),
     aspectRatio: readEnv("AVALAI_ASPECT_RATIO"),

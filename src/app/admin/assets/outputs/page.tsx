@@ -84,7 +84,7 @@ export default async function AdminOutputsPage({ searchParams }: AdminOutputsPag
     <>
       <ConsoleHeader
         title="خروجی‌های تولیدشده"
-        meta={<span>{faNum(totalOutputs)} خروجی موفق · بازبینی کیفیت نتیجه نهایی</span>}
+        meta={<span>{faNum(totalOutputs)} خروجی موفق</span>}
       />
 
       <TabNav
@@ -97,7 +97,7 @@ export default async function AdminOutputsPage({ searchParams }: AdminOutputsPag
       />
 
       <form className="flex items-center gap-2">
-        <input name="q" defaultValue={q} placeholder="عنوان پروژه، کاربر یا سبک" className={`${inlineFieldClass} w-64`} />
+        <input name="q" defaultValue={q} placeholder="جست‌وجو" className={`${inlineFieldClass} w-64`} />
         <button className={`${btnSecondary} h-8`}>جست‌وجو</button>
       </form>
 

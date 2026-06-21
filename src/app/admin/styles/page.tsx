@@ -7,14 +7,15 @@ import {
   btnDanger,
   btnPrimary,
   btnSecondary,
+  cellClass,
   checkboxClass,
   ConsoleHeader,
+  ConsoleTable,
   Disclosure,
   EmptyState,
   faNum,
   Field,
   fieldClass,
-  KeyValueList,
   StatusDot,
   Surface,
   TabNav,
@@ -28,6 +29,7 @@ import {
   updateStyleControlAction,
 } from "@/features/admin/actions";
 import { db } from "@/lib/db";
+import { StylePreviewUploadField } from "./style-preview-upload-field";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +42,7 @@ const controlTypeLabels: Record<ControlType, string> = {
 };
 
 const hiddenLegacyStyleIds = new Set(["style_warm_luxury"]);
+const defaultStylePreviewImageUrl = "/images/placeholders/jewelry/style-minimal.webp";
 
 function isEffectivelyUserVisible(style: { id: string; isActive: boolean; isUserVisible: boolean }) {
   return style.isActive && style.isUserVisible && !hiddenLegacyStyleIds.has(style.id);
@@ -63,7 +66,6 @@ export default async function AdminStylesPage({ searchParams }: AdminStylesPageP
   const styles = await db.creativeStyle.findMany({
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     include: {
-      category: true,
       controls: { orderBy: { sortOrder: "asc" } },
       variants: { orderBy: { sortOrder: "asc" } },
       _count: { select: { projects: true } },
@@ -71,6 +73,7 @@ export default async function AdminStylesPage({ searchParams }: AdminStylesPageP
   });
 
   const creating = params?.new === "1";
+  const showingStats = !creating && params?.tab === "stats";
   const selected = (!creating && styles.find((style) => style.id === params?.style)) || (creating ? null : styles[0] ?? null);
   const activeTab: TabKey = tabs.some((tab) => tab.key === params?.tab) ? (params?.tab as TabKey) : "overview";
   const visibleCount = styles.filter(isEffectivelyUserVisible).length;
@@ -79,7 +82,7 @@ export default async function AdminStylesPage({ searchParams }: AdminStylesPageP
     <>
       <ConsoleHeader
         title="کاتالوگ سبک‌ها"
-        meta={<span>{faNum(visibleCount)} سبک قابل استفاده از {faNum(styles.length)}</span>}
+        meta={<span>{faNum(visibleCount)} از {faNum(styles.length)} فعال</span>}
         actions={
           <Link href="/admin/styles?new=1" className={btnPrimary}>
             <Add className="h-4 w-4" />
@@ -88,9 +91,19 @@ export default async function AdminStylesPage({ searchParams }: AdminStylesPageP
         }
       />
 
+      <TabNav
+        tabs={[
+          { href: "/admin/styles", label: "سبک‌ها", active: !showingStats },
+          { href: "/admin/styles?tab=stats", label: "آمار", active: showingStats },
+        ]}
+      />
+
+      {showingStats ? <StylesStatsPanel styles={styles} /> : null}
+
+      {!showingStats ? (
       <div className="grid items-start gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
         <Surface>
-          <div className="max-h-[70vh] divide-y divide-slate-100 overflow-y-auto">
+          <div className="divide-y divide-slate-100">
             {styles.length === 0 ? (
               <div className="p-4">
                 <EmptyState title="هنوز سبکی ساخته نشده است." />
@@ -135,6 +148,7 @@ export default async function AdminStylesPage({ searchParams }: AdminStylesPageP
           </Surface>
         )}
       </div>
+      ) : null}
     </>
   );
 }
@@ -154,27 +168,28 @@ function CreateStylePanel({ nextSortOrder }: { nextSortOrder: number }) {
             <input name="name" required placeholder="مثلا پس‌زمینه سفید" className={fieldClass} />
           </Field>
           <Field label="ترتیب">
-            <input name="sortOrder" type="number" defaultValue={nextSortOrder} className={fieldClass} />
+            <input name="sortOrder" inputMode="numeric" defaultValue={nextSortOrder} className={fieldClass} />
           </Field>
         </div>
-        <Field label="توضیح کوتاه برای کاربر">
+        <Field label="توضیح UI">
           <input name="description" required className={fieldClass} />
         </Field>
         <Field label="پرامپت داخلی">
           <textarea name="prompt" required rows={5} dir="ltr" className={`${textareaClass} text-left font-mono text-xs leading-6`} />
         </Field>
-        <Field label="نشانی تصویر پیش‌نمایش" hint="در صورت خالی ماندن، تصویر پیش‌فرض استفاده می‌شود.">
-          <input
-            name="previewImageUrl"
-            defaultValue="/images/placeholders/jewelry/style-minimal.webp"
-            dir="ltr"
-            className={`${fieldClass} text-left`}
+        <div className="grid min-w-0 content-start gap-1.5 text-xs font-medium text-slate-600">
+          تصویر پیش‌نمایش
+          <StylePreviewUploadField
+            currentImageUrl={defaultStylePreviewImageUrl}
+            fallbackImageUrl={defaultStylePreviewImageUrl}
+            imageAlt="پیش‌نمایش سبک جدید"
+            hiddenUrlValue={defaultStylePreviewImageUrl}
           />
-        </Field>
+        </div>
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
           <label className="inline-flex items-center gap-2 text-xs font-medium text-navy-900">
             <input name="isAvailableToUsers" type="checkbox" className={checkboxClass} />
-            بعد از ساخت برای کاربران قابل استفاده باشد
+            نمایش به کاربران
           </label>
           <button className={btnPrimary}>
             <Add className="h-4 w-4" />
@@ -188,12 +203,46 @@ function CreateStylePanel({ nextSortOrder }: { nextSortOrder: number }) {
 
 type StyleWithRelations = Prisma.CreativeStyleGetPayload<{
   include: {
-    category: true;
     controls: true;
     variants: true;
     _count: { select: { projects: true } };
   };
 }>;
+
+function StylesStatsPanel({ styles }: { styles: StyleWithRelations[] }) {
+  return (
+    <Surface>
+      <ConsoleTable
+        head={["سبک", "وضعیت", "پروژه", "کنترل", "گونه", "ترتیب"]}
+        empty={<EmptyState title="سبکی برای آمار نیست." />}
+        minWidth={680}
+      >
+        {styles.map((style) => (
+          <tr key={style.id}>
+            <td className={cellClass}>
+              <Link href={`/admin/styles?style=${style.id}`} className="font-medium hover:text-navy-700 hover:underline">
+                {style.name}
+              </Link>
+              <p className="text-xs text-slate-400" dir="ltr">
+                {style.id}
+              </p>
+            </td>
+            <td className={cellClass}>
+              <StatusDot
+                status={isEffectivelyUserVisible(style) ? "ACTIVE" : "PAUSED"}
+                label={isEffectivelyUserVisible(style) ? "فعال" : "پنهان"}
+              />
+            </td>
+            <td className={`${cellClass} tabular-nums`}>{faNum(style._count.projects)}</td>
+            <td className={`${cellClass} tabular-nums`}>{faNum(style.controls.length)}</td>
+            <td className={`${cellClass} tabular-nums`}>{faNum(style.variants.length)}</td>
+            <td className={`${cellClass} tabular-nums`}>{faNum(style.sortOrder)}</td>
+          </tr>
+        ))}
+      </ConsoleTable>
+    </Surface>
+  );
+}
 
 function StyleDetail({ style, activeTab }: { style: StyleWithRelations; activeTab: TabKey }) {
   const visible = isEffectivelyUserVisible(style);
@@ -207,11 +256,8 @@ function StyleDetail({ style, activeTab }: { style: StyleWithRelations; activeTa
           </span>
           <div className="min-w-0 flex-1">
             <h2 className="truncate text-base font-semibold text-navy-950">{style.name}</h2>
-            <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-              <StatusDot status={visible ? "ACTIVE" : "PAUSED"} label={visible ? "قابل استفاده برای کاربر" : "پنهان از کاربر"} />
-              <span>{faNum(style._count.projects)} پروژه</span>
-              <span>{faNum(style.controls.length)} کنترل</span>
-              <span dir="ltr" className="text-slate-400">{style.id}</span>
+            <p className="mt-0.5 text-xs text-slate-500">
+              <StatusDot status={visible ? "ACTIVE" : "PAUSED"} label={visible ? "فعال" : "پنهان"} />
             </p>
           </div>
         </div>
@@ -261,23 +307,36 @@ function HiddenStyleFields({
 
 function OverviewTab({ style }: { style: StyleWithRelations }) {
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_240px]">
-      <form action={updateCreativeStyleAction} className="grid max-w-xl content-start gap-4">
+    <div className="grid gap-5">
+      <form action={updateCreativeStyleAction} className="grid content-start gap-5">
         <HiddenStyleFields style={style} except={["name", "description", "previewImageUrl", "sortOrder"]} />
-        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_110px]">
-          <Field label="نام سبک">
-            <input name="name" required defaultValue={style.name} className={fieldClass} />
-          </Field>
-          <Field label="ترتیب">
-            <input name="sortOrder" type="number" defaultValue={style.sortOrder} className={fieldClass} />
-          </Field>
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
+          <div className="grid min-w-0 flex-1 content-start gap-4">
+            <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_110px]">
+              <Field label="نام سبک">
+                <input name="name" required defaultValue={style.name} className={fieldClass} />
+              </Field>
+              <Field label="ترتیب">
+                <input name="sortOrder" inputMode="numeric" defaultValue={style.sortOrder} className={fieldClass} />
+              </Field>
+            </div>
+            <Field label="توضیح UI">
+              <input name="description" required defaultValue={style.description} className={fieldClass} />
+            </Field>
+          </div>
+          <div className="w-full shrink-0 lg:w-56">
+            <div className="grid min-w-0 content-start gap-1.5 text-xs font-medium text-slate-600">
+              تصویر پیش‌نمایش
+              <StylePreviewUploadField
+                currentImageUrl={style.previewImageUrl}
+                fallbackImageUrl={defaultStylePreviewImageUrl}
+                imageAlt={`پیش‌نمایش ${style.name}`}
+                hiddenUrlValue={style.previewImageUrl}
+                layout="stacked"
+              />
+            </div>
+          </div>
         </div>
-        <Field label="توضیح کوتاه در UI کاربر">
-          <input name="description" required defaultValue={style.description} className={fieldClass} />
-        </Field>
-        <Field label="نشانی تصویر پیش‌نمایش">
-          <input name="previewImageUrl" defaultValue={style.previewImageUrl} dir="ltr" className={`${fieldClass} text-left`} />
-        </Field>
         <div>
           <button className={btnPrimary}>
             <Save2 className="h-4 w-4" />
@@ -285,15 +344,6 @@ function OverviewTab({ style }: { style: StyleWithRelations }) {
           </button>
         </div>
       </form>
-      <div className="content-start">
-        <KeyValueList
-          items={[
-            { label: "دسته", value: style.category?.name ?? "بدون دسته" },
-            { label: "تعداد گونه", value: faNum(style.variants.length) },
-            { label: "پروژه‌های ساخته‌شده", value: faNum(style._count.projects) },
-          ]}
-        />
-      </div>
     </div>
   );
 }
@@ -367,18 +417,18 @@ function ControlFormFields({
           <input name="defaultValue" defaultValue={control?.defaultValue ?? ""} dir="ltr" className={`${fieldClass} text-left`} />
         </Field>
         <Field label="ترتیب">
-          <input name="sortOrder" type="number" defaultValue={control?.sortOrder ?? nextSortOrder ?? 10} className={fieldClass} />
+          <input name="sortOrder" inputMode="numeric" defaultValue={control?.sortOrder ?? nextSortOrder ?? 10} className={fieldClass} />
         </Field>
       </div>
-      <Field label="گزینه‌ها (برای نوع انتخابی)" hint='ساختار JSON مانند [{"value":"low","label":"کم"}]'>
+      <Field label="گزینه‌ها">
         <input name="optionsJson" defaultValue={control?.optionsJson ?? ""} dir="ltr" className={`${fieldClass} text-left font-mono`} />
       </Field>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="کمینه (برای نوع اسلایدی)">
-          <input name="minValue" type="number" defaultValue={control?.minValue ?? ""} className={fieldClass} />
+          <input name="minValue" inputMode="numeric" defaultValue={control?.minValue ?? ""} className={fieldClass} />
         </Field>
         <Field label="بیشینه (برای نوع اسلایدی)">
-          <input name="maxValue" type="number" defaultValue={control?.maxValue ?? ""} className={fieldClass} />
+          <input name="maxValue" inputMode="numeric" defaultValue={control?.maxValue ?? ""} className={fieldClass} />
         </Field>
       </div>
       <label className="inline-flex items-center gap-2 text-xs font-medium text-navy-900">
@@ -392,7 +442,6 @@ function ControlFormFields({
 function ControlsTab({ style }: { style: StyleWithRelations }) {
   return (
     <div className="grid gap-4">
-      <p className="text-xs text-slate-500">گزینه‌هایی که کاربر هنگام انتخاب این سبک می‌بیند. برای ویرایش، هر کنترل را باز کنید.</p>
       {style.controls.length === 0 ? (
         <EmptyState title="کنترلی برای این سبک ثبت نشده است." />
       ) : (
@@ -426,7 +475,7 @@ function ControlsTab({ style }: { style: StyleWithRelations }) {
                     action={deleteStyleControlAction}
                     fields={[{ name: "controlId", value: control.id }]}
                     title="کنترل حذف شود؟"
-                    description="این گزینه از فرم سبک کاربر حذف می‌شود."
+                    description="از فرم کاربر حذف می‌شود."
                     confirmLabel="حذف"
                     triggerLabel="حذف کنترل"
                     triggerClassName={btnDanger}
@@ -466,12 +515,7 @@ function VisibilityTab({ style, visible }: { style: StyleWithRelations; visible:
   return (
     <div className="grid max-w-xl gap-4">
       <div className="flex items-center justify-between gap-3 rounded-xl bg-navy-25 px-4 py-3">
-        <div>
-          <p className="text-sm font-medium text-navy-950">وضعیت فعلی</p>
-          <p className="mt-0.5 text-xs text-slate-500">
-            {visible ? "این سبک در فرم پروژه جدید کاربران نمایش داده می‌شود." : "این سبک از کاربران پنهان است."}
-          </p>
-        </div>
+        <p className="text-sm font-medium text-navy-950">وضعیت</p>
         <StatusDot status={visible ? "ACTIVE" : "PAUSED"} label={visible ? "قابل استفاده" : "پنهان"} />
       </div>
 
@@ -479,7 +523,7 @@ function VisibilityTab({ style, visible }: { style: StyleWithRelations; visible:
         <HiddenStyleFields style={style} except={["visibility"]} />
         <label className="inline-flex items-center gap-2 text-sm font-medium text-navy-900">
           <input name="isAvailableToUsers" type="checkbox" defaultChecked={visible} className={checkboxClass} />
-          قابل استفاده برای کاربران
+          نمایش به کاربران
         </label>
         <div>
           <button className={btnPrimary}>
@@ -491,7 +535,7 @@ function VisibilityTab({ style, visible }: { style: StyleWithRelations; visible:
 
       {hiddenLegacyStyleIds.has(style.id) ? (
         <p className="rounded-xl bg-amber-50 px-4 py-3 text-xs leading-6 text-amber-800">
-          این سبک به‌صورت سیستمی از کاربران پنهان شده و با تغییر گزینه بالا هم نمایش داده نمی‌شود.
+          این سبک سیستمی پنهان است.
         </p>
       ) : null}
     </div>

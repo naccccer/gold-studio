@@ -75,9 +75,9 @@ export default async function AdminSupportPage({ searchParams }: AdminSupportPag
         title="پشتیبانی"
         meta={
           openCount > 0 ? (
-            <span className="font-medium text-amber-700">{faNum(openCount)} تیکت باز منتظر پاسخ</span>
+            <span className="font-medium text-amber-700">{faNum(openCount)} تیکت باز</span>
           ) : (
-            <span>تیکت باز بدون پاسخی وجود ندارد</span>
+            <span>بدون تیکت باز</span>
           )
         }
         actions={

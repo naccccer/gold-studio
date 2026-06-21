@@ -1,5 +1,6 @@
 import type { ImagesResponse } from "openai/resources/images";
 import sharp from "sharp";
+import { clampNon4KImageSetting } from "@/lib/ai/model-routing";
 import { getOutputPresetSpec } from "@/lib/output-presets";
 
 const DEFAULT_LIARA_BASE_URL = "https://ai.liara.ir/api/69fe30c50bb427e049d327f6/v1";
@@ -103,8 +104,11 @@ function getLiaraConfig() {
     model:
       (liaraApiKey ? readEnv("LIARA_IMAGE_MODEL") : readEnv("LIARA_IMAGE_MODEL", ["GAPGPT_IMAGE_MODEL"])) ||
       DEFAULT_LIARA_IMAGE_MODEL,
-    size: (liaraApiKey ? readEnv("LIARA_IMAGE_SIZE") : readEnv("LIARA_IMAGE_SIZE", ["GAPGPT_IMAGE_SIZE"])) || DEFAULT_IMAGE_SIZE,
-    quality: readEnv("LIARA_IMAGE_QUALITY", ["GAPGPT_IMAGE_QUALITY"]) || DEFAULT_IMAGE_QUALITY,
+    size: clampNon4KImageSetting(
+      liaraApiKey ? readEnv("LIARA_IMAGE_SIZE") : readEnv("LIARA_IMAGE_SIZE", ["GAPGPT_IMAGE_SIZE"]),
+      DEFAULT_IMAGE_SIZE,
+    ),
+    quality: clampNon4KImageSetting(readEnv("LIARA_IMAGE_QUALITY", ["GAPGPT_IMAGE_QUALITY"]), DEFAULT_IMAGE_QUALITY),
   };
 }
 

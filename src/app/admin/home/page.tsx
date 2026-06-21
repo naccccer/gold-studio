@@ -43,7 +43,7 @@ export default async function AdminHomePage({ searchParams }: AdminHomePageProps
     <>
       <ConsoleHeader
         title="خانه اپ"
-        meta={<span>{faNum(activeCount)} اسلاید فعال برای کاروسل خانه</span>}
+        meta={<span>{faNum(activeCount)} اسلاید فعال</span>}
         actions={
           <Link href="/admin/home?new=1" className={btnPrimary}>
             <Add className="h-4 w-4" />
@@ -57,7 +57,7 @@ export default async function AdminHomePage({ searchParams }: AdminHomePageProps
           <div className="divide-y divide-slate-100">
             {slides.length === 0 ? (
               <div className="p-5">
-                <EmptyState title="هنوز اسلایدی ساخته نشده است.">تا زمان ساخت اسلاید، خانه از عکس‌های پیش‌فرض استفاده می‌کند.</EmptyState>
+                <EmptyState title="هنوز اسلایدی ساخته نشده است." />
               </div>
             ) : (
               slides.map((slide) => {
@@ -186,7 +186,6 @@ function CreateSlidePanel({ nextSortOrder }: { nextSortOrder: number }) {
             afterSrc={fallback.src}
             afterAlt={fallback.alt}
           />
-          <p className="text-xs leading-6 text-slate-500">بعد از ذخیره، پیش‌نمایش واقعی فایل‌های آپلودشده اینجا دیده می‌شود.</p>
         </div>
       </form>
     </Surface>
@@ -234,10 +233,10 @@ function EditSlidePanel({
             </Field>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="جایگزینی عکس قبل" hint="اگر خالی بماند عکس فعلی حفظ می‌شود.">
+            <Field label="عکس قبل جدید">
               <input name="beforeImage" type="file" accept="image/jpeg,image/png,image/webp" className={fieldClass} />
             </Field>
-            <Field label="جایگزینی عکس بعد" hint="اگر خالی بماند عکس فعلی حفظ می‌شود.">
+            <Field label="عکس بعد جدید">
               <input name="afterImage" type="file" accept="image/jpeg,image/png,image/webp" className={fieldClass} />
             </Field>
           </div>

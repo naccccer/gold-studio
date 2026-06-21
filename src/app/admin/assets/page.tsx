@@ -89,10 +89,7 @@ export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageP
 
   return (
     <>
-      <ConsoleHeader
-        title="تصاویر"
-        meta={<span>منبع، نمونه و خروجی در یک‌جا؛ کیفیت، تحلیل Vision و آرشیو.</span>}
-      />
+      <ConsoleHeader title="تصاویر" />
 
       <TabNav
         tabs={[
@@ -115,7 +112,7 @@ export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageP
         <form className="flex items-center gap-2">
           <input type="hidden" name="status" value={status} />
           {vision ? <input type="hidden" name="vision" value={vision} /> : null}
-          <input name="q" defaultValue={q} placeholder="شناسه، مالک، نوع محصول یا vision" className={`${inlineFieldClass} w-64`} />
+          <input name="q" defaultValue={q} placeholder="جست‌وجو" className={`${inlineFieldClass} w-64`} />
           <button className={`${btnSecondary} h-8`}>جست‌وجو</button>
         </form>
       </div>
@@ -205,7 +202,7 @@ function AssetDetailPanel({ asset }: { asset: AssetWithRelations }) {
             {asset.visionDescription || asset.visionShortTitle}
           </p>
         ) : (
-          <p className="text-xs text-slate-400">هنوز با Vision تحلیل نشده است.</p>
+          <p className="text-xs text-slate-400">بدون تحلیل Vision</p>
         )}
 
         <KeyValueList

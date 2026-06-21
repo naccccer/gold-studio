@@ -326,7 +326,7 @@ export function KeyValueList({ items }: { items: Array<{ label: string; value: R
 
 export function EmptyState({ title = "موردی برای نمایش نیست.", children }: { title?: string; children?: ReactNode }) {
   return (
-    <div className="grid justify-items-center gap-1 py-4 text-center">
+    <div className="grid justify-items-center gap-1 py-2 text-center">
       <p className="text-sm font-medium text-slate-500">{title}</p>
       {children ? <div className="text-xs leading-6 text-slate-400">{children}</div> : null}
     </div>

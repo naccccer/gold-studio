@@ -306,7 +306,7 @@ function PackagesTab({ packages }: { packages: BillingPackageWithCounts[] }) {
                       action={deleteBillingPackageAction}
                       fields={[{ name: "packageId", value: billingPackage.id }]}
                       title="بسته حذف شود؟"
-                      description="بسته از فهرست خرید کاربران حذف می‌شود؛ خریدهای قبلی دست‌نخورده می‌مانند."
+                      description="از خریدهای جدید حذف می‌شود."
                       confirmLabel="حذف"
                       triggerLabel="حذف بسته"
                       triggerClassName={btnDanger}
@@ -332,7 +332,6 @@ function SettingsTab({
     <Surface>
       <div className="border-b border-slate-100 px-5 py-4">
         <h2 className="text-sm font-semibold text-navy-950">کارت‌به‌کارت</h2>
-        <p className="mt-0.5 text-xs text-slate-500">این اطلاعات در مسیر خرید کاربر نمایش داده می‌شود.</p>
       </div>
       <form action={updatePaymentSettingsAction} className="grid max-w-xl gap-4 p-5">
         <Field label="نام صاحب کارت">
