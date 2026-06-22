@@ -22,6 +22,10 @@ export function isHumanWearableStyle(style: StylePolicyStyle) {
 }
 
 export function isProductOnlyStyle(style: StylePolicyStyle) {
+  if (style.id === "style_sample_reference") {
+    return false;
+  }
+
   return !isHumanWearableStyle(style);
 }
 
@@ -36,8 +40,6 @@ export function buildProductOnlyIsolationPrompt(input: {
 
   const isWornSource = input.visionAngle === "worn";
   const isWatch = input.productType === "ساعت";
-  const isSampleReference = input.style.id === "style_sample_reference";
-
   const instructions = [
     "Strict product-only extraction mode:",
     "The input photo may show the product worn or held on a hand, wrist, finger, neck, ear, or body. Treat all human presence and lifestyle context as temporary source-photo context, not as part of the desired output.",
@@ -58,12 +60,6 @@ export function buildProductOnlyIsolationPrompt(input: {
     instructions.push(
       "For a watch source photo on a wrist or hand, create a standalone watch product image at a front or three-quarter product angle. Show the case, dial, bezel, crown/buttons, lugs, strap or bracelet, clasp area when naturally visible, and material finish as a physically plausible product object. The watch must never remain on a wrist for this product-only style.",
       "Keep the dial geometry, markers, hands, sub-dials, display layout, bezel markings, crown/button placement, strap links or band texture, and case edges crisp and believable.",
-    );
-  }
-
-  if (isSampleReference) {
-    instructions.push(
-      "For the sample/reference style, use the sample image for scene, lighting, camera angle, surface, props, and mood only. If the sample/reference includes a hand, wrist, person, clothing, or body context, do not copy those human elements unless the selected style is explicitly a human/wearable style.",
     );
   }
 

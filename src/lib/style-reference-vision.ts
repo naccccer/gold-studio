@@ -56,16 +56,15 @@ export function buildSampleReferencePromptContext(input?: StyleReferencePromptMe
     );
 
   const promptParts = [
-    "Strict product-locked sample style mode:",
-    `Use ${productImageLabel} as the only product identity source. The product from ${productImageLabel} is locked: preserve its shape, proportions, silhouette, metal color, gemstone count and placement, visible chain or front-facing clasp design when naturally visible, watch face, engravings, material finish, and all visible details.`,
-    `Do not morph, redesign, recolor, simplify, re-stone, resize, replace, rotate into an incompatible pose, or reinterpret the user's product to fit image ${sampleImageNumber}.`,
+    "Strict sample-scene product replacement mode:",
+    `Use image ${sampleImageNumber} as the target scene and composition. Keep its non-product scene recognizable: hand, wrist, fingers, skin, body context, water, surface, props, lighting, camera angle, perspective, reflections, color palette, mood, and framing when present.`,
+    `Replace only the product/jewelry/accessory subject in image ${sampleImageNumber} with the user's product from ${productImageLabel}.`,
+    `Use ${productImageLabel} as the only product identity source. The uploaded product is locked: preserve its shape, proportions, silhouette, metal color, gemstone count and placement, visible chain or front-facing clasp design when naturally visible, watch face, engravings, material finish, and all visible details.`,
+    `Do not morph, redesign, recolor, simplify, re-stone, resize, replace, or reinterpret the user's product to fit image ${sampleImageNumber}. Adjust only scale, perspective, contact shadows, occlusion, and reflections needed to place the exact product believably in the sample scene.`,
     "Do not expose, invent, duplicate, or relocate hidden backs, rear clasps, closures, posts, undersides, or hardware just to show construction details.",
-    `Use image ${sampleImageNumber} only as a loose non-identity visual style reference for lighting, color mood, background/surface language, camera feel, reflections, water/fabric/stone/material atmosphere, and broad composition.`,
-    `Image ${sampleImageNumber} is not the target image. Do not copy its product, hand, wrist, fingers, skin, nails, face, body, clothing, pose, or any worn/held lifestyle subject into the result.`,
-    "For this product-only sample style, output a standalone premium product image. Human elements from either the source or sample are temporary context only and must be removed unless the selected style is explicitly a human model style.",
-    `If the sample is a worn or held product photo, extract only the visual mood and environment. Re-stage the user's product from ${productImageLabel} as a standalone product in a compatible scene, not on the sample hand/body.`,
-    `If there is any conflict between preserving product identity from ${productImageLabel} and matching image ${sampleImageNumber}, preserve product identity and reduce sample matching.`,
-    "The result should look like the user's exact product was newly photographed with the sample's broad art direction, not like the sample product or sample pose was edited.",
+    `Do not copy or retain the sample product identity from image ${sampleImageNumber}; only the sample scene around the product should remain.`,
+    `If there is conflict between preserving product identity from ${productImageLabel} and matching the sample product pose, preserve product identity and adapt the placement naturally within the sample scene.`,
+    "The result should look like the sample photo scene with the original sample product swapped for the user's exact uploaded product.",
   ];
 
   if (hasReliableMetadata && metadata) {

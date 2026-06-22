@@ -27,11 +27,12 @@ type GenerationPromptVision = {
 };
 
 const SAMPLE_REFERENCE_BASE_PROMPT = [
-  "Act as a senior jewelry product photographer using a sample image as art direction only.",
-  "Create a premium product-only image where the user's product photo is the locked product identity.",
-  "Borrow only the sample image's broad lighting, color mood, surface/background language, material atmosphere, and camera feel.",
-  "Do not copy the sample product, hand, wrist, body, pose, model, clothing, or lifestyle subject.",
-  "Do not force the user's product into a sample pose if doing so would alter the product shape, stones, metal, engravings, proportions, or material finish.",
+  "Act as a senior jewelry retoucher doing scene-preserving product replacement.",
+  "Use the selected sample image as the target scene, composition, camera angle, lighting, mood, background, surface, props, water/fabric/material atmosphere, and non-product context.",
+  "Replace only the product/jewelry/accessory in the sample scene with the user's uploaded product.",
+  "Keep the sample scene recognizable, including hand, wrist, body, water, surface, reflections, props, and pose when they are part of the sample composition.",
+  "The user's uploaded product is the locked identity source: preserve its exact shape, stones, metal, engravings, proportions, silhouette, and material finish.",
+  "Do not copy the sample product identity and do not redesign the uploaded product to fit the sample.",
 ].join(" ");
 
 function getCompositionInstruction(productType?: string | null, visionAngle?: string | null, options?: { isHumanModelStyle?: boolean }) {

@@ -443,7 +443,7 @@ function buildImageContent({
   if (referenceBuffer) {
     content.push({
       type: "text",
-      text: "Style reference image only. This is not the target image. Use only broad lighting, color mood, background/surface language, material atmosphere, and camera feel. Do not copy its product, hand, wrist, fingers, skin, nails, face, body, clothing, pose, model, or worn/held lifestyle subject.",
+      text: "Sample scene reference. Keep this image's non-product scene recognizable, including hand, wrist, fingers, skin, water, surface, props, lighting, reflections, camera angle, and pose when present. Replace only the sample product/jewelry/accessory with the uploaded product identity from the primary product reference. Do not copy the sample product identity.",
     });
     content.push({ type: "image_url", image_url: { url: toDataUrl(referenceBuffer, referenceMimeType || "image/jpeg") } });
   }
