@@ -20,6 +20,7 @@ import { pickVisionTitle, retryProjectVisionTitle } from "@/lib/product-vision";
 import { normalizeProductType } from "@/lib/product-types";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { deleteStorageObject, isAllowedStorageKey, readStorageObject } from "@/lib/storage";
+import { createOrFindStyleReferenceFromReadySample } from "@/lib/style-reference-ready-samples";
 import { getStyleForGeneration } from "@/lib/styles";
 import {
   saveStyleReferenceFile,
@@ -141,6 +142,11 @@ async function resolveReferenceAssetForStyle(styleId: string, formData: FormData
     }
 
     return { id: referenceAsset.id };
+  }
+
+  const readySampleId = String(formData.get("readySampleId") ?? "").trim();
+  if (readySampleId) {
+    return createOrFindStyleReferenceFromReadySample(userId, readySampleId);
   }
 
   const referenceImage = formData

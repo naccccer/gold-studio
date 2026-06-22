@@ -19,6 +19,7 @@ import { analyzeAndStoreProductAssetVision, ensureProductAssetVision, pickVision
 import { DEFAULT_PRODUCT_TYPE, normalizeProductType } from "@/lib/product-types";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { deleteStorageObject } from "@/lib/storage";
+import { createOrFindStyleReferenceFromReadySample } from "@/lib/style-reference-ready-samples";
 import { getStyleForGeneration } from "@/lib/styles";
 import { saveStyleReferenceFile, saveStyleReferenceFromStoredObject, saveUploadedFile } from "@/lib/uploads";
 
@@ -39,6 +40,16 @@ async function resolveReferenceAssetForBatch(styleId: string, formData: FormData
     }
 
     return { id: referenceAsset.id };
+  }
+
+  const readySampleId = String(formData.get("readySampleId") ?? "").trim();
+  if (readySampleId) {
+    const asset = await createOrFindStyleReferenceFromReadySample(userId, readySampleId);
+    if ("error" in asset) {
+      throw new Error(asset.error);
+    }
+
+    return { id: asset.id };
   }
 
   const referenceImage = formData

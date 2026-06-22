@@ -36,8 +36,16 @@ export type BatchStyleReference = {
   originalName: string | null;
 };
 
+export type BatchReadyStyleReference = {
+  id: string;
+  fileUrl: string;
+  title: string;
+  alt: string;
+};
+
 type GalleryBatchNewScreenProps = {
   assets: BatchSourceAsset[];
+  readyStyleReferences: BatchReadyStyleReference[];
   styleReferences: BatchStyleReference[];
   styles: StyleOption[];
   availableCredits: number;
@@ -128,6 +136,7 @@ function getResolvedStyleControlValue(control: StyleControl, values: Record<stri
 
 export function GalleryBatchNewScreen({
   assets,
+  readyStyleReferences,
   styleReferences,
   styles,
   availableCredits,
@@ -140,6 +149,7 @@ export function GalleryBatchNewScreen({
   const defaultStyle = styles[0];
   const [selectedStyle, setSelectedStyle] = useState(defaultStyle?.id ?? "");
   const [selectedReference, setSelectedReference] = useState<BatchStyleReference | null>(null);
+  const [selectedReadySampleId, setSelectedReadySampleId] = useState<string | null>(null);
   const [referenceUploadPreview, setReferenceUploadPreview] = useState<string | null>(null);
   const [styleControlValues, setStyleControlValues] = useState<Record<string, string>>(() => getInitialStyleControlValues(defaultStyle));
   const [openStyleControl, setOpenStyleControl] = useState<string | null>(null);
@@ -201,7 +211,18 @@ export function GalleryBatchNewScreen({
       input.value = "";
     }
     setReferenceUploadPreview(null);
+    setSelectedReadySampleId(null);
     setSelectedReference(reference);
+  }
+
+  function selectReadyReference(reference: BatchReadyStyleReference) {
+    const input = document.getElementById("batch-reference-file-input");
+    if (input instanceof HTMLInputElement) {
+      input.value = "";
+    }
+    setReferenceUploadPreview(null);
+    setSelectedReference(null);
+    setSelectedReadySampleId(reference.id);
   }
 
   function setStyleControlValue(key: string, value: string) {
@@ -234,6 +255,7 @@ export function GalleryBatchNewScreen({
           <input key={control.key} type="hidden" name={`styleControl_${control.key}`} value={getResolvedStyleControlValue(control, styleControlValues)} />
         ))}
         {selectedReference ? <input type="hidden" name="referenceAssetId" value={selectedReference.id} /> : null}
+        {selectedReadySampleId ? <input type="hidden" name="readySampleId" value={selectedReadySampleId} /> : null}
         <input
           id="batch-reference-file-input"
           name="referenceImage"
@@ -243,6 +265,7 @@ export function GalleryBatchNewScreen({
           onChange={(event) => {
             const file = event.currentTarget.files?.[0] ?? null;
             setSelectedReference(null);
+            setSelectedReadySampleId(null);
             setReferenceUploadPreview((current) => {
               if (current) {
                 URL.revokeObjectURL(current);
@@ -519,9 +542,40 @@ export function GalleryBatchNewScreen({
                     آپلود
                   </label>
                 </div>
-                {styleReferences.length > 0 ? (
+                {readyStyleReferences.length > 0 || styleReferences.length > 0 ? (
                   <div className="grid grid-cols-4 gap-3">
-                    {styleReferences.slice(0, 8).map((reference) => {
+                    {readyStyleReferences.map((reference) => {
+                      const checked = selectedReadySampleId === reference.id;
+                      const title = reference.title;
+
+                      return (
+                        <button
+                          key={`ready-${reference.id}`}
+                          type="button"
+                          onClick={() => selectReadyReference(reference)}
+                          aria-label={`انتخاب ${title}`}
+                          className="text-right"
+                        >
+                          <JewelryImageFrame aspect="square" selected={checked} treatment="quiet" className="rounded-[1rem]">
+                            <SafeJewelryImage
+                              src={reference.fileUrl}
+                              fallbackSrc={uploadPreview.src}
+                              fallbackAlt={uploadPreview.alt}
+                              alt={reference.alt}
+                              fill
+                              className="object-cover"
+                              sizes="120px"
+                            />
+                            {checked ? (
+                              <span className="absolute left-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-surface">
+                                <TickCircle aria-hidden={true} className="h-3.5 w-3.5" />
+                              </span>
+                            ) : null}
+                          </JewelryImageFrame>
+                        </button>
+                      );
+                    })}
+                    {styleReferences.map((reference) => {
                       const checked = selectedReference?.id === reference.id;
                       const title = reference.title || reference.originalName || "عکس نمونه";
 
@@ -583,7 +637,7 @@ export function GalleryBatchNewScreen({
                 بازگشت
               </Button>
               {hasEnoughCredits ? (
-                <Button type="submit" disabled={!selectedStyleData || (isSampleReferenceStyle && !selectedReference && !referenceUploadPreview)} variant="studio-primary" className="h-12 w-full">
+                <Button type="submit" disabled={!selectedStyleData || (isSampleReferenceStyle && !selectedReference && !selectedReadySampleId && !referenceUploadPreview)} variant="studio-primary" className="h-12 w-full">
                   شروع گروهی
                   <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-studio-control/15 bg-studio-control/12 px-2 text-[11px] font-bold text-studio-control" aria-label={`${requiredCredits.toLocaleString("fa-IR")} اعتبار`}>
                     {requiredCredits.toLocaleString("fa-IR")}

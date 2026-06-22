@@ -2,6 +2,7 @@ import { PageShell } from "@/components/ui/page-shell";
 import {
   NewProjectForm,
   type GalleryAssetOption,
+  type ReadyStyleReferenceOption,
   type StyleReferenceOption,
 } from "@/features/projects/components/new-project-form";
 import type { ProjectFormState } from "@/features/projects/actions";
@@ -13,6 +14,7 @@ type NewProjectScreenProps = {
     formData: FormData,
   ) => Promise<ProjectFormState>;
   galleryAssets: GalleryAssetOption[];
+  readyStyleReferences: ReadyStyleReferenceOption[];
   styleReferences: StyleReferenceOption[];
   styles: StyleOption[];
   selectedAssetId?: string;
@@ -26,6 +28,7 @@ type NewProjectScreenProps = {
 export function NewProjectScreen({
   action,
   galleryAssets,
+  readyStyleReferences,
   styleReferences,
   styles,
   selectedAssetId,
@@ -40,6 +43,7 @@ export function NewProjectScreen({
       <NewProjectForm
         action={action}
         galleryAssets={galleryAssets}
+        readyStyleReferences={readyStyleReferences}
         styleReferences={styleReferences}
         styles={styles}
         selectedAssetId={selectedAssetId}

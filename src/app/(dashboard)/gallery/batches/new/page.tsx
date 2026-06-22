@@ -8,7 +8,9 @@ import {
 import { requireUserSession } from "@/lib/auth/session";
 import { getAvailableGenerationCredits } from "@/lib/billing";
 import { db } from "@/lib/db";
+import { getReadyStyleReferenceSamples } from "@/lib/ready-style-reference-samples";
 import { storagePublicUrl } from "@/lib/storage";
+import { READY_SAMPLE_ORIGINAL_NAME_PREFIX } from "@/lib/style-reference-ready-samples";
 import { getUserVisibleStyles } from "@/lib/styles";
 
 export default async function NewGalleryBatchPage({
@@ -24,7 +26,7 @@ export default async function NewGalleryBatchPage({
     notFound();
   }
 
-  const [assets, styleReferences, styles, availableCredits] = await Promise.all([
+  const [assets, styleReferences, readySamples, styles, availableCredits] = await Promise.all([
     db.productAsset.findMany({
       where: {
         id: { in: assetIds },
@@ -52,6 +54,7 @@ export default async function NewGalleryBatchPage({
         originalName: true,
       },
     }),
+    getReadyStyleReferenceSamples(),
     getUserVisibleStyles(),
     getAvailableGenerationCredits(session.userId),
   ]);
@@ -67,7 +70,9 @@ export default async function NewGalleryBatchPage({
     originalName: asset.originalName,
     productType: asset.productType,
   }));
-  const displayStyleReferences: BatchStyleReference[] = styleReferences.map((asset) => ({
+  const displayStyleReferences: BatchStyleReference[] = styleReferences
+    .filter((asset) => !asset.originalName?.startsWith(READY_SAMPLE_ORIGINAL_NAME_PREFIX))
+    .map((asset) => ({
     id: asset.id,
     fileUrl: storagePublicUrl(asset.storageKey),
     title: asset.title,
@@ -77,6 +82,12 @@ export default async function NewGalleryBatchPage({
   return (
     <GalleryBatchNewScreen
       assets={displayAssets}
+      readyStyleReferences={readySamples.map((sample) => ({
+        id: sample.id,
+        fileUrl: sample.fileUrl,
+        title: sample.title,
+        alt: sample.alt,
+      }))}
       styleReferences={displayStyleReferences}
       styles={styles}
       availableCredits={availableCredits}

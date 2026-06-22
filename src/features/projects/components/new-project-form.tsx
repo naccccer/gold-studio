@@ -56,12 +56,20 @@ export type StyleReferenceOption = {
   originalName: string | null;
 };
 
+export type ReadyStyleReferenceOption = {
+  id: string;
+  fileUrl: string;
+  title: string;
+  alt: string;
+};
+
 type NewProjectFormProps = {
   action: (
     prevState: ProjectFormState,
     formData: FormData,
   ) => Promise<ProjectFormState>;
   galleryAssets: GalleryAssetOption[];
+  readyStyleReferences: ReadyStyleReferenceOption[];
   styleReferences: StyleReferenceOption[];
   selectedAssetId?: string;
   selectedReferenceId?: string;
@@ -192,6 +200,7 @@ function getResolvedStyleControlValue(control: StyleControl, values: Record<stri
 export function NewProjectForm({
   action,
   galleryAssets,
+  readyStyleReferences,
   styleReferences,
   selectedAssetId,
   selectedReferenceId,
@@ -229,6 +238,7 @@ export function NewProjectForm({
   const [outputPreset, setOutputPreset] = useState<OutputPresetId>(defaultOutputPreset);
   const [selectedStyle, setSelectedStyle] = useState(defaultStyle?.id ?? "");
   const [selectedReference, setSelectedReference] = useState<StyleReferenceOption | null>(explicitSelectedReference);
+  const [selectedReadySampleId, setSelectedReadySampleId] = useState<string | null>(null);
   const [referenceUploadPreview, setReferenceUploadPreview] = useState<string | null>(null);
   const [styleControlValues, setStyleControlValues] = useState<Record<string, string>>(() => getInitialStyleControlValues(defaultStyle));
   const [openStyleControl, setOpenStyleControl] = useState<string | null>(null);
@@ -261,7 +271,7 @@ export function NewProjectForm({
   const shouldOfferSupportingOnSizeStep = Boolean(explicitSelectedAsset);
   const canContinue = hasSource && !sourcePreparing && !sourceError;
   const canSubmit = Boolean(selectedStyleData) && canContinue;
-  const canSubmitWithReference = canSubmit && (!isSampleReferenceStyle || Boolean(selectedReference || referenceUploadPreview));
+  const canSubmitWithReference = canSubmit && (!isSampleReferenceStyle || Boolean(selectedReference || selectedReadySampleId || referenceUploadPreview));
   const canAddSupportingAsset = hasSource && supportingAssets.length < MAX_SUPPORTING_PRODUCT_IMAGES && !sourcePreparing;
   const shouldShowBillingShortcut = state.error === NO_CREDITS_ERROR;
 
@@ -390,7 +400,18 @@ export function NewProjectForm({
       input.value = "";
     }
     setReferenceUploadPreview(null);
+    setSelectedReadySampleId(null);
     setSelectedReference(reference);
+  }
+
+  function selectReadyReference(reference: ReadyStyleReferenceOption) {
+    const input = document.getElementById("project-reference-file-input");
+    if (input instanceof HTMLInputElement) {
+      input.value = "";
+    }
+    setReferenceUploadPreview(null);
+    setSelectedReference(null);
+    setSelectedReadySampleId(reference.id);
   }
 
   function setStyleControlValue(key: string, value: string) {
@@ -465,6 +486,7 @@ export function NewProjectForm({
         <input key={asset.id} type="hidden" name="supportingAssetId" value={asset.id} />
       ))}
       {selectedReference ? <input type="hidden" name="referenceAssetId" value={selectedReference.id} /> : null}
+      {selectedReadySampleId ? <input type="hidden" name="readySampleId" value={selectedReadySampleId} /> : null}
       <input type="hidden" name="productType" value={productType} />
 
       <input
@@ -493,6 +515,7 @@ export function NewProjectForm({
         onChange={(event) => {
           const file = event.currentTarget.files?.[0] ?? null;
           setSelectedReference(null);
+          setSelectedReadySampleId(null);
           setReferenceUploadPreview((current) => {
             if (current) {
               URL.revokeObjectURL(current);
@@ -938,9 +961,40 @@ export function NewProjectForm({
                   آپلود
                 </label>
               </div>
-              {styleReferences.length > 0 ? (
+              {readyStyleReferences.length > 0 || styleReferences.length > 0 ? (
                 <div className="grid grid-cols-4 gap-3">
-                  {styleReferences.slice(0, 8).map((reference) => {
+                  {readyStyleReferences.map((reference) => {
+                    const checked = selectedReadySampleId === reference.id;
+                    const title = reference.title;
+
+                    return (
+                      <button
+                        key={`ready-${reference.id}`}
+                        type="button"
+                        onClick={() => selectReadyReference(reference)}
+                        aria-label={`انتخاب ${title}`}
+                        className="text-right"
+                      >
+                        <JewelryImageFrame aspect="square" selected={checked} treatment="quiet" className="rounded-[1rem]">
+                          <SafeJewelryImage
+                            src={reference.fileUrl}
+                            alt={reference.alt}
+                            fallbackSrc={uploadPreview.src}
+                            fallbackAlt={uploadPreview.alt}
+                            fill
+                            className="object-cover"
+                            sizes="120px"
+                          />
+                          {checked ? (
+                            <span className="absolute left-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-surface">
+                              <TickCircle aria-hidden={true} className="h-3.5 w-3.5" />
+                            </span>
+                          ) : null}
+                        </JewelryImageFrame>
+                      </button>
+                    );
+                  })}
+                  {styleReferences.map((reference) => {
                     const checked = selectedReference?.id === reference.id;
                     const title = reference.title || reference.originalName || "عکس نمونه";
 

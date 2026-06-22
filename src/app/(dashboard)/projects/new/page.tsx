@@ -2,7 +2,9 @@ import { createProjectAction } from "@/features/projects/actions";
 import { NewProjectScreen } from "@/features/projects/screens/new-project-screen";
 import { requireUserSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { getReadyStyleReferenceSamples } from "@/lib/ready-style-reference-samples";
 import { storagePublicUrl } from "@/lib/storage";
+import { READY_SAMPLE_ORIGINAL_NAME_PREFIX } from "@/lib/style-reference-ready-samples";
 import { getUserVisibleStyles } from "@/lib/styles";
 
 export default async function NewProjectPage({
@@ -12,7 +14,7 @@ export default async function NewProjectPage({
 }) {
   const session = await requireUserSession();
   const params = await searchParams;
-  const [galleryAssets, styleReferences, selectedStyleReference, styles, outputSettings] = await Promise.all([
+  const [galleryAssets, styleReferences, selectedStyleReference, readySamples, styles, outputSettings] = await Promise.all([
     db.productAsset.findMany({
       where: { userId: session.userId, status: "READY", archivedAt: null },
       orderBy: { createdAt: "desc" },
@@ -48,6 +50,7 @@ export default async function NewProjectPage({
           },
         })
       : Promise.resolve(null),
+    getReadyStyleReferenceSamples(),
     getUserVisibleStyles(),
     db.userOutputSettings.findUnique({ where: { userId: session.userId } }),
   ]);
@@ -62,12 +65,21 @@ export default async function NewProjectPage({
     selectedStyleReference && !styleReferences.some((asset) => asset.id === selectedStyleReference.id)
       ? [selectedStyleReference, ...styleReferences]
       : styleReferences;
+  const visibleStyleReferences = resolvedStyleReferences.filter(
+    (asset) => !asset.originalName?.startsWith(READY_SAMPLE_ORIGINAL_NAME_PREFIX) || asset.id === params?.referenceAssetId,
+  );
 
   return (
     <NewProjectScreen
       action={createProjectAction}
       galleryAssets={galleryAssets.map((asset) => ({ ...asset, fileUrl: storagePublicUrl(asset.storageKey) }))}
-      styleReferences={resolvedStyleReferences.map((asset) => ({ ...asset, fileUrl: storagePublicUrl(asset.storageKey) }))}
+      readyStyleReferences={readySamples.map((sample) => ({
+        id: sample.id,
+        fileUrl: sample.fileUrl,
+        title: sample.title,
+        alt: sample.alt,
+      }))}
+      styleReferences={visibleStyleReferences.map((asset) => ({ ...asset, fileUrl: storagePublicUrl(asset.storageKey) }))}
       styles={styles}
       selectedAssetId={params?.assetId}
       selectedReferenceId={params?.referenceAssetId}

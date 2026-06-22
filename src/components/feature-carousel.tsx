@@ -51,7 +51,7 @@ export const FeatureCarousel = React.forwardRef<HTMLDivElement, FeatureCarouselP
 
     React.useEffect(() => {
       if (images.length === 0 || isDragging) return;
-      const delay = currentPhase === "after" ? 3200 : 2000;
+      const delay = currentPhase === "after" ? 3200 : 1050;
       const timer = window.setTimeout(() => {
         if (currentPhase === "before" && images[currentIndex]?.beforeSrc) {
           setSlidePhases((phases) => ({ ...phases, [currentIndex]: "after" }));
