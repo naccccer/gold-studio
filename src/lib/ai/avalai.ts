@@ -441,7 +441,10 @@ function buildImageContent({
   }
 
   if (referenceBuffer) {
-    content.push({ type: "text", text: "Style reference image. Use only its lighting, staging, mood, and composition. Do not copy its product." });
+    content.push({
+      type: "text",
+      text: "Style reference image only. This is not the target image. Use only broad lighting, color mood, background/surface language, material atmosphere, and camera feel. Do not copy its product, hand, wrist, fingers, skin, nails, face, body, clothing, pose, model, or worn/held lifestyle subject.",
+    });
     content.push({ type: "image_url", image_url: { url: toDataUrl(referenceBuffer, referenceMimeType || "image/jpeg") } });
   }
 

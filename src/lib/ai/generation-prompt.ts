@@ -26,6 +26,14 @@ type GenerationPromptVision = {
   visionAngle?: string | null;
 };
 
+const SAMPLE_REFERENCE_BASE_PROMPT = [
+  "Act as a senior jewelry product photographer using a sample image as art direction only.",
+  "Create a premium product-only image where the user's product photo is the locked product identity.",
+  "Borrow only the sample image's broad lighting, color mood, surface/background language, material atmosphere, and camera feel.",
+  "Do not copy the sample product, hand, wrist, body, pose, model, clothing, or lifestyle subject.",
+  "Do not force the user's product into a sample pose if doing so would alter the product shape, stones, metal, engravings, proportions, or material finish.",
+].join(" ");
+
 function getCompositionInstruction(productType?: string | null, visionAngle?: string | null, options?: { isHumanModelStyle?: boolean }) {
   const isWatch = productType === "ساعت";
   const isWorn = visionAngle === "worn";
@@ -112,7 +120,8 @@ export function buildGenerationPrompt({
   productImageCount?: number;
 }) {
   const outputPreset = normalizeOutputPreset(formData.get("outputPreset"));
-  const promptParts = [style.prompt, getOutputPresetSpec(outputPreset).instruction];
+  const baseStylePrompt = style.id === "style_sample_reference" ? SAMPLE_REFERENCE_BASE_PROMPT : style.prompt;
+  const promptParts = [baseStylePrompt, getOutputPresetSpec(outputPreset).instruction];
   const visionContext = vision ? buildVisionPromptContext(vision) : "";
   const styleControlPrompt = buildStyleControlPrompt(style, formData);
   const includesHumanModel = isHumanWearableStyle(style);

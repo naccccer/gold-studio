@@ -4,6 +4,7 @@ import { Buffer } from "node:buffer";
 import ts from "typescript";
 
 const source = await readFile(new URL("../src/lib/ai/style-policy.ts", import.meta.url), "utf8");
+const sampleReferenceSource = await readFile(new URL("../src/lib/style-reference-vision.ts", import.meta.url), "utf8");
 const { outputText } = ts.transpileModule(source, {
   compilerOptions: {
     module: ts.ModuleKind.ES2022,
@@ -46,5 +47,11 @@ const sampleReferencePrompt = buildProductOnlyIsolationPrompt({
   visionAngle: "worn",
 });
 assert.match(sampleReferencePrompt, /sample\/reference includes a hand, wrist, person/i);
+
+assert.match(sampleReferenceSource, /product.*locked/i, "sample style should lock product identity");
+assert.match(sampleReferenceSource, /Do not copy.*hand, wrist, fingers, skin/i, "sample style should reject sample human/product copying");
+assert.match(sampleReferenceSource, /standalone premium product image/i, "sample style should stay product-only");
+assert.match(sampleReferenceSource, /preserve product identity and reduce sample matching/i, "product identity should win over sample matching");
+assert.doesNotMatch(sampleReferenceSource, /exactly where the sample product\/subject sits/i, "sample style must not force exact sample subject replacement");
 
 console.log("Prompt policy checks passed.");

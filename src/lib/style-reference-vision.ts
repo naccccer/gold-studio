@@ -56,13 +56,16 @@ export function buildSampleReferencePromptContext(input?: StyleReferencePromptMe
     );
 
   const promptParts = [
-    "Strict sample-photo replacement mode:",
-    `Use ${productImageLabel} as the absolute product identity source. Preserve the user's product shape, proportions, silhouette, metal color, gemstone count and placement, visible chain or front-facing clasp design when naturally visible, watch face, engravings, material finish, and all visible details.`,
+    "Strict product-locked sample style mode:",
+    `Use ${productImageLabel} as the only product identity source. The product from ${productImageLabel} is locked: preserve its shape, proportions, silhouette, metal color, gemstone count and placement, visible chain or front-facing clasp design when naturally visible, watch face, engravings, material finish, and all visible details.`,
+    `Do not morph, redesign, recolor, simplify, re-stone, resize, replace, rotate into an incompatible pose, or reinterpret the user's product to fit image ${sampleImageNumber}.`,
     "Do not expose, invent, duplicate, or relocate hidden backs, rear clasps, closures, posts, undersides, or hardware just to show construction details.",
-    `Use image ${sampleImageNumber} only as the scene/style template. Preserve its setup, camera angle, perspective, product placement, framing, surface, background, props, lighting direction, shadow behavior, reflections, color palette, and mood as closely as possible.`,
-    `Remove, ignore, and do not copy the sample product identity from image ${sampleImageNumber}. Place the user's product from ${productImageLabel} exactly where the sample product/subject sits in image ${sampleImageNumber}, adapted only as needed for realistic scale, contact shadows, perspective, and material reflections.`,
-    "The result should look as if the user's product was physically photographed in the sample environment with the same lighting and camera setup.",
-    `If there is conflict between product identity and sample scene, product identity from ${productImageLabel} wins; scene, light, angle, and composition from image ${sampleImageNumber} should still be followed as closely as possible.`,
+    `Use image ${sampleImageNumber} only as a loose non-identity visual style reference for lighting, color mood, background/surface language, camera feel, reflections, water/fabric/stone/material atmosphere, and broad composition.`,
+    `Image ${sampleImageNumber} is not the target image. Do not copy its product, hand, wrist, fingers, skin, nails, face, body, clothing, pose, or any worn/held lifestyle subject into the result.`,
+    "For this product-only sample style, output a standalone premium product image. Human elements from either the source or sample are temporary context only and must be removed unless the selected style is explicitly a human model style.",
+    `If the sample is a worn or held product photo, extract only the visual mood and environment. Re-stage the user's product from ${productImageLabel} as a standalone product in a compatible scene, not on the sample hand/body.`,
+    `If there is any conflict between preserving product identity from ${productImageLabel} and matching image ${sampleImageNumber}, preserve product identity and reduce sample matching.`,
+    "The result should look like the user's exact product was newly photographed with the sample's broad art direction, not like the sample product or sample pose was edited.",
   ];
 
   if (hasReliableMetadata && metadata) {
