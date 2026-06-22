@@ -30,6 +30,14 @@ export type StyleReferenceVisionMetadata = {
   confidence: number;
 };
 
+export type QualityReviewVisionMetadata = {
+  identityScore: number;
+  severity: "low" | "medium" | "high";
+  recommendation: "APPROVE" | "REVIEW" | "REJECT";
+  summary: string | null;
+  differences: string[];
+};
+
 type AnalyzeProductImageInput = {
   sourceBuffer: Buffer;
   mimeType: string;
@@ -162,6 +170,32 @@ function normalizeDescription(value: unknown) {
   return text ? text.slice(0, 600) : null;
 }
 
+function normalizeQualityReviewRecommendation(value: unknown): QualityReviewVisionMetadata["recommendation"] {
+  const text = typeof value === "string" ? value.trim().toUpperCase() : "";
+  if (text === "APPROVE" || text === "REJECT") {
+    return text;
+  }
+
+  return "REVIEW";
+}
+
+function normalizeQualityReviewSeverity(value: unknown): QualityReviewVisionMetadata["severity"] {
+  const text = typeof value === "string" ? value.trim().toLowerCase() : "";
+  if (text === "low" || text === "medium" || text === "high") {
+    return text;
+  }
+
+  return "medium";
+}
+
+function normalizeDifferenceList(value: unknown) {
+  const values = Array.isArray(value) ? value : [];
+  return values
+    .map((item) => (typeof item === "string" ? item.replace(/\s+/g, " ").trim() : ""))
+    .filter(Boolean)
+    .slice(0, 8);
+}
+
 export function normalizeVisionMetadata(raw: unknown): ProductVisionMetadata {
   const value = typeof raw === "object" && raw !== null ? raw as Record<string, unknown> : {};
   const productType = normalizeProductType(value.productType);
@@ -186,6 +220,18 @@ export function normalizeStyleReferenceVisionMetadata(raw: unknown): StyleRefere
     background: normalizeDescription(value.background),
     subjectDescription: normalizeDescription(value.subjectDescription),
     confidence: clampConfidence(value.confidence),
+  };
+}
+
+export function normalizeQualityReviewVisionMetadata(raw: unknown): QualityReviewVisionMetadata {
+  const value = typeof raw === "object" && raw !== null ? raw as Record<string, unknown> : {};
+
+  return {
+    identityScore: clampConfidence(value.identityScore),
+    severity: normalizeQualityReviewSeverity(value.severity),
+    recommendation: normalizeQualityReviewRecommendation(value.recommendation),
+    summary: normalizeDescription(value.summary),
+    differences: normalizeDifferenceList(value.differences),
   };
 }
 
@@ -223,6 +269,24 @@ function parseStyleReferenceVisionMetadata(content: unknown) {
   }
 
   return normalizeStyleReferenceVisionMetadata(JSON.parse(extractJsonObject(text)));
+}
+
+function parseQualityReviewVisionMetadata(content: unknown) {
+  const text = Array.isArray(content)
+    ? content.map((part) => {
+        if (typeof part === "string") return part;
+        if (typeof part === "object" && part !== null && "text" in part && typeof part.text === "string") return part.text;
+        return "";
+      }).join("\n")
+    : typeof content === "string"
+      ? content
+      : "";
+
+  if (!text) {
+    throw new Error("Quality review vision response was empty.");
+  }
+
+  return normalizeQualityReviewVisionMetadata(JSON.parse(extractJsonObject(text)));
 }
 
 export async function analyzeProductImageWithLiara({
@@ -341,6 +405,72 @@ export async function analyzeStyleReferenceImageWithLiara({
 
   const result = await response.json() as ChatCompletionResponse;
   return parseStyleReferenceVisionMetadata(result.choices?.[0]?.message?.content);
+}
+
+export async function analyzeQualityReviewImagesWithLiara({
+  sourceBuffer,
+  sourceMimeType,
+  resultBuffer,
+  resultMimeType,
+  provider: providerOverride,
+}: {
+  sourceBuffer: Buffer;
+  sourceMimeType: string;
+  resultBuffer: Buffer;
+  resultMimeType: string;
+  provider?: ImageProvider;
+}): Promise<QualityReviewVisionMetadata> {
+  const { apiKey, baseURL, model, provider } = getVisionConfig(providerOverride);
+  const sourceImageUrl = `data:${sourceMimeType};base64,${sourceBuffer.toString("base64")}`;
+  const resultImageUrl = `data:${resultMimeType};base64,${resultBuffer.toString("base64")}`;
+  const prompt = [
+    "You are a quality-review assistant for Ovala, a Persian RTL jewelry product-photo app.",
+    "Compare image 1, the user's original product photo, with image 2, the generated output.",
+    "Judge only whether the product identity was preserved. Ignore background, lighting, framing, cleanup, and studio styling unless they hide or alter the product.",
+    "Pay close attention to jewelry/watch details: shape, silhouette, metal color, stone count and placement, chain or clasp design when visible, watch face, engravings, settings, proportions, and distinctive motifs.",
+    "Return ONLY valid JSON. Do not use markdown. Do not add explanations.",
+    "Recommendation rules:",
+    "- APPROVE means a refund is likely fair because the output clearly changed the product identity or removed important visible details.",
+    "- REJECT means the product identity is mostly preserved and differences are mainly style, lighting, background, crop, or expected cleanup.",
+    "- REVIEW means uncertainty or mixed evidence; a human admin should decide.",
+    "Return this exact JSON shape:",
+    "{\"identityScore\":0.0,\"severity\":\"low | medium | high\",\"recommendation\":\"APPROVE | REVIEW | REJECT\",\"summary\":\"short Persian summary for admin triage\",\"differences\":[\"short Persian difference\"]}",
+  ].join("\n");
+
+  const response = await fetch(`${baseURL.replace(/\/$/, "")}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", image_url: { url: sourceImageUrl } },
+            { type: "image_url", image_url: { url: resultImageUrl } },
+          ],
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    let detail = "";
+    try {
+      detail = await response.text();
+    } catch {
+      detail = "";
+    }
+    throw new Error(`${provider} quality review vision request failed with status ${response.status}${detail ? `: ${detail}` : ""}.`);
+  }
+
+  const result = await response.json() as ChatCompletionResponse;
+  return parseQualityReviewVisionMetadata(result.choices?.[0]?.message?.content);
 }
 
 export function buildVisionPromptContext(input: {

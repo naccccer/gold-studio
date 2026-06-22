@@ -6,3 +6,6 @@ export const SALES_CODE_CREDITS = 5;
 
 export const NO_CREDITS_ERROR =
   "اعتبار کافی برای ساخت خروجی ندارید. از بخش خرید اعتبار یا اشتراک، پلن جدید ثبت کنید.";
+
+export const NO_PROJECT_QUOTA_ERROR =
+  "سهمیه پروژه این دوره تمام شده است. برای ساخت پروژه جدید، پلن اختصاصی یا اشتراک تازه ثبت کنید.";

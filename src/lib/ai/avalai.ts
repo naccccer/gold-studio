@@ -32,6 +32,15 @@ const GENERATION_PROMPT_SUFFIX = [
   "Make the image look like a real high-end studio photograph with natural optics, believable lighting, realistic reflections, and true material texture.",
   "Avoid AI-looking gloss, CGI, 3D render, plastic surfaces, over-smoothing, over-sharpening, artificial sparkle, surreal lighting, distorted geometry, and fake luxury effects.",
 ].join("\n");
+const REFERENCE_SCENE_PROMPT_SUFFIX = [
+  "Return one final premium product image using the provided image order and labels.",
+  "The primary product identity reference and any supporting product angles are the only product identity sources.",
+  "The sample scene reference is scene and composition only, not product identity. Replace only the sample product/jewelry/accessory with the uploaded product.",
+  "Preserve the exact uploaded product shape, proportions, silhouette, metal color, gemstone count and placement, visible chain or front-facing clasp design when naturally visible, watch face, engravings, setting, material finish, visible defects, and all visible jewelry details.",
+  "Do not copy, mix in, retain, or reinterpret the sample product identity.",
+  "Integrate the uploaded product realistically into the sample scene with believable perspective, scale, contact shadows, occlusion, reflections, lighting, depth of field, hand/finger wrapping, water distortion, and physical placement when present.",
+  "Avoid AI-looking gloss, CGI, 3D render, plastic surfaces, over-smoothing, over-sharpening, artificial sparkle, surreal lighting, distorted geometry, and fake luxury effects.",
+].join("\n");
 
 type PreparedImage = {
   buffer: Buffer;
@@ -161,6 +170,10 @@ function extensionFromMimeType(mimeType: string) {
   if (mimeType === "image/png") return "png";
   if (mimeType === "image/webp") return "webp";
   return "jpg";
+}
+
+function generationPromptSuffix(hasReferenceScene: boolean) {
+  return hasReferenceScene ? REFERENCE_SCENE_PROMPT_SUFFIX : GENERATION_PROMPT_SUFFIX;
 }
 
 function dataUrlToImage(url: string) {
@@ -430,20 +443,20 @@ function buildImageContent({
   stylePrompt,
 }: Omit<GenerateImageInput, "outputPreset" | "model">): ChatContentPart[] {
   const content: ChatContentPart[] = [
-    { type: "text", text: `${stylePrompt}\n\n${GENERATION_PROMPT_SUFFIX}` },
-    { type: "text", text: "Primary product identity reference:" },
+    { type: "text", text: `${stylePrompt}\n\n${generationPromptSuffix(Boolean(referenceBuffer))}` },
+    { type: "text", text: "Primary product identity reference. This uploaded image is the locked product source:" },
     { type: "image_url", image_url: { url: toDataUrl(sourceBuffer, mimeType) } },
   ];
 
   for (const [index, supportingImage] of (supportingImages ?? []).entries()) {
-    content.push({ type: "text", text: `Supporting product angle ${index + 1}:` });
+    content.push({ type: "text", text: `Supporting product identity angle ${index + 1}. Use only for product details:` });
     content.push({ type: "image_url", image_url: { url: toDataUrl(supportingImage.buffer, supportingImage.mimeType) } });
   }
 
   if (referenceBuffer) {
     content.push({
       type: "text",
-      text: "Sample scene reference. Keep this image's non-product scene recognizable, including hand, wrist, fingers, skin, water, surface, props, lighting, reflections, camera angle, and pose when present. Replace only the sample product/jewelry/accessory with the uploaded product identity from the primary product reference. Do not copy the sample product identity.",
+      text: "Sample scene reference. This image is scene and composition only, not product identity. Keep its non-product scene recognizable, including hand, wrist, fingers, skin, water, surface, props, lighting, shadows, reflections, camera angle, lens feel, crop, and pose when present. Replace only the sample product/jewelry/accessory with the uploaded product identity from the primary product reference. Do not copy or retain the sample product identity.",
     });
     content.push({ type: "image_url", image_url: { url: toDataUrl(referenceBuffer, referenceMimeType || "image/jpeg") } });
   }
@@ -569,7 +582,7 @@ async function generateStyledWithOpenAIImageModel({
     return await withTransientRetry(async () => {
       const form = new FormData();
       form.append("model", imageModel);
-      form.append("prompt", `${stylePrompt}\n\n${GENERATION_PROMPT_SUFFIX}`);
+      form.append("prompt", `${stylePrompt}\n\n${generationPromptSuffix(Boolean(referenceBuffer))}`);
       form.append("size", getOpenAIImageSize(outputPreset));
       form.append("quality", openAIImageQuality);
       if (responseFormat) {

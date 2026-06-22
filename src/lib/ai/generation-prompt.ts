@@ -28,11 +28,12 @@ type GenerationPromptVision = {
 
 const SAMPLE_REFERENCE_BASE_PROMPT = [
   "Act as a senior jewelry retoucher doing scene-preserving product replacement.",
-  "Use the selected sample image as the target scene, composition, camera angle, lighting, mood, background, surface, props, water/fabric/material atmosphere, and non-product context.",
-  "Replace only the product/jewelry/accessory in the sample scene with the user's uploaded product.",
-  "Keep the sample scene recognizable, including hand, wrist, body, water, surface, reflections, props, and pose when they are part of the sample composition.",
-  "The user's uploaded product is the locked identity source: preserve its exact shape, stones, metal, engravings, proportions, silhouette, and material finish.",
-  "Do not copy the sample product identity and do not redesign the uploaded product to fit the sample.",
+  "The uploaded product image or images are the only locked product identity source.",
+  "Use the selected sample image as the target scene, composition, camera angle, lighting, mood, background, surface, props, water/fabric/material atmosphere, and non-product context only; it is not a product reference.",
+  "Replace only the product/jewelry/accessory in the sample scene with the user's uploaded product, as if the original sample product was removed and the uploaded product was realistically placed there.",
+  "Keep the sample scene recognizable, including hand, wrist, fingers, skin, body, pose, water, fabric, surface, reflections, shadows, props, crop, and lens feel when they are part of the sample composition.",
+  "The user's uploaded product is locked: preserve its exact shape, stones, metal, engravings, proportions, silhouette, color, finish, gemstone layout, setting, and visible defects or details.",
+  "Do not copy, mix in, or retain the sample product identity. Do not redesign, simplify, restyle, recolor, re-stone, unnaturally resize proportions, or invent a new product.",
 ].join(" ");
 
 function getCompositionInstruction(productType?: string | null, visionAngle?: string | null, options?: { isHumanModelStyle?: boolean }) {
@@ -86,7 +87,8 @@ function getFineDetailInstruction(productType?: string | null, options?: { isHum
   if (options?.isHumanModelStyle && productType === "گردنبند") {
     return [
       "Fine detail priority for a necklace on a model: preserve pendant shape, visible chain links, metal tone, stone settings, engravings, and front-facing design cues.",
-      "Do not expose, invent, duplicate, or relocate a normal rear necklace clasp in the visible neck or collarbone area; hidden back hardware may stay hidden when worn.",
+      "Default clasp policy: no visible clasp in necklace-on-model outputs. Treat any normal necklace clasp, lobster clasp, spring-ring clasp, hook, fastener, or rear closure as back-of-neck hardware that should not appear in the visible image.",
+      "Do not expose, invent, duplicate, enlarge, or relocate a normal rear necklace clasp in the visible neck, collarbone, shoulder, pendant, or side-front area. Hidden back hardware should stay hidden when worn.",
     ].join("\n");
   }
 
@@ -96,9 +98,38 @@ function getFineDetailInstruction(productType?: string | null, options?: { isHum
   ].join("\n");
 }
 
-function getProductImageSetInstruction(productImageCount: number) {
+function getFinalHumanWearableCorrection(productType?: string | null, options?: { isHumanModelStyle?: boolean }) {
+  if (!options?.isHumanModelStyle || productType !== "گردنبند") {
+    return "";
+  }
+
+  return [
+    "Final necklace-on-model correction:",
+    "Default policy: do not show a clasp in a necklace-on-model image. Assume any ordinary clasp or fastener in the source photo is a normal rear clasp unless it is unmistakably designed as a decorative front clasp.",
+    "Ignore any earlier generic instruction to preserve or show clasp details when it conflicts with natural wearing. A natural worn necklace image does not need to show the rear clasp. Prefer a believable front or three-quarter model photo where the normal back clasp is completely hidden behind the neck.",
+    "Never alter the pose, chain path, camera angle, crop, or product geometry to make a rear clasp visible. Do not place the clasp on the front of the neck, collarbone, shoulder, pendant area, or side-front chain.",
+    "Negative constraint: no visible lobster clasp, spring-ring clasp, hook clasp, rear fastener, closure hardware, extra ring, or dangling clasp near the neck, collarbone, shoulder, pendant, or side-front chain.",
+    "Only show a clasp if it is clearly a decorative front-facing clasp or front closure in the original product design; otherwise hide it naturally and preserve the pendant and visible chain instead.",
+  ].join("\n");
+}
+
+function getProductImageSetInstruction(
+  productImageCount: number,
+  productType?: string | null,
+  options?: { isHumanModelStyle?: boolean },
+) {
   if (productImageCount <= 1) {
     return "";
+  }
+
+  if (options?.isHumanModelStyle && productType === "گردنبند") {
+    return [
+      `Product identity references: use images 1-${productImageCount} together as views of the same necklace.`,
+      "Image 1 is the primary composition/source image. The additional product images are supporting detail and angle references only.",
+      "Use the supporting images to preserve pendant design, visible chain shape, metal tone, stone layout, engravings, material finish, and front-facing necklace details.",
+      "If a supporting image shows the rear clasp, use it only as hidden construction knowledge. Do not render that rear clasp in the worn model output; it should disappear naturally behind the neck.",
+      "Do not create multiple products, a collage, or multiple outputs. Return one final product image.",
+    ].join("\n");
   }
 
   return [
@@ -161,7 +192,7 @@ export function buildGenerationPrompt({
     promptParts.push(styleCompositionInstruction);
   }
 
-  const productImageSetInstruction = getProductImageSetInstruction(productImageCount);
+  const productImageSetInstruction = getProductImageSetInstruction(productImageCount, productType, { isHumanModelStyle: includesHumanModel });
   if (productImageSetInstruction) {
     promptParts.push(productImageSetInstruction);
   }
@@ -181,6 +212,11 @@ export function buildGenerationPrompt({
 
   if (visionContext) {
     promptParts.push(visionContext);
+  }
+
+  const finalWearableCorrection = getFinalHumanWearableCorrection(productType, { isHumanModelStyle: includesHumanModel });
+  if (finalWearableCorrection) {
+    promptParts.push(finalWearableCorrection);
   }
 
   return promptParts.join("\n");

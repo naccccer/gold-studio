@@ -27,8 +27,11 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 - Home now uses an admin-managed before/after carousel (`/admin/home`) with fallback placeholder slides until active slides are uploaded.
 - Style reference empty-state samples now come from the ready sample folder and can be uploaded or removed from `/admin/assets/samples`.
 - Curated style labels are simplified for users: social is "با جای متن", editorial is "با دکور", and cinematic is "سینمایی".
-- With-model necklace prompts now treat rear clasps as hidden hardware, so normal back clasps should not be moved into the visible neck or collarbone area.
+- With-model necklace prompts now default to no visible clasp: normal rear clasps are treated as hidden back-neck hardware, even when supporting images show them, unless the product has an unmistakable decorative front clasp.
 - Product-only generation prompts now explicitly remove source-photo hands, wrists, people, clothing, and selfie reflections while preserving product identity; human context remains reserved for explicitly wearable/model styles.
+- Sample-reference generation now treats the sample image as scene/composition only, keeps uploaded product identity locked, and asks providers for realistic replacement with perspective, shadows, occlusion, reflections, and physical placement.
+- In-app notifications now support user inbox messages, admin manual/broadcast sends, and quality-review refund outcomes from the project result flow.
+- Billing now supports admin-assigned custom user plans with separate project and output quotas, per-plan "نسخه دیگر" limits, and output-only accounting for alternate versions.
 - Image generation now routes hard user styles (`style_with_model` and `style_sample_reference`) to Pro image models first, keeps easier styles on Flash-first routing, and clamps configured 4K image settings back to 2K.
 - Admin style management now uploads style preview images directly with an inline preview instead of asking operators to paste image URLs.
 - Admin console copy is being kept terse and operational, with redundant helper text removed, style preview uploads in place, and style metrics moved into a focused admin stats tab.
@@ -41,7 +44,7 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 - Admin operations QA: review the rebuilt navy/white console with real data across overview, health, audit, users, billing, projects, AI, assets, styles, support/FAQ, and referrals.
 - Documentation hygiene: keep docs short and current; update this file only when scope or active priorities change.
 - SMS readiness: add the approved FarazSMS pattern code and line number before testing phone verification with real users.
-- Backend reliability: keep generation worker recovery, credit reservation consistency, and health/smoke coverage under review as real production traffic grows.
+- Backend reliability: keep generation worker recovery, project/output quota reservation consistency, and health/smoke coverage under review as real production traffic grows.
 
 ## Local Database
 

@@ -8,16 +8,17 @@ import { db } from "@/lib/db";
 import { requireUserSession } from "@/lib/auth/session";
 import {
   attachGenerationCreditReservation,
+  getEffectiveFreeVariantLimit,
   releaseGenerationCreditReservation,
   reserveGenerationCredit,
   reserveGenerationCreditInTransaction,
 } from "@/lib/billing";
-import { FREE_VARIANT_LIMIT } from "@/lib/credits";
 import { buildGenerationPrompt } from "@/lib/ai/generation-prompt";
 import { processImageProject, processTextProject } from "@/lib/generation/jobs";
 import { normalizeOutputPreset } from "@/lib/output-presets";
 import { pickVisionTitle, retryProjectVisionTitle } from "@/lib/product-vision";
 import { normalizeProductType } from "@/lib/product-types";
+import { analyzeQualityReviewRequest, normalizeQualityReviewReason } from "@/lib/quality-review";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { deleteStorageObject, isAllowedStorageKey, readStorageObject } from "@/lib/storage";
 import { createOrFindStyleReferenceFromReadySample } from "@/lib/style-reference-ready-samples";
@@ -38,6 +39,12 @@ const MAX_SUPPORTING_PRODUCT_IMAGES = 2;
 class RetryProjectClaimLostError extends Error {
   constructor() {
     super("Retry project claim was lost.");
+  }
+}
+
+class GenerationReservationRejectedError extends Error {
+  constructor(message: string) {
+    super(message);
   }
 }
 
@@ -292,7 +299,13 @@ export async function createProjectAction(
 
     try {
       if (freeVariantParentId) {
-        const freeVariant = await db.$transaction(async (tx) => {
+        const freeVariantLimit = await getEffectiveFreeVariantLimit(session.userId);
+        if (freeVariantLimit <= 0) {
+          return { error: "نسخه دیگر برای پلن فعلی شما فعال نیست." };
+        }
+
+      const freeVariant = await db
+        .$transaction(async (tx) => {
           const parent = await tx.project.findFirst({
             where: {
               id: freeVariantParentId,
@@ -319,7 +332,7 @@ export async function createProjectAction(
             },
           });
 
-          if (usedFreeVariants >= FREE_VARIANT_LIMIT) {
+          if (usedFreeVariants >= freeVariantLimit) {
             return null;
           }
 
@@ -340,6 +353,14 @@ export async function createProjectAction(
             return null;
           }
 
+          const reservation = await reserveGenerationCreditInTransaction(tx, {
+            userId: session.userId,
+            reserveProject: false,
+          });
+          if (!reservation.ok) {
+            throw new GenerationReservationRejectedError(reservation.error);
+          }
+
           if (asset.productType !== selectedProductType) {
             await tx.productAsset.updateMany({
               where: { id: asset.id, userId: session.userId, status: "READY", archivedAt: null },
@@ -351,7 +372,7 @@ export async function createProjectAction(
             where: { userId: session.userId, sourceAssetId: asset.id, archivedAt: null },
           });
 
-          return tx.project.create({
+          const createdProject = await tx.project.create({
             data: {
               id: freeVariantId,
               userId: session.userId,
@@ -368,12 +389,30 @@ export async function createProjectAction(
             },
             select: { id: true },
           });
+
+          await tx.generationCreditReservation.updateMany({
+            where: { id: reservation.reservationId, status: "RESERVED" },
+            data: { projectId: createdProject.id },
+          });
+
+          return createdProject;
+        })
+        .catch((error) => {
+          if (error instanceof GenerationReservationRejectedError) {
+            return { error: error.message };
+          }
+
+          throw error;
         });
+
+        if (freeVariant && "error" in freeVariant) {
+          return { error: freeVariant.error };
+        }
 
         if (freeVariant) {
           project = freeVariant;
         } else {
-          return { error: "فرصت رایگان این پروژه دیگر در دسترس نیست. دوباره از صفحه نتیجه اقدام کنید یا نسخه عادی بسازید." };
+          return { error: "فرصت نسخه دیگر برای این پروژه در دسترس نیست. دوباره از صفحه نتیجه اقدام کنید یا نسخه عادی بسازید." };
         }
       } else {
         const reserved = await reserveCreditOrState(session.userId);
@@ -583,6 +622,72 @@ export async function saveProjectResultAsStyleReferenceAction(formData: FormData
   }
 }
 
+export async function createQualityReviewAction(formData: FormData) {
+  const session = await requireUserSession();
+  const limited = await checkRateLimit({
+    scope: "quality-review:create",
+    identifier: session.userId,
+    limit: 5,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!limited.ok) {
+    return { ok: false, message: limited.error };
+  }
+
+  const projectId = String(formData.get("projectId") ?? "").trim();
+  const reason = normalizeQualityReviewReason(formData.get("reason"));
+  const userNote = String(formData.get("userNote") ?? "").trim().slice(0, 800);
+
+  if (!projectId) {
+    return { ok: false, message: "پروژه پیدا نشد." };
+  }
+
+  const project = await db.project.findFirst({
+    where: { id: projectId, userId: session.userId, status: "COMPLETED", archivedAt: null },
+    select: {
+      id: true,
+      resultImageUrl: true,
+      resultStorageKey: true,
+      qualityReviews: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { id: true, status: true },
+      },
+    },
+  });
+
+  if (!project?.resultImageUrl && !project?.resultStorageKey) {
+    return { ok: false, message: "برای این پروژه خروجی قابل بررسی پیدا نشد." };
+  }
+
+  const existingReview = project.qualityReviews[0];
+  if (existingReview) {
+    return {
+      ok: true,
+      message:
+        existingReview.status === "PENDING"
+          ? "درخواست بررسی این خروجی قبلا ثبت شده و در صف بررسی است."
+          : "درخواست بررسی این خروجی قبلا رسیدگی شده است.",
+    };
+  }
+
+  const review = await db.qualityReview.create({
+    data: {
+      projectId: project.id,
+      userId: session.userId,
+      reason,
+      userNote: userNote || null,
+    },
+    select: { id: true },
+  });
+
+  after(() => analyzeQualityReviewRequest(review.id));
+  revalidatePath(`/projects/${project.id}`);
+  revalidatePath("/admin/quality-reviews");
+
+  return { ok: true, message: "درخواست بررسی ثبت شد. نتیجه از بخش پیام‌ها به شما اعلام می‌شود." };
+}
+
 export async function updateProjectProductTypeAction(formData: FormData) {
   const session = await requireUserSession();
   const projectId = String(formData.get("projectId") ?? "").trim();
@@ -712,7 +817,7 @@ export async function retryProjectAction(formData: FormData) {
 
   const project = await db.project.findFirst({
     where: { id: projectId, userId: session.userId, status: { in: ["FAILED", "COMPLETED"] }, archivedAt: null },
-    select: { id: true, sourceAssetId: true, status: true, resultImageUrl: true, resultStorageKey: true },
+    select: { id: true, sourceAssetId: true, status: true, resultImageUrl: true, resultStorageKey: true, variantParentId: true },
   });
 
   if (!project?.sourceAssetId) {
@@ -740,7 +845,11 @@ export async function retryProjectAction(formData: FormData) {
 
   const retry = await db
     .$transaction(async (tx) => {
-      const reservation = await reserveGenerationCreditInTransaction(tx, { userId: session.userId, projectId: project.id });
+      const reservation = await reserveGenerationCreditInTransaction(tx, {
+        userId: session.userId,
+        projectId: project.id,
+        reserveProject: !project.variantParentId,
+      });
       if (!reservation.ok) {
         return reservation;
       }

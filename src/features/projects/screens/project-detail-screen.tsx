@@ -10,6 +10,7 @@ import {
   Gallery,
   GalleryAdd,
   Maximize4,
+  MessageQuestion,
   Refresh,
   Scan,
   TickCircle,
@@ -30,6 +31,7 @@ import { ProcessingCanvas } from "@/components/ui/processing-canvas";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 import {
   archiveProjectAction,
+  createQualityReviewAction,
   renameProjectAction,
   retryProjectAction,
   saveProjectResultAsStyleReferenceAction,
@@ -236,6 +238,7 @@ export type ProjectDetail = {
   titleRefreshPending?: boolean;
   variantNumber?: number | null;
   freeVariantRemaining?: number | null;
+  qualityReviewStatus?: string | null;
 };
 
 const failedCreditReassurance =
@@ -243,6 +246,7 @@ const failedCreditReassurance =
 
 type ShareStatus = "idle" | "sharing" | "shared" | "copied" | "failed";
 type ReferenceSaveStatus = "idle" | "saving" | "saved" | "failed";
+type QualityReviewSubmitStatus = "idle" | "submitting" | "sent" | "failed";
 
 type ProjectDetailScreenProps = { project: ProjectDetail };
 
@@ -254,6 +258,94 @@ function shareFileExtension(mimeType: string) {
 
 function shareFileName(projectId: string, mimeType: string) {
   return `ovala-${projectId.slice(0, 8)}.${shareFileExtension(mimeType)}`;
+}
+
+function qualityReviewStatusLabel(status?: string | null) {
+  if (status === "APPROVED") return "تایید شده";
+  if (status === "REJECTED") return "رسیدگی شده";
+  if (status === "PENDING") return "در صف بررسی";
+  return null;
+}
+
+function QualityReviewDialog({
+  projectId,
+  submitting,
+  onClose,
+  onSubmit,
+}: {
+  projectId: string;
+  submitting: boolean;
+  onClose: () => void;
+  onSubmit: (formData: FormData) => Promise<void>;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/62 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-6 text-right backdrop-blur-sm">
+      <form
+        action={onSubmit}
+        className="w-full max-w-[393px] rounded-[1.15rem] border border-white/12 bg-[#171411] p-4 text-surface shadow-[0_28px_70px_-38px_rgba(0,0,0,1)]"
+      >
+        <input type="hidden" name="projectId" value={projectId} />
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-surface">گزارش مشکل محصول</h2>
+            <p className="mt-1 text-xs leading-6 text-surface/68">
+              اگر خروجی با محصول اصلی فرق دارد، درخواست بررسی ثبت کنید. نتیجه از بخش پیام‌ها اعلام می‌شود.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="بستن گزارش مشکل"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/[0.08] text-surface/72 transition hover:bg-white/[0.12]"
+          >
+            <CloseCircle aria-hidden={true} className="h-4 w-4" />
+          </button>
+        </div>
+
+        <label className="mt-4 grid gap-1.5 text-xs font-medium text-surface/76">
+          دلیل اصلی
+          <select
+            name="reason"
+            className="h-11 rounded-[0.9rem] border border-white/12 bg-white/[0.07] px-3 text-sm text-surface outline-none focus:border-accent-soft"
+            defaultValue="PRODUCT_CHANGED"
+          >
+            <option className="bg-[#171411]" value="PRODUCT_CHANGED">محصول در خروجی عوض شده</option>
+            <option className="bg-[#171411]" value="DETAILS_MISSING">جزئیات مهم حذف شده</option>
+            <option className="bg-[#171411]" value="COLOR_OR_STONES_WRONG">رنگ، سنگ یا جنس اشتباه است</option>
+            <option className="bg-[#171411]" value="OTHER">مشکل دیگر</option>
+          </select>
+        </label>
+
+        <label className="mt-3 grid gap-1.5 text-xs font-medium text-surface/76">
+          توضیح کوتاه
+          <textarea
+            name="userNote"
+            maxLength={800}
+            placeholder="مثلا تعداد نگین‌ها عوض شده یا فرم قفل زنجیر درست نیست."
+            className="min-h-24 rounded-[0.9rem] border border-white/12 bg-white/[0.07] px-3 py-2 text-sm leading-7 text-surface outline-none placeholder:text-surface/36 focus:border-accent-soft"
+          />
+        </label>
+
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button
+            type="submit"
+            disabled={submitting}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-[0.95rem] bg-accent-wash text-sm font-semibold text-accent-deep transition hover:bg-accent-soft disabled:opacity-60"
+          >
+            <MessageQuestion aria-hidden={true} className="h-4 w-4" />
+            {submitting ? "در حال ثبت..." : "ثبت درخواست"}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-11 rounded-[0.95rem] bg-white/[0.08] text-sm font-semibold text-surface/82 transition hover:bg-white/[0.12]"
+          >
+            انصراف
+          </button>
+        </div>
+      </form>
+    </div>
+  );
 }
 
 function DetailMeta({
@@ -471,6 +563,9 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
   const [copiedError, setCopiedError] = useState(false);
   const [shareStatus, setShareStatus] = useState<ShareStatus>("idle");
   const [referenceSaveStatus, setReferenceSaveStatus] = useState<ReferenceSaveStatus>("idle");
+  const [qualityReviewOpen, setQualityReviewOpen] = useState(false);
+  const [qualityReviewStatus, setQualityReviewStatus] = useState<QualityReviewSubmitStatus>("idle");
+  const [qualityReviewMessage, setQualityReviewMessage] = useState<string | null>(null);
   const [resultImageLoadFailed, setResultImageLoadFailed] = useState(false);
   const status = statusConfig[project.status] ?? {
     label: "ثبت شده",
@@ -511,6 +606,9 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
     : null;
   const styleSettings = extractStyleSettings(project.prompt);
   const titleRefreshPending = Boolean(project.titleRefreshPending);
+  const currentQualityReviewLabel = qualityReviewStatus === "sent"
+    ? "در صف بررسی"
+    : qualityReviewStatusLabel(project.qualityReviewStatus);
   const closeFullscreen = useCallback(() => {
     setFullscreen(false);
   }, []);
@@ -598,6 +696,20 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
     const result = await saveProjectResultAsStyleReferenceAction(formData);
     setReferenceSaveStatus(result.ok ? "saved" : "failed");
     window.setTimeout(() => setReferenceSaveStatus("idle"), result.ok ? 1800 : 2400);
+  }
+
+  async function handleQualityReviewSubmit(formData: FormData) {
+    if (qualityReviewStatus === "submitting") {
+      return;
+    }
+
+    setQualityReviewStatus("submitting");
+    const result = await createQualityReviewAction(formData);
+    setQualityReviewStatus(result.ok ? "sent" : "failed");
+    setQualityReviewMessage(result.message);
+    if (result.ok) {
+      setQualityReviewOpen(false);
+    }
   }
 
   useEffect(() => {
@@ -773,7 +885,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
                   <Refresh aria-hidden={true} className="h-4 w-4" />
                   نسخه دیگر
                   <span className="inline-flex min-h-5 shrink-0 items-center rounded-full bg-[#f2dfbd] px-1.5 text-[10px] font-bold leading-none text-[#6f4d20]">
-                    رایگان
+                    ۱ خروجی
                   </span>
                 </ButtonLink>
               ) : (
@@ -829,6 +941,16 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
                           ? "ذخیره نشد"
                           : "ذخیره در نمونه‌ها"}
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setQualityReviewOpen(true)}
+                    disabled={Boolean(currentQualityReviewLabel)}
+                    className={contextMenuItemClasses}
+                    data-close-context-menu
+                  >
+                    <MessageQuestion aria-hidden={true} className="h-3.5 w-3.5" />
+                    {currentQualityReviewLabel ? `بررسی: ${currentQualityReviewLabel}` : "گزارش مشکل محصول"}
+                  </button>
                   <ConfirmAction
                     action={archiveProjectAction}
                     fields={[{ name: "projectId", value: project.id }]}
@@ -845,7 +967,29 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               </div>
             </div>
           </ActionDock>
+
+          {qualityReviewMessage ? (
+            <p
+              className={[
+                "shrink-0 rounded-[0.9rem] border px-3 py-2 text-right text-[11px] leading-6",
+                qualityReviewStatus === "failed"
+                  ? "border-rose-300/40 bg-rose-950/24 text-rose-100"
+                  : "border-accent-soft/40 bg-accent-wash/12 text-surface/82",
+              ].join(" ")}
+            >
+              {qualityReviewMessage}
+            </p>
+          ) : null}
         </section>
+
+        {qualityReviewOpen ? (
+          <QualityReviewDialog
+            projectId={project.id}
+            submitting={qualityReviewStatus === "submitting"}
+            onClose={() => setQualityReviewOpen(false)}
+            onSubmit={handleQualityReviewSubmit}
+          />
+        ) : null}
 
         {fullscreen ? (
           <div

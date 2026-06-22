@@ -4,6 +4,7 @@ import { requireUserSession } from "@/lib/auth/session";
 import { getUserDisplayName } from "@/lib/auth/user-identity";
 import { getUserCreditSummary } from "@/lib/billing";
 import { db } from "@/lib/db";
+import { getUserNotificationSummary } from "@/lib/notifications";
 
 export default async function DashboardLayout({
   children,
@@ -11,12 +12,13 @@ export default async function DashboardLayout({
   children: ReactNode;
 }>) {
   const session = await requireUserSession();
-  const [user, creditSummary] = await Promise.all([
+  const [user, creditSummary, notificationSummary] = await Promise.all([
     db.user.findUnique({
       where: { id: session.userId },
       select: { name: true, email: true, phone: true, startGuideSeenAt: true },
     }),
     getUserCreditSummary(session.userId),
+    getUserNotificationSummary(session.userId),
   ]);
 
   const quietName = user ? getUserDisplayName(user) : "حساب کاربری";
@@ -27,6 +29,12 @@ export default async function DashboardLayout({
     <DashboardFrame
       userLabel={quietName}
       remainingCredits={creditSummary.totalAvailableCredits}
+      unreadNotificationCount={notificationSummary.unreadCount}
+      recentNotifications={notificationSummary.recent.map((notification) => ({
+        ...notification,
+        createdAt: notification.createdAt.toISOString(),
+        readAt: notification.readAt?.toISOString() ?? null,
+      }))}
       needsNameOnboarding={needsNameOnboarding}
       showStartGuide={showStartGuide}
     >

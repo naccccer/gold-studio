@@ -17,6 +17,8 @@ import { getSubscriptionPeriod, logAdminAudit } from "@/lib/billing";
 import { normalizeBillingPlanColorPreset } from "@/lib/billing-plan-colors";
 import { INITIAL_SIGNUP_CREDITS } from "@/lib/credits";
 import { processImageProject } from "@/lib/generation/jobs";
+import { createAdminBroadcastNotification, createAdminUserNotification } from "@/lib/notifications";
+import { approveQualityReviewWithRefund, rejectQualityReview } from "@/lib/quality-review";
 import {
   ensureReadyStyleReferenceSampleDirectory,
   getReadyStyleReferenceSample,
@@ -172,6 +174,8 @@ function revalidateAdmin() {
   revalidatePath("/admin/styles");
   revalidatePath("/admin/home");
   revalidatePath("/admin/referrals");
+  revalidatePath("/admin/notifications");
+  revalidatePath("/admin/quality-reviews");
   revalidatePath("/admin/assets/samples");
   revalidatePath("/dashboard");
   revalidatePath("/account");
@@ -471,9 +475,11 @@ export async function createBillingPackageAction(formData: FormData) {
   const description = text(formData, "description");
   const priceAmount = integer(formData, "priceAmount");
   const credits = integer(formData, "credits");
+  const projectLimit = type === "SUBSCRIPTION" ? optionalInteger(formData, "projectLimit") : null;
+  const freeVariantLimit = type === "SUBSCRIPTION" ? Math.max(0, integer(formData, "freeVariantLimit", 2)) : 0;
   const periodDays = type === "SUBSCRIPTION" ? Math.max(1, integer(formData, "periodDays", 30)) : null;
 
-  if (!title || !description || priceAmount < 0 || credits < 0) {
+  if (!title || !description || priceAmount < 0 || credits < 0 || (projectLimit !== null && projectLimit < 0)) {
     return;
   }
 
@@ -485,6 +491,8 @@ export async function createBillingPackageAction(formData: FormData) {
       priceAmount,
       currency: text(formData, "currency") || "IRR",
       credits,
+      projectLimit,
+      freeVariantLimit,
       periodDays,
       colorPreset: normalizeBillingPlanColorPreset(text(formData, "colorPreset")),
       sortOrder: integer(formData, "sortOrder"),
@@ -512,9 +520,11 @@ export async function updateBillingPackageAction(formData: FormData) {
   const description = text(formData, "description");
   const priceAmount = integer(formData, "priceAmount");
   const credits = integer(formData, "credits");
+  const projectLimit = type === "SUBSCRIPTION" ? optionalInteger(formData, "projectLimit") : null;
+  const freeVariantLimit = type === "SUBSCRIPTION" ? Math.max(0, integer(formData, "freeVariantLimit", 2)) : 0;
   const periodDays = type === "SUBSCRIPTION" ? Math.max(1, integer(formData, "periodDays", 30)) : null;
 
-  if (!packageId || !title || !description || priceAmount < 0 || credits < 0) {
+  if (!packageId || !title || !description || priceAmount < 0 || credits < 0 || (projectLimit !== null && projectLimit < 0)) {
     return;
   }
 
@@ -527,6 +537,8 @@ export async function updateBillingPackageAction(formData: FormData) {
       priceAmount,
       currency: text(formData, "currency") || "IRR",
       credits,
+      projectLimit,
+      freeVariantLimit,
       periodDays,
       colorPreset: normalizeBillingPlanColorPreset(text(formData, "colorPreset")),
       sortOrder: integer(formData, "sortOrder"),
@@ -598,6 +610,8 @@ export async function duplicateBillingPackageAction(formData: FormData) {
       priceAmount: source.priceAmount,
       currency: source.currency,
       credits: source.credits,
+      projectLimit: source.projectLimit,
+      freeVariantLimit: source.freeVariantLimit,
       periodDays: source.periodDays,
       colorPreset: source.colorPreset,
       sortOrder: source.sortOrder + 1,
@@ -954,8 +968,12 @@ export async function approvePurchaseRequestAction(formData: FormData) {
           status: "ACTIVE",
           currentPeriodStart: period.start,
           currentPeriodEnd: period.end,
+          periodDays: request.package.periodDays ?? 30,
           creditsPerPeriod: request.package.credits,
           creditsUsedThisPeriod: 0,
+          projectLimit: request.package.projectLimit,
+          projectsUsedThisPeriod: 0,
+          freeVariantLimit: request.package.freeVariantLimit,
           assignedByAdminId: session.userId,
           purchaseRequestId: request.id,
           notes: `تایید درخواست خرید ${request.package.title}`,
@@ -1025,8 +1043,12 @@ export async function assignSubscriptionAction(formData: FormData) {
       status: "ACTIVE",
       currentPeriodStart: period.start,
       currentPeriodEnd: period.end,
+      periodDays: billingPackage.periodDays ?? 30,
       creditsPerPeriod: billingPackage.credits,
       creditsUsedThisPeriod: 0,
+      projectLimit: billingPackage.projectLimit,
+      projectsUsedThisPeriod: 0,
+      freeVariantLimit: billingPackage.freeVariantLimit,
       assignedByAdminId: session.userId,
       notes: notes || null,
     },
@@ -1038,6 +1060,51 @@ export async function assignSubscriptionAction(formData: FormData) {
     targetType: "UserSubscription",
     targetId: subscription.id,
     summary: `اشتراک ${billingPackage.title} به کاربر اختصاص یافت.`,
+  });
+  revalidateAdmin();
+}
+
+export async function assignCustomSubscriptionAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const userId = text(formData, "userId");
+  const customTitle = text(formData, "customTitle") || "پلن اختصاصی";
+  const projectLimit = integer(formData, "projectLimit");
+  const creditsPerPeriod = integer(formData, "creditsPerPeriod");
+  const periodDays = Math.max(1, integer(formData, "periodDays", 30));
+  const freeVariantLimit = Math.max(0, integer(formData, "freeVariantLimit", 0));
+  const notes = text(formData, "notes");
+
+  if (!userId || projectLimit < 0 || creditsPerPeriod <= 0) {
+    return;
+  }
+
+  const period = getSubscriptionPeriod(periodDays);
+  const subscription = await db.userSubscription.create({
+    data: {
+      userId,
+      packageId: null,
+      customTitle,
+      periodDays,
+      status: "ACTIVE",
+      currentPeriodStart: period.start,
+      currentPeriodEnd: period.end,
+      creditsPerPeriod,
+      creditsUsedThisPeriod: 0,
+      projectLimit,
+      projectsUsedThisPeriod: 0,
+      freeVariantLimit,
+      assignedByAdminId: session.userId,
+      notes: notes || null,
+    },
+  });
+
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: "subscription.assign_custom",
+    targetType: "UserSubscription",
+    targetId: subscription.id,
+    summary: `پلن اختصاصی ${customTitle} به کاربر اختصاص یافت.`,
+    metadata: { projectLimit, creditsPerPeriod, periodDays, freeVariantLimit },
   });
   revalidateAdmin();
 }
@@ -1127,15 +1194,20 @@ export async function resetSubscriptionPeriodAction(formData: FormData) {
   });
   if (!subscription) return;
 
-  const period = getSubscriptionPeriod(subscription.package.periodDays ?? 30);
+  const periodDays = subscription.periodDays ?? subscription.package?.periodDays ?? 30;
+  const period = getSubscriptionPeriod(periodDays);
   await db.userSubscription.update({
     where: { id: subscriptionId },
     data: {
       status: "ACTIVE",
       currentPeriodStart: period.start,
       currentPeriodEnd: period.end,
+      periodDays,
       creditsUsedThisPeriod: 0,
-      creditsPerPeriod: subscription.package.credits,
+      creditsPerPeriod: subscription.package?.credits ?? subscription.creditsPerPeriod,
+      projectLimit: subscription.package?.projectLimit ?? subscription.projectLimit,
+      projectsUsedThisPeriod: 0,
+      freeVariantLimit: subscription.package?.freeVariantLimit ?? subscription.freeVariantLimit,
     },
   });
   await logAdminAudit({
@@ -1217,6 +1289,121 @@ export async function updateSupportTicketStatusAction(formData: FormData) {
 
   revalidatePath("/admin/support");
   revalidatePath("/account/support");
+}
+
+export async function sendAdminNotificationAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const audience = text(formData, "audience");
+  const userId = text(formData, "userId");
+  const title = text(formData, "title");
+  const body = text(formData, "body");
+  const href = text(formData, "href");
+
+  if (!title || !body) {
+    return;
+  }
+
+  if (audience === "broadcast") {
+    const count = await createAdminBroadcastNotification({
+      title,
+      body,
+      href: href || null,
+      createdByAdminId: session.userId,
+    });
+    await logAdminAudit({
+      actorAdminId: session.userId,
+      action: "notification.broadcast",
+      targetType: "UserNotification",
+      targetId: "broadcast",
+      summary: `پیام عمومی برای ${count.toLocaleString("fa-IR")} کاربر ارسال شد.`,
+      metadata: { count, title, href: href || null },
+    });
+  } else {
+    const notification = userId
+      ? await createAdminUserNotification({
+          userId,
+          title,
+          body,
+          href: href || null,
+          createdByAdminId: session.userId,
+        })
+      : null;
+
+    if (!notification) {
+      return;
+    }
+
+    await logAdminAudit({
+      actorAdminId: session.userId,
+      action: "notification.send",
+      targetType: "UserNotification",
+      targetId: notification.id,
+      summary: "پیام دستی برای کاربر ارسال شد.",
+      metadata: { userId, title, href: href || null },
+    });
+  }
+
+  revalidatePath("/admin/notifications");
+  revalidatePath("/admin/users");
+  revalidatePath("/account/notifications");
+  revalidatePath("/dashboard");
+}
+
+export async function approveQualityReviewAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const reviewId = text(formData, "reviewId");
+  const adminNote = text(formData, "adminNote");
+  if (!reviewId) return;
+
+  const result = await approveQualityReviewWithRefund({
+    reviewId,
+    adminId: session.userId,
+    adminNote,
+  });
+
+  if (result) {
+    await logAdminAudit({
+      actorAdminId: session.userId,
+      action: "quality_review.approve_refund",
+      targetType: "QualityReview",
+      targetId: result.review.id,
+      summary: "درخواست بررسی کیفیت تایید و اعتبار برگشت داده شد.",
+      metadata: { projectId: result.review.projectId, creditEventId: result.creditEvent.id },
+    });
+  }
+
+  revalidatePath("/admin/quality-reviews");
+  revalidatePath("/admin/projects");
+  revalidatePath("/account/notifications");
+  revalidatePath("/dashboard");
+}
+
+export async function rejectQualityReviewAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const reviewId = text(formData, "reviewId");
+  const adminNote = text(formData, "adminNote");
+  if (!reviewId) return;
+
+  const review = await rejectQualityReview({
+    reviewId,
+    adminId: session.userId,
+    adminNote,
+  });
+
+  if (review) {
+    await logAdminAudit({
+      actorAdminId: session.userId,
+      action: "quality_review.reject",
+      targetType: "QualityReview",
+      targetId: review.id,
+      summary: "درخواست بررسی کیفیت رد شد.",
+      metadata: { projectId: review.projectId },
+    });
+  }
+
+  revalidatePath("/admin/quality-reviews");
+  revalidatePath("/account/notifications");
+  revalidatePath("/dashboard");
 }
 
 export async function createFaqItemAction(formData: FormData) {

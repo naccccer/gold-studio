@@ -7,6 +7,7 @@ import { normalizeLoginIdentifier } from "@/lib/auth/identifier";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { createSession, requireUserSession } from "@/lib/auth/session";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { markAllUserNotificationsRead } from "@/lib/notifications";
 import { applyReferralOrSalesCodeForUser } from "@/lib/referrals";
 import { saveReceiptFile } from "@/lib/uploads";
 
@@ -348,4 +349,11 @@ export async function replySupportTicketAction(formData: FormData) {
 
   revalidatePath("/account/support");
   revalidatePath("/admin/support");
+}
+
+export async function markAllNotificationsReadAction() {
+  const session = await requireUserSession();
+  await markAllUserNotificationsRead(session.userId);
+  revalidatePath("/account/notifications");
+  revalidatePath("/dashboard");
 }

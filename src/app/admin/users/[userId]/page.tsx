@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Add, Key, Refresh, ShieldTick, UserEdit, Wallet } from "vuesax-icons-react";
+import { Add, Key, NotificationBing, Refresh, ShieldTick, UserEdit, Wallet } from "vuesax-icons-react";
 import type { Prisma } from "@/generated/prisma";
 import {
   btnDanger,
@@ -28,6 +28,7 @@ import {
   adjustUserCreditsAction,
   approvePurchaseRequestAction,
   assignCreditPackAction,
+  assignCustomSubscriptionAction,
   assignSubscriptionAction,
   rejectPurchaseRequestAction,
   resetSubscriptionPeriodAction,
@@ -36,6 +37,7 @@ import {
   updateSubscriptionStatusAction,
   updateUserRoleAction,
 } from "@/features/admin/actions";
+import { AdminNotificationForm } from "@/features/admin/components/admin-notification-form";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { getUserCreditSummary } from "@/lib/billing";
 import { db } from "@/lib/db";
@@ -127,6 +129,13 @@ export default async function AdminUserDetailPage({ params, searchParams }: Admi
             />
           </Surface>
           <Surface className="p-5">
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-navy-950">
+              <NotificationBing className="h-4 w-4 text-slate-400" />
+              ارسال پیام
+            </h2>
+            <AdminNotificationForm fixedUserId={user.id} />
+          </Surface>
+          <Surface className="p-5">
             <h2 className="mb-3 text-sm font-semibold text-navy-950">آخرین پروژه‌ها</h2>
             {user.projects.length === 0 ? (
               <EmptyState title="پروژه‌ای ندارد." />
@@ -188,7 +197,7 @@ function BillingTab({
 }) {
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-4">
         <Disclosure
           summary={
             <>
@@ -207,6 +216,44 @@ function BillingTab({
             </Field>
             <div>
               <button className={btnPrimary}>ثبت تغییر</button>
+            </div>
+          </form>
+        </Disclosure>
+
+        <Disclosure
+          summary={
+            <>
+              <ShieldTick className="h-4 w-4 text-slate-400" />
+              پلن اختصاصی
+            </>
+          }
+        >
+          <form action={assignCustomSubscriptionAction} className="grid gap-3">
+            <input type="hidden" name="userId" value={user.id} />
+            <Field label="عنوان پلن">
+              <input name="customTitle" required defaultValue="پلن اختصاصی" className={fieldClass} />
+            </Field>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="پروژه">
+                <input name="projectLimit" type="number" min={0} required defaultValue={60} className={fieldClass} />
+              </Field>
+              <Field label="خروجی">
+                <input name="creditsPerPeriod" type="number" min={1} required defaultValue={60} className={fieldClass} />
+              </Field>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="دوره (روز)">
+                <input name="periodDays" type="number" min={1} required defaultValue={30} className={fieldClass} />
+              </Field>
+              <Field label="نسخه دیگر">
+                <input name="freeVariantLimit" type="number" min={0} required defaultValue={0} className={fieldClass} />
+              </Field>
+            </div>
+            <Field label="یادداشت">
+              <input name="notes" placeholder="مثلا قرارداد ۶۰ پروژه" className={fieldClass} />
+            </Field>
+            <div>
+              <button className={btnPrimary}>اختصاص پلن</button>
             </div>
           </form>
         </Disclosure>
@@ -280,11 +327,19 @@ function BillingTab({
           {user.subscriptions.map((subscription) => (
             <tr key={subscription.id}>
               <td className={cellClass}>
-                <p className="font-medium">{subscription.package.title}</p>
+                <p className="font-medium">{subscription.customTitle || subscription.package?.title || "پلن اختصاصی"}</p>
                 <p className="text-xs text-slate-400">پایان دوره {formatAdminDate(subscription.currentPeriodEnd)}</p>
               </td>
               <td className={`${cellClass} tabular-nums`}>
-                {faNum(subscription.creditsUsedThisPeriod)} / {faNum(subscription.creditsPerPeriod)}
+                <div className="grid gap-1 text-xs text-slate-500">
+                  <span>
+                    خروجی: {faNum(subscription.creditsUsedThisPeriod)} / {faNum(subscription.creditsPerPeriod)}
+                  </span>
+                  <span>
+                    پروژه: {subscription.projectLimit === null ? "بدون سقف" : `${faNum(subscription.projectsUsedThisPeriod)} / ${faNum(subscription.projectLimit)}`}
+                  </span>
+                  <span>نسخه دیگر: {faNum(subscription.freeVariantLimit)}</span>
+                </div>
               </td>
               <td className={cellClass}>
                 <StatusDot status={subscription.status} />

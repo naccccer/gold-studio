@@ -36,6 +36,8 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
         priceAmount: true,
         currency: true,
         credits: true,
+        projectLimit: true,
+        freeVariantLimit: true,
         periodDays: true,
         colorPreset: true,
       },

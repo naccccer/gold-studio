@@ -68,6 +68,7 @@ enum CreditEventSource {
   PACKAGE
   SUBSCRIPTION
   GENERATION
+  QUALITY_REFUND
   REFERRAL
   SALES_CODE
 }
@@ -104,6 +105,35 @@ enum OtpPurpose {
   PASSWORD_RESET
 }
 
+enum UserNotificationType {
+  SYSTEM
+  ADMIN
+  QUALITY_REVIEW
+  BILLING
+  SUPPORT
+}
+
+enum UserNotificationSource {
+  SYSTEM
+  ADMIN
+  QUALITY_REVIEW
+  BILLING
+  SUPPORT
+}
+
+enum QualityReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum QualityReviewReason {
+  PRODUCT_CHANGED
+  DETAILS_MISSING
+  COLOR_OR_STONES_WRONG
+  OTHER
+}
+
 model User {
   id                    String             @id @default(cuid())
   name                  String?
@@ -126,6 +156,10 @@ model User {
   creditEvents          CreditEvent[]      @relation("UserCreditEvents")
   creditReservations    GenerationCreditReservation[]
   authoredCreditEvents  CreditEvent[]      @relation("AdminCreditEvents")
+  notifications         UserNotification[] @relation("UserNotifications")
+  createdNotifications  UserNotification[] @relation("AdminCreatedNotifications")
+  qualityReviews        QualityReview[]    @relation("UserQualityReviews")
+  reviewedQualityReviews QualityReview[]   @relation("AdminQualityReviews")
   invitedReferrals      Referral[]         @relation("InviterReferrals")
   acceptedReferral      Referral?          @relation("InviteeReferral")
   outputSettings        UserOutputSettings?
@@ -166,6 +200,7 @@ model Project {
   batchItems       GenerationBatchItem[]
   providerEvents   ProviderEvent[]
   creditReservations GenerationCreditReservation[]
+  qualityReviews   QualityReview[]
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
 
@@ -384,6 +419,8 @@ model BillingPackage {
   priceAmount      Int
   currency         String             @default("IRR")
   credits          Int                @default(0)
+  projectLimit     Int?
+  freeVariantLimit Int                @default(2)
   periodDays       Int?
   colorPreset      String             @default("amber")
   isActive         Boolean            @default(true)
@@ -404,14 +441,20 @@ model UserSubscription {
   id                    String             @id @default(cuid())
   userId                String
   user                  User               @relation("UserSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
-  packageId             String
-  package               BillingPackage     @relation(fields: [packageId], references: [id], onDelete: Restrict)
+  packageId             String?
+  package               BillingPackage?    @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  customTitle           String?
+  periodDays            Int?
   status                SubscriptionStatus @default(ACTIVE)
   currentPeriodStart    DateTime
   currentPeriodEnd      DateTime
   creditsPerPeriod      Int
   creditsUsedThisPeriod Int                @default(0)
   reservedCredits       Int                @default(0)
+  projectLimit          Int?
+  projectsUsedThisPeriod Int               @default(0)
+  reservedProjects      Int                @default(0)
+  freeVariantLimit      Int                @default(2)
   assignedByAdminId     String?
   assignedByAdmin       User?              @relation("AssignedSubscriptions", fields: [assignedByAdminId], references: [id], onDelete: SetNull)
   purchaseRequestId     String?            @unique
@@ -490,6 +533,7 @@ model CreditEvent {
   purchaseRequest PurchaseRequest? @relation(fields: [purchaseRequestId], references: [id], onDelete: SetNull)
   referralId     String?
   referral       Referral?         @relation(fields: [referralId], references: [id], onDelete: SetNull)
+  qualityRefundReview QualityReview?
   createdAt      DateTime          @default(now())
 
   @@index([userId, createdAt])
@@ -511,6 +555,7 @@ model GenerationCreditReservation {
   subscriptionId String?
   subscription   UserSubscription?                 @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
   source         GenerationCreditReservationSource
+  reservesProject Boolean                          @default(false)
   status         GenerationCreditReservationStatus @default(RESERVED)
   capturedAt     DateTime?
   releasedAt     DateTime?
@@ -676,6 +721,57 @@ model ProviderEvent {
 
   @@index([projectId, createdAt])
   @@index([provider, status, createdAt])
+}
+
+model UserNotification {
+  id               String                 @id @default(cuid())
+  userId           String
+  user             User                   @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  title            String
+  body             String                 @db.Text
+  type             UserNotificationType   @default(SYSTEM)
+  source           UserNotificationSource @default(SYSTEM)
+  href             String?
+  readAt           DateTime?
+  createdByAdminId String?
+  createdByAdmin   User?                  @relation("AdminCreatedNotifications", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+  metadata         Json?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  @@index([userId, readAt, createdAt])
+  @@index([createdByAdminId, createdAt])
+  @@index([source, createdAt])
+}
+
+model QualityReview {
+  id                  String              @id @default(cuid())
+  projectId           String              @unique
+  project             Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId              String
+  user                User                @relation("UserQualityReviews", fields: [userId], references: [id], onDelete: Cascade)
+  reason              QualityReviewReason
+  userNote            String?             @db.Text
+  status              QualityReviewStatus @default(PENDING)
+  aiScore             Float?
+  aiRecommendation    String?
+  aiSummary           String?             @db.Text
+  aiRaw               Json?
+  aiModel             String?
+  aiAnalyzedAt        DateTime?
+  aiError             String?             @db.Text
+  reviewedByAdminId   String?
+  reviewedByAdmin     User?               @relation("AdminQualityReviews", fields: [reviewedByAdminId], references: [id], onDelete: SetNull)
+  adminNote           String?             @db.Text
+  refundCreditEventId String?             @unique
+  refundCreditEvent   CreditEvent?        @relation(fields: [refundCreditEventId], references: [id], onDelete: SetNull)
+  creditRefundedAt    DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@index([userId, status, createdAt])
+  @@index([status, createdAt])
+  @@index([reviewedByAdminId, updatedAt])
 }
 
 model RateLimitBucket {

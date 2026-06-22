@@ -3,7 +3,7 @@ import { after } from "next/server";
 import { ProjectDetailScreen, type ProjectDetail } from "@/features/projects/screens/project-detail-screen";
 import { db } from "@/lib/db";
 import { requireUserSession } from "@/lib/auth/session";
-import { FREE_VARIANT_LIMIT } from "@/lib/credits";
+import { getEffectiveFreeVariantLimit } from "@/lib/billing";
 import { isRawImageFilenameTitle, retryProjectVisionTitle } from "@/lib/product-vision";
 import { readStorageObject, storagePublicUrl } from "@/lib/storage";
 
@@ -27,6 +27,11 @@ export default async function ProjectDetailPage({
       },
       sourceAsset: {
         select: { storageKey: true, productType: true, visionShortTitle: true },
+      },
+      qualityReviews: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { status: true },
       },
     },
   });
@@ -71,7 +76,7 @@ export default async function ProjectDetailPage({
   let variantNumber: number | null = null;
   let freeVariantRemaining: number | null = null;
   if (project.sourceAssetId) {
-    const [sourceProjects, usedFreeVariantCount] = await Promise.all([
+    const [sourceProjects, usedFreeVariantCount, freeVariantLimit] = await Promise.all([
       db.project.findMany({
         where: { userId: session.userId, sourceAssetId: project.sourceAssetId, archivedAt: null },
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
@@ -87,10 +92,11 @@ export default async function ProjectDetailPage({
               status: "COMPLETED",
             },
           }),
+      getEffectiveFreeVariantLimit(session.userId),
     ]);
     const variantIndex = sourceProjects.findIndex((item) => item.id === project.id);
     variantNumber = variantIndex >= 0 ? variantIndex + 1 : null;
-    freeVariantRemaining = Math.max(0, FREE_VARIANT_LIMIT - usedFreeVariantCount);
+    freeVariantRemaining = Math.max(0, freeVariantLimit - usedFreeVariantCount);
   }
 
   return (
@@ -108,6 +114,7 @@ export default async function ProjectDetailPage({
           titleRefreshPending,
           variantNumber,
           freeVariantRemaining,
+          qualityReviewStatus: project.qualityReviews[0]?.status ?? null,
         } as ProjectDetail
       }
     />

@@ -210,8 +210,10 @@ export function buildHumanModelProductWearPrompt(productType?: string | null) {
 
   if (productType === "گردنبند") {
     base.push(
-      "For a necklace worn on the neck, treat rear clasps and back closures as hidden hardware: they normally sit behind the neck and must not be visible from the front or natural three-quarter view unless the original product clearly has a decorative front clasp or front closure.",
-      "Do not move a normal rear clasp to the front, side-front, collarbone, or pendant area just to prove it exists. If the source photo shows a back clasp, preserve it as part of product identity but let it be naturally hidden behind the neck in the worn model photo.",
+      "Default necklace-on-model clasp policy: no visible clasp. For a necklace worn on the neck, treat ordinary clasps, lobster clasps, spring-ring clasps, hooks, fasteners, and back closures as hidden hardware behind the neck.",
+      "In a natural front or three-quarter worn necklace photo, the rear clasp should be fully invisible unless the product unmistakably has a decorative front clasp or front closure.",
+      "It is correct and preferred for a normal rear clasp to be absent from the visible image. Do not move, duplicate, enlarge, rotate, or expose a normal rear clasp on the front, side-front, collarbone, pendant area, shoulder, or visible chain just to prove it exists.",
+      "If the source photo shows a back clasp, preserve it as product identity knowledge but let it disappear naturally behind the model's neck in the worn photo.",
       "Keep the chain naturally resting around the neck and collarbone; preserve the pendant, visible chain shape, metal tone, and front-facing design details.",
     );
   } else if (productType === "گوشواره") {

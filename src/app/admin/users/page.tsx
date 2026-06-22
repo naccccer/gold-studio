@@ -128,7 +128,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
                 <td className={cellClass}>
                   {subscription ? (
                     <>
-                      <p className="font-medium">{subscription.package.title}</p>
+                      <p className="font-medium">{subscription.customTitle || subscription.package?.title || "پلن اختصاصی"}</p>
                       <p className="text-xs text-slate-400">تا {formatAdminDate(subscription.currentPeriodEnd)}</p>
                     </>
                   ) : (

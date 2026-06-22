@@ -10,6 +10,15 @@ type DashboardFrameProps = {
   children: ReactNode;
   userLabel: string;
   remainingCredits: number;
+  unreadNotificationCount: number;
+  recentNotifications: Array<{
+    id: string;
+    title: string;
+    body: string;
+    href: string | null;
+    readAt: string | null;
+    createdAt: string;
+  }>;
   needsNameOnboarding: boolean;
   showStartGuide: boolean;
 };
@@ -18,6 +27,8 @@ export function DashboardFrame({
   children,
   userLabel,
   remainingCredits,
+  unreadNotificationCount,
+  recentNotifications,
   needsNameOnboarding,
   showStartGuide,
 }: DashboardFrameProps) {
@@ -53,6 +64,8 @@ export function DashboardFrame({
         <DashboardMasthead
           userLabel={userLabel}
           remainingCredits={remainingCredits}
+          unreadNotificationCount={unreadNotificationCount}
+          recentNotifications={recentNotifications}
         />
         {children}
       </div>

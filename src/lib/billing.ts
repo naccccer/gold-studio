@@ -1,6 +1,6 @@
 import type { Prisma } from "@/generated/prisma";
 import { db } from "@/lib/db";
-import { NO_CREDITS_ERROR } from "@/lib/credits";
+import { FREE_VARIANT_LIMIT, NO_CREDITS_ERROR, NO_PROJECT_QUOTA_ERROR } from "@/lib/credits";
 
 export async function logAdminAudit({
   actorAdminId,
@@ -66,12 +66,14 @@ export async function reserveGenerationCredit({
   userId,
   projectId,
   batchId,
+  reserveProject = true,
 }: {
   userId: string;
   projectId?: string | null;
   batchId?: string | null;
+  reserveProject?: boolean;
 }) {
-  return db.$transaction((tx) => reserveGenerationCreditInTransaction(tx, { userId, projectId, batchId }));
+  return db.$transaction((tx) => reserveGenerationCreditInTransaction(tx, { userId, projectId, batchId, reserveProject }));
 }
 
 export async function reserveGenerationCreditInTransaction(
@@ -80,10 +82,12 @@ export async function reserveGenerationCreditInTransaction(
     userId,
     projectId,
     batchId,
+    reserveProject = true,
   }: {
     userId: string;
     projectId?: string | null;
     batchId?: string | null;
+    reserveProject?: boolean;
   },
 ) {
   const now = new Date();
@@ -93,9 +97,12 @@ export async function reserveGenerationCreditInTransaction(
       creditsPerPeriod: number;
       creditsUsedThisPeriod: number;
       reservedCredits: number;
+      projectLimit: number | null;
+      projectsUsedThisPeriod: number;
+      reservedProjects: number;
     }>
   >`
-      SELECT id, creditsPerPeriod, creditsUsedThisPeriod, reservedCredits
+      SELECT id, creditsPerPeriod, creditsUsedThisPeriod, reservedCredits, projectLimit, projectsUsedThisPeriod, reservedProjects
       FROM \`UserSubscription\`
       WHERE userId = ${userId}
         AND status = 'ACTIVE'
@@ -105,15 +112,31 @@ export async function reserveGenerationCreditInTransaction(
       LIMIT 5
       FOR UPDATE
     `;
-  const subscription = subscriptions.find((item) => item.creditsUsedThisPeriod + item.reservedCredits < item.creditsPerPeriod);
+  const cappedSubscriptionActive = reserveProject && subscriptions.some((item) => item.projectLimit !== null);
+  const subscriptionOutputAvailable = subscriptions.some(
+    (item) => item.creditsUsedThisPeriod + item.reservedCredits < item.creditsPerPeriod,
+  );
+  const subscription = subscriptions.find((item) => {
+    const hasOutputCapacity = item.creditsUsedThisPeriod + item.reservedCredits < item.creditsPerPeriod;
+    const hasProjectCapacity =
+      !reserveProject ||
+      item.projectLimit === null ||
+      item.projectsUsedThisPeriod + item.reservedProjects < item.projectLimit;
+
+    return hasOutputCapacity && hasProjectCapacity;
+  });
 
   if (subscription) {
     const updatedSubscription = await tx.userSubscription.updateMany({
       where: {
         id: subscription.id,
         reservedCredits: subscription.reservedCredits,
+        reservedProjects: subscription.reservedProjects,
       },
-      data: { reservedCredits: { increment: 1 } },
+      data: {
+        reservedCredits: { increment: 1 },
+        ...(reserveProject && subscription.projectLimit !== null ? { reservedProjects: { increment: 1 } } : {}),
+      },
     });
     if (updatedSubscription.count === 0) {
       return { ok: false as const, error: NO_CREDITS_ERROR };
@@ -125,10 +148,15 @@ export async function reserveGenerationCreditInTransaction(
         batchId: batchId || null,
         source: "SUBSCRIPTION",
         subscriptionId: subscription.id,
+        reservesProject: reserveProject && subscription.projectLimit !== null,
       },
     });
 
     return { ok: true as const, reservationId: reservation.id, source: "SUBSCRIPTION" as const };
+  }
+
+  if (cappedSubscriptionActive) {
+    return { ok: false as const, error: subscriptionOutputAvailable ? NO_PROJECT_QUOTA_ERROR : NO_CREDITS_ERROR };
   }
 
   const [user] = await tx.$queryRaw<Array<{ id: string; credits: number; reservedCredits: number }>>`
@@ -156,6 +184,7 @@ export async function reserveGenerationCreditInTransaction(
       projectId: projectId || null,
       batchId: batchId || null,
       source: "CREDIT_BALANCE",
+      reservesProject: false,
     },
   });
 
@@ -237,6 +266,12 @@ export async function captureGenerationCreditReservation({
         data: {
           reservedCredits: { decrement: 1 },
           creditsUsedThisPeriod: { increment: 1 },
+          ...(reservation.reservesProject
+            ? {
+                reservedProjects: { decrement: 1 },
+                projectsUsedThisPeriod: { increment: 1 },
+              }
+            : {}),
         },
       });
       await tx.creditEvent.create({
@@ -308,7 +343,10 @@ export async function releaseGenerationCreditReservation({
     if (reservation.source === "SUBSCRIPTION" && reservation.subscriptionId) {
       await tx.userSubscription.update({
         where: { id: reservation.subscriptionId },
-        data: { reservedCredits: { decrement: 1 } },
+        data: {
+          reservedCredits: { decrement: 1 },
+          ...(reservation.reservesProject ? { reservedProjects: { decrement: 1 } } : {}),
+        },
       });
     }
 
@@ -333,6 +371,22 @@ export async function getAvailableGenerationCredits(userId: string) {
   return summary.totalAvailableCredits;
 }
 
+export async function getEffectiveFreeVariantLimit(userId: string) {
+  const now = new Date();
+  const subscription = await db.userSubscription.findFirst({
+    where: {
+      userId,
+      status: "ACTIVE",
+      currentPeriodStart: { lte: now },
+      currentPeriodEnd: { gt: now },
+    },
+    orderBy: [{ currentPeriodEnd: "desc" }, { createdAt: "desc" }],
+    select: { freeVariantLimit: true },
+  });
+
+  return subscription?.freeVariantLimit ?? FREE_VARIANT_LIMIT;
+}
+
 export async function getUserCreditSummary(userId: string) {
   const now = new Date();
   const [user, subscriptions] = await Promise.all([
@@ -350,7 +404,12 @@ export async function getUserCreditSummary(userId: string) {
         creditsPerPeriod: true,
         creditsUsedThisPeriod: true,
         reservedCredits: true,
+        projectLimit: true,
+        projectsUsedThisPeriod: true,
+        reservedProjects: true,
+        freeVariantLimit: true,
         currentPeriodEnd: true,
+        customTitle: true,
         package: { select: { title: true, colorPreset: true } },
       },
     }),
@@ -362,19 +421,28 @@ export async function getUserCreditSummary(userId: string) {
     0,
   );
   const walletCredits = Math.max(0, (user?.credits ?? 0) - (user?.reservedCredits ?? 0));
+  const subscriptionProjects = subscriptions.reduce((sum, subscription) => {
+    if (subscription.projectLimit === null) return sum;
+    return sum + Math.max(0, subscription.projectLimit - subscription.projectsUsedThisPeriod - subscription.reservedProjects);
+  }, 0);
 
   return {
     walletCredits,
     reservedWalletCredits: user?.reservedCredits ?? 0,
     subscriptionCredits,
+    subscriptionProjects,
     totalAvailableCredits: subscriptionCredits + walletCredits,
     activeSubscription: subscriptions[0]
       ? {
-          title: subscriptions[0].package.title,
-          colorPreset: subscriptions[0].package.colorPreset,
+          title: subscriptions[0].customTitle || subscriptions[0].package?.title || "پلن اختصاصی",
+          colorPreset: subscriptions[0].package?.colorPreset ?? "amber",
           creditsPerPeriod: subscriptions[0].creditsPerPeriod,
           creditsUsedThisPeriod: subscriptions[0].creditsUsedThisPeriod,
           reservedCredits: subscriptions[0].reservedCredits,
+          projectLimit: subscriptions[0].projectLimit,
+          projectsUsedThisPeriod: subscriptions[0].projectsUsedThisPeriod,
+          reservedProjects: subscriptions[0].reservedProjects,
+          freeVariantLimit: subscriptions[0].freeVariantLimit,
           currentPeriodEnd: subscriptions[0].currentPeriodEnd,
         }
       : null,

@@ -12,6 +12,8 @@ import {
   Home2,
   Image,
   Lifebuoy,
+  MessageQuestion,
+  NotificationBing,
   Profile2User,
   ShieldTick,
   TickCircle,
@@ -23,8 +25,10 @@ const navGroups = [
     items: [
       { href: "/admin", label: "نمای کلی", icon: Home2, exact: true },
       { href: "/admin/projects", label: "پروژه‌ها", icon: Gallery },
+      { href: "/admin/quality-reviews", label: "بررسی کیفیت", icon: MessageQuestion },
       { href: "/admin/billing", label: "پرداخت", icon: Card },
       { href: "/admin/support", label: "پشتیبانی", icon: Lifebuoy },
+      { href: "/admin/notifications", label: "پیام‌ها", icon: NotificationBing },
     ],
   },
   {
@@ -53,6 +57,8 @@ const titleBySegment: Record<string, string> = {
   home: "خانه اپ",
   billing: "پرداخت",
   projects: "پروژه‌ها",
+  "quality-reviews": "بررسی کیفیت",
+  notifications: "پیام‌ها",
   assets: "تصاویر",
   references: "عکس‌های نمونه",
   samples: "نمونه‌های آماده",

@@ -173,13 +173,21 @@ function PackageFormFields({
           <PriceAmountInput className={fieldClass} defaultValue={billingPackage?.priceAmount} />
         </Field>
       </div>
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Field label="اعتبار">
+      <div className="grid gap-3 sm:grid-cols-4">
+        <Field label="خروجی">
           <input name="credits" type="number" min={0} required defaultValue={billingPackage?.credits} className={fieldClass} />
+        </Field>
+        <Field label="پروژه">
+          <input name="projectLimit" type="number" min={0} defaultValue={billingPackage?.projectLimit ?? ""} placeholder="بدون سقف" className={fieldClass} />
+        </Field>
+        <Field label="نسخه دیگر">
+          <input name="freeVariantLimit" type="number" min={0} defaultValue={billingPackage?.freeVariantLimit ?? 2} className={fieldClass} />
         </Field>
         <Field label="دوره (روز)">
           <input name="periodDays" type="number" min={1} defaultValue={billingPackage?.periodDays ?? 30} className={fieldClass} />
         </Field>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
         <Field label="ترتیب">
           <input name="sortOrder" type="number" defaultValue={billingPackage?.sortOrder ?? nextSortOrder ?? 10} className={fieldClass} />
         </Field>
@@ -281,7 +289,8 @@ function PackagesTab({ packages }: { packages: BillingPackageWithCounts[] }) {
                       {formatIrr(billingPackage.priceAmount, billingPackage.currency)}
                     </span>
                     <span className="hidden text-xs text-slate-400 md:inline">
-                      {faNum(billingPackage.credits)} اعتبار · {faNum(usageCount)} استفاده
+                      {billingPackage.projectLimit !== null ? `${faNum(billingPackage.projectLimit)} پروژه · ` : ""}
+                      {faNum(billingPackage.credits)} خروجی · {faNum(usageCount)} استفاده
                     </span>
                   </>
                 }

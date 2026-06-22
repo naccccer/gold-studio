@@ -17,6 +17,8 @@ type BillingPackage = {
   priceAmount: number;
   currency: string;
   credits: number;
+  projectLimit: number | null;
+  freeVariantLimit: number;
   periodDays: number | null;
   colorPreset: string;
 };
@@ -179,11 +181,17 @@ function PackageCard({
             isSubscription ? "border border-white/20 bg-white/14 text-white backdrop-blur" : "border border-accent-soft bg-accent-wash text-accent-deep",
           ].join(" ")}
         >
-          {billingPackage.credits.toLocaleString("fa-IR")} {kind === "subscription" ? "خروجی" : "اعتبار"}
+          {kind === "subscription" && billingPackage.projectLimit !== null
+            ? `${billingPackage.projectLimit.toLocaleString("fa-IR")} پروژه`
+            : `${billingPackage.credits.toLocaleString("fa-IR")} ${kind === "subscription" ? "خروجی" : "اعتبار"}`}
         </span>
       </div>
       <div className={["relative mt-3 flex flex-wrap items-center justify-between gap-2 text-xs", isSubscription ? "text-white/68" : "text-muted"].join(" ")}>
-        <span>{kind === "subscription" ? `${(billingPackage.periodDays ?? 30).toLocaleString("fa-IR")} روزه` : "افزایش موجودی حساب"}</span>
+        <span>
+          {kind === "subscription"
+            ? `${billingPackage.credits.toLocaleString("fa-IR")} خروجی · ${(billingPackage.periodDays ?? 30).toLocaleString("fa-IR")} روزه`
+            : "افزایش موجودی حساب"}
+        </span>
         <span className={["font-semibold", isSubscription ? skin?.accent : "text-foreground"].join(" ")}>
           {formatPrice(billingPackage.priceAmount, billingPackage.currency)}
         </span>

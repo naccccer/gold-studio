@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ReceiptText, Refresh } from "vuesax-icons-react";
+import { MessageQuestion, ReceiptText, Refresh } from "vuesax-icons-react";
 import {
   btnDanger,
   btnPrimary,
@@ -30,15 +30,18 @@ export default async function AdminPage() {
     activeGenerationCount,
     failedGenerationCount,
     providerFailureTodayCount,
+    pendingQualityReviewCount,
     pendingPurchases,
     failedProjects,
     openTickets,
+    pendingQualityReviews,
   ] = await Promise.all([
     db.purchaseRequest.count({ where: { status: "PENDING" } }),
     db.supportTicket.count({ where: { status: { not: "CLOSED" } } }),
     db.project.count({ where: { status: { in: ["QUEUED", "PROCESSING"] }, archivedAt: null } }),
     db.project.count({ where: { status: "FAILED", archivedAt: null } }),
     db.providerEvent.count({ where: { status: "FAILED", createdAt: { gte: today } } }),
+    db.qualityReview.count({ where: { status: "PENDING" } }),
     db.purchaseRequest.findMany({
       where: { status: "PENDING" },
       orderBy: { createdAt: "asc" },
@@ -57,10 +60,19 @@ export default async function AdminPage() {
       take: 6,
       include: { user: { select: { name: true, email: true, phone: true } } },
     }),
+    db.qualityReview.findMany({
+      where: { status: "PENDING" },
+      orderBy: { createdAt: "desc" },
+      take: 6,
+      include: {
+        user: { select: { name: true, email: true, phone: true } },
+        project: { select: { id: true, title: true } },
+      },
+    }),
   ]);
 
   const allClear =
-    pendingPurchaseCount === 0 && failedGenerationCount === 0 && openTicketCount === 0;
+    pendingPurchaseCount === 0 && failedGenerationCount === 0 && openTicketCount === 0 && pendingQualityReviewCount === 0;
 
   return (
     <>
@@ -78,6 +90,7 @@ export default async function AdminPage() {
       <StatBar
         items={[
           { label: "رسید در انتظار", value: pendingPurchaseCount, tone: pendingPurchaseCount ? "attention" : "neutral", href: "/admin/billing" },
+          { label: "بررسی کیفیت", value: pendingQualityReviewCount, tone: pendingQualityReviewCount ? "attention" : "neutral", href: "/admin/quality-reviews" },
           { label: "شکست تولید", value: failedGenerationCount, tone: failedGenerationCount ? "danger" : "neutral", href: "/admin/projects?status=FAILED" },
           { label: "تیکت باز", value: openTicketCount, tone: openTicketCount ? "attention" : "neutral", href: "/admin/support" },
           { label: "در صف تولید", value: activeGenerationCount, href: "/admin/projects" },
@@ -139,6 +152,37 @@ export default async function AdminPage() {
       </Surface>
 
       <div className="grid items-start gap-5 xl:grid-cols-2">
+        <Surface>
+          <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5">
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-navy-950">
+              <MessageQuestion className="h-4 w-4 text-amber-600" />
+              بررسی‌های کیفیت
+            </h2>
+            <Link href="/admin/quality-reviews" className="text-xs font-medium text-navy-700 hover:underline">
+              همه درخواست‌ها
+            </Link>
+          </div>
+          {pendingQualityReviews.length === 0 ? (
+            <div className="px-5 py-8">
+              <EmptyState title="درخواست بررسی کیفیت باز نداریم." />
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {pendingQualityReviews.map((review) => (
+                <Link key={review.id} href="/admin/quality-reviews" className="flex items-center justify-between gap-3 px-5 py-3 transition hover:bg-navy-25">
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium text-navy-950">{review.project.title || "پروژه بدون عنوان"}</span>
+                    <span className="block truncate text-xs text-slate-400">
+                      {getUserDisplayName(review.user)} · {formatAdminDate(review.createdAt)}
+                    </span>
+                  </span>
+                  <StatusDot status={review.status} />
+                </Link>
+              ))}
+            </div>
+          )}
+        </Surface>
+
         <Surface>
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5">
             <h2 className="text-sm font-semibold text-navy-950">شکست‌های تولید</h2>

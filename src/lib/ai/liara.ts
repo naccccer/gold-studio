@@ -37,6 +37,15 @@ const GENERATION_PROMPT_SUFFIX = [
   "Make the image look like a real high-end studio photograph with natural optics, believable lighting, realistic reflections, and true material texture.",
   "Avoid AI-looking gloss, CGI, 3D render, plastic surfaces, over-smoothing, over-sharpening, artificial sparkle, surreal lighting, distorted geometry, and fake luxury effects.",
 ].join("\n");
+const REFERENCE_SCENE_PROMPT_SUFFIX = [
+  "Return one final premium product image using the provided image order and labels.",
+  "The primary product identity reference and any supporting product angles are the only product identity sources.",
+  "The sample scene reference is scene and composition only, not product identity. Replace only the sample product/jewelry/accessory with the uploaded product.",
+  "Preserve the exact uploaded product shape, proportions, silhouette, metal color, gemstone count and placement, visible chain or front-facing clasp design when naturally visible, watch face, engravings, setting, material finish, visible defects, and all visible jewelry details.",
+  "Do not copy, mix in, retain, or reinterpret the sample product identity.",
+  "Integrate the uploaded product realistically into the sample scene with believable perspective, scale, contact shadows, occlusion, reflections, lighting, depth of field, hand/finger wrapping, water distortion, and physical placement when present.",
+  "Avoid AI-looking gloss, CGI, 3D render, plastic surfaces, over-smoothing, over-sharpening, artificial sparkle, surreal lighting, distorted geometry, and fake luxury effects.",
+].join("\n");
 
 type GenerateImageInput = {
   sourceBuffer: Buffer;
@@ -178,6 +187,10 @@ function extensionFromMimeType(mimeType: string) {
   if (mimeType === "image/png") return "png";
   if (mimeType === "image/webp") return "webp";
   return "jpg";
+}
+
+function generationPromptSuffix(hasReferenceScene: boolean) {
+  return hasReferenceScene ? REFERENCE_SCENE_PROMPT_SUFFIX : GENERATION_PROMPT_SUFFIX;
 }
 
 async function prepareEditImageForModel(buffer: Buffer, mimeType: string, model: string): Promise<PreparedFormImage> {
@@ -467,7 +480,7 @@ export async function generateStyledImageWithLiara({
         : null;
       const form = new FormData();
       form.append("model", imageModel);
-      form.append("prompt", `${stylePrompt}\n\n${GENERATION_PROMPT_SUFFIX}`);
+      form.append("prompt", `${stylePrompt}\n\n${generationPromptSuffix(Boolean(referenceImage))}`);
       form.append("size", imageSize);
       form.append("quality", getImageQuality(quality, imageModel));
       form.append(

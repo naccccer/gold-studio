@@ -9,6 +9,7 @@ import {
   Gift,
   Lifebuoy,
   MessageQuestion,
+  NotificationBing,
   ReceiptText,
   ShieldSecurity,
   UserEdit,
@@ -49,6 +50,7 @@ type AccountRowItem = {
 const rowItems: AccountRowItem[] = [
   { title: "حساب کاربری", href: "/account/profile", icon: UserEdit },
   { title: "گالری نمونه‌ها", href: "/account/style-references", icon: Gallery },
+  { title: "پیام‌ها", href: "/account/notifications", icon: NotificationBing },
   { title: "آرشیو", href: "/account/archive", icon: ArchiveBook },
   { title: "کد معرفی", href: "/account/referral", icon: Gift },
 ];
