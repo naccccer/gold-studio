@@ -30,6 +30,44 @@ type GuideRects = {
   };
 };
 
+function clamp(value: number, min: number, max: number) {
+  if (max < min) return min;
+  return Math.min(Math.max(value, min), max);
+}
+
+function getSpotlightRect(target: GuideStep["target"], rect: TargetRect, frame: TargetRect | null, viewport: GuideRects["viewport"]) {
+  const inset = 4;
+  const frameLeft = frame?.left ?? 0;
+  const frameTop = frame?.top ?? 0;
+  const frameRight = frame?.right ?? viewport.width;
+  const frameBottom = frame?.bottom ?? viewport.height;
+
+  if (target === "new-project") {
+    const diameter = Math.max(rect.width, rect.height) + inset * 2;
+    const left = clamp(rect.left + rect.width / 2 - diameter / 2, frameLeft, frameRight - diameter);
+    const top = clamp(rect.top + rect.height / 2 - diameter / 2, frameTop, frameBottom - diameter);
+
+    return {
+      top,
+      left,
+      width: diameter,
+      height: diameter,
+    };
+  }
+
+  const left = Math.max(frameLeft, rect.left - inset);
+  const top = Math.max(frameTop, rect.top - inset);
+  const right = Math.min(frameRight, rect.right + inset);
+  const bottom = Math.min(frameBottom, rect.bottom + inset);
+
+  return {
+    top,
+    left,
+    width: Math.max(0, right - left),
+    height: Math.max(0, bottom - top),
+  };
+}
+
 const steps: GuideStep[] = [
   {
     target: "gallery",
@@ -130,23 +168,20 @@ export function StartGuide({ enabled = true }: StartGuideProps) {
   const { target: rect, frame, viewport } = useGuideRects(step.target);
   const isLastStep = !isProjectUploadGuide && stepIndex === steps.length - 1;
   const isUploadStep = step.target === "project-upload";
-  const spotlightRect = rect
-    ? {
-        top: Math.max(frame?.top ?? 0, rect.top - 4),
-        right: Math.max(0, viewport.width - Math.min(frame?.right ?? viewport.width, rect.right + 4)),
-        left: Math.max(frame?.left ?? 0, rect.left - 4),
-        width: rect.width + 8,
-        height: rect.height + 8,
-      }
-    : null;
-  const spotlightRadius = step.target === "new-project" ? 999 : 16;
+  const isNewProjectStep = step.target === "new-project";
+  const spotlightRect = rect ? getSpotlightRect(step.target, rect, frame, viewport) : null;
+  const spotlightRadius = isNewProjectStep ? 999 : 16;
 
   const bubbleStyle = useMemo<CSSProperties>(() => {
     const frameLeft = frame?.left ?? 16;
     const frameRight = frame?.right ?? viewport.width - 16;
     const frameTop = frame?.top ?? 0;
     const frameBottom = frame?.bottom ?? viewport.height;
-    const bubbleWidth = isUploadStep ? Math.min(302, frameRight - frameLeft - 24) : Math.min(334, frameRight - frameLeft - 24);
+    const bubbleWidth = isUploadStep
+      ? Math.min(302, frameRight - frameLeft - 24)
+      : isNewProjectStep
+        ? frameRight - frameLeft - 32
+        : Math.min(334, frameRight - frameLeft - 24);
 
     if (!rect) {
       return {
@@ -158,7 +193,7 @@ export function StartGuide({ enabled = true }: StartGuideProps) {
 
     const targetCenter = rect.left + rect.width / 2;
     const left = Math.min(Math.max(frameLeft + 12, targetCenter - bubbleWidth / 2), frameRight - bubbleWidth - 12);
-    const estimatedBubbleHeight = 146;
+    const estimatedBubbleHeight = isUploadStep ? 146 : 160;
     const gap = 14;
     const spaceAbove = rect.top - frameTop;
     const top = isUploadStep
@@ -172,7 +207,7 @@ export function StartGuide({ enabled = true }: StartGuideProps) {
       left,
       top: Math.max(frameTop + 12, top),
     };
-  }, [frame, isUploadStep, rect, viewport.height, viewport.width]);
+  }, [frame, isNewProjectStep, isUploadStep, rect, viewport.height, viewport.width]);
 
   const pointerStyle = useMemo<CSSProperties | null>(() => {
     if (!rect || !frame) return null;
@@ -227,40 +262,39 @@ export function StartGuide({ enabled = true }: StartGuideProps) {
   return (
     <div dir="rtl" className="fixed inset-0 z-50 text-right">
       {spotlightRect ? (
-        <svg aria-hidden="true" className="pointer-events-none fixed inset-0 h-full w-full">
-          <defs>
-            <mask id="start-guide-spotlight-mask">
-              <rect width="100%" height="100%" fill="white" />
-              <rect
-                x={spotlightRect.left}
-                y={spotlightRect.top}
-                width={spotlightRect.width}
-                height={spotlightRect.height}
-                rx={spotlightRadius}
-                ry={spotlightRadius}
-                fill="black"
-              />
-            </mask>
-          </defs>
-          <rect width="100%" height="100%" fill="rgba(13,12,10,0.74)" mask="url(#start-guide-spotlight-mask)" />
-        </svg>
+        <>
+          {isNewProjectStep ? (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none fixed inset-0"
+              style={{
+                background: `radial-gradient(circle at ${spotlightRect.left + spotlightRect.width / 2}px ${
+                  spotlightRect.top + spotlightRect.height / 2
+                }px, transparent 0 ${spotlightRect.width / 2}px, rgba(13,12,10,0.74) ${spotlightRect.width / 2 + 1}px)`,
+              }}
+            />
+          ) : null}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none fixed border border-[#f5d9a4]/90"
+            style={{
+              top: spotlightRect.top,
+              left: spotlightRect.left,
+              width: spotlightRect.width,
+              height: spotlightRect.height,
+              borderRadius: spotlightRadius,
+              boxShadow: isNewProjectStep
+                ? "0 0 0 4px rgba(245,217,164,0.14), 0 14px 30px -24px rgba(245,217,164,0.86)"
+                : "0 0 0 4px rgba(245,217,164,0.14), 0 14px 30px -24px rgba(245,217,164,0.86), 0 0 0 9999px rgba(13,12,10,0.74)",
+            }}
+          />
+        </>
       ) : (
         <div className="absolute inset-0 bg-[#0d0c0a]/72 backdrop-blur-[1px]" />
       )}
 
       {spotlightRect ? (
         <>
-          <div
-            aria-hidden="true"
-            className="pointer-events-none fixed border border-[#f5d9a4]/90 shadow-[0_0_0_4px_rgba(245,217,164,0.13),0_14px_30px_-24px_rgba(245,217,164,0.86)]"
-            style={{
-              top: spotlightRect.top,
-              right: spotlightRect.right,
-              width: spotlightRect.width,
-              height: spotlightRect.height,
-              borderRadius: spotlightRadius,
-            }}
-          />
           {isLastStep || isUploadStep ? (
             <button
               type="button"
@@ -270,9 +304,10 @@ export function StartGuide({ enabled = true }: StartGuideProps) {
               className="fixed rounded-full focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]"
               style={{
                 top: spotlightRect.top - 2,
-                right: spotlightRect.right - 2,
+                left: spotlightRect.left - 2,
                 width: spotlightRect.width + 4,
                 height: spotlightRect.height + 4,
+                borderRadius: spotlightRadius,
               }}
             />
           ) : null}
@@ -281,7 +316,7 @@ export function StartGuide({ enabled = true }: StartGuideProps) {
 
       <section
         className="fixed rounded-[var(--radius-xl)] border border-white/78 bg-surface p-3.5 text-foreground shadow-[0_26px_70px_-34px_rgba(0,0,0,0.76)]"
-        style={bubbleStyle}
+        style={{ ...bubbleStyle, height: isUploadStep ? undefined : 160 }}
         aria-live="polite"
       >
         {isUploadStep && pointerStyle ? (
@@ -297,7 +332,7 @@ export function StartGuide({ enabled = true }: StartGuideProps) {
           </span>
           <div className="min-w-0">
             <h2 className="text-sm font-semibold leading-6 text-foreground">{step.title}</h2>
-            <p className="mt-1 text-xs leading-6 text-muted">{step.body}</p>
+            <p className="mt-1 min-h-12 text-xs leading-6 text-muted">{step.body}</p>
           </div>
         </div>
 
