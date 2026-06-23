@@ -31,6 +31,7 @@ import {
 } from "@/lib/referrals";
 import { deleteStorageObject } from "@/lib/storage";
 import { saveHomeCarouselFile, saveStylePreviewFile } from "@/lib/uploads";
+import { normalizeVerticalId } from "@/lib/verticals";
 
 function text(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -1611,6 +1612,7 @@ export async function updateCreativeStyleAction(formData: FormData) {
   const prompt = text(formData, "prompt");
   const previewImageUrl = await getStylePreviewImageUrl(formData, text(formData, "currentPreviewImageUrl"));
   const sortOrder = integer(formData, "sortOrder");
+  const vertical = normalizeVerticalId(text(formData, "vertical"));
 
   if (!styleId || !name || !description || !prompt || !previewImageUrl) {
     return;
@@ -1630,6 +1632,7 @@ export async function updateCreativeStyleAction(formData: FormData) {
       description,
       prompt,
       previewImageUrl,
+      vertical,
       sortOrder,
       isActive: availableToUsers,
       isUserVisible: availableToUsers,
@@ -1644,6 +1647,7 @@ export async function updateCreativeStyleAction(formData: FormData) {
     summary: `سبک ${name} ویرایش شد.`,
     metadata: {
       previousName: previous?.name,
+      vertical,
       promptChanged: previous?.prompt !== prompt,
       wasUserVisible: previous?.isUserVisible,
       isUserVisible: availableToUsers,
@@ -1661,6 +1665,7 @@ export async function createCreativeStyleAction(formData: FormData) {
   const description = text(formData, "description");
   const prompt = text(formData, "prompt");
   const previewImageUrl = await getStylePreviewImageUrl(formData, "/images/placeholders/jewelry/style-minimal.webp");
+  const vertical = normalizeVerticalId(text(formData, "vertical"));
 
   if (!name || !description || !prompt || !previewImageUrl) {
     return;
@@ -1674,6 +1679,7 @@ export async function createCreativeStyleAction(formData: FormData) {
       description,
       prompt,
       previewImageUrl,
+      vertical,
       sortOrder: integer(formData, "sortOrder"),
       isActive: availableToUsers,
       isUserVisible: availableToUsers,
@@ -1686,6 +1692,7 @@ export async function createCreativeStyleAction(formData: FormData) {
     targetType: "CreativeStyle",
     targetId: style.id,
     summary: `سبک ${name} ساخته شد.`,
+    metadata: { vertical },
   });
 
   revalidatePath("/admin/styles");

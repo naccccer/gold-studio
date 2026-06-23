@@ -22,6 +22,7 @@ import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { db } from "@/lib/db";
 import { requireAdminSession } from "@/lib/auth/session";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
+import { getVerticalLabel } from "@/lib/verticals";
 
 export const dynamic = "force-dynamic";
 
@@ -123,6 +124,7 @@ export default async function AdminProjectDetailPage({ params }: AdminProjectDet
                   ),
                 },
                 { label: "شناسه کاربر", value: getUserIdentifier(project.user), dir: "ltr" },
+                { label: "Vertical", value: getVerticalLabel(project.vertical) },
                 { label: "سبک", value: project.style.name },
                 { label: "قالب خروجی", value: project.outputPreset, dir: "ltr" },
                 { label: "آخرین آپدیت", value: formatAdminDate(project.updatedAt) },

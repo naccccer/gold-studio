@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import type { StyleOption } from "@/features/projects/presets";
+import { DEFAULT_VERTICAL_ID, type VerticalId } from "@/lib/verticals";
 
 function toStyleOption(style: {
   id: string;
@@ -27,9 +28,9 @@ function toStyleOption(style: {
   };
 }
 
-export async function getUserVisibleStyles(): Promise<StyleOption[]> {
+export async function getUserVisibleStyles(vertical: VerticalId = DEFAULT_VERTICAL_ID): Promise<StyleOption[]> {
   const styles = await db.creativeStyle.findMany({
-    where: { isActive: true, isUserVisible: true, id: { not: "style_warm_luxury" } },
+    where: { vertical, isActive: true, isUserVisible: true, id: { not: "style_warm_luxury" } },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     include: {
       controls: {
@@ -46,10 +47,11 @@ export type StyleForGeneration = StyleOption & {
   prompt: string;
 };
 
-export async function getStyleForGeneration(styleId: string): Promise<StyleForGeneration | null> {
+export async function getStyleForGeneration(styleId: string, vertical: VerticalId = DEFAULT_VERTICAL_ID): Promise<StyleForGeneration | null> {
   const style = await db.creativeStyle.findFirst({
     where: {
       id: styleId,
+      vertical,
       isActive: true,
     },
     include: {

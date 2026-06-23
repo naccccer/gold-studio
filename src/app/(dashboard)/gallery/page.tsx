@@ -1,5 +1,6 @@
 import { GalleryScreen, type GalleryAssetItem } from "@/features/gallery/screens/gallery-screen";
 import { requireUserSession } from "@/lib/auth/session";
+import { getCurrentVertical } from "@/lib/current-vertical";
 import { db } from "@/lib/db";
 import { storagePublicUrl } from "@/lib/storage";
 import { getUserVisibleStyles } from "@/lib/styles";
@@ -14,10 +15,11 @@ function normalizeDeleteNotice(value?: string) {
 
 export default async function GalleryPage({ searchParams }: GalleryPageProps) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const params = await searchParams;
   const [assets, styles] = await Promise.all([
     db.productAsset.findMany({
-      where: { userId: session.userId, status: "READY", archivedAt: null },
+      where: { userId: session.userId, vertical, status: "READY", archivedAt: null },
       orderBy: { createdAt: "desc" },
       include: {
         projects: {
@@ -25,7 +27,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
         },
       },
     }),
-    getUserVisibleStyles(),
+    getUserVisibleStyles(vertical),
   ]);
 
   const displayAssets = assets.map((asset) => ({

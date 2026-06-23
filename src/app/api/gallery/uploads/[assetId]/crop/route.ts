@@ -6,6 +6,7 @@ import { analyzeAndStoreProductAssetVision } from "@/lib/product-vision";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { generateNumericSupportCode, logSupportError } from "@/lib/support-code";
 import { saveUploadedFile } from "@/lib/uploads";
+import { resolveVerticalFromRequest } from "@/lib/verticals";
 
 function cropErrorMessage(error: unknown) {
   if (error instanceof Error && error.message.trim()) {
@@ -23,6 +24,7 @@ export async function POST(
   if (!session) {
     return NextResponse.json({ error: "نشست کاربر معتبر نیست." }, { status: 401 });
   }
+  const vertical = resolveVerticalFromRequest(request);
 
   const limited = await checkRateLimit({
     scope: "gallery:crop",
@@ -39,6 +41,7 @@ export async function POST(
     where: {
       id: assetId,
       userId: session.userId,
+      vertical,
     },
     select: {
       id: true,

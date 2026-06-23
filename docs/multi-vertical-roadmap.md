@@ -209,3 +209,4 @@ For UI phases, manually review the `393x852` mobile layout target. Capture scree
 ## Phase Log
 
 - 2026-06-24: Roadmap created on `codex/multi-vertical-platform`. No product implementation started yet.
+- 2026-06-24: Phase 1 Vertical Foundation implemented on `codex/phase-1-vertical-foundation`: added the central vertical registry and host resolver, stored `vertical` on behavior-critical records with a jewelry backfill, scoped user gallery/projects/styles/ready samples to the current vertical, and added lightweight admin vertical filters/labels. Existing Jewelry behavior remains the default.

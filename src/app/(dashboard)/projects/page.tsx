@@ -1,13 +1,15 @@
 import { ProjectsListScreen, type ProjectListItem } from "@/features/projects/screens/projects-list-screen";
+import { getCurrentVertical } from "@/lib/current-vertical";
 import { db } from "@/lib/db";
 import { requireUserSession } from "@/lib/auth/session";
 import { storagePublicUrl } from "@/lib/storage";
 
 export default async function ProjectsPage() {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
 
   const projects = (await db.project.findMany({
-    where: { userId: session.userId, archivedAt: null },
+    where: { userId: session.userId, vertical, archivedAt: null },
     orderBy: { createdAt: "desc" },
     include: {
       style: {

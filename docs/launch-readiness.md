@@ -11,6 +11,7 @@
 - تنظیمات پرداخت در `/admin/billing` کامل باشد: بسته‌ها، اعتبار مستقل، پلن سفارشی کاربر، توضیح پرداخت، و اطلاعات کارت به کارت.
 - مسیرهای پشتیبانی و FAQ آماده باشند و یک تیکت تستی از سمت کاربر پاسخ داده شود.
 - Home carousel، ready style samples، style previews، و متن‌های اصلی ادمین مرور شوند.
+- Multi-vertical host routing is verified: current Jewelry host resolves to `jewelry`; `food.*` resolves to `food`; local development may use optional `OVALA_LOCAL_VERTICAL` and otherwise falls back to `jewelry`.
 - backup قبل لانچ از `/admin/backups` یا `npm run backup:run` گرفته و دانلود/بازبینی شود.
 - نقش `SALES` با یک حساب تستی بررسی شود: دسترسی به users/billing/referrals باز باشد و health/AI/backups/audit بسته باشد.
 

@@ -19,11 +19,12 @@ import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { db } from "@/lib/db";
 import { requireAdminSession } from "@/lib/auth/session";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
+import { getVerticalLabel, normalizeVerticalId, USER_VISIBLE_VERTICAL_IDS, VERTICALS } from "@/lib/verticals";
 
 export const dynamic = "force-dynamic";
 
 type AdminProjectsPageProps = {
-  searchParams?: Promise<{ status?: string; q?: string; styleId?: string; archived?: string }>;
+  searchParams?: Promise<{ status?: string; q?: string; styleId?: string; archived?: string; vertical?: string }>;
 };
 
 const statusFilters = [
@@ -34,11 +35,12 @@ const statusFilters = [
   { value: "COMPLETED", label: "تکمیل‌شده" },
 ];
 
-function buildQuery(params: { status?: string; q?: string; styleId?: string; archived?: string }) {
+function buildQuery(params: { status?: string; q?: string; styleId?: string; archived?: string; vertical?: string }) {
   const query = new URLSearchParams();
   if (params.status && params.status !== "ALL") query.set("status", params.status);
   if (params.q) query.set("q", params.q);
   if (params.styleId) query.set("styleId", params.styleId);
+  if (params.vertical && params.vertical !== "ALL") query.set("vertical", params.vertical);
   if (params.archived === "all") query.set("archived", "all");
   const value = query.toString();
   return value ? `?${value}` : "";
@@ -52,16 +54,19 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
   const q = params?.q?.trim();
   const styleId = params?.styleId;
   const includeArchived = params?.archived === "all";
+  const vertical = params?.vertical && params.vertical !== "ALL" ? normalizeVerticalId(params.vertical) : "ALL";
 
   const where: Prisma.ProjectWhereInput = {
     ...(includeArchived ? {} : { archivedAt: null }),
     ...(status !== "ALL" ? { status: status as "QUEUED" | "PROCESSING" | "COMPLETED" | "FAILED" } : {}),
     ...(styleId ? { styleId } : {}),
+    ...(vertical === "ALL" ? {} : { vertical }),
     ...(q
       ? {
           OR: [
             { id: { contains: q } },
             { title: { contains: q } },
+            { vertical: { contains: q } },
             { errorMessage: { contains: q } },
             { prompt: { contains: q } },
             { user: { OR: [{ email: { contains: q } }, { phone: { contains: q } }, { name: { contains: q } }] } },
@@ -82,7 +87,11 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
         providerEvents: { orderBy: { createdAt: "desc" }, take: 1 },
       },
     }),
-    db.creativeStyle.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], select: { id: true, name: true } }),
+    db.creativeStyle.findMany({
+      where: vertical === "ALL" ? undefined : { vertical },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      select: { id: true, name: true },
+    }),
     db.project.count({ where: { status: "QUEUED", archivedAt: null } }),
     db.project.count({ where: { status: "PROCESSING", archivedAt: null } }),
     db.project.count({ where: { status: "FAILED", archivedAt: null } }),
@@ -110,7 +119,7 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
       <div className="flex flex-wrap items-center justify-between gap-3">
         <SegmentedLinks
           items={statusFilters.map((item) => ({
-            href: `/admin/projects${buildQuery({ status: item.value, q, styleId, archived: params?.archived })}`,
+            href: `/admin/projects${buildQuery({ status: item.value, q, styleId, archived: params?.archived, vertical })}`,
             label: item.label,
             active: status === item.value,
             count: countByStatus[item.value],
@@ -119,6 +128,14 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
         <form className="flex flex-wrap items-center gap-2">
           {status !== "ALL" ? <input type="hidden" name="status" value={status} /> : null}
           <input name="q" defaultValue={q} placeholder="جست‌وجو در پروژه‌ها و کاربران" className={`${inlineFieldClass} w-56`} />
+          <select name="vertical" defaultValue={vertical} className={`${inlineFieldClass} w-36`}>
+            <option value="ALL">All verticals</option>
+            {USER_VISIBLE_VERTICAL_IDS.map((item) => (
+              <option key={item} value={item}>
+                {VERTICALS[item].label}
+              </option>
+            ))}
+          </select>
           <select name="styleId" defaultValue={styleId ?? ""} className={`${inlineFieldClass} w-36`}>
             <option value="">همه سبک‌ها</option>
             {styles.map((style) => (
@@ -137,7 +154,7 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
 
       <Surface>
         <ConsoleTable
-          head={["پروژه", "کاربر", "سبک", "وضعیت", "آخرین رویداد", "زمان"]}
+          head={["پروژه", "کاربر", "Vertical", "سبک", "وضعیت", "آخرین رویداد", "زمان"]}
           empty={<EmptyState title="پروژه‌ای با این فیلتر پیدا نشد." />}
         >
           {projects.map((project) => {
@@ -175,6 +192,9 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
                   <p className="text-xs text-slate-400" dir="ltr">
                     {getUserIdentifier(project.user)}
                   </p>
+                </td>
+                <td className={cellClass}>
+                  {getVerticalLabel(project.vertical)}
                 </td>
                 <td className={cellClass}>
                   <p>{project.style.name}</p>

@@ -4,6 +4,7 @@ import { ProjectDetailScreen, type ProjectDetail } from "@/features/projects/scr
 import { db } from "@/lib/db";
 import { requireUserSession } from "@/lib/auth/session";
 import { getEffectiveFreeVariantLimit } from "@/lib/billing";
+import { getCurrentVertical } from "@/lib/current-vertical";
 import { isRawImageFilenameTitle, retryProjectVisionTitle } from "@/lib/product-vision";
 import { readStorageObject, storagePublicUrl } from "@/lib/storage";
 
@@ -13,12 +14,14 @@ export default async function ProjectDetailPage({
   params: Promise<{ projectId: string }>;
 }) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const { projectId } = await params;
 
   const project = await db.project.findFirst({
     where: {
       id: projectId,
       userId: session.userId,
+      vertical,
       archivedAt: null,
     },
     include: {
@@ -48,7 +51,7 @@ export default async function ProjectDetailPage({
   if (isRawImageFilenameTitle(title) && visionTitle) {
     title = visionTitle;
     await db.project.updateMany({
-      where: { id: project.id, userId: session.userId, archivedAt: null },
+      where: { id: project.id, userId: session.userId, vertical, archivedAt: null },
       data: { title: visionTitle },
     });
   }
@@ -78,7 +81,7 @@ export default async function ProjectDetailPage({
   if (project.sourceAssetId) {
     const [sourceProjects, usedFreeVariantCount, freeVariantLimit] = await Promise.all([
       db.project.findMany({
-        where: { userId: session.userId, sourceAssetId: project.sourceAssetId, archivedAt: null },
+        where: { userId: session.userId, vertical, sourceAssetId: project.sourceAssetId, archivedAt: null },
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
         select: { id: true },
       }),
@@ -87,6 +90,7 @@ export default async function ProjectDetailPage({
         : db.project.count({
             where: {
               userId: session.userId,
+              vertical,
               variantParentId: project.id,
               archivedAt: null,
               status: "COMPLETED",

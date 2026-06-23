@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { GalleryAssetScreen, type GalleryAssetDetail } from "@/features/gallery/screens/gallery-asset-screen";
 import { requireUserSession } from "@/lib/auth/session";
+import { getCurrentVertical } from "@/lib/current-vertical";
 import { db } from "@/lib/db";
 import { storagePublicUrl } from "@/lib/storage";
 
@@ -10,12 +11,13 @@ export default async function GalleryAssetPage({
   params: Promise<{ assetId: string }>;
 }) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const { assetId } = await params;
   const asset = await db.productAsset.findFirst({
-    where: { id: assetId, userId: session.userId, status: "READY", archivedAt: null },
+    where: { id: assetId, userId: session.userId, vertical, status: "READY", archivedAt: null },
     include: {
       projects: {
-        where: { archivedAt: null },
+        where: { vertical, archivedAt: null },
         orderBy: { createdAt: "desc" },
         select: {
           id: true,

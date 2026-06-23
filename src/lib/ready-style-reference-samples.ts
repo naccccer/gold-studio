@@ -2,6 +2,7 @@ import "server-only";
 
 import { access, mkdir, readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
+import { DEFAULT_VERTICAL_ID, type VerticalId } from "@/lib/verticals";
 
 export const readyStyleReferenceSamplePublicBasePath = "/images/Samples";
 export const readyStyleReferenceSampleDirectory = path.join(process.cwd(), "public", "images", "Samples");
@@ -88,6 +89,7 @@ const legacyIdByStem: Record<string, string> = {
 };
 
 export type ReadyStyleReferenceSample = {
+  vertical: VerticalId;
   id: string;
   fileName: string;
   filePath: string;
@@ -149,9 +151,10 @@ export async function ensureReadyStyleReferenceSampleDirectory() {
   await mkdir(readyStyleReferenceSampleDirectory, { recursive: true });
 }
 
-export async function getReadyStyleReferenceSamples(): Promise<ReadyStyleReferenceSample[]> {
+export async function getReadyStyleReferenceSamples(vertical: VerticalId = DEFAULT_VERTICAL_ID): Promise<ReadyStyleReferenceSample[]> {
   const directoryFiles = await listSampleDirectoryFiles();
   const fileNames = Array.from(new Set([...sampleFiles, ...directoryFiles]));
+  const sampleVertical: VerticalId = DEFAULT_VERTICAL_ID;
   const samples = await Promise.all(
     fileNames
       .filter((fileName) => allowedSampleExtensions.has(path.extname(fileName).toLowerCase()))
@@ -162,6 +165,7 @@ export async function getReadyStyleReferenceSamples(): Promise<ReadyStyleReferen
         const info = await stat(filePath).catch(() => null);
 
         return {
+          vertical: sampleVertical,
           id,
           fileName,
           filePath,
@@ -174,11 +178,13 @@ export async function getReadyStyleReferenceSamples(): Promise<ReadyStyleReferen
       }),
   );
 
-  return samples.sort((left, right) => left.fileName.localeCompare(right.fileName, "en"));
+  return samples
+    .filter((sample) => sample.vertical === vertical)
+    .sort((left, right) => left.fileName.localeCompare(right.fileName, "en"));
 }
 
-export async function getReadyStyleReferenceSample(sampleId: string) {
-  const samples = await getReadyStyleReferenceSamples();
+export async function getReadyStyleReferenceSample(sampleId: string, vertical: VerticalId = DEFAULT_VERTICAL_ID) {
+  const samples = await getReadyStyleReferenceSamples(vertical);
   return samples.find((sample) => sample.id === sampleId) ?? null;
 }
 

@@ -7,6 +7,7 @@ import {
 } from "@/features/gallery/screens/gallery-batch-new-screen";
 import { requireUserSession } from "@/lib/auth/session";
 import { getAvailableGenerationCredits } from "@/lib/billing";
+import { getCurrentVertical } from "@/lib/current-vertical";
 import { db } from "@/lib/db";
 import { getReadyStyleReferenceSamples } from "@/lib/ready-style-reference-samples";
 import { storagePublicUrl } from "@/lib/storage";
@@ -19,6 +20,7 @@ export default async function NewGalleryBatchPage({
   searchParams?: Promise<{ assetIds?: string; error?: string }>;
 }) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const params = await searchParams;
   const assetIds = Array.from(new Set((params?.assetIds ?? "").split(",").map((id) => id.trim()).filter(Boolean)));
 
@@ -31,6 +33,7 @@ export default async function NewGalleryBatchPage({
       where: {
         id: { in: assetIds },
         userId: session.userId,
+        vertical,
         status: "READY",
         archivedAt: null,
       },
@@ -44,7 +47,7 @@ export default async function NewGalleryBatchPage({
       },
     }),
     db.styleReferenceAsset.findMany({
-      where: { userId: session.userId, status: "READY", archivedAt: null },
+      where: { userId: session.userId, vertical, status: "READY", archivedAt: null },
       orderBy: { createdAt: "desc" },
       take: 12,
       select: {
@@ -54,8 +57,8 @@ export default async function NewGalleryBatchPage({
         originalName: true,
       },
     }),
-    getReadyStyleReferenceSamples(),
-    getUserVisibleStyles(),
+    getReadyStyleReferenceSamples(vertical),
+    getUserVisibleStyles(vertical),
     getAvailableGenerationCredits(session.userId),
   ]);
 

@@ -8,6 +8,7 @@ import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 import { accountCardClass } from "@/features/account/components/account-subpage";
 import { deleteArchivedProjectAction, restoreProjectAction } from "@/features/projects/actions";
 import { requireUserSession } from "@/lib/auth/session";
+import { getCurrentVertical } from "@/lib/current-vertical";
 import { db } from "@/lib/db";
 import { archiveItems } from "@/lib/placeholders/jewelry-images";
 import { storagePublicUrl } from "@/lib/storage";
@@ -16,8 +17,9 @@ export const dynamic = "force-dynamic";
 
 export default async function AccountArchivePage() {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const projects = (await db.project.findMany({
-    where: { userId: session.userId, archivedAt: { not: null } },
+    where: { userId: session.userId, vertical, archivedAt: { not: null } },
     orderBy: { archivedAt: "desc" },
     include: {
       style: { select: { name: true } },

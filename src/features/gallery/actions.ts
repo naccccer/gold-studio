@@ -13,6 +13,7 @@ import {
 import { NO_CREDITS_ERROR } from "@/lib/credits";
 import { db } from "@/lib/db";
 import { buildGenerationPrompt } from "@/lib/ai/generation-prompt";
+import { getCurrentVertical } from "@/lib/current-vertical";
 import { processGenerationBatch } from "@/lib/generation/jobs";
 import { normalizeOutputPreset } from "@/lib/output-presets";
 import { analyzeAndStoreProductAssetVision, ensureProductAssetVision, pickVisionTitle } from "@/lib/product-vision";
@@ -22,8 +23,9 @@ import { deleteStorageObject } from "@/lib/storage";
 import { createOrFindStyleReferenceFromReadySample } from "@/lib/style-reference-ready-samples";
 import { getStyleForGeneration } from "@/lib/styles";
 import { saveStyleReferenceFile, saveStyleReferenceFromStoredObject, saveUploadedFile } from "@/lib/uploads";
+import type { VerticalId } from "@/lib/verticals";
 
-async function resolveReferenceAssetForBatch(styleId: string, formData: FormData, userId: string) {
+async function resolveReferenceAssetForBatch(styleId: string, formData: FormData, userId: string, vertical: VerticalId) {
   if (styleId !== "style_sample_reference") {
     return null;
   }
@@ -31,7 +33,7 @@ async function resolveReferenceAssetForBatch(styleId: string, formData: FormData
   const referenceAssetId = String(formData.get("referenceAssetId") ?? "").trim();
   if (referenceAssetId) {
     const referenceAsset = await db.styleReferenceAsset.findFirst({
-      where: { id: referenceAssetId, userId, status: "READY", archivedAt: null },
+      where: { id: referenceAssetId, userId, vertical, status: "READY", archivedAt: null },
       select: { id: true },
     });
 
@@ -44,7 +46,7 @@ async function resolveReferenceAssetForBatch(styleId: string, formData: FormData
 
   const readySampleId = String(formData.get("readySampleId") ?? "").trim();
   if (readySampleId) {
-    const asset = await createOrFindStyleReferenceFromReadySample(userId, readySampleId);
+    const asset = await createOrFindStyleReferenceFromReadySample(userId, readySampleId, vertical);
     if ("error" in asset) {
       throw new Error(asset.error);
     }
@@ -64,6 +66,7 @@ async function resolveReferenceAssetForBatch(styleId: string, formData: FormData
   return db.styleReferenceAsset.create({
     data: {
       userId,
+      vertical,
       fileUrl: uploaded.publicUrl,
       storageKey: uploaded.storageKey,
       mimeType: uploaded.mimeType,
@@ -76,6 +79,7 @@ async function resolveReferenceAssetForBatch(styleId: string, formData: FormData
 
 export async function uploadGalleryAssetsAction(formData: FormData) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const limited = await checkRateLimit({
     scope: "gallery:bulk-upload",
     identifier: session.userId,
@@ -99,6 +103,7 @@ export async function uploadGalleryAssetsAction(formData: FormData) {
     const asset = await db.productAsset.create({
       data: {
         userId: session.userId,
+        vertical,
         fileUrl: uploaded.publicUrl,
         storageKey: uploaded.storageKey,
         mimeType: uploaded.mimeType,
@@ -120,6 +125,7 @@ export async function uploadGalleryAssetsAction(formData: FormData) {
 
 export async function createBatchFromGalleryAction(formData: FormData) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const limited = await checkRateLimit({
     scope: "generation:batch",
     identifier: session.userId,
@@ -133,7 +139,7 @@ export async function createBatchFromGalleryAction(formData: FormData) {
   const assetIds = Array.from(new Set(formData.getAll("assetIds").map(String).filter(Boolean)));
   const styleId = String(formData.get("styleId") ?? "");
   const outputPreset = normalizeOutputPreset(formData.get("outputPreset"));
-  const style = await getStyleForGeneration(styleId);
+  const style = await getStyleForGeneration(styleId, vertical);
 
   if (assetIds.length < 2 || !style) {
     redirect("/gallery");
@@ -143,6 +149,7 @@ export async function createBatchFromGalleryAction(formData: FormData) {
     where: {
       id: { in: assetIds },
       userId: session.userId,
+      vertical,
       status: "READY",
       archivedAt: null,
     },
@@ -155,7 +162,7 @@ export async function createBatchFromGalleryAction(formData: FormData) {
 
   let referenceAsset: { id: string } | null = null;
   try {
-    referenceAsset = await resolveReferenceAssetForBatch(style.id, formData, session.userId);
+    referenceAsset = await resolveReferenceAssetForBatch(style.id, formData, session.userId, vertical);
   } catch (error) {
     redirect(
       `/gallery/batches/new?assetIds=${encodeURIComponent(assetIds.join(","))}&error=${encodeURIComponent(
@@ -174,6 +181,7 @@ export async function createBatchFromGalleryAction(formData: FormData) {
   const batch = await db.generationBatch.create({
     data: {
       userId: session.userId,
+      vertical,
       title: `${assets.length} تصویر`,
       styleId: style.id,
       referenceAssetId: referenceAsset?.id ?? null,
@@ -199,7 +207,7 @@ export async function createBatchFromGalleryAction(formData: FormData) {
           : submittedProductType;
       if (asset.productType !== submittedProductType) {
         await db.productAsset.updateMany({
-          where: { id: asset.id, userId: session.userId, status: "READY", archivedAt: null },
+          where: { id: asset.id, userId: session.userId, vertical, status: "READY", archivedAt: null },
           data: { productType: submittedProductType },
         });
       }
@@ -216,6 +224,7 @@ export async function createBatchFromGalleryAction(formData: FormData) {
       const project = await db.project.create({
         data: {
           userId: session.userId,
+          vertical,
           sourceAssetId: asset.id,
           title: pickVisionTitle({
             userTitle: asset.title,
@@ -276,6 +285,7 @@ export async function createBatchFromGalleryAction(formData: FormData) {
 
 export async function renameAssetAction(formData: FormData) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const assetId = String(formData.get("assetId") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim();
 
@@ -284,7 +294,7 @@ export async function renameAssetAction(formData: FormData) {
   }
 
   await db.productAsset.updateMany({
-    where: { id: assetId, userId: session.userId, status: "READY", archivedAt: null },
+    where: { id: assetId, userId: session.userId, vertical, status: "READY", archivedAt: null },
     data: { title },
   });
 
@@ -293,6 +303,7 @@ export async function renameAssetAction(formData: FormData) {
 
 export async function saveGalleryAssetAsStyleReferenceAction(formData: FormData) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const assetId = String(formData.get("assetId") ?? "").trim();
 
   if (!assetId) {
@@ -300,7 +311,7 @@ export async function saveGalleryAssetAsStyleReferenceAction(formData: FormData)
   }
 
   const asset = await db.productAsset.findFirst({
-    where: { id: assetId, userId: session.userId, status: "READY", archivedAt: null },
+    where: { id: assetId, userId: session.userId, vertical, status: "READY", archivedAt: null },
     select: {
       storageKey: true,
       mimeType: true,
@@ -322,6 +333,7 @@ export async function saveGalleryAssetAsStyleReferenceAction(formData: FormData)
   await db.styleReferenceAsset.create({
     data: {
       userId: session.userId,
+      vertical,
       fileUrl: copied.publicUrl,
       storageKey: copied.storageKey,
       mimeType: copied.mimeType,
@@ -335,6 +347,7 @@ export async function saveGalleryAssetAsStyleReferenceAction(formData: FormData)
 
 export async function updateAssetProductTypeAction(formData: FormData) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const assetId = String(formData.get("assetId") ?? "").trim();
   const productType = normalizeProductType(formData.get("productType"));
 
@@ -343,7 +356,7 @@ export async function updateAssetProductTypeAction(formData: FormData) {
   }
 
   await db.productAsset.updateMany({
-    where: { id: assetId, userId: session.userId, status: "READY", archivedAt: null },
+    where: { id: assetId, userId: session.userId, vertical, status: "READY", archivedAt: null },
     data: { productType },
   });
 
@@ -353,6 +366,7 @@ export async function updateAssetProductTypeAction(formData: FormData) {
 
 export async function archiveAssetAction(formData: FormData) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const assetIds = formData.getAll("assetId").map(String).map((id) => id.trim()).filter(Boolean);
 
   if (assetIds.length === 0) {
@@ -360,7 +374,7 @@ export async function archiveAssetAction(formData: FormData) {
   }
 
   const assets = await db.productAsset.findMany({
-    where: { id: { in: assetIds }, userId: session.userId, status: "READY", archivedAt: null },
+    where: { id: { in: assetIds }, userId: session.userId, vertical, status: "READY", archivedAt: null },
     select: {
       id: true,
       storageKey: true,
@@ -386,6 +400,7 @@ export async function archiveAssetAction(formData: FormData) {
       where: {
         id: { in: deletableAssets.map((asset) => asset.id) },
         userId: session.userId,
+        vertical,
         status: "READY",
         archivedAt: null,
       },
@@ -411,6 +426,7 @@ export async function archiveAssetAction(formData: FormData) {
       where: {
         id: { in: usedAssets.map((asset) => asset.id) },
         userId: session.userId,
+        vertical,
         status: "READY",
         archivedAt: null,
       },
@@ -437,6 +453,7 @@ export async function archiveAssetAction(formData: FormData) {
 
 export async function restoreGalleryAssetsAction(formData: FormData) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const assetIds = formData.getAll("assetId").map(String).map((id) => id.trim()).filter(Boolean);
 
   if (assetIds.length === 0) {
@@ -447,6 +464,7 @@ export async function restoreGalleryAssetsAction(formData: FormData) {
     where: {
       id: { in: assetIds },
       userId: session.userId,
+      vertical,
       status: "ARCHIVED",
       archivedAt: { not: null },
     },

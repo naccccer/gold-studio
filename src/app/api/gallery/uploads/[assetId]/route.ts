@@ -5,15 +5,17 @@ import { db } from "@/lib/db";
 import { cleanupAbandonedGalleryUploads } from "@/lib/gallery-upload-cleanup";
 import { deleteStorageObject } from "@/lib/storage";
 import { generateNumericSupportCode, logSupportError } from "@/lib/support-code";
+import { resolveVerticalFromRequest } from "@/lib/verticals";
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ assetId: string }> },
 ) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "نشست کاربر معتبر نیست." }, { status: 401 });
   }
+  const vertical = resolveVerticalFromRequest(request);
 
   after(() => cleanupAbandonedGalleryUploads({ userId: session.userId }).catch((error) => {
     console.error("[gallery-temp-upload-cleanup-failed]", error);
@@ -24,6 +26,7 @@ export async function DELETE(
     where: {
       id: assetId,
       userId: session.userId,
+      vertical,
     },
     select: {
       id: true,
@@ -68,13 +71,14 @@ export async function DELETE(
 }
 
 export async function PATCH(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ assetId: string }> },
 ) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "نشست کاربر معتبر نیست." }, { status: 401 });
   }
+  const vertical = resolveVerticalFromRequest(request);
 
   after(() => cleanupAbandonedGalleryUploads({ userId: session.userId }).catch((error) => {
     console.error("[gallery-temp-upload-cleanup-failed]", error);
@@ -85,6 +89,7 @@ export async function PATCH(
     where: {
       id: assetId,
       userId: session.userId,
+      vertical,
     },
     select: {
       id: true,
