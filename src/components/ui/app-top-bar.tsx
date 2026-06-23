@@ -67,7 +67,7 @@ export function AppTopBar({
         <div className="flex shrink-0 items-center justify-start overflow-visible">
           {!hideLogo ? (
             <Link href={logoHref} aria-label="OVALA Studio" className={framelessLogoLinkClassName}>
-              <BrandLogo variant={logoVariant} />
+              <BrandLogo variant={logoVariant} priority />
             </Link>
           ) : null}
         </div>
@@ -115,7 +115,7 @@ export function AppTopBar({
         {action}
         {!hideLogo ? (
           <Link href={logoHref} aria-label="OVALA Studio" className={logoLinkClassName}>
-            <BrandLogo variant={logoVariant} />
+            <BrandLogo variant={logoVariant} priority />
           </Link>
         ) : null}
       </div>
