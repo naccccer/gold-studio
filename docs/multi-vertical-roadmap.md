@@ -191,7 +191,7 @@ Implement later:
 
 ## Required Verification
 
-Run after each implementation phase:
+Run the full verification suite only at the end of each phase, after that phase is functionally complete and before the phase commit/push:
 
 ```powershell
 npm run check:prompts
@@ -201,6 +201,8 @@ npm run check:mojibake
 npm run lint
 npm run build
 ```
+
+During a phase, use targeted fast checks only for the files or behavior being changed. Do not run `npm run build` repeatedly for small intermediate edits or documentation-only updates unless the user explicitly asks for it.
 
 For UI phases, manually review the `393x852` mobile layout target. Capture screenshots only when explicitly requested.
 

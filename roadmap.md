@@ -67,7 +67,7 @@ npx prisma migrate deploy
 
 ## Verification
 
-Run after meaningful implementation or docs cleanup:
+Run the full suite at the end of each implementation phase, after that phase is complete and before its commit/push. During a phase, use targeted fast checks; do not run `npm run build` repeatedly for small intermediate edits or documentation-only updates unless explicitly requested.
 
 ```powershell
 npm run check:prompts
