@@ -19,7 +19,7 @@ Ovala is a mobile-first Farsi RTL web app for turning low-quality jewelry, gold,
 
 ## Architecture Rules
 
-- Keep the app in a single Next.js repo for MVP.
+- Keep the app in a single Next.js repo for launch/current production.
 - Use App Router, TypeScript, Tailwind, Prisma, and MySQL.
 - Keep business logic out of UI components.
 - Keep AI logic inside dedicated `src/lib/ai` files.
@@ -50,6 +50,11 @@ Ovala is a mobile-first Farsi RTL web app for turning low-quality jewelry, gold,
 - Keep Gallery asset logic separate from generated Project review UI where possible.
 - Admin may be denser and more operational, but should remain visually related to Ovala.
 
+## Design Skill Rules
+
+- For UI/UX design, redesign, polish, audit, or frontend implementation work, use `impeccable` as the primary design quality skill.
+- Also use `emil-design-eng` for interaction details, component feel, animation decisions, easing, active states, and invisible polish.
+
 ## Coding Rules
 
 - Prefer server-side logic for sensitive operations.
@@ -59,6 +64,7 @@ Ovala is a mobile-first Farsi RTL web app for turning low-quality jewelry, gold,
 - Edit existing files before creating new ones when practical.
 - Keep markdown docs short and current.
 - Update `roadmap.md` when progress or scope changes.
+- Update launch/readiness docs when deploy, env, storage, worker, billing, SMS, provider, or operations behavior changes.
 
 ## Persian And Encoding
 
@@ -72,6 +78,9 @@ Ovala is a mobile-first Farsi RTL web app for turning low-quality jewelry, gold,
 Every implementation phase should run:
 
 ```powershell
+npm run check:prompts
+npm run check:model-routing
+npm run check:readiness
 npm run check:mojibake
 npm run lint
 npm run build

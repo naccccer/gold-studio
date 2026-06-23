@@ -17,6 +17,7 @@ import {
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { db } from "@/lib/db";
+import { requireAdminSession } from "@/lib/auth/session";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
@@ -44,6 +45,8 @@ function buildQuery(params: { status?: string; q?: string; styleId?: string; arc
 }
 
 export default async function AdminProjectsPage({ searchParams }: AdminProjectsPageProps) {
+  await requireAdminSession();
+
   const params = await searchParams;
   const status = params?.status && params.status !== "ALL" ? params.status : "ALL";
   const q = params?.q?.trim();

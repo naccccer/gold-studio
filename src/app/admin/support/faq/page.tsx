@@ -14,10 +14,13 @@ import {
 } from "@/features/admin/components/console";
 import { createFaqItemAction, updateFaqItemAction } from "@/features/admin/actions";
 import { db } from "@/lib/db";
+import { requireAdminSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminFaqPage() {
+  await requireAdminSession();
+
   const faqs = await db.faqItem.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] });
   const activeCount = faqs.filter((item) => item.isActive).length;
 

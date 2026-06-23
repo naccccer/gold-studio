@@ -24,6 +24,7 @@ import {
 } from "@/features/admin/actions";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { db } from "@/lib/db";
+import { requireAdminSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,8 @@ type AdminSupportPageProps = {
 };
 
 export default async function AdminSupportPage({ searchParams }: AdminSupportPageProps) {
+  await requireAdminSession();
+
   const params = await searchParams;
   const selectedTicketId = params?.ticketId;
   const status = params?.status ?? "";

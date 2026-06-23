@@ -13,19 +13,25 @@ git commit -m "Describe the work"
 git push
 ```
 
-Export the local database:
+Create a full local backup from the admin panel (`/admin/backups`) or CLI:
 
 ```powershell
 cd C:\xampp\htdocs\gold-studio
-npm run db:export-local
+npm run backup:run
 ```
 
-This writes `gold_studio_local.sql` to your Desktop by default.
+This writes a `.tar.gz` backup under `.local-storage\backups` with `database.sql`, `manifest.json`, and current storage files.
+
+If you only need the old database-only export:
+
+```powershell
+npm run db:export-local
+```
 
 Copy these private/local items separately:
 
 - `.env`
-- `Desktop\gold_studio_local.sql`
+- `.local-storage\backups\*.tar.gz` or `Desktop\gold_studio_local.sql`
 - `.local-storage\uploads` if it exists and you need local uploaded/generated files
 
 Do not commit `.env`, database dumps, or `.local-storage/uploads`.
@@ -66,6 +72,8 @@ Import the dump:
 ```powershell
 cmd /c "C:\xampp\mysql\bin\mysql.exe -h 127.0.0.1 -P 3306 -u root gold_studio < %USERPROFILE%\Desktop\gold_studio_local.sql"
 ```
+
+If you used the full `.tar.gz` backup, extract it first and import the included `database.sql`.
 
 Restore uploads if you copied them:
 

@@ -22,6 +22,7 @@ import {
 } from "@/features/admin/actions";
 import { db } from "@/lib/db";
 import { fallbackHomeCarouselImages } from "@/lib/home-carousel";
+import { requireAdminSession } from "@/lib/auth/session";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +32,8 @@ type AdminHomePageProps = {
 };
 
 export default async function AdminHomePage({ searchParams }: AdminHomePageProps) {
+  await requireAdminSession();
+
   const params = await searchParams;
   const slides = await db.homeCarouselSlide.findMany({
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],

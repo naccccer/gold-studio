@@ -20,6 +20,7 @@ import { archiveAdminProjectAction, retryAdminProjectAction } from "@/features/a
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { db } from "@/lib/db";
+import { requireAdminSession } from "@/lib/auth/session";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +30,8 @@ type AdminProjectDetailPageProps = {
 };
 
 export default async function AdminProjectDetailPage({ params }: AdminProjectDetailPageProps) {
+  await requireAdminSession();
+
   const { projectId } = await params;
   const project = await db.project.findUnique({
     where: { id: projectId },

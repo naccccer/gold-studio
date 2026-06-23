@@ -37,7 +37,9 @@ import {
   updateSubscriptionStatusAction,
   updateUserRoleAction,
 } from "@/features/admin/actions";
+import { AdminPasswordField } from "@/features/admin/components/admin-password-field";
 import { AdminNotificationForm } from "@/features/admin/components/admin-notification-form";
+import { requireAdminOrSalesSession } from "@/lib/auth/session";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { getUserCreditSummary } from "@/lib/billing";
 import { db } from "@/lib/db";
@@ -60,9 +62,12 @@ type AdminUserDetailPageProps = {
 };
 
 export default async function AdminUserDetailPage({ params, searchParams }: AdminUserDetailPageProps) {
+  const session = await requireAdminOrSalesSession();
+  const isAdmin = session.role === "ADMIN";
   const { userId } = await params;
   const query = await searchParams;
-  const activeTab: TabKey = tabs.some((tab) => tab.key === query?.tab) ? (query?.tab as TabKey) : "overview";
+  const visibleTabs = isAdmin ? tabs : tabs.filter((tab) => tab.key !== "security");
+  const activeTab: TabKey = visibleTabs.some((tab) => tab.key === query?.tab) ? (query?.tab as TabKey) : "overview";
 
   const [user, creditSummary, subscriptionPackages, creditPackages] = await Promise.all([
     db.user.findUnique({
@@ -111,7 +116,7 @@ export default async function AdminUserDetailPage({ params, searchParams }: Admi
         ]}
       />
 
-      <TabNav tabs={tabs.map((tab) => ({ href: tabHref(tab.key), label: tab.label, active: activeTab === tab.key }))} />
+      <TabNav tabs={visibleTabs.map((tab) => ({ href: tabHref(tab.key), label: tab.label, active: activeTab === tab.key }))} />
 
       {activeTab === "overview" ? (
         <div className="grid items-start gap-5 lg:grid-cols-2">
@@ -168,7 +173,7 @@ export default async function AdminUserDetailPage({ params, searchParams }: Admi
       ) : null}
 
       {activeTab === "activity" ? <ActivityTab user={user} /> : null}
-      {activeTab === "security" ? <SecurityTab key={user.id} user={user} /> : null}
+      {isAdmin && activeTab === "security" ? <SecurityTab key={user.id} user={user} /> : null}
     </>
   );
 }
@@ -527,9 +532,7 @@ function SecurityTab({ user }: { user: UserWithRelations }) {
       >
         <form action={updateAdminUserPasswordAction} className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
           <input type="hidden" name="userId" value={user.id} />
-          <Field label="رمز جدید">
-            <input name="password" required minLength={6} type="password" dir="ltr" className={`${fieldClass} text-left`} />
-          </Field>
+          <AdminPasswordField label="رمز جدید" name="password" />
           <button className={btnSecondary}>ثبت رمز جدید</button>
         </form>
       </Disclosure>
@@ -549,6 +552,7 @@ function SecurityTab({ user }: { user: UserWithRelations }) {
             <Field label="نقش">
               <select name="role" defaultValue={user.role} className={fieldClass}>
                 <option value="USER">کاربر</option>
+                <option value="SALES">فروش</option>
                 <option value="ADMIN">ادمین</option>
               </select>
             </Field>

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { normalizeLoginIdentifier, normalizePhone } from "@/lib/auth/identifier";
 import { createOtpChallenge, getOtpResendDelaySeconds, verifyOtpChallenge, type OtpPurpose } from "@/lib/auth/otp";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
-import { clearSession, createSession } from "@/lib/auth/session";
+import { clearSession, createSession, postLoginPathForRole } from "@/lib/auth/session";
 import { INITIAL_SIGNUP_CREDITS } from "@/lib/credits";
 import { db } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -185,7 +185,7 @@ export async function completeSignupAction(
     const user = await createUserWithPhonePassword(phone, password);
 
     await createSession({ userId: user.id, role: user.role });
-    redirect(user.role === "ADMIN" ? "/admin" : "/dashboard");
+    redirect(postLoginPathForRole(user.role));
   }
 
   const limited = await checkRateLimit({
@@ -268,7 +268,7 @@ export async function resetPasswordWithOtpAction(
   });
 
   await createSession({ userId: user.id, role: user.role });
-  redirect(user.role === "ADMIN" ? "/admin" : "/dashboard");
+  redirect(postLoginPathForRole(user.role));
 }
 
 export async function loginAction(
@@ -305,7 +305,7 @@ export async function loginAction(
   }
 
   await createSession({ userId: user.id, role: user.role });
-  redirect(user.role === "ADMIN" ? "/admin" : "/dashboard");
+  redirect(postLoginPathForRole(user.role));
 }
 
 export async function logoutAction() {

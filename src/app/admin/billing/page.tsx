@@ -24,6 +24,7 @@ import {
 } from "@/features/admin/components/console";
 import { PriceAmountInput } from "@/features/admin/components/price-amount-input";
 import { BILLING_PLAN_COLOR_PRESETS, normalizeBillingPlanColorPreset } from "@/lib/billing-plan-colors";
+import { requireAdminOrSalesSession } from "@/lib/auth/session";
 import {
   approvePurchaseRequestAction,
   createBillingPackageAction,
@@ -44,8 +45,10 @@ type AdminBillingPageProps = {
 };
 
 export default async function AdminBillingPage({ searchParams }: AdminBillingPageProps) {
+  const session = await requireAdminOrSalesSession();
+  const isAdmin = session.role === "ADMIN";
   const params = await searchParams;
-  const activeTab = params?.tab === "packages" || params?.tab === "settings" ? params.tab : "receipts";
+  const activeTab = isAdmin && (params?.tab === "packages" || params?.tab === "settings") ? params.tab : "receipts";
 
   const [packages, paymentSettings, pendingPurchases, pendingCount] = await Promise.all([
     db.billingPackage.findMany({
@@ -79,8 +82,12 @@ export default async function AdminBillingPage({ searchParams }: AdminBillingPag
       <TabNav
         tabs={[
           { href: "/admin/billing", label: "بررسی رسیدها", active: activeTab === "receipts", count: pendingCount },
-          { href: "/admin/billing?tab=packages", label: "کاتالوگ بسته‌ها", active: activeTab === "packages", count: packages.length },
-          { href: "/admin/billing?tab=settings", label: "تنظیمات پرداخت", active: activeTab === "settings" },
+          ...(isAdmin
+            ? [
+                { href: "/admin/billing?tab=packages", label: "کاتالوگ بسته‌ها", active: activeTab === "packages", count: packages.length },
+                { href: "/admin/billing?tab=settings", label: "تنظیمات پرداخت", active: activeTab === "settings" },
+              ]
+            : []),
         ]}
       />
 

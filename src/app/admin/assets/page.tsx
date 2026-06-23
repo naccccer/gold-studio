@@ -20,6 +20,7 @@ import { archiveAdminAssetAction } from "@/features/admin/actions";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { db } from "@/lib/db";
+import { requireAdminSession } from "@/lib/auth/session";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +30,8 @@ type AdminAssetsPageProps = {
 };
 
 export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageProps) {
+  await requireAdminSession();
+
   const params = await searchParams;
   const q = params?.q?.trim();
   const status = params?.status ?? "READY";

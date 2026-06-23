@@ -54,13 +54,20 @@ npm run admin:bootstrap -- --email "admin@example.com" --password "strong-passwo
 - `npm run db:generate`: regenerate Prisma Client only when Prisma inputs changed. It does not reset, migrate, or seed the database. Use `npm run db:generate -- --force` to force regeneration after stopping running Node processes.
 - `npx prisma migrate deploy`: apply committed migrations to the current database.
 - `npm run db:export-local`: export the current local DB to `Desktop\gold_studio_local.sql`.
+- `npm run check:prompts`: verify prompt-policy guardrails for generation styles.
+- `npm run check:model-routing`: verify hard image styles still route to stronger image models.
+- `npm run check:readiness`: verify launch/readiness docs and repo guardrails stay current.
 - `npm run check:mojibake`: detect corrupted Persian text.
 - `npm run lint`: run ESLint.
 - `npm run build`: ensure Prisma Client is current, then build the app.
 - `npm run smoke -- http://localhost:3000`: check a running app without logging in or touching AI/payment flows.
 - `npm run worker:generation`: run the queued generation worker.
 - `npm run watchdog:health`: run the PM2 health watchdog loop.
+- `npm run backup:run`: create a full DB + storage backup archive.
+- `npm run backup:scheduler`: run the nightly backup scheduler loop.
 - `npm run check:liara`: test direct Liara access from the local machine.
+- `npm run check:avalai`: test Avalai when intentionally using or debugging that provider.
+- `npm run cleanup:archives`: permanently delete archived DB rows and storage files after the retention window.
 
 Avoid `npx prisma migrate reset` unless you intentionally want to wipe and recreate local data.
 
@@ -74,6 +81,8 @@ Preserve `.local-storage/uploads` when moving PCs or deployment folders. Do not 
 
 - [Agent rules](AGENTS.md)
 - [Roadmap](roadmap.md)
+- [Launch readiness](docs/launch-readiness.md)
+- [Repo readiness](docs/repo-readiness.md)
 - [Switching PCs](docs/local-pc-switch.md)
 - [Deployment runbook](docs/deployment-runbook.md)
 - [Proxy notes](docs/proxy.md)

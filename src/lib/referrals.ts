@@ -32,10 +32,12 @@ function generateSalesReferralCode() {
 
 export async function createSalesReferralCodeBatch({
   createdByAdminId,
+  salesUserId,
   salespersonName,
   note,
 }: {
   createdByAdminId: string;
+  salesUserId?: string | null;
   salespersonName?: string | null;
   note?: string | null;
 }) {
@@ -58,6 +60,7 @@ export async function createSalesReferralCodeBatch({
       code,
       creditAmount: SALES_CODE_CREDITS,
       batchKey,
+      salesUserId: salesUserId || null,
       salespersonName: salespersonName || null,
       note: note || null,
       createdByAdminId,

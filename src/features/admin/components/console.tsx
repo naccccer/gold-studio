@@ -255,6 +255,7 @@ const statusMap: Record<string, { label: string; variant: StatusVariant }> = {
   SUCCESS: { label: "موفق", variant: "success" },
   USER: { label: "کاربر", variant: "neutral" },
   ADMIN: { label: "ادمین", variant: "accent" },
+  SALES: { label: "فروش", variant: "success" },
   CREDIT_PACK: { label: "بسته اعتبار", variant: "accent" },
   SUBSCRIPTION: { label: "اشتراک", variant: "success" },
   SIGNUP: { label: "ثبت‌نام", variant: "neutral" },

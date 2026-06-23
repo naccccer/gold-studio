@@ -36,6 +36,10 @@ FARAZSMS_PATTERN_CODE="..."
 FARAZSMS_LINE_NUMBER="..."
 
 STORAGE_DRIVER="local"
+BACKUP_RETENTION_COUNT="3"
+BACKUP_TIMEZONE="Asia/Tehran"
+BACKUP_SCHEDULE_HOUR="3"
+BACKUP_SCHEDULE_MINUTE="0"
 ```
 
 اگر `STORAGE_DRIVER="local"` است، این پوشه باید وجود داشته باشد:
@@ -46,6 +50,14 @@ chmod -R 775 .local-storage
 chmod 600 .env
 ```
 
+قبل از هر deploy برای production، backup بگیر. مسیر ترجیحی پنل ادمین است: `/admin/backups`. از CLI هم می‌توانی همین archive کامل را بسازی:
+
+```bash
+npm run backup:run
+```
+
+این بکاپ شامل `database.sql`، `manifest.json`، و storage فعلی است. فایل‌ها در `.local-storage/backups` می‌مانند و فقط آخرین ۳ بکاپ نگهداری می‌شود.
+
 ## 2. آپدیت نسخه
 
 ترتیب مهم است. قبل از restart حتما build بگیر، وگرنه `next start` می‌تواند با خطای نبودن production build بیفتد.
@@ -55,11 +67,17 @@ git fetch origin main
 git switch main
 git merge --ff-only origin/main
 npm install
+npm run check:prompts
+npm run check:model-routing
+npm run check:readiness
+npm run check:mojibake
+npm run lint
 npm run db:deploy
 npm run build
 pm2 restart gold-studio --update-env
 pm2 restart gold-studio-worker --update-env
 pm2 restart gold-studio-watchdog --update-env
+pm2 restart gold-studio-backups --update-env
 pm2 save
 ```
 
@@ -77,6 +95,13 @@ pm2 start npm --name gold-studio-watchdog -- run watchdog:health
 pm2 save
 ```
 
+اگر scheduler بکاپ هنوز ساخته نشده:
+
+```bash
+pm2 start npm --name gold-studio-backups -- run backup:scheduler
+pm2 save
+```
+
 ## 3. چک بعد از deploy
 
 ```bash
@@ -86,6 +111,7 @@ npm run smoke -- https://ovala.ir
 pm2 logs gold-studio --lines 80 --nostream
 pm2 logs gold-studio-worker --lines 80 --nostream
 pm2 logs gold-studio-watchdog --lines 80 --nostream
+pm2 logs gold-studio-backups --lines 80 --nostream
 ```
 
 خروجی public health باید `200` و `ok: true` داشته باشد. جزئیات دیتابیس و generation را از `/admin/health` ببین. داخل سایت هم این مسیرها را سریع تست کن:
@@ -93,9 +119,14 @@ pm2 logs gold-studio-watchdog --lines 80 --nostream
 - ثبت‌نام با پیامک
 - ورود
 - آپلود یک عکس در گالری
-- ساخت یک پروژه و گرفتن خروجی
+- ساخت پروژه کاتالوگ، با مدل، و عکس نمونه
+- درخواست بررسی کیفیت و مشاهده اعلان کاربر
 - آپلود رسید خرید
 - تایید خرید از ادمین
+- بررسی `/admin/health`، `/admin/projects`، `/admin/quality-reviews`، `/admin/notifications`، `/admin/billing`، و `/admin/backups`
+- ورود با نقش `SALES`: فقط users/billing/referrals باز باشد و backup/system بسته باشد.
+
+برای چک کامل‌تر قبل از گرفتن کاربر واقعی، `docs/launch-readiness.md` را اجرا کن.
 
 ## 4. وقتی سایت بالا نمی‌آید
 
@@ -146,3 +177,22 @@ pm2 save
 ```
 
 اگر worker سالم بود ولی خروجی تولید نشد، پروژه را از پنل ادمین retry کن و لاگ provider را ببین.
+
+## 6. rollback با احتیاط
+
+Rollback کد فقط وقتی امن است که migration جدید schema را ناسازگار نکرده باشد. قبل از rollback، آخرین migrationها و خطای production را بررسی کن.
+
+```bash
+git log --oneline -5
+git switch main
+git reset --hard COMMIT_SHA
+npm install
+npm run build
+pm2 restart gold-studio --update-env
+pm2 restart gold-studio-worker --update-env
+pm2 restart gold-studio-watchdog --update-env
+pm2 restart gold-studio-backups --update-env
+npm run smoke -- https://ovala.ir
+```
+
+اگر migration destructive یا ناسازگار deploy شده، بدون restore برنامه‌ریزی‌شده دیتابیس rollback نکن. اول backup قبل deploy را نگه دار و وضعیت را در ادمین/لاگ‌ها بررسی کن.

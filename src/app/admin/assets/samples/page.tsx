@@ -15,6 +15,7 @@ import {
   deleteReadyStyleReferenceSampleAction,
   uploadReadyStyleReferenceSampleAction,
 } from "@/features/admin/actions";
+import { requireAdminSession } from "@/lib/auth/session";
 import { getReadyStyleReferenceSamples } from "@/lib/ready-style-reference-samples";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +33,8 @@ function formatBytes(bytes: number) {
 }
 
 export default async function AdminReadySamplesPage({ searchParams }: AdminReadySamplesPageProps) {
+  await requireAdminSession();
+
   const [params, samples] = await Promise.all([searchParams, getReadyStyleReferenceSamples()]);
 
   return (

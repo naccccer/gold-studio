@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ArrowRight2,
+  ArchiveBook,
   Box,
   Card,
   Category,
@@ -47,6 +48,7 @@ const navGroups = [
       { href: "/admin/ai", label: "موتور AI", icon: Box },
       { href: "/admin/health", label: "سلامت", icon: TickCircle },
       { href: "/admin/audit", label: "ردپای تغییرات", icon: ShieldTick },
+      { href: "/admin/backups", label: "پشتیبان‌گیری", icon: ArchiveBook },
     ],
   },
 ];
@@ -70,7 +72,10 @@ const titleBySegment: Record<string, string> = {
   referrals: "معرفی و فروش",
   health: "سلامت",
   audit: "ردپای تغییرات",
+  backups: "پشتیبان‌گیری",
 };
+
+const salesAllowedHrefs = new Set(["/admin/billing", "/admin/users", "/admin/referrals"]);
 
 function isActive(pathname: string, href: string, exact?: boolean) {
   return exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
@@ -84,9 +89,18 @@ function breadcrumbs(pathname: string) {
   }));
 }
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
+export function AdminShell({ children, role }: { children: React.ReactNode; role: "ADMIN" | "SALES" }) {
   const pathname = usePathname();
   const crumbs = breadcrumbs(pathname);
+  const visibleGroups =
+    role === "ADMIN"
+      ? navGroups
+      : navGroups
+          .map((group) => ({
+            ...group,
+            items: group.items.filter((item) => salesAllowedHrefs.has(item.href)),
+          }))
+          .filter((group) => group.items.length > 0);
 
   return (
     <div data-admin-console className="min-h-screen bg-navy-25 text-right text-navy-950">
@@ -98,7 +112,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </Link>
 
           <nav className="mt-6 flex-1 space-y-5" aria-label="ناوبری ادمین">
-            {navGroups.map((group) => (
+            {visibleGroups.map((group) => (
               <div key={group.label}>
                 <p className="mb-1.5 px-2.5 text-[10px] font-medium text-navy-500">{group.label}</p>
                 <div className="grid gap-0.5">
@@ -159,7 +173,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               </Link>
             </div>
             <nav className="flex gap-1 overflow-x-auto border-t border-slate-100 px-3 py-2 lg:hidden" aria-label="ناوبری ادمین موبایل">
-              {navGroups.flatMap((group) => group.items).map((item) => {
+              {visibleGroups.flatMap((group) => group.items).map((item) => {
                 const active = isActive(pathname, item.href, item.exact);
                 return (
                   <Link

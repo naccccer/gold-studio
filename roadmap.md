@@ -19,7 +19,9 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 - Prisma uses MySQL through Prisma's standard query engine and keeps `DATABASE_URL` on the Prisma-compatible `mysql://` scheme.
 - Image generation uses the provider boundary in `src/lib/ai`, with Liara as the default path and an admin-controlled Avalai path for Gemini image testing.
 - DB-backed rate limits, credit reservations, manual purchase review, sales referral codes, support tickets, FAQ, and admin billing operations are present.
-- Pre-launch security hardening now includes identifier-based auth throttling, long-lived signed session revocation, global security headers, and guarded storage responses for non-display objects.
+- `SALES` is a real operational role for sales/payment work across users, billing, and referral codes, while system/admin-only surfaces remain blocked.
+- `/admin/backups` and `npm run backup:run` create full launch backups with database dump, manifest, and current storage; `npm run backup:scheduler` keeps nightly backups with latest-3 retention.
+- Launch security hardening includes identifier-based auth throttling, long-lived signed session revocation, global security headers, and guarded storage responses for non-display objects.
 - Batch generation starts from Gallery, creates one project per selected source photo, and reserves generation credit until each output succeeds.
 - Generation now has a DB-backed recovery worker (`npm run worker:generation`) that polls queued projects, resumes stale `PROCESSING` jobs, and runs as a separate PM2 process in production.
 - Production availability now includes a PM2 health watchdog (`npm run watchdog:health`) that checks local `/api/health` and restarts the app after repeated failures. Public health is minimal, while detailed DB, generation, and storage metrics live in `/admin/health`.
@@ -38,11 +40,11 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 
 ## Next Priorities
 
-- Production hardening: keep the production worker/watchdog processes active in PM2, verify real Liara/Avalai generation, storage display URLs, provider cost, and failed-state recovery on the deployment target.
-- Release readiness: route QA across auth, home, gallery, new project, project detail, projects, account, billing, support, settings, and admin.
+- Launch operations: keep production worker/watchdog/backup scheduler active in PM2, verify real Liara/Avalai generation, storage display URLs, provider cost, backups, and failed-state recovery on the deployment target.
+- Release QA: route QA across auth, home, gallery, new project, project detail, projects, notifications, quality reviews, account, billing, support, settings, and admin.
 - Mobile polish: check the `393x852` mobile layout target for Farsi wrapping, RTL controls, bottom navigation, action placement, calm motion, and accidental scrolling.
 - Admin operations QA: review the rebuilt navy/white console with real data across overview, health, audit, users, billing, projects, AI, assets, styles, support/FAQ, and referrals.
-- Documentation hygiene: keep docs short and current; update this file only when scope or active priorities change.
+- Documentation hygiene: keep `docs/launch-readiness.md`, `docs/repo-readiness.md`, deployment docs, and this file current when launch/operations scope changes.
 - SMS readiness: add the approved FarazSMS pattern code and line number before testing phone verification with real users.
 - Backend reliability: keep generation worker recovery, project/output quota reservation consistency, and health/smoke coverage under review as real production traffic grows.
 

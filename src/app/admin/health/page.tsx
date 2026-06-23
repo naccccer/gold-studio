@@ -15,6 +15,7 @@ import { imageProviderLabel } from "@/lib/ai/provider";
 import { getImageProviderAttemptOrder, getProviderSettings } from "@/lib/ai/provider-settings";
 import { db } from "@/lib/db";
 import { getDetailedHealthReport } from "@/lib/health";
+import { requireAdminSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,8 @@ function envIsSet(name: string) {
 }
 
 export default async function AdminHealthPage() {
+  await requireAdminSession();
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 

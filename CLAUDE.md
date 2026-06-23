@@ -27,6 +27,9 @@ All scripts run via `npm run <name>`. `dev` and `build` ensure Prisma Client is 
 | `npm run build` | Ensure Prisma client is current + production build |
 | `npm run start` | Run the built app |
 | `npm run lint` | ESLint |
+| `npm run check:prompts` | Prompt-policy regression checks for style and reference-image behavior |
+| `npm run check:model-routing` | Model-routing checks for hard image styles |
+| `npm run check:readiness` | Repo/docs readiness checks for launch guardrails |
 | `npm run check:mojibake` | Detect corrupted Persian text in source |
 | `npm run db:generate` | Safely run `prisma generate` into `src/generated/prisma` only when Prisma inputs changed |
 | `npm run db:deploy` | `prisma migrate deploy` |
@@ -35,16 +38,24 @@ All scripts run via `npm run <name>`. `dev` and `build` ensure Prisma Client is 
 | `npm run db:export-local` | Safe local DB export (avoids PowerShell dump encoding issues) |
 | `npm run admin:bootstrap` | Create/promote a local admin via terminal (preferred over `ADMIN_EMAIL` signup promotion, which was removed) |
 | `npm run check:liara` | Direct-access check for diagnosing v2rayN/TUN bypass before testing generation |
+| `npm run check:avalai` | Avalai provider check when intentionally using/debugging Avalai |
+| `npm run smoke -- <url>` | Availability smoke test for a running deployment |
+| `npm run worker:generation` | Queued generation worker loop |
+| `npm run watchdog:health` | PM2 health watchdog loop |
+| `npm run backup:run` | Create a full DB + storage backup archive |
+| `npm run backup:scheduler` | Nightly backup scheduler loop |
 | `npm run cleanup:archives` | Hard-delete archived assets/projects after the retention window |
 | `npm run convert:placeholders` | Convert placeholder assets to WebP |
 
 ### Verification (run after meaningful work)
 ```powershell
+npm run check:prompts
+npm run check:model-routing
+npm run check:readiness
 npm run check:mojibake
 npm run lint
 npm run build
 ```
-If `build` fails only due to the known PrismaClient issue in `src/lib/db.ts`, report it clearly as unrelated and unchanged — do not "fix" it.
 
 ## Layout
 - `src/app` — App Router routes. Thin route files; the (auth), (dashboard), (marketing) groupings hold user-facing flows; `admin/` holds admin; `api/` holds API routes (including `/api/storage/...`).
@@ -52,7 +63,7 @@ If `build` fails only due to the known PrismaClient issue in `src/lib/db.ts`, re
 - `src/features` — Feature modules: `account`, `admin`, `auth`, `dashboard`, `gallery`, `projects`, `style-references`.
 - `src/lib` — Cross-cutting logic. AI stays in `src/lib/ai`. Generation job orchestration in `src/lib/generation`. Auth helpers in `src/lib/auth`. Single Prisma client in `src/lib/db.ts`. Other helpers: `billing`, `credits`, `output-presets`, `placeholders`, `product-types`, `product-vision`, `rate-limit` (DB-backed, shared), `referrals`, `storage`, `styles`, `support-code`, `uploads`.
 - `prisma/` — Schema and migrations.
-- `docs/` — Architecture, conventions, brand, proxy, deployment runbook, execution phases.
+- `docs/` — Proxy notes, deployment runbooks, launch readiness, repo readiness, and local handoff docs.
 - `scripts/` — Standalone Node/PowerShell helpers invoked by npm scripts.
 
 ## Architectural rules (enforced)
@@ -77,10 +88,11 @@ If `build` fails only due to the known PrismaClient issue in `src/lib/db.ts`, re
 
 ## Coding rules
 - Prefer server-side logic for sensitive operations.
-- Never hardcode secrets; read from env (see `.env.example` for current names: `DATABASE_URL`, `AUTH_SECRET`, `LIARA_API_KEY`, `LIARA_VISION_API_KEY`, `LIARA_BASE_URL`, `LIARA_IMAGE_MODEL`, `LIARA_VISION_MODEL`, `LIARA_IMAGE_SIZE`, `LIARA_IMAGE_QUALITY`, `LIARA_FALLBACK_LONG_EDGE`, `LIARA_ALLOW_UPSCALE_FALLBACK`, `STORAGE_DRIVER`, S3 vars).
+- Never hardcode secrets; read from env (see `.env.example` for current names: auth/session, worker/watchdog, Liara, Avalai, FarazSMS, storage, and S3 vars).
 - Edit existing files before creating new ones when practical; avoid duplicate helpers.
 - Update `roadmap.md` whenever scope, progress, or active priorities change.
 - Keep `docs/` short and current — no implementation diaries, phase histories, or stale warnings.
+- Update `docs/launch-readiness.md` and `docs/repo-readiness.md` when production operations, env, deploy, storage, provider, SMS, billing, or worker behavior changes.
 
 ## Persian/encoding
 - Source and docs are UTF-8. Keep Persian as direct UTF-8 in TSX/TS/MD, not escaped Unicode.
@@ -98,8 +110,11 @@ The developer may be in Iran with limited paid proxy bandwidth. Default to direc
 - New users get 1 tracked signup credit; subscription credit is consumed before standalone wallet credit.
 - Referral grants 5 credits to both sides only after the invitee's first approved purchase.
 - Output preset is persisted per project (1:1, 9:16, 16:9) — generation sends the per-project size, not a global square default.
-- Each successful project grants one free «نسخه دیگر» retry; only consumed on a successful output, refunded on generation failure.
+- Each successful project can grant «نسخه دیگر» according to the user's active package/custom plan; alternate versions consume output quota only.
+- Quality review requests can refund credit after admin approval and notify the user.
+- User notifications support system/admin/quality/billing/support messages and live under `/account/notifications`; admins can send manual/broadcast notifications.
 - Six user-visible style directions: `با مدل`, `پس‌زمینه`, `دکور انتزاعی`, `شبکه اجتماعی`, `ادیتوریال`, `سینماتیک`. Model style targets 25–35 year olds.
 - Batch generation creates one project per selected source photo and reserves credit until each output succeeds.
 - Local uploads normalize images before storage (metadata stripped, large files resized); gallery crop exports JPEG.
+- Local storage lives under `.local-storage/uploads` and is served through `/api/storage/...`; `public/uploads` is not an active user-upload path.
 - `/design/*` prototypes are not part of the shipped app.

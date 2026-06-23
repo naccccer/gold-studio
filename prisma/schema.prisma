@@ -11,6 +11,7 @@ datasource db {
 enum UserRole {
   USER
   ADMIN
+  SALES
 }
 
 enum ProjectStatus {
@@ -168,6 +169,7 @@ model User {
   adminSupportMessages  SupportTicketMessage[] @relation("AdminSupportMessages")
   auditEvents           AdminAuditEvent[]  @relation("AdminAuditActor")
   createdSalesReferralCodes SalesReferralCode[] @relation("SalesReferralCodeAdmin")
+  ownedSalesReferralCodes SalesReferralCode[] @relation("SalesReferralCodeSalesUser")
   redeemedSalesReferralCodes SalesReferralCode[] @relation("SalesReferralCodeRedeemer")
   startGuideSeenAt     DateTime?
   createdAt             DateTime           @default(now())
@@ -596,6 +598,8 @@ model SalesReferralCode {
   note             String?  @db.Text
   createdByAdminId String
   createdByAdmin   User     @relation("SalesReferralCodeAdmin", fields: [createdByAdminId], references: [id], onDelete: Restrict)
+  salesUserId      String?
+  salesUser        User?    @relation("SalesReferralCodeSalesUser", fields: [salesUserId], references: [id], onDelete: SetNull)
   redeemedByUserId String?
   redeemedByUser   User?    @relation("SalesReferralCodeRedeemer", fields: [redeemedByUserId], references: [id], onDelete: SetNull)
   redeemedAt       DateTime?
@@ -604,6 +608,7 @@ model SalesReferralCode {
   @@index([batchKey, createdAt])
   @@index([redeemedAt, createdAt])
   @@index([createdByAdminId, createdAt])
+  @@index([salesUserId, createdAt])
   @@index([redeemedByUserId])
 }
 

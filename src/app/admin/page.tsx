@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { MessageQuestion, ReceiptText, Refresh } from "vuesax-icons-react";
 import {
   btnDanger,
@@ -14,6 +15,7 @@ import {
   Surface,
 } from "@/features/admin/components/console";
 import { approvePurchaseRequestAction, rejectPurchaseRequestAction, retryAdminProjectAction } from "@/features/admin/actions";
+import { requireAdminOrSalesSession } from "@/lib/auth/session";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { db } from "@/lib/db";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
@@ -21,6 +23,11 @@ import { storageUrlFromKeyOrUrl } from "@/lib/storage";
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
+  const session = await requireAdminOrSalesSession();
+  if (session.role === "SALES") {
+    redirect("/admin/billing");
+  }
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 

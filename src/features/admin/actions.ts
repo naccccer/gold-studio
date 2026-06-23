@@ -9,7 +9,7 @@ import { after } from "next/server";
 import type { Prisma } from "@/generated/prisma";
 import sharp from "sharp";
 import { db } from "@/lib/db";
-import { requireAdminSession } from "@/lib/auth/session";
+import { requireAdminOrSalesSession, requireAdminSession } from "@/lib/auth/session";
 import { normalizeProviderSettings, SUPPORTED_IMAGE_MODELS, updateProviderSettings } from "@/lib/ai/provider-settings";
 import { normalizeLoginIdentifier } from "@/lib/auth/identifier";
 import { hashPassword } from "@/lib/auth/password";
@@ -122,6 +122,7 @@ async function getStylePreviewImageUrl(formData: FormData, fallback = "") {
 }
 
 function parseRole(value: string) {
+  if (value === "SALES") return "SALES";
   return value === "ADMIN" ? "ADMIN" : "USER";
 }
 
@@ -631,7 +632,7 @@ export async function duplicateBillingPackageAction(formData: FormData) {
 }
 
 export async function adjustUserCreditsAction(formData: FormData) {
-  const session = await requireAdminSession();
+  const session = await requireAdminOrSalesSession();
   const userId = text(formData, "userId");
   const delta = integer(formData, "delta");
   const reason = text(formData, "reason");
@@ -677,12 +678,19 @@ export async function adjustUserCreditsAction(formData: FormData) {
 }
 
 export async function createSalesReferralCodesAction(formData: FormData) {
-  const session = await requireAdminSession();
+  const session = await requireAdminOrSalesSession();
   const salespersonName = text(formData, "salespersonName");
   const note = text(formData, "note");
+  const requestedSalesUserId = text(formData, "salesUserId");
+  const salesUserId = session.role === "SALES" ? session.userId : requestedSalesUserId || null;
+  if (salesUserId && session.role === "ADMIN") {
+    const salesUser = await db.user.findFirst({ where: { id: salesUserId, role: "SALES" }, select: { id: true } });
+    if (!salesUser) return;
+  }
 
   const batch = await createSalesReferralCodeBatch({
     createdByAdminId: session.userId,
+    salesUserId,
     salespersonName,
     note,
   });
@@ -693,7 +701,7 @@ export async function createSalesReferralCodesAction(formData: FormData) {
     targetType: "SalesReferralCode",
     targetId: batch.batchKey,
     summary: `۵ کد تست فروش ساخته شد.`,
-    metadata: { batchKey: batch.batchKey, codes: batch.codes, salespersonName, note },
+    metadata: { batchKey: batch.batchKey, codes: batch.codes, salespersonName, note, salesUserId },
   });
 
   revalidatePath("/admin/referrals");
@@ -745,7 +753,7 @@ export async function updateUserCreditsAction(formData: FormData) {
 export async function updateUserRoleAction(formData: FormData) {
   const session = await requireAdminSession();
   const userId = text(formData, "userId");
-  const role = text(formData, "role") === "ADMIN" ? "ADMIN" : "USER";
+  const role = parseRole(text(formData, "role"));
   const confirm = text(formData, "confirmRoleChange");
 
   if (!userId || confirm !== "تایید") {
@@ -907,7 +915,7 @@ export async function updateAdminUserPasswordAction(formData: FormData) {
 }
 
 export async function approvePurchaseRequestAction(formData: FormData) {
-  const session = await requireAdminSession();
+  const session = await requireAdminOrSalesSession();
   const requestId = text(formData, "requestId");
   if (!requestId) return;
 
@@ -1002,7 +1010,7 @@ export async function approvePurchaseRequestAction(formData: FormData) {
 }
 
 export async function rejectPurchaseRequestAction(formData: FormData) {
-  const session = await requireAdminSession();
+  const session = await requireAdminOrSalesSession();
   const requestId = text(formData, "requestId");
   if (!requestId) return;
 
@@ -1025,7 +1033,7 @@ export async function rejectPurchaseRequestAction(formData: FormData) {
 }
 
 export async function assignSubscriptionAction(formData: FormData) {
-  const session = await requireAdminSession();
+  const session = await requireAdminOrSalesSession();
   const userId = text(formData, "userId");
   const packageId = text(formData, "packageId");
   const notes = text(formData, "notes");
@@ -1065,7 +1073,7 @@ export async function assignSubscriptionAction(formData: FormData) {
 }
 
 export async function assignCustomSubscriptionAction(formData: FormData) {
-  const session = await requireAdminSession();
+  const session = await requireAdminOrSalesSession();
   const userId = text(formData, "userId");
   const customTitle = text(formData, "customTitle") || "پلن اختصاصی";
   const projectLimit = integer(formData, "projectLimit");
@@ -1110,7 +1118,7 @@ export async function assignCustomSubscriptionAction(formData: FormData) {
 }
 
 export async function assignCreditPackAction(formData: FormData) {
-  const session = await requireAdminSession();
+  const session = await requireAdminOrSalesSession();
   const userId = text(formData, "userId");
   const packageId = text(formData, "packageId");
   const notes = text(formData, "notes");
@@ -1163,7 +1171,7 @@ export async function assignCreditPackAction(formData: FormData) {
 }
 
 export async function updateSubscriptionStatusAction(formData: FormData) {
-  const session = await requireAdminSession();
+  const session = await requireAdminOrSalesSession();
   const subscriptionId = text(formData, "subscriptionId");
   const status = text(formData, "status");
 
@@ -1186,7 +1194,7 @@ export async function updateSubscriptionStatusAction(formData: FormData) {
 }
 
 export async function resetSubscriptionPeriodAction(formData: FormData) {
-  const session = await requireAdminSession();
+  const session = await requireAdminOrSalesSession();
   const subscriptionId = text(formData, "subscriptionId");
   const subscription = await db.userSubscription.findUnique({
     where: { id: subscriptionId },
@@ -1292,7 +1300,7 @@ export async function updateSupportTicketStatusAction(formData: FormData) {
 }
 
 export async function sendAdminNotificationAction(formData: FormData) {
-  const session = await requireAdminSession();
+  const session = await requireAdminOrSalesSession();
   const audience = text(formData, "audience");
   const userId = text(formData, "userId");
   const title = text(formData, "title");
@@ -1304,6 +1312,10 @@ export async function sendAdminNotificationAction(formData: FormData) {
   }
 
   if (audience === "broadcast") {
+    if (session.role !== "ADMIN") {
+      return;
+    }
+
     const count = await createAdminBroadcastNotification({
       title,
       body,

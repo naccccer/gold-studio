@@ -29,6 +29,7 @@ import {
   updateStyleControlAction,
 } from "@/features/admin/actions";
 import { db } from "@/lib/db";
+import { requireAdminSession } from "@/lib/auth/session";
 import { StylePreviewUploadField } from "./style-preview-upload-field";
 
 export const dynamic = "force-dynamic";
@@ -62,6 +63,8 @@ type AdminStylesPageProps = {
 };
 
 export default async function AdminStylesPage({ searchParams }: AdminStylesPageProps) {
+  await requireAdminSession();
+
   const params = await searchParams;
   const styles = await db.creativeStyle.findMany({
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],

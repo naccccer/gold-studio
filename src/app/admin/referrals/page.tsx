@@ -19,6 +19,7 @@ import {
 } from "@/features/admin/components/console";
 import { createSalesReferralCodesAction } from "@/features/admin/actions";
 import { CopySalesCodesButton } from "@/features/admin/components/copy-sales-codes-button";
+import { requireAdminOrSalesSession } from "@/lib/auth/session";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { SALES_CODE_BATCH_SIZE, SALES_CODE_CREDITS } from "@/lib/credits";
 import { db } from "@/lib/db";
@@ -30,15 +31,18 @@ type AdminReferralsPageProps = {
 };
 
 export default async function AdminReferralsPage({ searchParams }: AdminReferralsPageProps) {
+  const session = await requireAdminOrSalesSession();
+  const isAdmin = session.role === "ADMIN";
   const params = await searchParams;
   const activeTab = params?.tab === "referrals" ? "referrals" : "codes";
 
-  const [codes, totalCodes, redeemedCodes, pendingReferralRewards, referrals] = await Promise.all([
+  const [codes, totalCodes, redeemedCodes, pendingReferralRewards, referrals, salesUsers] = await Promise.all([
     db.salesReferralCode.findMany({
       orderBy: { createdAt: "desc" },
       take: 120,
       include: {
         createdByAdmin: { select: { name: true, email: true, phone: true } },
+        salesUser: { select: { id: true, name: true, email: true, phone: true } },
         redeemedByUser: { select: { id: true, name: true, email: true, phone: true } },
       },
     }),
@@ -54,6 +58,13 @@ export default async function AdminReferralsPage({ searchParams }: AdminReferral
         rewardPurchaseRequest: { select: { id: true, status: true } },
       },
     }),
+    isAdmin
+      ? db.user.findMany({
+          where: { role: "SALES" },
+          orderBy: [{ name: "asc" }, { createdAt: "desc" }],
+          select: { id: true, name: true, email: true, phone: true },
+        })
+      : Promise.resolve([]),
   ]);
 
   const unusedCodes = totalCodes - redeemedCodes;
@@ -98,6 +109,18 @@ export default async function AdminReferralsPage({ searchParams }: AdminReferral
               <Field label="نام فروشنده یا کانال">
                 <input name="salespersonName" className={fieldClass} />
               </Field>
+              {isAdmin ? (
+                <Field label="حساب نیروی فروش">
+                  <select name="salesUserId" className={fieldClass} defaultValue="">
+                    <option value="">بدون مالک حساب</option>
+                    {salesUsers.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {getUserDisplayName(user)} · {getUserIdentifier(user)}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              ) : null}
               <Field label="یادداشت داخلی">
                 <textarea name="note" className={textareaClass} />
               </Field>
@@ -128,7 +151,9 @@ export default async function AdminReferralsPage({ searchParams }: AdminReferral
                         <span className="truncate font-mono text-xs font-semibold text-navy-950" dir="ltr">
                           {batchKey}
                         </span>
-                        <span className="truncate text-xs text-slate-500">{first.salespersonName || "بدون فروشنده"}</span>
+                        <span className="truncate text-xs text-slate-500">
+                          {first.salesUser ? getUserDisplayName(first.salesUser) : first.salespersonName || "بدون فروشنده"}
+                        </span>
                         <span className="shrink-0 text-[11px] tabular-nums text-slate-400">
                           {faNum(batchCodes.length - redeemed)} از {faNum(batchCodes.length)} آماده توزیع
                         </span>
@@ -137,6 +162,7 @@ export default async function AdminReferralsPage({ searchParams }: AdminReferral
                   >
                     <p className="mb-3 truncate text-xs text-slate-500">
                       {formatAdminDate(first.createdAt)} · {getUserDisplayName(first.createdByAdmin)}
+                      {first.salesUser ? ` · مالک فروش: ${getUserDisplayName(first.salesUser)}` : ""}
                       {first.note ? ` · ${first.note}` : ""}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
@@ -175,7 +201,9 @@ export default async function AdminReferralsPage({ searchParams }: AdminReferral
                   </td>
                   <td className={cellClass}>
                     <p className="font-medium">{code.salespersonName || "بدون فروشنده"}</p>
-                    <p className="max-w-48 truncate text-xs text-slate-400">{code.note || code.batchKey}</p>
+                    <p className="max-w-48 truncate text-xs text-slate-400">
+                      {code.salesUser ? getUserDisplayName(code.salesUser) : code.note || code.batchKey}
+                    </p>
                   </td>
                   <td className={cellClass}>
                     {code.redeemedByUser ? (

@@ -120,7 +120,7 @@ export function AccountScreen({
   pendingRequests,
   activeSubscription,
 }: AccountScreenProps) {
-  const isAdmin = role.toUpperCase() === "ADMIN";
+  const canEnterAdmin = ["ADMIN", "SALES"].includes(role.toUpperCase());
   const displayName = getUserDisplayName({ name, email, phone });
   const identifier = getUserIdentifier({ email, phone });
   const pendingReceiptCount = pendingRequests.filter((request) => !request.receiptSubmittedAt).length;
@@ -179,7 +179,7 @@ export function AccountScreen({
           ))}
         </section>
 
-        {isAdmin ? (
+        {canEnterAdmin ? (
           <section className={`${accountCardClass} space-y-3`}>
             <ButtonLink
               href="/admin"
@@ -188,7 +188,7 @@ export function AccountScreen({
               className="h-12 rounded-[1rem] bg-[#1f1b16] !text-[#fffdf9] hover:bg-[#30291f]"
             >
               <ShieldSecurity aria-hidden={true} className="h-4 w-4" />
-              ورود به پنل ادمین
+              ورود به پنل عملیات
             </ButtonLink>
           </section>
         ) : null}

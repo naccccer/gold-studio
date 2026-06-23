@@ -11,6 +11,7 @@ import {
 } from "@/features/admin/components/console";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { db } from "@/lib/db";
+import { requireAdminSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,8 @@ type AdminAuditPageProps = {
 };
 
 export default async function AdminAuditPage({ searchParams }: AdminAuditPageProps) {
+  await requireAdminSession();
+
   const params = await searchParams;
   const q = params?.q?.trim();
   const targetType = params?.targetType?.trim();

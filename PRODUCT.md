@@ -10,7 +10,7 @@ Ovala serves Persian-speaking jewelry, gold, watch, and luxury accessory sellers
 
 ## Product Purpose
 
-Ovala turns low-quality product photos into premium catalog and campaign-ready images. The admin console exists to keep the system reliable before launch: identify operational risk, resolve user/payment issues, inspect generation failures, tune AI providers, and manage public catalog options.
+Ovala turns low-quality product photos into premium catalog and campaign-ready images. The admin console exists for ongoing production operations: identify operational risk, resolve user/payment issues, inspect generation failures, review quality/refund requests, tune AI providers, send notifications, and manage public catalog options.
 
 ## Brand Personality
 
@@ -27,6 +27,7 @@ Do not make the admin feel like a decorative SaaS landing page, a card-heavy moc
 - Prefer tables, detail pages, tabs, and action bars over decorative cards.
 - Keep Persian and RTL behavior first-class.
 - Preserve business boundaries: AI logic stays in `src/lib/ai`, business logic stays out of UI components.
+- Treat signup, gallery upload, generation, billing, support, notifications, quality review, and admin health as launch-critical journeys.
 
 ## Accessibility & Inclusion
 

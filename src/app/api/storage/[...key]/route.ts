@@ -34,7 +34,7 @@ async function canReadStorageKey(storageKey: string) {
   const storageUrl = `/api/storage/${storageKey}`;
   const storageKeys = storageKeyLookupValues(storageKey);
 
-  if (currentUser.role === "ADMIN") {
+  if (currentUser.role === "ADMIN" || currentUser.role === "SALES") {
     const knownObject = await Promise.all([
       db.productAsset.findFirst({ where: { storageKey: { in: storageKeys } }, select: { id: true } }),
       db.styleReferenceAsset.findFirst({ where: { storageKey: { in: storageKeys } }, select: { id: true } }),

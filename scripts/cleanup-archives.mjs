@@ -23,7 +23,7 @@ function localPathFromKey(key) {
     throw new Error(`Invalid storage key: ${key}`);
   }
 
-  return path.join(process.cwd(), "public", "uploads", normalized.slice(uploadsRoot.length));
+  return path.join(process.cwd(), ".local-storage", "uploads", normalized.slice(uploadsRoot.length));
 }
 
 function requiredEnv(name) {

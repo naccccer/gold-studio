@@ -20,9 +20,12 @@
     "check:liara": "node scripts/check-liara-direct.mjs",
     "check:avalai": "node scripts/check-avalai.mjs",
     "cleanup:archives": "node scripts/cleanup-archives.mjs",
+    "backup:run": "node scripts/backup-run.mjs",
+    "backup:scheduler": "node scripts/backup-scheduler.mjs",
     "check:mojibake": "node scripts/check-mojibake.mjs",
     "check:model-routing": "node scripts/check-model-routing.mjs",
     "check:prompts": "node scripts/check-prompt-policy.mjs",
+    "check:readiness": "node scripts/check-readiness.mjs",
     "smoke": "node scripts/smoke-test.mjs",
     "convert:placeholders": "node scripts/convert-placeholders-to-webp.mjs"
   },

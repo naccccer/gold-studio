@@ -13,10 +13,13 @@ import {
 import { AdminNotificationForm } from "@/features/admin/components/admin-notification-form";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { db } from "@/lib/db";
+import { requireAdminSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminNotificationsPage() {
+  await requireAdminSession();
+
   const [users, notifications, pendingQualityReviews, unreadCount, totalCount] = await Promise.all([
     db.user.findMany({
       orderBy: { createdAt: "desc" },

@@ -1,12 +1,12 @@
 import { AdminShell } from "@/features/admin/components/admin-shell";
-import { requireAdminSession } from "@/lib/auth/session";
+import { requireAdminOrSalesSession } from "@/lib/auth/session";
 
 export default async function AdminLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  await requireAdminSession();
+  const session = await requireAdminOrSalesSession();
 
-  return <AdminShell>{children}</AdminShell>;
+  return <AdminShell role={session.role}>{children}</AdminShell>;
 }

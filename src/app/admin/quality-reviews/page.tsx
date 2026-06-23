@@ -21,6 +21,7 @@ import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity"
 import { db } from "@/lib/db";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { qualityReviewReasonLabel } from "@/lib/quality-review";
+import { requireAdminSession } from "@/lib/auth/session";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +46,8 @@ function recommendationLabel(value?: string | null) {
 }
 
 export default async function AdminQualityReviewsPage({ searchParams }: AdminQualityReviewsPageProps) {
+  await requireAdminSession();
+
   const params = await searchParams;
   const status = normalizeStatus(params?.status);
   const where = status === "ALL" ? {} : { status: status as "PENDING" | "APPROVED" | "REJECTED" };

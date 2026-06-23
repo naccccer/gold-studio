@@ -18,6 +18,7 @@ import {
   Surface,
 } from "@/features/admin/components/console";
 import { createAdminUserAction } from "@/features/admin/actions";
+import { requireAdminOrSalesSession } from "@/lib/auth/session";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { db } from "@/lib/db";
 
@@ -28,13 +29,15 @@ type AdminUsersPageProps = {
 };
 
 export default async function AdminUsersPage({ searchParams }: AdminUsersPageProps) {
+  const session = await requireAdminOrSalesSession();
+  const isAdmin = session.role === "ADMIN";
   const params = await searchParams;
   const q = params?.q?.trim();
   const role = params?.role;
   const credit = params?.credit;
 
   const where: Prisma.UserWhereInput = {
-    ...(role === "ADMIN" || role === "USER" ? { role: role as "ADMIN" | "USER" } : {}),
+    ...(role === "ADMIN" || role === "USER" || role === "SALES" ? { role: role as "ADMIN" | "USER" | "SALES" } : {}),
     ...(credit === "low" ? { credits: { lte: 1 } } : {}),
     ...(q
       ? {
@@ -49,7 +52,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
       : {}),
   };
 
-  const [users, totalUsers, adminUsers, lowCreditUsers] = await Promise.all([
+  const [users, totalUsers, adminUsers, salesUsers, lowCreditUsers] = await Promise.all([
     db.user.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -66,6 +69,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
     }),
     db.user.count(),
     db.user.count({ where: { role: "ADMIN" } }),
+    db.user.count({ where: { role: "SALES" } }),
     db.user.count({ where: { credits: { lte: 1 } } }),
   ]);
 
@@ -88,6 +92,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
             { href: filterQuery({}), label: "همه", active: !role && credit !== "low" },
             { href: filterQuery({ role: "USER" }), label: "کاربران", active: role === "USER" },
             { href: filterQuery({ role: "ADMIN" }), label: "ادمین‌ها", active: role === "ADMIN", count: adminUsers },
+            { href: filterQuery({ role: "SALES" }), label: "فروش", active: role === "SALES", count: salesUsers },
             { href: filterQuery({ credit: "low" }), label: "کم‌اعتبار", active: credit === "low", count: lowCreditUsers },
           ]}
         />
@@ -145,6 +150,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
         </ConsoleTable>
       </Surface>
 
+      {isAdmin ? (
       <Disclosure
         summary={
           <>
@@ -173,6 +179,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
           <Field label="نقش">
             <select name="role" defaultValue="USER" className={`${fieldClass} sm:max-w-48`}>
               <option value="USER">کاربر</option>
+              <option value="SALES">فروش</option>
               <option value="ADMIN">ادمین</option>
             </select>
           </Field>
@@ -184,6 +191,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
           </div>
         </form>
       </Disclosure>
+      ) : null}
     </>
   );
 }

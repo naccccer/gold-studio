@@ -7,9 +7,23 @@ import { sessionCookieName } from "@/lib/auth/session-cookie";
 export const SESSION_COOKIE = sessionCookieName();
 const PERSISTENT_SESSION_SECONDS = 60 * 60 * 24 * 90;
 
+export type UserSessionRole = "USER" | "ADMIN" | "SALES";
+
+export function isAdminRole(role: string): role is "ADMIN" {
+  return role === "ADMIN";
+}
+
+export function isAdminOrSalesRole(role: string): role is "ADMIN" | "SALES" {
+  return role === "ADMIN" || role === "SALES";
+}
+
+export function postLoginPathForRole(role: string) {
+  return isAdminOrSalesRole(role) ? "/admin" : "/dashboard";
+}
+
 type SessionPayload = {
   userId: string;
-  role: "USER" | "ADMIN";
+  role: UserSessionRole;
 };
 
 type SessionTokenPayload = SessionPayload & {
@@ -62,7 +76,7 @@ function decode(token: string): SignedSessionPayload | null {
 
   try {
     const parsed = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
-    if (!parsed.userId || (parsed.role !== "USER" && parsed.role !== "ADMIN")) return null;
+    if (!parsed.userId || !["USER", "ADMIN", "SALES"].includes(parsed.role)) return null;
     if (!Number.isInteger(parsed.sessionVersion)) return null;
     if (!Number.isFinite(parsed.iat) || !Number.isFinite(parsed.exp)) return null;
     if (parsed.exp <= Math.floor(Date.now() / 1000)) return null;
@@ -157,5 +171,14 @@ export async function requireAdminSession() {
     redirect("/dashboard");
   }
 
-  return session;
+  return { userId: session.userId, role: "ADMIN" as const };
+}
+
+export async function requireAdminOrSalesSession() {
+  const session = await requireUserSession();
+  if (!isAdminOrSalesRole(session.role)) {
+    redirect("/dashboard");
+  }
+
+  return { userId: session.userId, role: session.role as "ADMIN" | "SALES" };
 }

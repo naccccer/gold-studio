@@ -19,6 +19,7 @@ import { updateProviderSettingsAction } from "@/features/admin/actions";
 import { imageProviderLabel } from "@/lib/ai/provider";
 import { AVALAI_IMAGE_MODELS, getImageProviderAttemptOrder, getProviderSettings, LIARA_IMAGE_MODELS } from "@/lib/ai/provider-settings";
 import { db } from "@/lib/db";
+import { requireAdminSession } from "@/lib/auth/session";
 import { ProviderSwitch } from "../provider/provider-switch";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +29,8 @@ function envIsSet(name: string) {
 }
 
 export default async function AdminAiPage() {
+  await requireAdminSession();
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
