@@ -2,11 +2,13 @@
 
 ## Product Direction
 
-Ovala is a mobile-first Farsi RTL app for turning low-quality jewelry, gold, watch, and luxury accessory photos into premium studio-style product images.
+Ovala is a mobile-first Farsi RTL app for turning low-quality product photos into premium studio-style product images. The current launch product is focused on jewelry, gold, watches, and luxury accessories; the accepted expansion path is a multi-vertical system starting with Food & Drink.
 
 The product should stay professional, minimal, premium, image-led, and easy for non-technical users. The normal user flow is a guided assistant, not a SaaS dashboard, form-heavy admin panel, prompt-heavy AI tool, or text-to-image playground.
 
 Text-to-image and provider/debug controls are admin/internal only. The default user path is clean catalog/product imagery.
+
+Multi-vertical expansion is tracked in `docs/multi-vertical-roadmap.md`. The implementation branch is `codex/multi-vertical-platform`, and each phase should be completed, verified, committed, and pushed before the next phase starts.
 
 ## Current Status
 
@@ -37,9 +39,11 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 - Image generation now routes hard user styles (`style_with_model` and `style_sample_reference`) to Pro image models first, keeps easier styles on Flash-first routing, and clamps configured 4K image settings back to 2K.
 - Admin style management now uploads style preview images directly with an inline preview instead of asking operators to paste image URLs.
 - Admin console copy is being kept terse and operational, with redundant helper text removed, style preview uploads in place, and style metrics moved into a focused admin stats tab.
+- Multi-vertical planning has started. The live execution roadmap now defines vertical-first architecture, subdomain-based Food launch, shared auth/admin/billing, internal credit units, and phase-by-phase gates before implementation begins.
 
 ## Next Priorities
 
+- Execute `docs/multi-vertical-roadmap.md` phase by phase on `codex/multi-vertical-platform`, starting with Phase 1: Vertical Foundation.
 - Launch operations: keep production worker/watchdog/backup scheduler active in PM2, verify real Liara/Avalai generation, storage display URLs, provider cost, backups, and failed-state recovery on the deployment target.
 - Release QA: route QA across auth, home, gallery, new project, project detail, projects, notifications, quality reviews, account, billing, support, settings, and admin.
 - Mobile polish: check the `393x852` mobile layout target for Farsi wrapping, RTL controls, bottom navigation, action placement, calm motion, and accidental scrolling.
@@ -66,6 +70,9 @@ npx prisma migrate deploy
 Run after meaningful implementation or docs cleanup:
 
 ```powershell
+npm run check:prompts
+npm run check:model-routing
+npm run check:readiness
 npm run check:mojibake
 npm run lint
 npm run build

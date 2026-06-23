@@ -1,0 +1,209 @@
+# Ovala Multi-Vertical Roadmap
+
+## Purpose
+
+Ovala is moving from a jewelry-only studio product into a multi-vertical product photography system. The first expansion vertical is Food & Drink, with Clothing and Furniture reserved for later.
+
+This roadmap is the live execution path. Each phase should be implemented in a focused session, verified, committed, and pushed before the next phase starts.
+
+## Operating Rules For Each Session
+
+- Work only on `codex/multi-vertical-platform` unless the user explicitly changes the branch.
+- Start every session by reading this file, `roadmap.md`, `AGENTS.md`, and the files directly relevant to the current phase.
+- Do not skip ahead. Finish the current phase, verify it, commit it, and update this file before starting the next phase.
+- Keep the app as one Next.js repo, one database, one auth system, one admin console, one billing system, and one generation worker.
+- Preserve the existing Jewelry experience unless the phase explicitly changes it.
+- Keep user-facing text-to-image out of scope.
+- Keep AI logic inside `src/lib/ai`.
+- Update `roadmap.md` whenever a phase changes product scope or current status.
+
+## Target Architecture
+
+- `vertical` is a first-class concept.
+- Initial verticals:
+  - `jewelry`
+  - `food`
+- Reserved future verticals:
+  - `clothing`
+  - `furniture`
+- Subdomains define the user-facing vertical context:
+  - current jewelry host -> `jewelry`
+  - `food.ovala.ir` -> `food`
+- Accounts are shared across verticals.
+- The credit wallet is shared across verticals.
+- Gallery, projects, styles, ready samples, and generation prompts are scoped by vertical.
+- Admin remains shared, with vertical filters where operational behavior changes.
+
+## Pricing Direction
+
+Use internal credit units from the start:
+
+- `100 creditUnits = 1 visible credit`
+- Food & Drink generation cost: `100 creditUnits`
+- Jewelry generation cost: `300 creditUnits`
+
+User-facing screens should display visible credits. Billing and reservation logic should store and calculate internal units.
+
+## Phase 1 - Vertical Foundation
+
+Goal: make the app vertical-aware without changing the visible Jewelry product behavior.
+
+Implement:
+
+- Add a central vertical registry in shared logic.
+- Resolve the current vertical from the request host, with a local development fallback.
+- Add `vertical` to behavior-critical records:
+  - product assets
+  - projects
+  - generation batches
+  - creative styles
+  - style categories if needed for filtering
+  - ready style/reference samples where user-visible selection depends on vertical
+- Backfill all existing production records as `jewelry`.
+- Scope user gallery, projects, style lists, and ready samples to the current vertical.
+- Keep admin global for this phase, but make the stored vertical visible where useful.
+
+Do not:
+
+- Add Food UI copy yet.
+- Refactor all prompts yet.
+- Add Clothing or Furniture behavior beyond reserved IDs.
+- Split auth, billing, admin, database, or worker.
+
+Exit criteria:
+
+- Existing Jewelry flows still work on the current host.
+- New records created on the Jewelry host are stored as `jewelry`.
+- No Food content is visible yet unless seeded deliberately in a later phase.
+- Worktree is clean after commit and push.
+
+## Phase 2 - Credit Units
+
+Goal: move credit accounting to internal units and support different generation costs per vertical.
+
+Implement:
+
+- Migrate user credit balances and reserved balances to internal units.
+- Migrate package credits and subscription counters to internal units where they represent spendable generation balance.
+- Update reservation, capture, release, package purchase, subscription, referral, quality refund, admin credit, and sales code paths to use units.
+- Add a single helper layer for formatting visible credits from internal units.
+- Charge by vertical:
+  - `food`: `100`
+  - `jewelry`: `300`
+- Ensure batch generation reserves the correct units per output.
+
+Do not:
+
+- Create separate wallets per vertical.
+- Create per-vertical billing packages unless explicitly requested later.
+
+Exit criteria:
+
+- Existing balances display correctly as visible credits.
+- Jewelry generation costs 3 visible credits.
+- Food cost support exists even if Food UI is not fully launched yet.
+- Admin billing operations remain understandable.
+
+## Phase 3 - Ovala Food User Experience
+
+Goal: launch `food.ovala.ir` as a dedicated Food & Drink product experience on the shared platform.
+
+Implement:
+
+- Host-based Food context for `food.ovala.ir`.
+- Food-specific auth/home/gallery/project copy and visual direction.
+- Food-only gallery and projects inside the Food host.
+- New project flow defaults to Food and never asks the user to choose Jewelry vs Food inside the Food host.
+- Food product types:
+  - food dish
+  - drink
+  - dessert
+  - cafe item
+  - restaurant plate
+  - packaged food or drink
+- Five Food styles:
+  - Menu/catalog
+  - Instagram/social
+  - Minimal
+  - Luxury
+  - UGC/natural
+- Food preview/sample assets good enough for launch-quality trust.
+
+Do not:
+
+- Show Jewelry samples, product types, or styles inside Food.
+- Add free-form user prompt entry.
+
+Exit criteria:
+
+- `food.ovala.ir` feels like Ovala Food, not Jewelry with renamed labels.
+- Same account can use Jewelry and Food.
+- Food gallery/projects/styles remain isolated from Jewelry.
+
+## Phase 4 - Prompt Architecture
+
+Goal: make generation prompt assembly vertical-aware while preserving Jewelry quality.
+
+Implement:
+
+- Keep shared prompt primitives for product identity, output preset, and provider constraints.
+- Add Jewelry prompt rules as the protected existing behavior.
+- Add Food prompt rules for appetite appeal, freshness, plating, packaging, labels, and dish/drink identity preservation.
+- Add product-type-specific Food refinements where necessary.
+- Keep admin style prompts usable, but apply vertical rules automatically during generation.
+
+Do not:
+
+- Build an abstract plugin system for prompts.
+- Rewrite all style controls unless required by Food behavior.
+
+Exit criteria:
+
+- Jewelry hard cases still preserve stones, metal, watches, clasps, model-wear behavior, and sample-reference replacement.
+- Food outputs do not turn the item into a different dish, drink, package, or brand.
+
+## Phase 5 - Admin And Operations
+
+Goal: make operations reliable across verticals without creating separate admin apps.
+
+Implement:
+
+- Add vertical filters to admin assets, projects, styles, samples, and quality review surfaces.
+- Let styles and samples be assigned to a vertical.
+- Show project vertical and credit unit cost where operationally useful.
+- Keep support, notifications, audit, and billing global unless a real workflow requires vertical scoping.
+
+Exit criteria:
+
+- Admin can inspect and manage Food and Jewelry without mixing user-facing catalogs.
+- Operators can debug generation cost and vertical routing per project.
+
+## Phase 6 - Future Verticals
+
+Goal: add Clothing and Furniture through the same foundation, not new architecture.
+
+Implement later:
+
+- Add `clothing` and `furniture` to the registry.
+- Add subdomain mapping.
+- Add product types, styles, samples, prompt rules, and credit costs.
+- Reuse shared auth, billing, admin, storage, and worker.
+
+## Required Verification
+
+Run after each implementation phase:
+
+```powershell
+npm run check:prompts
+npm run check:model-routing
+npm run check:readiness
+npm run check:mojibake
+npm run lint
+npm run build
+```
+
+For UI phases, manually review the `393x852` mobile layout target. Capture screenshots only when explicitly requested.
+
+## Phase Log
+
+- 2026-06-24: Roadmap created on `codex/multi-vertical-platform`. No product implementation started yet.
