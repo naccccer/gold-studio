@@ -7,6 +7,7 @@ import { getReadyStyleReferenceSamples } from "@/lib/ready-style-reference-sampl
 import { storagePublicUrl } from "@/lib/storage";
 import { READY_SAMPLE_ORIGINAL_NAME_PREFIX } from "@/lib/style-reference-ready-samples";
 import { getUserVisibleStyles } from "@/lib/styles";
+import { getVerticalContent } from "@/lib/vertical-content";
 
 export default async function NewProjectPage({
   searchParams,
@@ -15,6 +16,7 @@ export default async function NewProjectPage({
 }) {
   const session = await requireUserSession();
   const vertical = await getCurrentVertical();
+  const content = getVerticalContent(vertical);
   const params = await searchParams;
   const [galleryAssets, styleReferences, selectedStyleReference, readySamples, styles, outputSettings] = await Promise.all([
     db.productAsset.findMany({
@@ -83,6 +85,8 @@ export default async function NewProjectPage({
       }))}
       styleReferences={visibleStyleReferences.map((asset) => ({ ...asset, fileUrl: storagePublicUrl(asset.storageKey) }))}
       styles={styles}
+      vertical={vertical}
+      content={content}
       selectedAssetId={params?.assetId}
       selectedReferenceId={params?.referenceAssetId}
       freeVariantParentId={params?.freeVariantParentId}

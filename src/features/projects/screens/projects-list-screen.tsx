@@ -18,9 +18,7 @@ import {
 import { PageShell } from "@/components/ui/page-shell";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 import { archiveProjectAction, renameProjectAction, saveProjectResultAsStyleReferenceAction } from "@/features/projects/actions";
-import { archiveItems, extras } from "@/lib/placeholders/jewelry-images";
-
-const galleryFallbacks = [...archiveItems, ...extras];
+import type { VerticalContent } from "@/lib/vertical-content";
 
 export type ProjectListItem = {
   id: string;
@@ -35,9 +33,11 @@ export type ProjectListItem = {
 
 type ProjectsListScreenProps = {
   projects: ProjectListItem[];
+  content: VerticalContent;
 };
 
-export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
+export function ProjectsListScreen({ projects, content }: ProjectsListScreenProps) {
+  const galleryFallbacks = [...content.placeholders.archiveItems, ...content.placeholders.extras];
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const longPressTimer = useRef<number | null>(null);
@@ -96,13 +96,13 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
       <div className="flex min-h-[calc(100svh-12rem)] flex-col gap-5">
         {projects.length === 0 ? (
           <EmptyState
-            title="هنوز خروجی تولید نشده است."
+            title={content.projectEmptyTitle}
             media={(
               <SafeJewelryImage
                 src={galleryFallbacks[0].src}
                 fallbackSrc={galleryFallbacks[1].src}
                 fallbackAlt={galleryFallbacks[0].alt}
-                alt="نمونه خروجی پروژه"
+                alt={content.projectResultAlt}
                 fill
                 priority
                 className="object-cover"
@@ -115,7 +115,7 @@ export function ProjectsListScreen({ projects }: ProjectsListScreenProps) {
             {projects.map((project, index) => {
               const fallbackImage = galleryFallbacks[index % galleryFallbacks.length];
               const imageSrc = project.resultImageUrl?.trim() || project.sourceImageUrl?.trim() || fallbackImage.src;
-              const projectTitle = project.title?.trim() || "پروژه محصول";
+              const projectTitle = project.title?.trim() || content.projectFallbackTitle;
               const selected = selectedIds.includes(project.id);
               const failed = project.status === "FAILED";
               const editing = editingProjectId === project.id;

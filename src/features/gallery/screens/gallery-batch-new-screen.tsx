@@ -18,8 +18,9 @@ import {
   StyleToggleControl,
 } from "@/features/projects/components/style-choice-control";
 import type { StyleControlOption, StyleOption } from "@/features/projects/presets";
-import { uploadPreview } from "@/lib/placeholders/jewelry-images";
-import { DEFAULT_PRODUCT_TYPE, normalizeProductType, productTypeLabel, PRODUCT_TYPES } from "@/lib/product-types";
+import { getDefaultProductType, getProductTypes, normalizeProductType, productTypeLabel } from "@/lib/product-types";
+import type { VerticalContent } from "@/lib/vertical-content";
+import type { VerticalId } from "@/lib/verticals";
 
 export type BatchSourceAsset = {
   id: string;
@@ -48,6 +49,8 @@ type GalleryBatchNewScreenProps = {
   readyStyleReferences: BatchReadyStyleReference[];
   styleReferences: BatchStyleReference[];
   styles: StyleOption[];
+  vertical: VerticalId;
+  content: VerticalContent;
   availableCredits: number;
   requiredCredits: number;
   error?: string | null;
@@ -57,12 +60,6 @@ type GalleryBatchNewScreenProps = {
 type OutputPresetId = "post" | "story" | "banner";
 type WizardStep = "assets" | "size" | "style";
 type StyleControl = NonNullable<StyleOption["controls"]>[number];
-
-const topBarTitles: Record<WizardStep, string> = {
-  assets: "ساخت گروهی",
-  size: "ابعاد خروجی",
-  style: "انتخاب سبک",
-};
 
 const outputPresets: Array<{
   id: OutputPresetId;
@@ -91,8 +88,8 @@ function StepScrollPanel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function assetTitle(asset?: BatchSourceAsset) {
-  return asset?.title || asset?.originalName || "تصویر محصول";
+function assetTitle(asset: BatchSourceAsset | undefined, fallbackTitle: string) {
+  return asset?.title || asset?.originalName || fallbackTitle;
 }
 
 function parseChoiceOptions(optionsJson?: string | null): StyleControlOption[] {
@@ -140,6 +137,8 @@ export function GalleryBatchNewScreen({
   readyStyleReferences,
   styleReferences,
   styles,
+  vertical,
+  content,
   availableCredits,
   requiredCredits,
   error,
@@ -149,6 +148,14 @@ export function GalleryBatchNewScreen({
   const [step, setStep] = useState<WizardStep>("assets");
   const [outputPreset, setOutputPreset] = useState<OutputPresetId>("post");
   const defaultStyle = styles[0];
+  const uploadPreview = content.placeholders.uploadPreview;
+  const productTypesList = getProductTypes(vertical);
+  const defaultProductType = getDefaultProductType(vertical);
+  const topBarTitles: Record<WizardStep, string> = {
+    assets: "ساخت گروهی",
+    size: "ابعاد خروجی",
+    style: content.newProjectStyleTitle,
+  };
   const [selectedStyle, setSelectedStyle] = useState(defaultStyle?.id ?? "");
   const [selectedReference, setSelectedReference] = useState<BatchStyleReference | null>(null);
   const [selectedReadySampleId, setSelectedReadySampleId] = useState<string | null>(null);
@@ -156,7 +163,7 @@ export function GalleryBatchNewScreen({
   const [styleControlValues, setStyleControlValues] = useState<Record<string, string>>(() => getInitialStyleControlValues(defaultStyle));
   const [openStyleControl, setOpenStyleControl] = useState<string | null>(null);
   const [productTypes, setProductTypes] = useState<Record<string, string>>(() =>
-    Object.fromEntries(assets.map((asset) => [asset.id, normalizeProductType(asset.productType)])),
+    Object.fromEntries(assets.map((asset) => [asset.id, normalizeProductType(asset.productType, vertical)])),
   );
   const hasEnoughCredits = availableCredits >= requiredCredits;
   const selectedPreset = outputPresets.find((preset) => preset.id === outputPreset) ?? outputPresets[0];
@@ -309,7 +316,7 @@ export function GalleryBatchNewScreen({
                     src={asset.fileUrl}
                     fallbackSrc={uploadPreview.src}
                     fallbackAlt={uploadPreview.alt}
-                    alt={assetTitle(asset)}
+                    alt={assetTitle(asset, content.galleryImageFallbackTitle)}
                     fill
                     className="object-cover"
                     sizes="120px"
@@ -341,27 +348,27 @@ export function GalleryBatchNewScreen({
                       src={asset.fileUrl}
                       fallbackSrc={uploadPreview.src}
                       fallbackAlt={uploadPreview.alt}
-                      alt={assetTitle(asset)}
+                      alt={assetTitle(asset, content.galleryImageFallbackTitle)}
                       fill
                       className="object-cover"
                       sizes="44px"
                     />
                   </JewelryImageFrame>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-semibold text-surface">{assetTitle(asset)}</p>
+                    <p className="truncate text-xs font-semibold text-surface">{assetTitle(asset, content.galleryImageFallbackTitle)}</p>
                     <div className="relative mt-1">
                       <select
                         name={`productType_${asset.id}`}
-                        value={normalizeProductType(productTypes[asset.id] ?? DEFAULT_PRODUCT_TYPE)}
+                        value={normalizeProductType(productTypes[asset.id] ?? defaultProductType, vertical)}
                         onChange={(event) =>
                           setProductTypes((current) => ({ ...current, [asset.id]: event.target.value }))
                         }
-                        aria-label={`نوع محصول ${assetTitle(asset)}`}
+                        aria-label={`${content.productTypeFieldLabel} ${assetTitle(asset, content.galleryImageFallbackTitle)}`}
                         className="min-h-8 w-full appearance-none rounded-full border border-white/12 bg-white/[0.08] py-0 pr-3 pl-8 text-xs font-semibold text-surface outline-none transition focus:border-white/28"
                       >
-                        {PRODUCT_TYPES.map((item) => (
+                        {productTypesList.map((item) => (
                           <option key={item} value={item} className="bg-[#171411] text-white">
-                            {productTypeLabel(item)}
+                            {productTypeLabel(item, vertical)}
                           </option>
                         ))}
                       </select>
@@ -393,7 +400,7 @@ export function GalleryBatchNewScreen({
             >
               <Image
                 src={heroAsset?.fileUrl || uploadPreview.src}
-                alt={assetTitle(heroAsset)}
+                alt={assetTitle(heroAsset, content.galleryImageFallbackTitle)}
                 fill
                 priority
                 unoptimized
@@ -537,7 +544,7 @@ export function GalleryBatchNewScreen({
             {isSampleReferenceStyle ? (
               <section className="space-y-3 rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-3">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs font-medium text-surface/72">عکس نمونه مشترک</p>
+                  <p className="text-xs font-medium text-surface/72">{content.sampleReferenceTitle}</p>
                   <label htmlFor="batch-reference-file-input" className="inline-flex min-h-9 items-center gap-2 rounded-full border border-white/14 bg-white/[0.06] px-3 text-xs font-semibold text-surface">
                     <DocumentUpload aria-hidden={true} className="h-3.5 w-3.5" />
                     آپلود
@@ -578,7 +585,7 @@ export function GalleryBatchNewScreen({
                     })}
                     {styleReferences.map((reference) => {
                       const checked = selectedReference?.id === reference.id;
-                      const title = reference.title || reference.originalName || "عکس نمونه";
+                      const title = reference.title || reference.originalName || content.sampleReferenceTitle;
 
                       return (
                         <button
@@ -613,11 +620,11 @@ export function GalleryBatchNewScreen({
                   <div className="flex items-center gap-3 rounded-[0.9rem] border border-white/14 bg-white/[0.04] px-3 py-2">
                     <JewelryImageFrame aspect="square" selected treatment="quiet" className="h-16 w-16 shrink-0 rounded-[0.9rem]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={referenceUploadPreview} alt="پیش‌نمایش عکس نمونه" className="h-full w-full object-cover" />
+                      <img src={referenceUploadPreview} alt={`پیش‌نمایش ${content.sampleReferenceTitle}`} className="h-full w-full object-cover" />
                     </JewelryImageFrame>
                     <div className="flex min-w-0 items-center gap-2 text-xs text-surface/84">
                       <ImageIcon aria-hidden={true} className="h-4 w-4 shrink-0 text-accent-bright" />
-                      <span>نمونه آپلودی</span>
+                      <span>{content.uploadedSampleLabel}</span>
                     </div>
                   </div>
                 ) : null}

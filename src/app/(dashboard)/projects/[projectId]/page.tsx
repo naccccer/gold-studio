@@ -7,6 +7,7 @@ import { getEffectiveFreeVariantLimit } from "@/lib/billing";
 import { getCurrentVertical } from "@/lib/current-vertical";
 import { isRawImageFilenameTitle, retryProjectVisionTitle } from "@/lib/product-vision";
 import { readStorageObject, storagePublicUrl } from "@/lib/storage";
+import { getVerticalContent } from "@/lib/vertical-content";
 
 export default async function ProjectDetailPage({
   params,
@@ -15,6 +16,7 @@ export default async function ProjectDetailPage({
 }) {
   const session = await requireUserSession();
   const vertical = await getCurrentVertical();
+  const content = getVerticalContent(vertical);
   const { projectId } = await params;
 
   const project = await db.project.findFirst({
@@ -105,6 +107,7 @@ export default async function ProjectDetailPage({
 
   return (
     <ProjectDetailScreen
+      content={content}
       project={
         {
           ...project,

@@ -3,6 +3,7 @@ import { FeatureCarousel } from "@/components/feature-carousel";
 import { ButtonLink } from "@/components/ui/button";
 import { PageShell } from "@/components/ui/page-shell";
 import type { HomeCarouselImage } from "@/lib/home-carousel";
+import type { VerticalContent } from "@/lib/vertical-content";
 
 export type DashboardRecentProject = {
   id: string;
@@ -20,9 +21,10 @@ type DashboardHomeScreenProps = {
   completedCount: number;
   recentProjects: DashboardRecentProject[];
   carouselImages: HomeCarouselImage[];
+  content: VerticalContent;
 };
 
-export function DashboardHomeScreen({ carouselImages }: DashboardHomeScreenProps) {
+export function DashboardHomeScreen({ carouselImages, content }: DashboardHomeScreenProps) {
   return (
     <PageShell maxWidth="lg" minHeight={false} className="min-h-0 flex-1 pb-[calc(env(safe-area-inset-bottom)+6.2rem)]">
       <section className="flex min-h-0 flex-1 flex-col">
@@ -34,7 +36,7 @@ export function DashboardHomeScreen({ carouselImages }: DashboardHomeScreenProps
 
         <ButtonLink href="/projects/new" size="full" className="mt-2 h-12 shrink-0 rounded-[1rem] text-sm">
           <Add aria-hidden="true" className="h-4 w-4" />
-          پروژه جدید
+          {content.productName === "غذا یا نوشیدنی" ? "پروژه غذایی جدید" : "پروژه جدید"}
         </ButtonLink>
 
       </section>

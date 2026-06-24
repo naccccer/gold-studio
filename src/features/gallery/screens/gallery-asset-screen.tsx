@@ -5,7 +5,8 @@ import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 import { AssetProductTypeForm } from "@/features/gallery/components/asset-product-type-form";
-import { uploadPreview } from "@/lib/placeholders/jewelry-images";
+import type { VerticalContent } from "@/lib/vertical-content";
+import type { VerticalId } from "@/lib/verticals";
 
 export type GalleryAssetDetail = {
   id: string;
@@ -27,6 +28,8 @@ export type GalleryAssetDetail = {
 
 type GalleryAssetScreenProps = {
   asset: GalleryAssetDetail;
+  vertical: VerticalId;
+  content: VerticalContent;
 };
 
 const dateFormatter = new Intl.DateTimeFormat("fa-IR", { day: "numeric", month: "long" });
@@ -37,8 +40,9 @@ const statusLabelMap: Record<string, string> = {
   FAILED: "نیازمند تکرار",
 };
 
-export function GalleryAssetScreen({ asset }: GalleryAssetScreenProps) {
-  const title = asset.title || asset.originalName || "تصویر محصول";
+export function GalleryAssetScreen({ asset, vertical, content }: GalleryAssetScreenProps) {
+  const uploadPreview = content.placeholders.uploadPreview;
+  const title = asset.title || asset.originalName || content.galleryImageFallbackTitle;
 
   return (
     <PageShell maxWidth="lg" className="space-y-5 pb-4">
@@ -67,7 +71,7 @@ export function GalleryAssetScreen({ asset }: GalleryAssetScreenProps) {
           </ButtonLink>
         </div>
         {asset.notes ? <p className="text-sm leading-7 text-muted">{asset.notes}</p> : null}
-        <AssetProductTypeForm assetId={asset.id} productType={asset.productType} />
+        <AssetProductTypeForm assetId={asset.id} productType={asset.productType} vertical={vertical} />
       </section>
 
       <section className="space-y-3">
@@ -83,7 +87,7 @@ export function GalleryAssetScreen({ asset }: GalleryAssetScreenProps) {
                 <div className="relative h-[136px] overflow-hidden rounded-[1rem] border border-white/75 bg-[#ebe2d6] transition group-hover:border-border-strong">
                   <SafeJewelryImage
                     src={project.resultImageUrl || project.sourceImageUrl}
-                    alt={project.title || "خروجی محصول"}
+                    alt={project.title || content.projectResultAlt}
                     fallbackSrc={uploadPreview.src}
                     fallbackAlt={uploadPreview.alt}
                     fill

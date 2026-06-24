@@ -37,8 +37,8 @@ import {
   saveProjectResultAsStyleReferenceAction,
 } from "@/features/projects/actions";
 import { ProjectStatusRefresh } from "@/features/projects/components/project-status-refresh";
-import { resultHeroDark, uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { generateNumericSupportCode } from "@/lib/support-code";
+import type { VerticalContent } from "@/lib/vertical-content";
 
 const statusConfig: Record<string, { label: string; supportCopy: string }> = {
   QUEUED: {
@@ -119,19 +119,22 @@ function formatProjectError(project: ProjectDetail) {
   };
 }
 
-function buildProcessingMoments(styleName: string) {
+function buildProcessingMoments(styleName: string, content: VerticalContent) {
   const withModel = styleName.includes("مدل");
+  const isFood = content.productName === "غذا یا نوشیدنی";
   const phaseZero = [
-    "تشخیص محصول",
+    `تشخیص ${content.productName}`,
     "بررسی جزئیات",
     "چک کردن زاویه",
-    "هماهنگی با عکاس",
+    isFood ? "هماهنگی با سبک غذایی" : "هماهنگی با عکاس",
   ];
-  const phaseOne = [
-    withModel ? "در حال هماهنگ کردن با مدل" : "پاک‌سازی زمینه",
-    "تنظیم نور",
-    "مرتب‌کاری لبه‌ها",
-  ];
+  const phaseOne = isFood
+    ? ["تنظیم نور و تازگی", "مرتب‌سازی سطح", "حفظ بافت و رنگ"]
+    : [
+        withModel ? "در حال هماهنگ کردن با مدل" : "پاک‌سازی زمینه",
+        "تنظیم نور",
+        "مرتب‌کاری لبه‌ها",
+      ];
   const phaseTwo = [
     "چیدمان قاب",
     "صیقل نهایی",
@@ -248,7 +251,7 @@ type ShareStatus = "idle" | "sharing" | "shared" | "copied" | "failed";
 type ReferenceSaveStatus = "idle" | "saving" | "saved" | "failed";
 type QualityReviewSubmitStatus = "idle" | "submitting" | "sent" | "failed";
 
-type ProjectDetailScreenProps = { project: ProjectDetail };
+type ProjectDetailScreenProps = { project: ProjectDetail; content: VerticalContent };
 
 function shareFileExtension(mimeType: string) {
   if (mimeType.includes("png")) return "png";
@@ -269,11 +272,13 @@ function qualityReviewStatusLabel(status?: string | null) {
 
 function QualityReviewDialog({
   projectId,
+  title,
   submitting,
   onClose,
   onSubmit,
 }: {
   projectId: string;
+  title: string;
   submitting: boolean;
   onClose: () => void;
   onSubmit: (formData: FormData) => Promise<void>;
@@ -287,7 +292,7 @@ function QualityReviewDialog({
         <input type="hidden" name="projectId" value={projectId} />
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-surface">گزارش مشکل محصول</h2>
+            <h2 className="text-sm font-semibold text-surface">{title}</h2>
             <p className="mt-1 text-xs leading-6 text-surface/68">
               اگر خروجی با محصول اصلی فرق دارد، درخواست بررسی ثبت کنید. نتیجه از بخش پیام‌ها اعلام می‌شود.
             </p>
@@ -557,7 +562,9 @@ function ResultHeader({
   );
 }
 
-export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
+export function ProjectDetailScreen({ project, content }: ProjectDetailScreenProps) {
+  const uploadPreview = content.placeholders.uploadPreview;
+  const resultHeroDark = content.placeholders.resultHeroDark;
   const [fullscreen, setFullscreen] = useState(false);
   const [showBefore, setShowBefore] = useState(false);
   const [copiedError, setCopiedError] = useState(false);
@@ -591,7 +598,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
     !project.variantParentId &&
     !project.freeVariantProjectId &&
     (project.freeVariantRemaining ?? 0) > 0;
-  const processingMoments = buildProcessingMoments(project.style.name);
+  const processingMoments = buildProcessingMoments(project.style.name, content);
   const errorPresentation = formatProjectError(visibleProject);
   const errorCopyText = [
     errorPresentation.title,
@@ -599,7 +606,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
     failedCreditReassurance,
     `کد پیگیری: ${errorPresentation.supportCode}`,
   ].join("\n");
-  const rawProjectTitle = project.title?.trim() || "پروژه محصول";
+  const rawProjectTitle = project.title?.trim() || content.projectFallbackTitle;
   const projectTitle = stripVersionSuffix(rawProjectTitle) || rawProjectTitle;
   const variantLabel = project.variantNumber && project.variantNumber > 1
     ? project.variantNumber.toLocaleString("fa-IR")
@@ -751,7 +758,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
             imageAlt="در حال پردازش تصویر"
             title={status.label}
             caption="می‌توانید از این صفحه خارج شوید و نتیجه را در تب پروژه‌ها ببینید."
-            steps={["تشخیص محصول", "پاک‌سازی زمینه", "ساخت خروجی نهایی"]}
+            steps={[...content.processingSteps]}
             moments={processingMoments}
             className="min-h-0 flex-1"
             frameClassName="h-full min-h-0"
@@ -807,7 +814,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={resultImageSrc}
-                alt={project.title || "خروجی نهایی محصول"}
+                alt={project.title || content.projectResultAlt}
                 className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-150 ${showBefore ? "opacity-0" : "opacity-100"}`}
                 decoding="async"
                 onError={() => {
@@ -845,7 +852,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
                   ].join(" ")}
                 >
                   <Scan aria-hidden={true} className="h-4 w-4" />
-                  {showBefore ? "خروجی" : "عکس خام"}
+                  {showBefore ? content.finalImageLabel : content.rawImageLabel}
                 </button>
                 <button
                   type="button"
@@ -949,7 +956,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
                     data-close-context-menu
                   >
                     <MessageQuestion aria-hidden={true} className="h-3.5 w-3.5" />
-                    {currentQualityReviewLabel ? `بررسی: ${currentQualityReviewLabel}` : "گزارش مشکل محصول"}
+                    {currentQualityReviewLabel ? `بررسی: ${currentQualityReviewLabel}` : content.qualityReviewTitle}
                   </button>
                   <ConfirmAction
                     action={archiveProjectAction}
@@ -985,6 +992,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
         {qualityReviewOpen ? (
           <QualityReviewDialog
             projectId={project.id}
+            title={content.qualityReviewTitle}
             submitting={qualityReviewStatus === "submitting"}
             onClose={() => setQualityReviewOpen(false)}
             onSubmit={handleQualityReviewSubmit}
@@ -1018,7 +1026,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
                 ].join(" ")}
               >
                 <Scan aria-hidden={true} className="h-4 w-4" />
-                {showBefore ? "خروجی" : "عکس خام"}
+                {showBefore ? content.finalImageLabel : content.rawImageLabel}
               </button>
               <button
                 type="button"
@@ -1037,7 +1045,7 @@ export function ProjectDetailScreen({ project }: ProjectDetailScreenProps) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={resultImageSrc}
-                alt={project.title || "خروجی نهایی محصول"}
+                alt={project.title || content.projectResultAlt}
                 draggable={false}
                 className={`absolute inset-0 h-full w-full bg-black object-contain object-center transition-opacity duration-150 ${showBefore ? "opacity-0" : "opacity-100"}`}
                 decoding="async"

@@ -10,7 +10,7 @@ export const VERTICALS = {
   food: {
     id: "food",
     label: "Food & Drink",
-    isLaunchReady: false,
+    isLaunchReady: true,
     hostSubdomains: ["food"],
   },
   clothing: {

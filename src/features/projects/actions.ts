@@ -205,7 +205,7 @@ export async function createProjectAction(
   const sourceAssetId = String(formData.get("sourceAssetId") ?? "").trim();
   const freeVariantParentId = String(formData.get("freeVariantParentId") ?? "").trim();
   const submittedProductType = String(formData.get("productType") ?? "").trim();
-  const selectedProductType = normalizeProductType(submittedProductType);
+  const selectedProductType = normalizeProductType(submittedProductType, vertical);
   const outputPreset = normalizeOutputPreset(formData.get("outputPreset"));
   const styleId = String(formData.get("styleId") ?? "");
   const style = await getStyleForGeneration(styleId, vertical);
@@ -224,7 +224,7 @@ export async function createProjectAction(
     return readyUser;
   }
 
-  const stylePrompt = buildGenerationPrompt({ style, formData });
+  const stylePrompt = buildGenerationPrompt({ style, formData, vertical });
 
   if (mode === "text") {
     if (session.role !== "ADMIN") {
@@ -285,6 +285,7 @@ export async function createProjectAction(
     const projectPrompt = buildGenerationPrompt({
       style,
       formData,
+      vertical,
       vision: {
         productType: selectedProductType,
         visionDescription: asset.visionDescription,
@@ -508,6 +509,7 @@ export async function createProjectAction(
     const projectPrompt = buildGenerationPrompt({
       style,
       formData,
+      vertical,
       vision: {
         productType: selectedProductType,
         visionDescription: null,
@@ -710,7 +712,7 @@ export async function updateProjectProductTypeAction(formData: FormData) {
   const session = await requireUserSession();
   const vertical = await getCurrentVertical();
   const projectId = String(formData.get("projectId") ?? "").trim();
-  const productType = normalizeProductType(formData.get("productType"));
+  const productType = normalizeProductType(formData.get("productType"), vertical);
 
   if (!projectId) {
     return;

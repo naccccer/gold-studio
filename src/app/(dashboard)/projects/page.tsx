@@ -3,10 +3,12 @@ import { getCurrentVertical } from "@/lib/current-vertical";
 import { db } from "@/lib/db";
 import { requireUserSession } from "@/lib/auth/session";
 import { storagePublicUrl } from "@/lib/storage";
+import { getVerticalContent } from "@/lib/vertical-content";
 
 export default async function ProjectsPage() {
   const session = await requireUserSession();
   const vertical = await getCurrentVertical();
+  const content = getVerticalContent(vertical);
 
   const projects = (await db.project.findMany({
     where: { userId: session.userId, vertical, archivedAt: null },
@@ -25,5 +27,5 @@ export default async function ProjectsPage() {
     resultImageUrl: project.resultStorageKey ? storagePublicUrl(project.resultStorageKey) : project.resultImageUrl,
   })) as ProjectListItem[];
 
-  return <ProjectsListScreen projects={projects} />;
+  return <ProjectsListScreen projects={projects} content={content} />;
 }

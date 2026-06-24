@@ -18,7 +18,7 @@ import { getCurrentVertical } from "@/lib/current-vertical";
 import { processGenerationBatch } from "@/lib/generation/jobs";
 import { normalizeOutputPreset } from "@/lib/output-presets";
 import { analyzeAndStoreProductAssetVision, ensureProductAssetVision, pickVisionTitle } from "@/lib/product-vision";
-import { DEFAULT_PRODUCT_TYPE, normalizeProductType } from "@/lib/product-types";
+import { getDefaultProductType, normalizeProductType } from "@/lib/product-types";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { deleteStorageObject } from "@/lib/storage";
 import { createOrFindStyleReferenceFromReadySample } from "@/lib/style-reference-ready-samples";
@@ -202,10 +202,11 @@ export async function createBatchFromGalleryAction(formData: FormData) {
       reservations.push(reservation.reservationId);
 
       const analyzedAsset = await ensureProductAssetVision(asset.id);
-      const submittedProductType = normalizeProductType(formData.get(`productType_${asset.id}`));
+      const submittedProductType = normalizeProductType(formData.get(`productType_${asset.id}`), vertical);
+      const defaultProductType = getDefaultProductType(vertical);
       const effectiveProductType =
-        submittedProductType === DEFAULT_PRODUCT_TYPE && analyzedAsset?.productType
-          ? normalizeProductType(analyzedAsset.productType)
+        submittedProductType === defaultProductType && analyzedAsset?.productType
+          ? normalizeProductType(analyzedAsset.productType, vertical)
           : submittedProductType;
       if (asset.productType !== submittedProductType) {
         await db.productAsset.updateMany({
@@ -216,6 +217,7 @@ export async function createBatchFromGalleryAction(formData: FormData) {
       const projectPrompt = buildGenerationPrompt({
         style,
         formData,
+        vertical,
         vision: {
           productType: effectiveProductType,
           visionDescription: analyzedAsset?.visionDescription,
@@ -351,7 +353,7 @@ export async function updateAssetProductTypeAction(formData: FormData) {
   const session = await requireUserSession();
   const vertical = await getCurrentVertical();
   const assetId = String(formData.get("assetId") ?? "").trim();
-  const productType = normalizeProductType(formData.get("productType"));
+  const productType = normalizeProductType(formData.get("productType"), vertical);
 
   if (!assetId) {
     return;

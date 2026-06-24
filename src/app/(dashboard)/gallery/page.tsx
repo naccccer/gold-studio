@@ -4,6 +4,7 @@ import { getCurrentVertical } from "@/lib/current-vertical";
 import { db } from "@/lib/db";
 import { storagePublicUrl } from "@/lib/storage";
 import { getUserVisibleStyles } from "@/lib/styles";
+import { getVerticalContent } from "@/lib/vertical-content";
 
 type GalleryPageProps = {
   searchParams?: Promise<{ deleteNotice?: string; undoAssetIds?: string }>;
@@ -16,6 +17,7 @@ function normalizeDeleteNotice(value?: string) {
 export default async function GalleryPage({ searchParams }: GalleryPageProps) {
   const session = await requireUserSession();
   const vertical = await getCurrentVertical();
+  const content = getVerticalContent(vertical);
   const params = await searchParams;
   const [assets, styles] = await Promise.all([
     db.productAsset.findMany({
@@ -39,6 +41,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
     <GalleryScreen
       assets={displayAssets as GalleryAssetItem[]}
       styles={styles}
+      content={content}
       deleteNotice={normalizeDeleteNotice(params?.deleteNotice)}
       undoAssetIds={params?.undoAssetIds}
     />

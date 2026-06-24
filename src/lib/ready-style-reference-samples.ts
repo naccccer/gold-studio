@@ -6,6 +6,8 @@ import { DEFAULT_VERTICAL_ID, type VerticalId } from "@/lib/verticals";
 
 export const readyStyleReferenceSamplePublicBasePath = "/images/Samples";
 export const readyStyleReferenceSampleDirectory = path.join(process.cwd(), "public", "images", "Samples");
+const foodReadyStyleReferenceSamplePublicBasePath = "/images/placeholders/food";
+const foodReadyStyleReferenceSampleDirectory = path.join(process.cwd(), "public", "images", "placeholders", "food");
 
 const allowedSampleExtensions = new Set([".webp"]);
 
@@ -23,6 +25,15 @@ const sampleFiles = [
   "Ring-Redbg.webp",
   "shadow.webp",
   "wood-ring.webp",
+];
+
+const foodSampleFiles = [
+  "food-cafe-item.webp",
+  "food-dessert-chocolate.webp",
+  "food-packaged.webp",
+  "food-restaurant-plate.webp",
+  "food-dessert-strawberry.webp",
+  "food-drink-social.webp",
 ];
 
 const sampleMetadata: Record<string, { title: string; alt: string }> = {
@@ -80,6 +91,33 @@ const sampleMetadata: Record<string, { title: string; alt: string }> = {
   },
 };
 
+const foodSampleMetadata: Record<string, { title: string; alt: string }> = {
+  "food-cafe-item": {
+    title: "چیدمان کافه",
+    alt: "نمونه چیدمان کروسان و قهوه برای عکس کافه",
+  },
+  "food-dessert-chocolate": {
+    title: "دسر شکلاتی",
+    alt: "نمونه عکس دسر شکلاتی با نور استودیویی",
+  },
+  "food-packaged": {
+    title: "بسته‌بندی غذا",
+    alt: "نمونه عکس غذای بسته‌بندی‌شده برای فروش آنلاین",
+  },
+  "food-restaurant-plate": {
+    title: "بشقاب رستورانی",
+    alt: "نمونه چیدمان بشقاب رستورانی مینیمال",
+  },
+  "food-dessert-strawberry": {
+    title: "دسر توت‌فرنگی",
+    alt: "نمونه عکس دسر توت‌فرنگی برای منوی رستوران",
+  },
+  "food-drink-social": {
+    title: "نوشیدنی اجتماعی",
+    alt: "نمونه عکس نوشیدنی برای پست شبکه اجتماعی",
+  },
+};
+
 const legacyIdByStem: Record<string, string> = {
   c0fb4190cd96c9391b843c31fac66b86: "soft-ring-light",
   "Hand-Ring-under-water": "hand-ring-under-water",
@@ -112,7 +150,14 @@ async function listSampleDirectoryFiles() {
   }
 }
 
-function samplePathCandidates(fileName: string) {
+function samplePathCandidates(fileName: string, vertical: VerticalId = DEFAULT_VERTICAL_ID) {
+  if (vertical === "food") {
+    return [
+      path.join(process.cwd(), "public", "images", "placeholders", "food", fileName),
+      path.join(process.cwd(), ".next", "standalone", "public", "images", "placeholders", "food", fileName),
+    ];
+  }
+
   return [
     path.join(process.cwd(), "public", "images", "Samples", fileName),
     path.join(process.cwd(), "public", "images", "samples", fileName),
@@ -121,8 +166,8 @@ function samplePathCandidates(fileName: string) {
   ];
 }
 
-async function findExistingSampleFilePath(fileName: string) {
-  for (const candidate of samplePathCandidates(fileName)) {
+async function findExistingSampleFilePath(fileName: string, vertical: VerticalId = DEFAULT_VERTICAL_ID) {
+  for (const candidate of samplePathCandidates(fileName, vertical)) {
     try {
       await access(candidate);
       return candidate;
@@ -131,7 +176,7 @@ async function findExistingSampleFilePath(fileName: string) {
     }
   }
 
-  return path.join(readyStyleReferenceSampleDirectory, fileName);
+  return path.join(vertical === "food" ? foodReadyStyleReferenceSampleDirectory : readyStyleReferenceSampleDirectory, fileName);
 }
 
 function sampleIdFromFileName(fileName: string) {
@@ -152,26 +197,27 @@ export async function ensureReadyStyleReferenceSampleDirectory() {
 }
 
 export async function getReadyStyleReferenceSamples(vertical: VerticalId = DEFAULT_VERTICAL_ID): Promise<ReadyStyleReferenceSample[]> {
-  const directoryFiles = await listSampleDirectoryFiles();
-  const fileNames = Array.from(new Set([...sampleFiles, ...directoryFiles]));
-  const sampleVertical: VerticalId = DEFAULT_VERTICAL_ID;
+  const directoryFiles = vertical === "food" ? [] : await listSampleDirectoryFiles();
+  const fileNames = vertical === "food" ? foodSampleFiles : Array.from(new Set([...sampleFiles, ...directoryFiles]));
+  const basePath = vertical === "food" ? foodReadyStyleReferenceSamplePublicBasePath : readyStyleReferenceSamplePublicBasePath;
+  const metadataById = vertical === "food" ? foodSampleMetadata : sampleMetadata;
   const samples = await Promise.all(
     fileNames
       .filter((fileName) => allowedSampleExtensions.has(path.extname(fileName).toLowerCase()))
       .map(async (fileName) => {
         const id = sampleIdFromFileName(fileName);
-        const metadata = sampleMetadata[id];
-        const filePath = await findExistingSampleFilePath(fileName);
+        const metadata = metadataById[id];
+        const filePath = await findExistingSampleFilePath(fileName, vertical);
         const info = await stat(filePath).catch(() => null);
 
         return {
-          vertical: sampleVertical,
+          vertical,
           id,
           fileName,
           filePath,
-          fileUrl: `${readyStyleReferenceSamplePublicBasePath}/${encodeURIComponent(fileName)}`,
+          fileUrl: `${basePath}/${encodeURIComponent(fileName)}`,
           title: metadata?.title ?? fallbackTitleFromId(id),
-          alt: metadata?.alt ?? "نمونه آماده عکس جواهر",
+          alt: metadata?.alt ?? (vertical === "food" ? "نمونه آماده عکس غذا و نوشیدنی" : "نمونه آماده عکس جواهر"),
           size: info?.size ?? 0,
           updatedAt: info?.mtime ?? new Date(0),
         };
@@ -189,7 +235,7 @@ export async function getReadyStyleReferenceSample(sampleId: string, vertical: V
 }
 
 export async function readReadyStyleReferenceSample(sample: ReadyStyleReferenceSample) {
-  for (const candidate of samplePathCandidates(sample.fileName)) {
+  for (const candidate of samplePathCandidates(sample.fileName, sample.vertical)) {
     try {
       return await readFile(candidate);
     } catch (error) {

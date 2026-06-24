@@ -18,6 +18,8 @@ type AuthEntryStageProps = {
   sendResetAction?: OtpAction;
   verifyResetAction?: OtpAction;
   initialPanel?: AuthPanel | null;
+  contextLabel?: string;
+  hint?: string;
 };
 
 type DragState = {
@@ -83,6 +85,8 @@ export function AuthEntryStage({
   sendResetAction,
   verifyResetAction,
   initialPanel = null,
+  contextLabel = "استودیوی هوشمند طلا",
+  hint = "کارت را به یک سمت بکشید",
 }: AuthEntryStageProps) {
   const [panel, setPanel] = useState<AuthPanel | null>(initialPanel);
   const [commit, setCommit] = useState<AuthPanel | null>(initialPanel);
@@ -339,8 +343,11 @@ export function AuthEntryStage({
             <div className="ov-sweepband" />
           </div>
 
-          <header className="relative z-10 flex justify-center pt-8">
+          <header className="relative z-10 flex flex-col items-center justify-center gap-3 pt-8">
             <BrandLogo variant="primary-on-dark" priority />
+            <p className="rounded-full border border-white/10 bg-white/[0.055] px-3 py-1 text-[11px] font-semibold leading-5 text-studio-text-muted">
+              {contextLabel}
+            </p>
           </header>
 
           <div className="ov-scene relative z-10 flex flex-1 items-center justify-center">
@@ -394,7 +401,7 @@ export function AuthEntryStage({
           </div>
 
           <p className="relative z-10 pb-9 text-center text-[0.8rem] font-semibold text-studio-text-muted">
-            <span className="ov-hint-drag">کارت را به یک سمت بکشید</span>
+            <span className="ov-hint-drag">{hint}</span>
             <span className="ov-hint-tap">ورود یا ثبت‌نام را انتخاب کنید</span>
           </p>
         </div>

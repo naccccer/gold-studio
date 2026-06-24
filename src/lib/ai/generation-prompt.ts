@@ -2,8 +2,9 @@ import { buildHumanModelProductWearPrompt, buildStyleControlPrompt } from "@/lib
 import { buildProductOnlyIsolationPrompt, isHumanWearableStyle } from "@/lib/ai/style-policy";
 import { buildVisionPromptContext } from "@/lib/ai/vision";
 import { getOutputPresetSpec, normalizeOutputPreset } from "@/lib/output-presets";
-import { DEFAULT_PRODUCT_TYPE, normalizeProductType } from "@/lib/product-types";
+import { getDefaultProductType, normalizeProductType } from "@/lib/product-types";
 import { buildSampleReferencePromptContext } from "@/lib/style-reference-vision";
+import { DEFAULT_VERTICAL_ID, type VerticalId } from "@/lib/verticals";
 
 type GenerationPromptStyle = {
   id: string;
@@ -76,7 +77,14 @@ export function getEditorialBackgroundDecorInstruction(styleId: string) {
   return "Editorial background decor: always include a restrained designed background decor element such as simple geometric volume, matte stone plane, soft fabric plane, plinth, or subtle editorial surface layering. Keep it premium, uncluttered, product-first, and avoid a plain empty catalog background.";
 }
 
-function getFineDetailInstruction(productType?: string | null, options?: { isHumanModelStyle?: boolean }) {
+function getFineDetailInstruction(productType?: string | null, options?: { isHumanModelStyle?: boolean; vertical?: VerticalId }) {
+  if (options?.vertical === "food") {
+    return [
+      "Fine detail priority: preserve the exact food or drink identity, plating, portion shape, packaging, label placement, garnish, sauce pattern, texture, color, and visible freshness cues.",
+      "Do not turn the item into a different dish, drink, dessert, package, flavor, brand, serving size, or cuisine. Keep ingredient details crisp and appetizing without making the result look synthetic.",
+    ].join("\n");
+  }
+
   if (productType === "ساعت") {
     return [
       "Fine detail priority: preserve the watch face layout, display structure, bezel markings, button placement, engravings, and case edges.",
@@ -116,10 +124,18 @@ function getFinalHumanWearableCorrection(productType?: string | null, options?: 
 function getProductImageSetInstruction(
   productImageCount: number,
   productType?: string | null,
-  options?: { isHumanModelStyle?: boolean },
+  options?: { isHumanModelStyle?: boolean; vertical?: VerticalId },
 ) {
   if (productImageCount <= 1) {
     return "";
+  }
+
+  if (options?.vertical === "food") {
+    return [
+      `Product identity references: use images 1-${productImageCount} together as views of the same food or drink item.`,
+      "Image 1 is the primary composition/source image. The additional images are supporting references for plating, packaging, label visibility, garnish, texture, scale, and ingredient detail only.",
+      "Do not create multiple dishes, a collage, or multiple outputs. Return one final food/product image.",
+    ].join("\n");
   }
 
   if (options?.isHumanModelStyle && productType === "گردنبند") {
@@ -145,11 +161,13 @@ export function buildGenerationPrompt({
   formData,
   vision,
   productImageCount = 1,
+  vertical = DEFAULT_VERTICAL_ID,
 }: {
   style: GenerationPromptStyle;
   formData: FormData;
   vision?: GenerationPromptVision | null;
   productImageCount?: number;
+  vertical?: VerticalId;
 }) {
   const outputPreset = normalizeOutputPreset(formData.get("outputPreset"));
   const baseStylePrompt = style.id === "style_sample_reference" ? SAMPLE_REFERENCE_BASE_PROMPT : style.prompt;
@@ -157,9 +175,9 @@ export function buildGenerationPrompt({
   const visionContext = vision ? buildVisionPromptContext(vision) : "";
   const styleControlPrompt = buildStyleControlPrompt(style, formData);
   const includesHumanModel = isHumanWearableStyle(style);
-  const submittedProductType = normalizeProductType(formData.get("productType"));
-  const visionProductType = vision?.productType ? normalizeProductType(vision.productType) : null;
-  const productType = visionProductType && visionProductType !== DEFAULT_PRODUCT_TYPE ? visionProductType : submittedProductType;
+  const submittedProductType = normalizeProductType(formData.get("productType"), vertical);
+  const visionProductType = vision?.productType ? normalizeProductType(vision.productType, vertical) : null;
+  const productType = visionProductType && visionProductType !== getDefaultProductType(vertical) ? visionProductType : submittedProductType;
 
   if (includesHumanModel) {
     promptParts.push(
@@ -174,11 +192,14 @@ export function buildGenerationPrompt({
     promptParts.push(buildHumanModelProductWearPrompt(productType));
   }
 
-  const productOnlyIsolationPrompt = buildProductOnlyIsolationPrompt({
-    style,
-    productType,
-    visionAngle: vision?.visionAngle,
-  });
+  const productOnlyIsolationPrompt =
+    vertical === "jewelry"
+      ? buildProductOnlyIsolationPrompt({
+          style,
+          productType,
+          visionAngle: vision?.visionAngle,
+        })
+      : "";
   if (productOnlyIsolationPrompt) {
     promptParts.push(productOnlyIsolationPrompt);
   }
@@ -192,7 +213,7 @@ export function buildGenerationPrompt({
     promptParts.push(styleCompositionInstruction);
   }
 
-  const productImageSetInstruction = getProductImageSetInstruction(productImageCount, productType, { isHumanModelStyle: includesHumanModel });
+  const productImageSetInstruction = getProductImageSetInstruction(productImageCount, productType, { isHumanModelStyle: includesHumanModel, vertical });
   if (productImageSetInstruction) {
     promptParts.push(productImageSetInstruction);
   }
@@ -208,7 +229,7 @@ export function buildGenerationPrompt({
   }
 
   promptParts.push(getCompositionInstruction(productType, vision?.visionAngle, { isHumanModelStyle: includesHumanModel }));
-  promptParts.push(getFineDetailInstruction(productType, { isHumanModelStyle: includesHumanModel }));
+  promptParts.push(getFineDetailInstruction(productType, { isHumanModelStyle: includesHumanModel, vertical }));
 
   if (visionContext) {
     promptParts.push(visionContext);
