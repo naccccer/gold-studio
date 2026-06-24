@@ -8,6 +8,7 @@ import {
   resolveModelRoutingDecision,
   type ProviderModelAttempt,
 } from "@/lib/ai/provider-settings";
+import { isSampleReferenceStyleId } from "@/lib/ai/style-policy";
 import { captureGenerationCreditReservation, logProviderEvent, releaseGenerationCreditReservation } from "@/lib/billing";
 import { db } from "@/lib/db";
 import { buildSampleReferenceVisionPromptContext, ensureStyleReferenceVision } from "@/lib/style-reference-vision";
@@ -414,7 +415,7 @@ async function enrichPromptWithReferenceVision(project: {
   prompt: string;
   referenceAssetId: string | null;
 }) {
-  if (project.styleId !== "style_sample_reference" || !project.referenceAssetId) {
+  if (!isSampleReferenceStyleId(project.styleId) || !project.referenceAssetId) {
     return project.prompt;
   }
 
@@ -473,7 +474,7 @@ export async function processImageProject(projectId: string) {
       throw new Error("تصویر ورودی پروژه پیدا نشد.");
     }
 
-    if (project.styleId === "style_sample_reference" && !project.referenceAsset) {
+    if (isSampleReferenceStyleId(project.styleId) && !project.referenceAsset) {
       throw new Error("برای سبک عکس نمونه، فایل نمونه پروژه پیدا نشد.");
     }
 

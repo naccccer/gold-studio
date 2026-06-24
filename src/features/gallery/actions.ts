@@ -14,6 +14,7 @@ import { NO_CREDITS_ERROR } from "@/lib/credits";
 import { getGenerationCreditUnitCost } from "@/lib/credit-units";
 import { db } from "@/lib/db";
 import { buildGenerationPrompt } from "@/lib/ai/generation-prompt";
+import { isSampleReferenceStyleId } from "@/lib/ai/style-policy";
 import { getCurrentVertical } from "@/lib/current-vertical";
 import { processGenerationBatch } from "@/lib/generation/jobs";
 import { normalizeOutputPreset } from "@/lib/output-presets";
@@ -27,7 +28,7 @@ import { saveStyleReferenceFile, saveStyleReferenceFromStoredObject, saveUploade
 import type { VerticalId } from "@/lib/verticals";
 
 async function resolveReferenceAssetForBatch(styleId: string, formData: FormData, userId: string, vertical: VerticalId) {
-  if (styleId !== "style_sample_reference") {
+  if (!isSampleReferenceStyleId(styleId)) {
     return null;
   }
 

@@ -1,4 +1,5 @@
 import {
+  FOOD_PRODUCT_TYPE,
   FOOD_PRODUCT_TYPES,
   getDefaultProductType,
   normalizeProductType,
@@ -296,27 +297,47 @@ export function buildVisionAnalysisPrompt(vertical: VerticalId) {
 }
 
 function buildFoodProductTypePrompt(productType: ProductType) {
-  if (productType === FOOD_PRODUCT_TYPES[0]) {
-    return "Food dish refinement: preserve the recipe identity, main ingredients, cooked surface, doneness, garnish, sauce placement, plate shape, and portion. Improve freshness and color gently without changing the cuisine or dish.";
+  if (productType === FOOD_PRODUCT_TYPE.persianRice) {
+    return "Persian rice dish refinement: preserve rice grain texture, saffron or topping placement, stew/khoresh separation when present, protein pieces, garnish, plate or container shape, and portion size. Keep colors appetizing and honest without changing the dish, cuisine, or serving style.";
   }
 
-  if (productType === FOOD_PRODUCT_TYPES[1]) {
-    return "Drink refinement: preserve the exact beverage type, color, opacity, foam, ice, bubbles, layers, garnish, straw, cup/glass/can/bottle shape, condensation, and fill level. Do not change it into another drink or invent a brand.";
+  if (productType === FOOD_PRODUCT_TYPE.grill) {
+    return "Grill and kebab refinement: preserve skewer or grilled-piece geometry, char marks, doneness, meat texture, rice or bread relationship, onion/tomato/garnish placement, plate or takeaway container, and portion size. Do not rearrange it into another kebab, steak, or mixed platter.";
   }
 
-  if (productType === FOOD_PRODUCT_TYPES[2]) {
+  if (productType === FOOD_PRODUCT_TYPE.sandwich) {
+    return "Burger, sandwich, and fried item refinement: preserve bun or bread shape, visible filling layers, cut-open interior when visible, fried coating texture, sauce placement, cheese, vegetables, wrapper or basket, and portion size. Do not change the sandwich build, filling, or protein type.";
+  }
+
+  if (productType === FOOD_PRODUCT_TYPE.pizzaFastFood) {
+    return "Pizza and fast-food refinement: preserve crust shape, slice layout, toppings, cheese texture, sauce visibility, box or plate context, and portion. Keep the item readable for menu thumbnails without inventing toppings or changing the flavor.";
+  }
+
+  if (productType === FOOD_PRODUCT_TYPE.healthy) {
+    return "Salad and healthy food refinement: preserve leaf freshness, ingredient separation, bowl or plate shape, dressing placement, grains, protein, fruit, vegetables, and portion. Keep colors bright but realistic, not over-saturated or plastic.";
+  }
+
+  if (productType === FOOD_PRODUCT_TYPE.cafeBreakfast) {
+    return "Cafe breakfast refinement: preserve pastry, egg, toast, sandwich, saucer, cup, garnish, plate relationship, table scale, and serving identity. Keep the scene natural and clean without adding unrelated cafe clutter.";
+  }
+
+  if (productType === FOOD_PRODUCT_TYPE.hotDrink) {
+    return "Hot drink refinement: preserve beverage color, foam, crema, latte art, steam only when subtle and plausible, cup shape, saucer, spoon, fill level, and any visible garnish. Do not change it into another coffee, tea, or hot beverage.";
+  }
+
+  if (productType === FOOD_PRODUCT_TYPE.coldDrink) {
+    return "Cold drink refinement: preserve exact beverage color, opacity, ice, bubbles, layers, garnish, straw, cup/glass/can/bottle shape, condensation, and fill level. Do not change it into another drink or invent a brand.";
+  }
+
+  if (productType === FOOD_PRODUCT_TYPE.dessert) {
     return "Dessert refinement: preserve layers, filling, crumb or cream texture, topping placement, cut shape, glaze, fruit, chocolate, and serving size. Keep it fresh and structured, not melted, mushy, or over-decorated.";
   }
 
-  if (productType === FOOD_PRODUCT_TYPES[3]) {
-    return "Cafe item refinement: preserve the cafe serving identity such as cup, pastry, sandwich, saucer, latte art, wrapper, garnish, and table scale. Keep the scene natural and clean without adding unrelated cafe clutter.";
+  if (productType === FOOD_PRODUCT_TYPE.bakery) {
+    return "Bakery refinement: preserve crust, crumb, glaze, seeds, flour dusting, cut shape, pastry layers, box or tray context, and portion count. Keep texture crisp and fresh without turning it into a different pastry or bread.";
   }
 
-  if (productType === FOOD_PRODUCT_TYPES[4]) {
-    return "Restaurant plate refinement: preserve the chef plating geometry, protein/carbohydrate/vegetable placement, sauce dots or streaks, garnish, plate rim, portion, and restaurant serving style. Do not rearrange it into a different dish.";
-  }
-
-  if (productType === FOOD_PRODUCT_TYPES[5]) {
+  if (productType === FOOD_PRODUCT_TYPE.packaged) {
     return "Packaged food or drink refinement: preserve package shape, label area, visible brand marks, flavor cues, barcode/claims only when visible, cap/seal, wrapper folds, and product scale. Do not invent new label text, fake logos, or change the package into another SKU.";
   }
 

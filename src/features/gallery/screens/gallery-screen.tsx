@@ -13,7 +13,7 @@ import {
   DocumentUpload,
   Edit2,
   Eye,
-  GalleryAdd,
+  ArchiveAdd,
   Magicpen,
   TickCircle,
   Trash,
@@ -373,7 +373,7 @@ export function GalleryScreen({ assets, styles, content, deleteNotice, undoAsset
                       <form action={saveGalleryAssetAsStyleReferenceAction}>
                         <input type="hidden" name="assetId" value={asset.id} />
                         <button type="submit" className={contextMenuItemClasses}>
-                          <GalleryAdd aria-hidden={true} className="h-3.5 w-3.5" />
+                          <ArchiveAdd aria-hidden={true} className="h-3.5 w-3.5" />
                           {content.gallerySaveReferenceLabel}
                         </button>
                       </form>

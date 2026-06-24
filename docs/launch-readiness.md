@@ -1,22 +1,32 @@
 # Launch Readiness
 
-این چک‌لیست برای آماده‌سازی Ovala برای کاربر واقعی است. مقدار secret، شماره کارت واقعی، API key، پسورد، یا داده خصوصی کاربر را داخل git ننویس.
+این چک‌لیست برای آماده‌سازی Ovala برای کاربر واقعی است. secret، شماره کارت واقعی، API key، پسورد، dump دیتابیس، یا داده خصوصی کاربر را داخل git ننویس.
 
-## قبل از لانچ
+## Before Launch
 
 - Production `.env` کامل باشد: `DATABASE_URL`, `AUTH_SECRET`, `ALLOW_INSECURE_COOKIES=false`, `SESSION_COOKIE_NAME`, `IMAGE_PROVIDER=avalai`, worker/watchdog/backup vars, `AVALAI_*`, `LIARA_*`, `FARAZSMS_*`, و `STORAGE_DRIVER`.
 - اگر پشت Nginx یا proxy قابل اعتماد هستی و rate limit باید IP واقعی را ببیند، `TRUST_PROXY=true` را فقط بعد از بررسی headerهای proxy فعال کن.
-- FarazSMS pattern code و line number تایید شده باشند و ثبت‌نام و فراموشی رمز با شماره واقعی تست شوند.
-- Avalai مسیر اصلی باشد و حداقل یک generation واقعی برای کاتالوگ، با مدل، و عکس نمونه تست شود. Liara فقط به‌عنوان پشتیبان در صورت خطای Avalai بررسی شود.
-- تنظیمات پرداخت در `/admin/billing` کامل باشد: بسته‌ها، اعتبار مستقل، پلن سفارشی کاربر، توضیح پرداخت، و اطلاعات کارت به کارت.
+- FarazSMS pattern code و line number تایید شده باشند و signup/password reset با شماره واقعی تست شوند.
+- Avalai مسیر primary باشد و حداقل یک generation واقعی برای catalog، with-model، و sample-reference تست شود.
+- Liara در `/admin/ai` قابل انتخاب بماند و fallback/support path آن بررسی شود.
+- تنظیمات پرداخت در `/admin/billing` کامل باشد: packageها، اعتبار مستقل، پلن سفارشی کاربر، توضیح پرداخت، و اطلاعات کارت به کارت.
 - مسیرهای پشتیبانی و FAQ آماده باشند و یک تیکت تستی از سمت کاربر پاسخ داده شود.
 - Home carousel، ready style samples، style previews، و متن‌های اصلی ادمین مرور شوند.
-- Multi-vertical host routing is verified: current Jewelry host resolves to `jewelry`; `food.*` resolves to `food`; local development may use optional `OVALA_LOCAL_VERTICAL` and otherwise falls back to `jewelry`.
-- Home carousel uploads are reviewed separately per vertical in `/admin/home?vertical=jewelry` and `/admin/home?vertical=food`; Jewelry must not contain Food slides.
-- backup قبل لانچ از `/admin/backups` یا `npm run backup:run` گرفته و دانلود/بازبینی شود.
-- نقش `SALES` با یک حساب تستی بررسی شود: دسترسی به users/billing/referrals باز باشد و health/AI/backups/audit بسته باشد.
+- Backup قبل لانچ از `/admin/backups` یا `npm run backup:run` گرفته و دانلود/بازبینی شود.
+- نقش `SALES` با یک حساب تستی بررسی شود: users/billing/referrals باز باشد و health/AI/backups/audit بسته باشد.
 
-## روز لانچ
+## Multi-Vertical Gate
+
+- Jewelry روی host اصلی به `jewelry` resolve شود.
+- `food.*` به Food resolve شود.
+- لوکال با `npm run dev:jewelry` و `npm run dev:food` جداگانه تست شود.
+- Clothing/Furniture تا Phase 6 فقط reserved باشند و رفتار فعال نداشته باشند.
+- Jewelry/Food در gallery، projects، styles، ready samples، style-reference assets، home carousel، outputs، و quality reviews leak نداشته باشند.
+- Food content با taxonomy فعلی مرور شود: product typeهای رستوران/کافه، شش style قابل نمایش، Food sample-photo style، و Food-only ready samples.
+- Jewelry sample-reference با `style_sample_reference` و Food sample-reference با `food_style_sample_reference` تست شود.
+- هزینه‌ها ثابت بمانند: `jewelry = 300 creditUnits` و `food = 100 creditUnits`.
+
+## Launch Commands
 
 ```bash
 cd /var/www/gold-studio
@@ -40,34 +50,35 @@ npm run smoke -- https://ovala.ir
 
 اگر app، worker، watchdog، یا backup scheduler هنوز در PM2 نیستند، اول طبق `docs/deployment-runbook.md` بساز و بعد `pm2 save` بزن.
 
-## QA دستی
+## Manual QA
 
-- ثبت‌نام با پیامک، ورود، خروج، و فراموشی رمز.
-- گالری: آپلود، crop، تغییر نوع محصول، و نمایش فایل ذخیره‌شده.
-- پروژه جدید: خروجی کاتالوگ، با مدل، و عکس نمونه.
-- پروژه‌ها: وضعیت `QUEUED/PROCESSING/COMPLETED/FAILED`، retry، نسخه دیگر، و درخواست بررسی کیفیت.
-- حساب: اعلان‌ها، پشتیبانی، ارجاع، تنظیمات خروجی، آرشیو.
-- پرداخت: خرید بسته/اعتبار، آپلود رسید، تایید/رد از ادمین، و اعمال credit یا پلن.
-- ادمین: health، AI/provider، پروژه‌ها، quality reviews، اعلان‌ها، کاربران، billing، support، assets، styles، backups.
-- فروش: رسیدها و عملیات فروش را انجام دهد، ولی تنظیمات سیستم، backup، role/password، و package/payment settings را نبیند.
-- موبایل هدف `393x852`: nav پایین، متن فارسی، دکمه‌ها، فرم‌ها، و project result.
+- Auth: ثبت‌نام با پیامک، ورود، خروج، و فراموشی رمز.
+- Home: carousel، متن‌ها، CTAها، و رفتار Jewelry/Food.
+- Gallery: آپلود، crop، تغییر نوع محصول، نمایش فایل ذخیره‌شده، batch generation، و ذخیره در نمونه‌ها.
+- New project: catalog، with-model، sample-reference، supporting images، preset خروجی، و هزینه credit.
+- Food project flow: product typeهای غذا/نوشیدنی، شش style Food، Food sample-reference، ذخیره در نمونه‌ها، و جداسازی کامل از Jewelry.
+- Projects: `QUEUED`, `PROCESSING`, `COMPLETED`, `FAILED`, retry، نسخه دیگر، و quality review.
+- Account: notifications، support، referral، خروجی‌ها، آرشیو، و لینک admin برای ادمین.
+- Billing: خرید بسته/اعتبار، آپلود رسید، تایید/رد از ادمین، اعمال credit، و custom plan.
+- Admin: health، AI/provider، assets، samples، styles، projects، outputs، quality reviews، users، billing، support، referrals، backups، audit.
+- Mobile target `393x852`: nav پایین، متن فارسی، RTL controls، button wrapping، forms، menus، و project result.
 
-## عملیات روزانه بعد لانچ
+## Daily Operations
 
-- `/admin/health`: صف generation، failed 24h، stale processing، storage driver، و envهای ضروری.
-- `/admin/projects`: خطاهای provider و پروژه‌های گیرکرده.
+- `/admin/health`: queue، failed 24h، stale processing، storage driver، و envهای ضروری.
+- `/admin/projects`: stuck/failed projects و provider errors.
 - `/admin/quality-reviews`: درخواست‌های refund/quality pending.
 - `/admin/billing`: رسیدهای pending و پلن‌های کاربر.
-- `/admin/backups`: آخرین بکاپ و وضعیت retention.
+- `/admin/backups`: آخرین backup و retention.
 - `/admin/support`: تیکت‌های باز.
 - PM2 logs برای app، worker، watchdog، و backups.
-- حجم دیتابیس و `.local-storage/uploads` یا bucket را بررسی کن.
+- حجم دیتابیس و `.local-storage/uploads` یا bucket.
 
-## Incident
+## Incident Checks
 
-- سایت down: `pm2 status`, app logs, watchdog logs, `/api/health`, و `journalctl` را قبل از restart بگیر.
-- دیتابیس down: MySQL status، connection count، `DATABASE_URL`، و آخرین migration را بررسی کن.
-- worker stuck: لاگ worker، `GENERATION_WORKER_SECRET`, queue count، و `/admin/health`.
-- provider down: provider events، `check:liara`، موجودی/دسترسی provider، و fallback model.
+- Site down: `pm2 status`, app logs, watchdog logs, `/api/health`, و `journalctl` را قبل از restart بگیر.
+- Database down: MySQL status، connection count، `DATABASE_URL`، و آخرین migration را بررسی کن.
+- Worker stuck: worker logs، `GENERATION_WORKER_SECRET`, queue count، و `/admin/health`.
+- Provider down: provider events، `check:avalai`, `check:liara`, provider balance/access، و fallback model.
 - SMS down: FarazSMS pattern approval، line number، API key، و پیام خطای auth flow.
-- پرداخت مشکل دارد: purchase request، receipt storage، credit event، و audit event را بررسی کن.
+- Billing issue: purchase request، receipt storage، credit event، و audit event را بررسی کن.

@@ -31,6 +31,7 @@ Required database workflow for implementation phases:
 
    ```powershell
    $env:DATABASE_URL="mysql://root@127.0.0.1:3306/gold_studio_phase1_codex?allowPublicKeyRetrieval=true"
+   node -e "console.log(process.env.DATABASE_URL)"
    C:\xampp\mysql\bin\mysql.exe -h 127.0.0.1 -P 3306 -u root -e "CREATE DATABASE IF NOT EXISTS gold_studio_phase1_codex CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
    npx prisma migrate deploy
    ```
@@ -140,19 +141,14 @@ Implement:
 - Food-specific auth/home/gallery/project copy and visual direction.
 - Food-only gallery and projects inside the Food host.
 - New project flow defaults to Food and never asks the user to choose Jewelry vs Food inside the Food host.
-- Food product types:
-  - food dish
-  - drink
-  - dessert
-  - cafe item
-  - restaurant plate
-  - packaged food or drink
-- Five Food styles:
+- Food product types should cover real restaurant and cafe inventory for Snappfood and Instagram sellers: Persian/rice dishes, grill, sandwiches/fried items, pizza/fast-food, healthy bowls, cafe breakfast, hot drinks, cold drinks, desserts, bakery, packaged items, and a safe fallback.
+- Six Food styles:
   - Menu/catalog
-  - Instagram/social
-  - Minimal
-  - Luxury
-  - UGC/natural
+  - Clean background
+  - Sample photo
+  - Instagram post
+  - Cafe/restaurant table
+  - Ready-to-sell packaging
 - Food preview/sample assets good enough for launch-quality trust.
 
 Do not:
@@ -232,15 +228,20 @@ Exit criteria:
 - Provider routing, prompt policy, and credit reservations match the intended vertical.
 - Any fixes found during QA are committed and pushed before Phase 6 begins.
 
-Validation result on 2026-06-24:
+Current status on 2026-06-24:
 
-- Host routing passed for default Jewelry hosts, `food.ovala.ir`, and local `OVALA_LOCAL_VERTICAL=food`.
-- Local reserved future vertical overrides now fall back to Jewelry so Clothing/Furniture behavior cannot activate before Phase 6.
-- User-facing gallery, projects, styles, ready samples, style-reference assets, storage reads, and home carousel paths were audited for Jewelry/Food vertical scoping.
-- Admin assets, reference assets, ready samples, outputs, projects, home carousel slides, and quality reviews were audited with Jewelry/Food filters.
-- Isolated DB audit on `gold_studio_phase1_codex` found no Jewelry/Food credit reservation cost mismatches.
-- Provider routing remained Avalai-primary with Liara selectable in `/admin/ai` and available in the fallback attempt order.
-- Prompt policy checks covered Jewelry safeguards and Food identity/appetite-preservation rules.
+- Validation Gate Before Phase 6 is complete for Jewelry + Food.
+- Phase 6 remains on hold. Current work is limited to Jewelry + Food QA, Food polish, docs, and bug fixes.
+- Default Jewelry hosts, `food.ovala.ir`, and local Food mode passed host/vertical routing QA.
+- Clothing/Furniture remain reserved only; local reserved overrides fall back to Jewelry until Phase 6 intentionally starts.
+- User and admin surfaces were audited for Jewelry/Food scoping: gallery, projects, styles, samples, reference assets, outputs, home carousel, storage reads, and quality reviews.
+- `gold_studio_phase1_codex` audit found no Jewelry/Food credit reservation cost mismatches.
+- Avalai remains primary; Liara remains selectable in `/admin/ai` and available in fallback/support paths.
+- Prompt policy checks cover Jewelry safeguards and Food identity/appetite-preservation rules.
+- Local switching uses `npm run dev:jewelry` and `npm run dev:food`; see `docs/local-pc-switch.md`.
+- Food uses restaurant/cafe product types and six visible launch styles, including `food_style_sample_reference`; Jewelry keeps `style_sample_reference`.
+- Shared sample-reference code paths support both Jewelry and Food style IDs across prompt policy, model routing, project creation, batch generation, and worker enrichment.
+- UI polish after the gate: style-reference entry points use the saved/bookmark metaphor, save-to-samples actions use `ArchiveAdd`, and the project result "نسخه دیگر" action no longer shows the redundant `۱ خروجی` tag.
 
 ## Phase 6 - Future Verticals
 
@@ -259,6 +260,7 @@ Run the full verification suite only at the end of each phase, after that phase 
 
 ```powershell
 $env:DATABASE_URL="mysql://root@127.0.0.1:3306/gold_studio_phase1_codex?allowPublicKeyRetrieval=true"
+node -e "console.log(process.env.DATABASE_URL)"
 npm run check:prompts
 npm run check:model-routing
 npm run check:readiness
@@ -282,3 +284,5 @@ For UI phases, manually review the `393x852` mobile layout target. Capture scree
 - 2026-06-24: Provider routing clarified after Phase 4: Avalai is the default primary image provider and Liara remains the fallback provider if Avalai fails; admin/provider docs and routing checks were updated to prevent the primary/fallback order from drifting.
 - 2026-06-24: Phase 5 Admin And Operations implemented on `codex/multi-vertical-platform`: tightened vertical filtering across admin assets, reference assets, ready samples, projects, outputs, and quality reviews; made ready sample upload/delete vertical-aware for Jewelry and Food; scoped operational counters to the selected vertical; and surfaced project credit-unit costs on project, output, and quality-review inspection paths. No schema migration was needed.
 - 2026-06-24: Validation Gate Before Phase 6 completed on `codex/multi-vertical-platform`: audited Jewelry/Food host routing, local Food override, user/admin vertical scoping, provider routing, prompt policy, and credit-unit costs against `gold_studio_phase1_codex`; fixed local reserved-vertical routing so Clothing/Furniture cannot activate before Phase 6. Phase 6 was not started.
+- 2026-06-24: Food style and product taxonomy refined after initial Food launch: replaced placeholder-like Food product types with restaurant/cafe inventory categories, expanded Food to six visible styles for Snappfood and Instagram workflows, added a Food-specific sample-photo style, and updated prompt refinements for the new Food item categories.
+- 2026-06-24: Post-gate Food/Jewelry polish documented: Jewelry/Food dev shortcuts are the supported local switching path, Food sample-reference behavior is tracked separately from Jewelry sample-reference behavior, style-reference icons use the saved/bookmark metaphor, and Phase 6 remains on hold.

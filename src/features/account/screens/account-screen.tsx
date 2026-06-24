@@ -3,9 +3,9 @@ import Link from "next/link";
 import type { ComponentType } from "react";
 import {
   ArrowLeft2,
+  Archive,
   ArchiveBook,
   Card,
-  Gallery,
   Gift,
   Lifebuoy,
   MessageQuestion,
@@ -49,7 +49,7 @@ type AccountRowItem = {
 
 const rowItems: AccountRowItem[] = [
   { title: "حساب کاربری", href: "/account/profile", icon: UserEdit },
-  { title: "گالری نمونه‌ها", href: "/account/style-references", icon: Gallery },
+  { title: "گالری نمونه‌ها", href: "/account/style-references", icon: Archive },
   { title: "پیام‌ها", href: "/account/notifications", icon: NotificationBing },
   { title: "آرشیو", href: "/account/archive", icon: ArchiveBook },
   { title: "کد معرفی", href: "/account/referral", icon: Gift },

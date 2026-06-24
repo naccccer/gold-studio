@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { sampleReferenceStyleIdForVertical } from "@/lib/ai/style-policy";
 import { requireUserSession } from "@/lib/auth/session";
 import { getCurrentVertical } from "@/lib/current-vertical";
 import { db } from "@/lib/db";
@@ -80,7 +81,7 @@ export async function createStyleReferenceFromSampleAction(formData: FormData) {
     redirect(`/account/style-references?error=${encodeURIComponent(asset.error)}`);
   }
 
-  redirect(`/projects/new?styleId=style_sample_reference&referenceAssetId=${asset.id}`);
+  redirect(`/projects/new?styleId=${sampleReferenceStyleIdForVertical(vertical)}&referenceAssetId=${asset.id}`);
 }
 
 export async function renameStyleReferenceAction(formData: FormData) {

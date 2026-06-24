@@ -1,3 +1,5 @@
+import { isSampleReferenceStyleId } from "@/lib/ai/style-policy";
+
 export type ImageProviderId = "liara" | "avalai";
 
 export const LIARA_IMAGE_MODELS = [
@@ -35,7 +37,7 @@ export type ModelRoutingDecision = {
   reason: "style_with_model" | "style_sample_reference" | "default";
 };
 
-const HARD_STYLE_IDS = new Set(["style_with_model", "style_sample_reference"]);
+const HARD_STYLE_IDS = new Set(["style_with_model"]);
 
 const MODEL_ORDER: Record<ImageProviderId, Record<ModelRoutingDecision["routing"], SupportedImageModel[]>> = {
   avalai: {
@@ -54,10 +56,10 @@ export function providerImageModels(provider: ImageProviderId) {
 
 export function resolveModelRoutingDecision(context?: ModelRoutingContext | null): ModelRoutingDecision {
   const styleId = context?.styleId?.trim() || "";
-  if (styleId && HARD_STYLE_IDS.has(styleId)) {
+  if (styleId && (HARD_STYLE_IDS.has(styleId) || isSampleReferenceStyleId(styleId))) {
     return {
       routing: "hard",
-      reason: styleId === "style_sample_reference" ? "style_sample_reference" : "style_with_model",
+      reason: isSampleReferenceStyleId(styleId) ? "style_sample_reference" : "style_with_model",
     };
   }
 

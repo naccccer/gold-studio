@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDown2, CloseCircle, Edit2, Eye, GalleryAdd, Refresh, TickCircle, Trash } from "vuesax-icons-react";
+import { ArchiveAdd, ArrowDown2, CloseCircle, Edit2, Eye, Refresh, TickCircle, Trash } from "vuesax-icons-react";
 import { useEffect, useRef, useState } from "react";
 import { ActionDock } from "@/components/ui/action-dock";
 import { Button, IconButton, buttonClasses } from "@/components/ui/button";
@@ -245,7 +245,7 @@ export function ProjectsListScreen({ projects, content }: ProjectsListScreenProp
                                     className={contextMenuItemClasses}
                                     data-close-context-menu
                                   >
-                                    <GalleryAdd aria-hidden={true} className="h-3.5 w-3.5" />
+                                    <ArchiveAdd aria-hidden={true} className="h-3.5 w-3.5" />
                                     ذخیره در نمونه‌ها
                                   </button>
                                 ) : null}

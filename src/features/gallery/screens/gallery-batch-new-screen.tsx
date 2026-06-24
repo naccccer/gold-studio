@@ -18,6 +18,7 @@ import {
   StyleToggleControl,
 } from "@/features/projects/components/style-choice-control";
 import type { StyleControlOption, StyleOption } from "@/features/projects/presets";
+import { isSampleReferenceStyleId } from "@/lib/ai/style-policy";
 import { getDefaultProductType, getProductTypes, normalizeProductType, productTypeLabel } from "@/lib/product-types";
 import type { VerticalContent } from "@/lib/vertical-content";
 import type { VerticalId } from "@/lib/verticals";
@@ -172,7 +173,7 @@ export function GalleryBatchNewScreen({
     [defaultStyle, selectedStyle, styles],
   );
   const styleControls = selectedStyleData?.controls ?? [];
-  const isSampleReferenceStyle = selectedStyleData?.id === "style_sample_reference";
+  const isSampleReferenceStyle = isSampleReferenceStyleId(selectedStyleData?.id);
   const currentMeta = stepMeta[step];
   const heroAsset = assets[0];
   const outputPresetItems = outputPresets.map((preset) => ({

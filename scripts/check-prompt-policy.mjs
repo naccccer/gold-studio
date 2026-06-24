@@ -20,11 +20,13 @@ const { buildProductOnlyIsolationPrompt, isHumanWearableStyle, isProductOnlyStyl
 
 const catalogStyle = { id: "style_clean_white", controls: [] };
 const sampleReferenceStyle = { id: "style_sample_reference", controls: [] };
+const foodSampleReferenceStyle = { id: "food_style_sample_reference", controls: [] };
 const modelStyle = { id: "style_with_model", controls: [{ key: "modelGender" }] };
 const customModelStyle = { id: "custom_model", controls: [{ key: "faceFraming" }] };
 
 assert.equal(isProductOnlyStyle(catalogStyle), true, "catalog style should be product-only");
 assert.equal(isProductOnlyStyle(sampleReferenceStyle), false, "sample reference should preserve the sample scene instead of product-only extraction");
+assert.equal(isProductOnlyStyle(foodSampleReferenceStyle), false, "Food sample reference should preserve the sample scene instead of product-only extraction");
 assert.equal(isHumanWearableStyle(modelStyle), true, "style_with_model should allow human context");
 assert.equal(isHumanWearableStyle(customModelStyle), true, "human controls should mark a style as wearable");
 
@@ -70,7 +72,9 @@ assert.match(promptArchitectureSource, /plating, packaging, label placement, gar
 assert.match(promptArchitectureSource, /Do not turn the item into a different dish, drink, dessert, package, flavor, brand, serving size, or cuisine/i, "Food prompts should forbid identity drift");
 assert.match(promptArchitectureSource, /Packaged food or drink refinement/i, "Food prompts should include packaged item refinements");
 assert.match(promptArchitectureSource, /Drink refinement/i, "Food prompts should include drink refinements");
-assert.match(promptArchitectureSource, /Restaurant plate refinement/i, "Food prompts should include restaurant plate refinements");
+assert.match(promptArchitectureSource, /Grill and kebab refinement/i, "Food prompts should include grill and kebab refinements");
+assert.match(promptArchitectureSource, /Hot drink refinement/i, "Food prompts should include hot drink refinements");
+assert.match(promptArchitectureSource, /Cold drink refinement/i, "Food prompts should include cold drink refinements");
 assert.match(samplePolicySource, /food item replacement mode/i, "Food sample-reference prompts should replace food items, not jewelry");
 assert.match(samplePolicySource, /Do not invent new label text, fake logos/i, "Food prompts should protect labels and brands");
 assert.match(samplePolicySource, /food or drink product image/i, "Provider suffixes should include Food-specific image instructions");

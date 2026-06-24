@@ -1,5 +1,5 @@
 import { buildHumanModelProductWearPrompt, buildStyleControlPrompt } from "@/lib/ai/style-controls";
-import { buildProductOnlyIsolationPrompt, isHumanWearableStyle } from "@/lib/ai/style-policy";
+import { buildProductOnlyIsolationPrompt, isHumanWearableStyle, isSampleReferenceStyleId } from "@/lib/ai/style-policy";
 import { buildVisionPromptContext } from "@/lib/ai/vision";
 import {
   buildCompositionPrompt,
@@ -51,7 +51,8 @@ export function buildGenerationPrompt({
   vertical?: VerticalId;
 }) {
   const outputPreset = normalizeOutputPreset(formData.get("outputPreset"));
-  const baseStylePrompt = style.id === "style_sample_reference" ? buildSampleReferenceBasePrompt(vertical) : style.prompt;
+  const isSampleReferenceStyle = isSampleReferenceStyleId(style.id);
+  const baseStylePrompt = isSampleReferenceStyle ? buildSampleReferenceBasePrompt(vertical) : style.prompt;
   const promptParts = [baseStylePrompt, getOutputPresetSpec(outputPreset).instruction];
   const styleControlPrompt = buildStyleControlPrompt(style, formData);
   const includesHumanModel = isHumanWearableStyle(style);
@@ -111,7 +112,7 @@ export function buildGenerationPrompt({
     promptParts.push(productImageSetPrompt);
   }
 
-  const referenceStylePrompt = style.id === "style_sample_reference" ? buildSampleReferencePromptContext(null, productImageCount, vertical) : "";
+  const referenceStylePrompt = isSampleReferenceStyle ? buildSampleReferencePromptContext(null, productImageCount, vertical) : "";
   if (referenceStylePrompt) {
     promptParts.push(referenceStylePrompt);
   }

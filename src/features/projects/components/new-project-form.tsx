@@ -35,6 +35,7 @@ import {
   StyleToggleControl,
 } from "@/features/projects/components/style-choice-control";
 import type { StyleControlOption, StyleOption } from "@/features/projects/presets";
+import { isSampleReferenceStyleId } from "@/lib/ai/style-policy";
 import { NO_CREDITS_ERROR } from "@/lib/credits";
 import { getDefaultProductType, getProductTypes, normalizeProductType, productTypeLabel } from "@/lib/product-types";
 import type { VerticalContent } from "@/lib/vertical-content";
@@ -260,7 +261,7 @@ export function NewProjectForm({
   );
 
   const styleControls = selectedStyleData?.controls ?? [];
-  const isSampleReferenceStyle = selectedStyleData?.id === "style_sample_reference";
+  const isSampleReferenceStyle = isSampleReferenceStyleId(selectedStyleData?.id);
   const outputPresetItems = outputPresets.map((preset) => ({
     value: preset.id,
     label: preset.label,

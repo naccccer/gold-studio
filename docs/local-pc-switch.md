@@ -92,14 +92,20 @@ npm run dev
 
 ## Local Vertical Switching
 
-Use these shortcuts when you want localhost to behave like a specific Ovala vertical:
+Use the vertical dev shortcuts when localhost should behave like a specific Ovala product:
 
 ```powershell
 npm run dev:jewelry
 npm run dev:food
 ```
 
-Both commands start the normal Next.js dev server and set `OVALA_LOCAL_VERTICAL` only for that terminal process. Stop the server with `Ctrl+C`, then run the other command to switch.
+These commands start the normal Next.js dev server and set `OVALA_LOCAL_VERTICAL` only for that terminal process. Stop the server with `Ctrl+C`, then run the other command to switch.
+
+- `npm run dev:jewelry`: default Jewelry localhost behavior.
+- `npm run dev:food`: Food localhost behavior, matching `food.ovala.ir`.
+- `npm run dev`: normal host-based behavior; localhost falls back to Jewelry unless that shell already has `OVALA_LOCAL_VERTICAL`.
+
+Do not use local Clothing or Furniture overrides yet. Those verticals are reserved IDs only until Phase 6 intentionally starts.
 
 ## Admin Access
 

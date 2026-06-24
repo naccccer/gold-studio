@@ -12,8 +12,13 @@ function transpile(source) {
   }).outputText;
 }
 
+const stylePolicySource = await readFile(new URL("../src/lib/ai/style-policy.ts", import.meta.url), "utf8");
 const source = await readFile(new URL("../src/lib/ai/model-routing.ts", import.meta.url), "utf8");
-const outputText = transpile(source);
+const bundledSource = [
+  stylePolicySource.replace(/\bexport\s+/g, ""),
+  source.replace(/^import \{ isSampleReferenceStyleId \} from "@\/lib\/ai\/style-policy";\r?\n\r?\n/u, ""),
+].join("\n");
+const outputText = transpile(bundledSource);
 const providerSource = await readFile(new URL("../src/lib/ai/provider.ts", import.meta.url), "utf8");
 const providerOutputText = transpile(providerSource);
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(outputText).toString("base64")}`;
@@ -51,11 +56,15 @@ try {
   }
 }
 
-const hardStyles = ["style_with_model", "style_sample_reference"];
+const hardStyles = ["style_with_model", "style_sample_reference", "food_style_sample_reference"];
 for (const styleId of hardStyles) {
   const decision = resolveModelRoutingDecision({ styleId, operation: "image.edit" });
   assert.equal(decision.routing, "hard", `${styleId} should use hard routing`);
-  assert.equal(decision.reason, styleId, `${styleId} should be recorded as routing reason`);
+  assert.equal(
+    decision.reason,
+    styleId === "style_with_model" ? "style_with_model" : "style_sample_reference",
+    `${styleId} should be recorded as routing reason`,
+  );
 }
 
 for (const styleId of ["style_clean_white", "style_social_media", "style_soft_editorial", "style_dramatic_dark"]) {

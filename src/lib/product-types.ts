@@ -17,13 +17,32 @@ export const JEWELRY_PRODUCT_TYPES = [
   JEWELRY_DEFAULT_PRODUCT_TYPE,
 ] as const;
 
+export const FOOD_PRODUCT_TYPE = {
+  persianRice: "غذای ایرانی / پلویی",
+  grill: "کباب و گریل",
+  sandwich: "برگر / ساندویچ / سوخاری",
+  pizzaFastFood: "پیتزا / فست‌فود",
+  healthy: "سالاد / غذای سالم",
+  cafeBreakfast: "صبحانه / آیتم کافه",
+  hotDrink: "قهوه / نوشیدنی گرم",
+  coldDrink: "نوشیدنی سرد / شیک",
+  dessert: "دسر / شیرینی / کیک",
+  bakery: "نان / شیرینی خشک",
+  packaged: "بسته‌بندی / بطری / قوطی",
+} as const;
+
 export const FOOD_PRODUCT_TYPES = [
-  "غذای آماده",
-  "نوشیدنی",
-  "دسر",
-  "آیتم کافه",
-  "بشقاب رستورانی",
-  "غذا یا نوشیدنی بسته‌بندی‌شده",
+  FOOD_PRODUCT_TYPE.persianRice,
+  FOOD_PRODUCT_TYPE.grill,
+  FOOD_PRODUCT_TYPE.sandwich,
+  FOOD_PRODUCT_TYPE.pizzaFastFood,
+  FOOD_PRODUCT_TYPE.healthy,
+  FOOD_PRODUCT_TYPE.cafeBreakfast,
+  FOOD_PRODUCT_TYPE.hotDrink,
+  FOOD_PRODUCT_TYPE.coldDrink,
+  FOOD_PRODUCT_TYPE.dessert,
+  FOOD_PRODUCT_TYPE.bakery,
+  FOOD_PRODUCT_TYPE.packaged,
   FOOD_DEFAULT_PRODUCT_TYPE,
 ] as const;
 

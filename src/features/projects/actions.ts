@@ -14,6 +14,7 @@ import {
   reserveGenerationCreditInTransaction,
 } from "@/lib/billing";
 import { buildGenerationPrompt } from "@/lib/ai/generation-prompt";
+import { isSampleReferenceStyleId } from "@/lib/ai/style-policy";
 import { getCurrentVertical } from "@/lib/current-vertical";
 import { processImageProject, processTextProject } from "@/lib/generation/jobs";
 import { normalizeOutputPreset } from "@/lib/output-presets";
@@ -136,7 +137,7 @@ function versionedProjectTitle(title: string | null, versionNumber: number) {
 }
 
 async function resolveReferenceAssetForStyle(styleId: string, formData: FormData, userId: string, vertical: VerticalId) {
-  if (styleId !== "style_sample_reference") {
+  if (!isSampleReferenceStyleId(styleId)) {
     return null;
   }
 

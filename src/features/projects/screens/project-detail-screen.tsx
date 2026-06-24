@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Add,
+  ArchiveAdd,
   ArrowDown2,
   CloseCircle,
   Copy,
   ExportCurve,
   Gallery,
-  GalleryAdd,
   Maximize4,
   MessageQuestion,
   Refresh,
@@ -891,9 +891,6 @@ export function ProjectDetailScreen({ project, content }: ProjectDetailScreenPro
                 >
                   <Refresh aria-hidden={true} className="h-4 w-4" />
                   نسخه دیگر
-                  <span className="inline-flex min-h-5 shrink-0 items-center rounded-full bg-[#f2dfbd] px-1.5 text-[10px] font-bold leading-none text-[#6f4d20]">
-                    ۱ خروجی
-                  </span>
                 </ButtonLink>
               ) : (
                 <ButtonLink
@@ -938,7 +935,7 @@ export function ProjectDetailScreen({ project, content }: ProjectDetailScreenPro
                     {referenceSaveStatus === "saved" ? (
                       <TickCircle aria-hidden={true} className="h-3.5 w-3.5 text-[#0f6f43]" />
                     ) : (
-                      <GalleryAdd aria-hidden={true} className="h-3.5 w-3.5" />
+                      <ArchiveAdd aria-hidden={true} className="h-3.5 w-3.5" />
                     )}
                     {referenceSaveStatus === "saving"
                       ? "در حال ذخیره..."

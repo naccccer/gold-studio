@@ -33,23 +33,25 @@ export const foodDessertChocolate = image("food-dessert-chocolate.webp", {
 export const foodCafeItem = image("food-cafe-item.webp", {
   alt: "عکس کروسان و قهوه در فضای کافه",
   title: "آیتم کافه",
+  styleLabel: "عکس نمونه",
 });
 
 export const foodDishNatural = image("food-dish-natural.webp", {
   alt: "عکس بشقاب غذای سالم با نور طبیعی",
-  title: "غذای طبیعی",
-  styleLabel: "طبیعی / UGC",
+  title: "چیدمان کافه و رستوران",
+  styleLabel: "چیدمان کافه و رستوران",
 });
 
 export const foodPackaged = image("food-packaged.webp", {
   alt: "عکس غذای بسته‌بندی‌شده آماده فروش",
   title: "بسته‌بندی غذا",
+  styleLabel: "بسته‌بندی آماده فروش",
 });
 
 export const foodMinimal = image("food-style-minimal.webp", {
   alt: "عکس مینیمال بشقاب غذا روی سطح روشن",
-  title: "مینیمال",
-  styleLabel: "مینیمال",
+  title: "پس‌زمینه تمیز",
+  styleLabel: "پس‌زمینه تمیز",
 });
 
 export const foodLuxury = image("food-style-luxury.webp", {
@@ -75,10 +77,11 @@ export const foodDessertStrawberry = image("food-dessert-strawberry.webp", {
 
 export const foodStyleSamples = [
   foodMenuCatalog,
-  foodDrinkSocial,
   foodMinimal,
-  foodLuxury,
+  foodCafeItem,
+  foodDrinkSocial,
   foodDishNatural,
+  foodPackaged,
 ];
 
 export const foodReferenceSamples = [
@@ -108,4 +111,3 @@ export const foodPlaceholderImages = {
   archiveItems: foodArchiveItems,
   extras: [foodCafeItem, foodDessertChocolate, foodDrinkSocial],
 };
-
