@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "npm run db:generate && next dev",
+    "dev:food": "powershell -ExecutionPolicy Bypass -File scripts/dev-vertical.ps1 food",
+    "dev:jewelry": "powershell -ExecutionPolicy Bypass -File scripts/dev-vertical.ps1 jewelry",
     "build": "npm run db:generate && next build",
     "start": "next start",
     "lint": "eslint",

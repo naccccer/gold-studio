@@ -90,6 +90,17 @@ npx prisma migrate deploy
 npm run dev
 ```
 
+## Local Vertical Switching
+
+Use these shortcuts when you want localhost to behave like a specific Ovala vertical:
+
+```powershell
+npm run dev:jewelry
+npm run dev:food
+```
+
+Both commands start the normal Next.js dev server and set `OVALA_LOCAL_VERTICAL` only for that terminal process. Stop the server with `Ctrl+C`, then run the other command to switch.
+
 ## Admin Access
 
 If the admin user is missing or the password is unknown, reset it intentionally:
