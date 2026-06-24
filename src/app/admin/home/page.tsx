@@ -21,21 +21,36 @@ import {
   updateHomeCarouselSlideAction,
 } from "@/features/admin/actions";
 import { db } from "@/lib/db";
-import { fallbackHomeCarouselImages } from "@/lib/home-carousel";
+import { fallbackFoodHomeCarouselImages, fallbackHomeCarouselImages } from "@/lib/home-carousel";
 import { requireAdminSession } from "@/lib/auth/session";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
+import {
+  getVerticalLabel,
+  normalizeUserVisibleVerticalId,
+  USER_VISIBLE_VERTICAL_IDS,
+  type UserVisibleVerticalId,
+} from "@/lib/verticals";
 
 export const dynamic = "force-dynamic";
 
 type AdminHomePageProps = {
-  searchParams?: Promise<{ slide?: string; new?: string }>;
+  searchParams?: Promise<{ slide?: string; new?: string; vertical?: string }>;
 };
+
+function adminHomeHref(vertical: UserVisibleVerticalId, params: { slide?: string; new?: string } = {}) {
+  const query = new URLSearchParams({ vertical });
+  if (params.slide) query.set("slide", params.slide);
+  if (params.new) query.set("new", params.new);
+  return `/admin/home?${query.toString()}`;
+}
 
 export default async function AdminHomePage({ searchParams }: AdminHomePageProps) {
   await requireAdminSession();
 
   const params = await searchParams;
+  const vertical = normalizeUserVisibleVerticalId(params?.vertical);
   const slides = await db.homeCarouselSlide.findMany({
+    where: { vertical },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
   });
   const creating = params?.new === "1" || slides.length === 0;
@@ -48,12 +63,30 @@ export default async function AdminHomePage({ searchParams }: AdminHomePageProps
         title="خانه اپ"
         meta={<span>{faNum(activeCount)} اسلاید فعال</span>}
         actions={
-          <Link href="/admin/home?new=1" className={btnPrimary}>
+          <Link href={adminHomeHref(vertical, { new: "1" })} className={btnPrimary}>
             <Add className="h-4 w-4" />
             اسلاید جدید
           </Link>
         }
       />
+
+      <div className="mb-4 flex flex-wrap gap-2">
+        {USER_VISIBLE_VERTICAL_IDS.map((item) => {
+          const active = item === vertical;
+          return (
+            <Link
+              key={item}
+              href={adminHomeHref(item)}
+              aria-current={active ? "page" : undefined}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                active ? "bg-navy-950 text-white shadow-sm" : "bg-white text-navy-700 ring-1 ring-slate-200 hover:bg-navy-25"
+              }`}
+            >
+              {getVerticalLabel(item)}
+            </Link>
+          );
+        })}
+      </div>
 
       <div className="grid items-start gap-5 lg:grid-cols-[300px_minmax(0,1fr)]">
         <Surface>
@@ -71,7 +104,7 @@ export default async function AdminHomePage({ searchParams }: AdminHomePageProps
                 return (
                   <Link
                     key={slide.id}
-                    href={`/admin/home?slide=${slide.id}`}
+                    href={adminHomeHref(vertical, { slide: slide.id })}
                     aria-current={active ? "true" : undefined}
                     className={`grid grid-cols-[72px_minmax(0,1fr)] gap-3 px-3 py-3 transition ${active ? "bg-navy-50" : "hover:bg-navy-25"}`}
                   >
@@ -101,7 +134,7 @@ export default async function AdminHomePage({ searchParams }: AdminHomePageProps
         </Surface>
 
         {creating ? (
-          <CreateSlidePanel nextSortOrder={slides.length * 10 + 10} />
+          <CreateSlidePanel vertical={vertical} nextSortOrder={slides.length * 10 + 10} />
         ) : selected ? (
           <EditSlidePanel slide={selected} />
         ) : null}
@@ -135,18 +168,19 @@ function BeforeAfterPreview({
   );
 }
 
-function CreateSlidePanel({ nextSortOrder }: { nextSortOrder: number }) {
-  const fallback = fallbackHomeCarouselImages()[0];
+function CreateSlidePanel({ nextSortOrder, vertical }: { nextSortOrder: number; vertical: UserVisibleVerticalId }) {
+  const fallback = (vertical === "food" ? fallbackFoodHomeCarouselImages() : fallbackHomeCarouselImages())[0];
 
   return (
     <Surface>
       <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
         <h2 className="text-sm font-semibold text-navy-950">اسلاید جدید</h2>
-        <Link href="/admin/home" className={btnSecondary}>
+        <Link href={adminHomeHref(vertical)} className={btnSecondary}>
           انصراف
         </Link>
       </div>
       <form action={createHomeCarouselSlideAction} className="grid gap-5 p-5 xl:grid-cols-[minmax(0,1fr)_280px]">
+        <input type="hidden" name="vertical" value={vertical} />
         <div className="grid max-w-2xl content-start gap-4">
           <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_110px]">
             <Field label="عنوان داخلی">
@@ -212,7 +246,10 @@ function EditSlidePanel({
         </div>
         <ConfirmAction
           action={deleteHomeCarouselSlideAction}
-          fields={[{ name: "slideId", value: slide.id }]}
+          fields={[
+            { name: "slideId", value: slide.id },
+            { name: "vertical", value: slide.vertical },
+          ]}
           title="اسلاید حذف شود؟"
           description="این اسلاید از کاروسل خانه حذف می‌شود."
           confirmLabel="حذف"
@@ -224,6 +261,7 @@ function EditSlidePanel({
 
       <form action={updateHomeCarouselSlideAction} className="grid gap-5 p-5 xl:grid-cols-[minmax(0,1fr)_280px]">
         <input type="hidden" name="slideId" value={slide.id} />
+        <input type="hidden" name="vertical" value={slide.vertical} />
         <input type="hidden" name="beforeImageUrl" value={slide.beforeImageUrl} />
         <input type="hidden" name="afterImageUrl" value={slide.afterImageUrl} />
         <div className="grid max-w-2xl content-start gap-4">

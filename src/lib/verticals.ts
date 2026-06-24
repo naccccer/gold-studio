@@ -31,6 +31,7 @@ export type VerticalId = keyof typeof VERTICALS;
 
 export const VERTICAL_IDS = Object.keys(VERTICALS) as VerticalId[];
 export const USER_VISIBLE_VERTICAL_IDS = ["jewelry", "food"] as const satisfies readonly VerticalId[];
+export type UserVisibleVerticalId = (typeof USER_VISIBLE_VERTICAL_IDS)[number];
 
 function normalizeHost(host: string | null | undefined) {
   const value = host?.split(",")[0]?.trim().toLowerCase() ?? "";
@@ -55,6 +56,11 @@ export function isVerticalId(value: unknown): value is VerticalId {
 
 export function normalizeVerticalId(value: unknown): VerticalId {
   return isVerticalId(value) ? value : DEFAULT_VERTICAL_ID;
+}
+
+export function normalizeUserVisibleVerticalId(value: unknown): UserVisibleVerticalId {
+  const vertical = normalizeVerticalId(value);
+  return (USER_VISIBLE_VERTICAL_IDS as readonly string[]).includes(vertical) ? (vertical as UserVisibleVerticalId) : DEFAULT_VERTICAL_ID;
 }
 
 export function getVerticalLabel(value: unknown) {

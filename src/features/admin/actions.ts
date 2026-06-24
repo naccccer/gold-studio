@@ -32,7 +32,7 @@ import {
 } from "@/lib/referrals";
 import { deleteStorageObject } from "@/lib/storage";
 import { saveHomeCarouselFile, saveStylePreviewFile } from "@/lib/uploads";
-import { normalizeVerticalId } from "@/lib/verticals";
+import { normalizeUserVisibleVerticalId, normalizeVerticalId, type UserVisibleVerticalId } from "@/lib/verticals";
 
 function text(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -199,6 +199,15 @@ async function getCarouselImageInput(formData: FormData, fileKey: string, urlKey
   return { publicUrl: fallbackUrl, storageKey: fallbackStorageKey };
 }
 
+function homeCarouselAdminPath(vertical: UserVisibleVerticalId, slideId?: string) {
+  const params = new URLSearchParams({ vertical });
+  if (slideId) {
+    params.set("slide", slideId);
+  }
+
+  return `/admin/home?${params.toString()}`;
+}
+
 export async function uploadReadyStyleReferenceSampleAction(formData: FormData) {
   const session = await requireAdminSession();
   const image = formData.get("image");
@@ -293,6 +302,7 @@ export async function updateProviderSettingsAction(formData: FormData) {
 
 export async function createHomeCarouselSlideAction(formData: FormData) {
   const session = await requireAdminSession();
+  const vertical = normalizeUserVisibleVerticalId(text(formData, "vertical"));
   const before = await getCarouselImageInput(formData, "beforeImage", "beforeImageUrl");
   const afterImage = await getCarouselImageInput(formData, "afterImage", "afterImageUrl");
 
@@ -302,6 +312,7 @@ export async function createHomeCarouselSlideAction(formData: FormData) {
 
   const slide = await db.homeCarouselSlide.create({
     data: {
+      vertical,
       title: text(formData, "title") || null,
       beforeImageUrl: before.publicUrl,
       beforeStorageKey: before.storageKey,
@@ -320,12 +331,12 @@ export async function createHomeCarouselSlideAction(formData: FormData) {
     targetType: "HomeCarouselSlide",
     targetId: slide.id,
     summary: "اسلاید کاروسل خانه ساخته شد.",
-    metadata: { title: slide.title, sortOrder: slide.sortOrder, isActive: slide.isActive },
+    metadata: { title: slide.title, vertical, sortOrder: slide.sortOrder, isActive: slide.isActive },
   });
 
   revalidatePath("/admin/home");
   revalidatePath("/dashboard");
-  redirect(`/admin/home?slide=${slide.id}`);
+  redirect(homeCarouselAdminPath(vertical, slide.id));
 }
 
 export async function updateHomeCarouselSlideAction(formData: FormData) {
@@ -335,6 +346,7 @@ export async function updateHomeCarouselSlideAction(formData: FormData) {
 
   const current = await db.homeCarouselSlide.findUnique({ where: { id: slideId } });
   if (!current) return;
+  const vertical = normalizeUserVisibleVerticalId(text(formData, "vertical") || current.vertical);
 
   const before = await getCarouselImageInput(
     formData,
@@ -358,6 +370,7 @@ export async function updateHomeCarouselSlideAction(formData: FormData) {
   const slide = await db.homeCarouselSlide.update({
     where: { id: slideId },
     data: {
+      vertical,
       title: text(formData, "title") || null,
       beforeImageUrl: before.publicUrl,
       beforeStorageKey: before.storageKey,
@@ -376,12 +389,12 @@ export async function updateHomeCarouselSlideAction(formData: FormData) {
     targetType: "HomeCarouselSlide",
     targetId: slide.id,
     summary: "اسلاید کاروسل خانه به‌روزرسانی شد.",
-    metadata: { title: slide.title, sortOrder: slide.sortOrder, isActive: slide.isActive },
+    metadata: { title: slide.title, vertical, sortOrder: slide.sortOrder, isActive: slide.isActive },
   });
 
   revalidatePath("/admin/home");
   revalidatePath("/dashboard");
-  redirect(`/admin/home?slide=${slide.id}`);
+  redirect(homeCarouselAdminPath(vertical, slide.id));
 }
 
 export async function deleteHomeCarouselSlideAction(formData: FormData) {
@@ -391,6 +404,7 @@ export async function deleteHomeCarouselSlideAction(formData: FormData) {
 
   const slide = await db.homeCarouselSlide.findUnique({ where: { id: slideId } });
   if (!slide) return;
+  const vertical = normalizeUserVisibleVerticalId(text(formData, "vertical") || slide.vertical);
 
   await db.homeCarouselSlide.delete({ where: { id: slideId } });
 
@@ -409,12 +423,12 @@ export async function deleteHomeCarouselSlideAction(formData: FormData) {
     targetType: "HomeCarouselSlide",
     targetId: slide.id,
     summary: "اسلاید کاروسل خانه حذف شد.",
-    metadata: { title: slide.title },
+    metadata: { title: slide.title, vertical },
   });
 
   revalidatePath("/admin/home");
   revalidatePath("/dashboard");
-  redirect("/admin/home");
+  redirect(homeCarouselAdminPath(vertical));
 }
 
 function isAvailableToUsers(formData: FormData) {

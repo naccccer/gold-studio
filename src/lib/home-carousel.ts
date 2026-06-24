@@ -31,19 +31,19 @@ export function fallbackFoodHomeCarouselImages(): HomeCarouselImage[] {
   ];
 }
 
-export async function getActiveHomeCarouselImages(vertical: VerticalId = DEFAULT_VERTICAL_ID): Promise<HomeCarouselImage[]> {
-  if (vertical === "food") {
-    return fallbackFoodHomeCarouselImages();
-  }
+function fallbackHomeCarouselImagesForVertical(vertical: VerticalId) {
+  return vertical === "food" ? fallbackFoodHomeCarouselImages() : fallbackHomeCarouselImages();
+}
 
+export async function getActiveHomeCarouselImages(vertical: VerticalId = DEFAULT_VERTICAL_ID): Promise<HomeCarouselImage[]> {
   const slides = await db.homeCarouselSlide.findMany({
-    where: { isActive: true },
+    where: { vertical, isActive: true },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     take: 8,
   });
 
   if (slides.length === 0) {
-    return fallbackHomeCarouselImages();
+    return fallbackHomeCarouselImagesForVertical(vertical);
   }
 
   return slides.map((slide) => ({

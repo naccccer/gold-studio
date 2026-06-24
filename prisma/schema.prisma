@@ -651,6 +651,7 @@ model SupportSettings {
 
 model HomeCarouselSlide {
   id               String   @id @default(cuid())
+  vertical         String   @default("jewelry")
   title            String?
   beforeImageUrl   String
   beforeStorageKey String?
@@ -664,6 +665,7 @@ model HomeCarouselSlide {
   updatedAt        DateTime @updatedAt
 
   @@index([isActive, sortOrder])
+  @@index([vertical, isActive, sortOrder])
   @@index([sortOrder, createdAt])
 }
 
