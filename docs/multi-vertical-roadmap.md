@@ -204,9 +204,47 @@ Exit criteria:
 - Admin can inspect and manage Food and Jewelry without mixing user-facing catalogs.
 - Operators can debug generation cost and vertical routing per project.
 
+## Validation Gate Before Phase 6
+
+Goal: prove the Jewelry + Food multi-vertical foundation before adding more vertical behavior.
+
+Run before starting Phase 6:
+
+- QA Food on `food.ovala.ir` and local `OVALA_LOCAL_VERTICAL=food`.
+- QA Jewelry on the default host to confirm launch behavior did not drift.
+- Verify users on Jewelry cannot see Food gallery items, projects, styles, samples, or home carousel content.
+- Verify users on Food cannot see Jewelry gallery items, projects, styles, samples, or home carousel content.
+- Audit admin assets, projects, styles, samples, outputs, and quality reviews with both Jewelry and Food filters.
+- Verify generation routing and prompt behavior for both verticals:
+  - Avalai remains the default primary image provider.
+  - Liara remains manually selectable in `/admin/ai` and available as fallback/support path.
+  - Jewelry prompts preserve jewelry-specific safeguards.
+  - Food prompts preserve dish/drink/package identity and appetite appeal.
+- Verify credit unit costs during real or controlled generation:
+  - `jewelry`: `300 creditUnits`
+  - `food`: `100 creditUnits`
+- Fix any cross-vertical leaks, cost mismatches, prompt regressions, or admin filter confusion before adding Clothing/Furniture behavior.
+
+Exit criteria:
+
+- Jewelry and Food pass user-flow QA.
+- Admin can inspect both verticals without accidental catalog mixing.
+- Provider routing, prompt policy, and credit reservations match the intended vertical.
+- Any fixes found during QA are committed and pushed before Phase 6 begins.
+
+Validation result on 2026-06-24:
+
+- Host routing passed for default Jewelry hosts, `food.ovala.ir`, and local `OVALA_LOCAL_VERTICAL=food`.
+- Local reserved future vertical overrides now fall back to Jewelry so Clothing/Furniture behavior cannot activate before Phase 6.
+- User-facing gallery, projects, styles, ready samples, style-reference assets, storage reads, and home carousel paths were audited for Jewelry/Food vertical scoping.
+- Admin assets, reference assets, ready samples, outputs, projects, home carousel slides, and quality reviews were audited with Jewelry/Food filters.
+- Isolated DB audit on `gold_studio_phase1_codex` found no Jewelry/Food credit reservation cost mismatches.
+- Provider routing remained Avalai-primary with Liara selectable in `/admin/ai` and available in the fallback attempt order.
+- Prompt policy checks covered Jewelry safeguards and Food identity/appetite-preservation rules.
+
 ## Phase 6 - Future Verticals
 
-Goal: add Clothing and Furniture through the same foundation, not new architecture.
+Goal: add Clothing and Furniture through the same foundation, not new architecture, only after the validation gate passes.
 
 Implement later:
 
@@ -243,3 +281,4 @@ For UI phases, manually review the `393x852` mobile layout target. Capture scree
 - 2026-06-24: Phase 4 Prompt Architecture implemented on `codex/multi-vertical-platform`: moved generation prompt assembly to vertical-aware prompt rules, preserved Jewelry model/clasp/sample-reference behavior, added Food prompt rules for appetite appeal, freshness, plating, packaging, labels, dish/drink/package identity, and product-type refinements, and passed vertical context through provider suffixes and product vision analysis. No schema migration was needed.
 - 2026-06-24: Provider routing clarified after Phase 4: Avalai is the default primary image provider and Liara remains the fallback provider if Avalai fails; admin/provider docs and routing checks were updated to prevent the primary/fallback order from drifting.
 - 2026-06-24: Phase 5 Admin And Operations implemented on `codex/multi-vertical-platform`: tightened vertical filtering across admin assets, reference assets, ready samples, projects, outputs, and quality reviews; made ready sample upload/delete vertical-aware for Jewelry and Food; scoped operational counters to the selected vertical; and surfaced project credit-unit costs on project, output, and quality-review inspection paths. No schema migration was needed.
+- 2026-06-24: Validation Gate Before Phase 6 completed on `codex/multi-vertical-platform`: audited Jewelry/Food host routing, local Food override, user/admin vertical scoping, provider routing, prompt policy, and credit-unit costs against `gold_studio_phase1_codex`; fixed local reserved-vertical routing so Clothing/Furniture cannot activate before Phase 6. Phase 6 was not started.

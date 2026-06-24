@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
+import { Buffer } from "node:buffer";
 import { readFile } from "node:fs/promises";
+import ts from "typescript";
 
 async function read(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
@@ -25,6 +27,7 @@ const readme = files["README.md"];
 const packageJson = JSON.parse(await read("package.json"));
 const cleanupArchives = await read("scripts/cleanup-archives.mjs");
 const envExample = await read(".env.example");
+const verticalsSource = await read("src/lib/verticals.ts");
 
 for (const path of requiredDocs) {
   assert.ok(files[path]?.trim(), `${path} should exist and not be empty`);
@@ -51,6 +54,32 @@ for (const script of [
 
 assert.ok(cleanupArchives.includes('".local-storage", "uploads"'), "cleanup:archives should delete local files from .local-storage/uploads");
 assert.ok(!cleanupArchives.includes('"public", "uploads"'), "cleanup:archives must not delete from public/uploads");
+
+const verticalsOutput = ts.transpileModule(verticalsSource, {
+  compilerOptions: {
+    module: ts.ModuleKind.ES2022,
+    target: ts.ScriptTarget.ES2022,
+  },
+}).outputText;
+const verticalsModuleUrl = `data:text/javascript;base64,${Buffer.from(verticalsOutput).toString("base64")}`;
+const { resolveVerticalFromHost } = await import(verticalsModuleUrl);
+const originalLocalVertical = process.env.OVALA_LOCAL_VERTICAL;
+try {
+  delete process.env.OVALA_LOCAL_VERTICAL;
+  assert.equal(resolveVerticalFromHost("ovala.ir"), "jewelry", "Default host should resolve to Jewelry");
+  assert.equal(resolveVerticalFromHost("food.ovala.ir"), "food", "Food subdomain should resolve to Food");
+  assert.equal(resolveVerticalFromHost("localhost:3000"), "jewelry", "Localhost should default to Jewelry");
+  process.env.OVALA_LOCAL_VERTICAL = "food";
+  assert.equal(resolveVerticalFromHost("localhost:3000"), "food", "Local Food override should resolve to Food");
+  process.env.OVALA_LOCAL_VERTICAL = "clothing";
+  assert.equal(resolveVerticalFromHost("localhost:3000"), "jewelry", "Reserved future verticals should not activate user-facing local routing");
+} finally {
+  if (originalLocalVertical === undefined) {
+    delete process.env.OVALA_LOCAL_VERTICAL;
+  } else {
+    process.env.OVALA_LOCAL_VERTICAL = originalLocalVertical;
+  }
+}
 
 for (const envName of [
   "DATABASE_URL",

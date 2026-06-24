@@ -74,7 +74,7 @@ export function resolveVerticalFromHost(host: string | null | undefined): Vertic
   }
 
   if (isLocalHost(hostname)) {
-    return normalizeVerticalId(process.env.OVALA_LOCAL_VERTICAL);
+    return normalizeUserVisibleVerticalId(process.env.OVALA_LOCAL_VERTICAL);
   }
 
   for (const vertical of USER_VISIBLE_VERTICAL_IDS) {
