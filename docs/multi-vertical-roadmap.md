@@ -11,11 +11,38 @@ This roadmap is the live execution path. Each phase should be implemented in a f
 - Work only on `codex/multi-vertical-platform` unless the user explicitly changes the branch.
 - Start every session by reading this file, `roadmap.md`, `AGENTS.md`, and the files directly relevant to the current phase.
 - Do not skip ahead. Finish the current phase, verify it, commit it, and update this file before starting the next phase.
+- Before any phase that creates or applies migrations, create and use an isolated local test database for that phase. Never run phase work against the main local launch database, staging, or production.
 - Keep the app as one Next.js repo, one database, one auth system, one admin console, one billing system, and one generation worker.
 - Preserve the existing Jewelry experience unless the phase explicitly changes it.
 - Keep user-facing text-to-image out of scope.
 - Keep AI logic inside `src/lib/ai`.
 - Update `roadmap.md` whenever a phase changes product scope or current status.
+
+## Database Safety
+
+Feature-branch implementation must not mutate the main app database until the work has been reviewed, selected, merged, and intentionally deployed.
+
+Required database workflow for implementation phases:
+
+1. Confirm the current `DATABASE_URL` is not production, staging, or the main local launch database.
+2. Create a phase-specific local database before applying migrations. Recommended names:
+   - `gold_studio_phase1_codex`
+   - `gold_studio_phase1_claude`
+   - `gold_studio_phase2_codex`
+3. Point the current shell session to that test database before running Prisma commands:
+
+   ```powershell
+   $env:DATABASE_URL="mysql://root@127.0.0.1:3306/gold_studio_phase1_codex?allowPublicKeyRetrieval=true"
+   C:\xampp\mysql\bin\mysql.exe -h 127.0.0.1 -P 3306 -u root -e "CREATE DATABASE IF NOT EXISTS gold_studio_phase1_codex CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+   npx prisma migrate deploy
+   ```
+
+4. Use that same shell-scoped `DATABASE_URL` for targeted checks, local dev, and final phase verification.
+5. Do not edit `.env` to point at a test database unless the user explicitly asks for a persistent local switch.
+6. Do not run `npx prisma migrate deploy`, `npx prisma migrate dev`, or `npx prisma migrate reset` against `gold_studio` during feature-branch work.
+7. If local MySQL/MariaDB is not running, stop database work and repair local MySQL or use a separate local test server. Never use production or staging as a fallback test database.
+
+Before any final merge/deploy, take a backup and apply migrations intentionally through the deployment process.
 
 ## Target Architecture
 
@@ -75,6 +102,7 @@ Exit criteria:
 - Existing Jewelry flows still work on the current host.
 - New records created on the Jewelry host are stored as `jewelry`.
 - No Food content is visible yet unless seeded deliberately in a later phase.
+- Schema and migration testing was done against a phase-specific test database, not the main local launch database.
 - Worktree is clean after commit and push.
 
 ## Phase 2 - Credit Units
@@ -194,6 +222,7 @@ Implement later:
 Run the full verification suite only at the end of each phase, after that phase is functionally complete and before the phase commit/push:
 
 ```powershell
+$env:DATABASE_URL="mysql://root@127.0.0.1:3306/gold_studio_phaseN_agent?allowPublicKeyRetrieval=true"
 npm run check:prompts
 npm run check:model-routing
 npm run check:readiness
