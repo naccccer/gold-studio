@@ -19,7 +19,7 @@ Multi-vertical expansion is tracked in `docs/multi-vertical-roadmap.md`. The imp
 - `/admin` is a calm white/deep-navy operations console built on the `console.tsx` primitive kit: one job per page, link-driven tabs, master-detail surfaces (styles, support), and `<details>`-based progressive disclosure instead of always-visible mega-forms.
 - Local uploads and generated results are stored under `.local-storage/uploads` when `STORAGE_DRIVER="local"` and are streamed through authorized `/api/storage/...` routes.
 - Prisma uses MySQL through Prisma's standard query engine and keeps `DATABASE_URL` on the Prisma-compatible `mysql://` scheme.
-- Image generation uses the provider boundary in `src/lib/ai`, with Liara as the default path and an admin-controlled Avalai path for Gemini image testing.
+- Image generation uses the provider boundary in `src/lib/ai`, with Avalai as the default primary path and Liara kept as the fallback path if Avalai fails.
 - DB-backed rate limits, credit reservations, manual purchase review, sales referral codes, support tickets, FAQ, and admin billing operations are present.
 - `SALES` is a real operational role for sales/payment work across users, billing, and referral codes, while system/admin-only surfaces remain blocked.
 - `/admin/backups` and `npm run backup:run` create full launch backups with database dump, manifest, and current storage; `npm run backup:scheduler` keeps nightly backups with latest-3 retention.
@@ -47,7 +47,7 @@ Multi-vertical expansion is tracked in `docs/multi-vertical-roadmap.md`. The imp
 ## Next Priorities
 
 - Continue `docs/multi-vertical-roadmap.md` with Phase 5: admin and operations hardening on `codex/multi-vertical-platform`.
-- Launch operations: keep production worker/watchdog/backup scheduler active in PM2, verify real Liara/Avalai generation, storage display URLs, provider cost, backups, and failed-state recovery on the deployment target.
+- Launch operations: keep production worker/watchdog/backup scheduler active in PM2, verify real Avalai primary generation, Liara fallback behavior, storage display URLs, provider cost, backups, and failed-state recovery on the deployment target.
 - Release QA: route QA across auth, home, gallery, new project, project detail, projects, notifications, quality reviews, account, billing, support, settings, and admin.
 - Mobile polish: check the `393x852` mobile layout target for Farsi wrapping, RTL controls, bottom navigation, action placement, calm motion, and accidental scrolling.
 - Admin operations QA: review the rebuilt navy/white console with real data across overview, health, audit, users, billing, projects, AI, assets, styles, support/FAQ, and referrals.

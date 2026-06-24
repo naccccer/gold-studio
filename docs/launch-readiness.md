@@ -4,10 +4,10 @@
 
 ## قبل از لانچ
 
-- Production `.env` کامل باشد: `DATABASE_URL`, `AUTH_SECRET`, `ALLOW_INSECURE_COOKIES=false`, `SESSION_COOKIE_NAME`, `IMAGE_PROVIDER`, worker/watchdog/backup vars, `LIARA_*`, `FARAZSMS_*`, و `STORAGE_DRIVER`.
+- Production `.env` کامل باشد: `DATABASE_URL`, `AUTH_SECRET`, `ALLOW_INSECURE_COOKIES=false`, `SESSION_COOKIE_NAME`, `IMAGE_PROVIDER=avalai`, worker/watchdog/backup vars, `AVALAI_*`, `LIARA_*`, `FARAZSMS_*`, و `STORAGE_DRIVER`.
 - اگر پشت Nginx یا proxy قابل اعتماد هستی و rate limit باید IP واقعی را ببیند، `TRUST_PROXY=true` را فقط بعد از بررسی headerهای proxy فعال کن.
 - FarazSMS pattern code و line number تایید شده باشند و ثبت‌نام و فراموشی رمز با شماره واقعی تست شوند.
-- Liara مسیر اصلی باشد و حداقل یک generation واقعی برای کاتالوگ، با مدل، و عکس نمونه تست شود. Avalai فقط وقتی لازم است و با توجه به هزینه بررسی شود.
+- Avalai مسیر اصلی باشد و حداقل یک generation واقعی برای کاتالوگ، با مدل، و عکس نمونه تست شود. Liara فقط به‌عنوان پشتیبان در صورت خطای Avalai بررسی شود.
 - تنظیمات پرداخت در `/admin/billing` کامل باشد: بسته‌ها، اعتبار مستقل، پلن سفارشی کاربر، توضیح پرداخت، و اطلاعات کارت به کارت.
 - مسیرهای پشتیبانی و FAQ آماده باشند و یک تیکت تستی از سمت کاربر پاسخ داده شود.
 - Home carousel، ready style samples، style previews، و متن‌های اصلی ادمین مرور شوند.

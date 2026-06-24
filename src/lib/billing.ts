@@ -1,4 +1,5 @@
 import type { Prisma } from "@/generated/prisma";
+import { imageProvider } from "@/lib/ai/provider";
 import { db } from "@/lib/db";
 import { FREE_VARIANT_LIMIT, NO_CREDITS_ERROR, NO_PROJECT_QUOTA_ERROR } from "@/lib/credits";
 import { creditUnitsToVisibleCredits, getGenerationCreditUnitCost } from "@/lib/credit-units";
@@ -53,7 +54,7 @@ export async function logProviderEvent({
   await db.providerEvent.create({
     data: {
       projectId: projectId || null,
-      provider: provider || "liara",
+      provider: provider || imageProvider(),
       operation,
       status,
       model: model || null,
