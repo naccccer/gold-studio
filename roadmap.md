@@ -22,6 +22,7 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 - Generation recovery runs through `npm run worker:generation`; production health recovery uses `npm run watchdog:health`; backups use `/admin/backups`, `npm run backup:run`, and `npm run backup:scheduler`.
 - Billing supports credit reservations, manual purchase review, referral/sales codes, admin-assigned custom plans, per-plan "نسخه دیگر" limits, and output-only accounting for alternate versions.
 - Prompt policy protects product identity: jewelry safeguards remain active, product-only outputs remove source-photo people/hands, model styles allow human context only when explicit, and sample-reference styles borrow scene/composition while preserving the uploaded product.
+- Jewelry ready style references now include a broader curated set of product, editorial, model, and watch samples for users who do not have their own style photo yet.
 
 ## Multi-Vertical Status
 
@@ -34,6 +35,7 @@ Multi-vertical expansion is tracked in `docs/multi-vertical-roadmap.md` on `code
 - Food is active through `food.ovala.ir` and local `npm run dev:food`.
 - Jewelry remains the default host/local behavior and can be forced locally with `npm run dev:jewelry`.
 - Food now uses restaurant/cafe product types, six visible launch styles, a Food-specific sample-photo style (`food_style_sample_reference`), and Food-aware sample-reference prompt/routing paths.
+- Food ready style references now include a broader Pinterest-like set across cafe drinks, desserts, clean menu catalog shots, social compositions, and restaurant plating.
 - Style-reference entry points use a saved/bookmark-style icon treatment; save-to-samples menu actions use the matching archive-add icon.
 
 ## Next Priorities

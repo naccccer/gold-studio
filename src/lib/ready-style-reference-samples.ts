@@ -24,6 +24,21 @@ const sampleFiles = [
   "neckless-editorial-wooddecor.webp",
   "Ring-Redbg.webp",
   "shadow.webp",
+  "style-ref-blue-pendant-warm.webp",
+  "style-ref-chain-editorial-magazine.webp",
+  "style-ref-diamond-ring-black.webp",
+  "style-ref-diamond-stack-minimal.webp",
+  "style-ref-gem-earrings-leaf.webp",
+  "style-ref-gold-hoops-stone.webp",
+  "style-ref-gold-set-dark-stone.webp",
+  "style-ref-hoop-earring-model.webp",
+  "style-ref-layered-necklace-model.webp",
+  "style-ref-rings-satin-hand.webp",
+  "style-ref-rose-rings-box.webp",
+  "style-ref-snake-chain-black.webp",
+  "style-ref-watch-blue-editorial.webp",
+  "style-ref-watch-clean-catalog.webp",
+  "style-ref-watch-dark-leather.webp",
   "wood-ring.webp",
 ];
 
@@ -33,7 +48,17 @@ const foodSampleFiles = [
   "food-packaged.webp",
   "food-restaurant-plate.webp",
   "food-dessert-strawberry.webp",
+  "food-dish-natural.webp",
   "food-drink-social.webp",
+  "food-home-ugc.webp",
+  "food-menu-catalog.webp",
+  "food-ref-dark-dessert-ceramic.webp",
+  "food-ref-iced-berry-drink.webp",
+  "food-ref-latte-pastry-cafe.webp",
+  "food-ref-pasta-editorial.webp",
+  "food-style-luxury.webp",
+  "food-style-minimal.webp",
+  "food-style-social.webp",
 ];
 
 const sampleMetadata: Record<string, { title: string; alt: string }> = {
@@ -85,6 +110,66 @@ const sampleMetadata: Record<string, { title: string; alt: string }> = {
     title: "سایه نرم",
     alt: "نمونه عکس جواهر با سایه نرم",
   },
+  "style-ref-blue-pendant-warm": {
+    title: "گردنبند با نور گرم",
+    alt: "نمونه عکس گردنبند طلایی با آویز آبی و نور گرم ادیتوریال",
+  },
+  "style-ref-chain-editorial-magazine": {
+    title: "زنجیر روی مجله",
+    alt: "نمونه عکس زنجیر طلایی روی مجله با نور طبیعی و عمق میدان کم",
+  },
+  "style-ref-diamond-ring-black": {
+    title: "انگشتر روی زمینه تیره",
+    alt: "نمونه عکس انگشتر نگین‌دار روی سطح مشکی با نور کنترل‌شده",
+  },
+  "style-ref-diamond-stack-minimal": {
+    title: "چیدمان مینیمال نگین",
+    alt: "نمونه عکس انگشتر و نگین روی زمینه روشن با چیدمان مینیمال",
+  },
+  "style-ref-gem-earrings-leaf": {
+    title: "گوشواره سنگی",
+    alt: "نمونه عکس گوشواره سنگی روی برگ سبز با کنتراست رنگی واضح",
+  },
+  "style-ref-gold-hoops-stone": {
+    title: "گوشواره طلایی و سنگ",
+    alt: "نمونه عکس گوشواره طلایی کنار سنگ با سایه نرم و فضای استودیویی",
+  },
+  "style-ref-gold-set-dark-stone": {
+    title: "ست طلایی تیره",
+    alt: "نمونه عکس ست طلایی روی سنگ تیره با نورپردازی لوکس",
+  },
+  "style-ref-hoop-earring-model": {
+    title: "گوشواره با مدل",
+    alt: "نمونه عکس گوشواره حلقه‌ای روی مدل با قاب نزدیک و طبیعی",
+  },
+  "style-ref-layered-necklace-model": {
+    title: "گردنبند لایه‌ای",
+    alt: "نمونه عکس گردنبند و انگشتر روی مدل با لباس روشن",
+  },
+  "style-ref-rings-satin-hand": {
+    title: "انگشتر روی ساتن",
+    alt: "نمونه عکس انگشترهای ظریف روی دست و پارچه ساتن",
+  },
+  "style-ref-rose-rings-box": {
+    title: "انگشتر رزگلد در جعبه",
+    alt: "نمونه عکس انگشترهای رزگلد داخل جعبه مخملی روشن",
+  },
+  "style-ref-snake-chain-black": {
+    title: "زنجیر طلایی روی مشکی",
+    alt: "نمونه عکس زنجیر تخت طلایی روی لباس مشکی با حس ادیتوریال",
+  },
+  "style-ref-watch-blue-editorial": {
+    title: "ساعت طلایی آبی",
+    alt: "نمونه عکس ساعت طلایی با انعکاس و پس‌زمینه آبی ادیتوریال",
+  },
+  "style-ref-watch-clean-catalog": {
+    title: "ساعت کاتالوگی روشن",
+    alt: "نمونه عکس ساعت روی زمینه روشن برای خروجی کاتالوگی تمیز",
+  },
+  "style-ref-watch-dark-leather": {
+    title: "ساعت چرمی تیره",
+    alt: "نمونه عکس ساعت چرمی روی زمینه مشکی با انعکاس لوکس",
+  },
   "wood-ring": {
     title: "انگشتر و چوب",
     alt: "نمونه عکس انگشتر با بافت چوبی",
@@ -112,9 +197,49 @@ const foodSampleMetadata: Record<string, { title: string; alt: string }> = {
     title: "دسر توت‌فرنگی",
     alt: "نمونه عکس دسر توت‌فرنگی برای منوی رستوران",
   },
+  "food-dish-natural": {
+    title: "بشقاب با نور طبیعی",
+    alt: "نمونه عکس غذای رستورانی با نور طبیعی و چیدمان تمیز",
+  },
   "food-drink-social": {
     title: "نوشیدنی اجتماعی",
     alt: "نمونه عکس نوشیدنی برای پست شبکه اجتماعی",
+  },
+  "food-home-ugc": {
+    title: "حس خانگی تمیز",
+    alt: "نمونه عکس غذا با حس خانگی، نور نرم و کادر مناسب شبکه اجتماعی",
+  },
+  "food-menu-catalog": {
+    title: "منوی کاتالوگی",
+    alt: "نمونه عکس غذا برای منوی آنلاین با کادر ساده و خوانا",
+  },
+  "food-ref-dark-dessert-ceramic": {
+    title: "دسر روی سرامیک تیره",
+    alt: "نمونه عکس دسر حرفه‌ای روی ظرف سرامیکی تیره با نور کنترل‌شده",
+  },
+  "food-ref-iced-berry-drink": {
+    title: "نوشیدنی یخی بری",
+    alt: "نمونه عکس نوشیدنی یخی رنگی با لیوان شفاف و حس کافه‌ای حرفه‌ای",
+  },
+  "food-ref-latte-pastry-cafe": {
+    title: "لاته و شیرینی کافه",
+    alt: "نمونه عکس لاته و شیرینی با نور پنجره و چیدمان پینترستی",
+  },
+  "food-ref-pasta-editorial": {
+    title: "پاستای ادیتوریال",
+    alt: "نمونه عکس غذای رستورانی با سس براق، چیدمان حرفه‌ای و بک‌گراند مینیمال",
+  },
+  "food-style-luxury": {
+    title: "لوکس رستورانی",
+    alt: "نمونه عکس غذا با نورپردازی لوکس و چیدمان مناسب رستوران",
+  },
+  "food-style-minimal": {
+    title: "مینیمال روشن",
+    alt: "نمونه عکس غذا با زمینه روشن، سایه نرم و فضای تمیز",
+  },
+  "food-style-social": {
+    title: "اجتماعی پینترستی",
+    alt: "نمونه عکس غذا و نوشیدنی برای شبکه اجتماعی با حس پینترستی",
   },
 };
 
