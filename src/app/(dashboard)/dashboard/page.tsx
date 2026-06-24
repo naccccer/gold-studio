@@ -4,12 +4,10 @@ import { db } from "@/lib/db";
 import { requireUserSession } from "@/lib/auth/session";
 import { getActiveHomeCarouselImages } from "@/lib/home-carousel";
 import { storagePublicUrl } from "@/lib/storage";
-import { getVerticalContent } from "@/lib/vertical-content";
 
 export default async function DashboardPage() {
   const session = await requireUserSession();
   const vertical = await getCurrentVertical();
-  const content = getVerticalContent(vertical);
 
   const [user, projectCount, completedCount, recentProjects, carouselImages] = await Promise.all([
     db.user.findUnique({ where: { id: session.userId } }),
@@ -44,7 +42,6 @@ export default async function DashboardPage() {
       projectCount={projectCount}
       completedCount={completedCount}
       carouselImages={carouselImages}
-      content={content}
       recentProjects={recentProjects.map((project) => ({
         ...project,
         sourceImageUrl: project.sourceAsset?.storageKey ? storagePublicUrl(project.sourceAsset.storageKey) : project.sourceImageUrl,
