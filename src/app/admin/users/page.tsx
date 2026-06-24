@@ -20,6 +20,7 @@ import {
 import { createAdminUserAction } from "@/features/admin/actions";
 import { requireAdminOrSalesSession } from "@/lib/auth/session";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
+import { creditUnitsToVisibleCredits, visibleCreditsToCreditUnits } from "@/lib/credit-units";
 import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +39,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
 
   const where: Prisma.UserWhereInput = {
     ...(role === "ADMIN" || role === "USER" || role === "SALES" ? { role: role as "ADMIN" | "USER" | "SALES" } : {}),
-    ...(credit === "low" ? { credits: { lte: 1 } } : {}),
+    ...(credit === "low" ? { credits: { lte: visibleCreditsToCreditUnits(1) } } : {}),
     ...(q
       ? {
           OR: [
@@ -70,7 +71,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
     db.user.count(),
     db.user.count({ where: { role: "ADMIN" } }),
     db.user.count({ where: { role: "SALES" } }),
-    db.user.count({ where: { credits: { lte: 1 } } }),
+    db.user.count({ where: { credits: { lte: visibleCreditsToCreditUnits(1) } } }),
   ]);
 
   const filterQuery = (next: { role?: string; credit?: string }) => {
@@ -127,8 +128,8 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
                   <StatusDot status={user.role} />
                 </td>
                 <td className={`${cellClass} tabular-nums`}>
-                  {faNum(user.credits)}
-                  {user.reservedCredits > 0 ? <p className="text-xs text-slate-400">رزرو {faNum(user.reservedCredits)}</p> : null}
+                  {faNum(creditUnitsToVisibleCredits(user.credits))}
+                  {user.reservedCredits > 0 ? <p className="text-xs text-slate-400">رزرو {faNum(creditUnitsToVisibleCredits(user.reservedCredits))}</p> : null}
                 </td>
                 <td className={cellClass}>
                   {subscription ? (

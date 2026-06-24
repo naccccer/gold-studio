@@ -49,6 +49,7 @@ type GalleryBatchNewScreenProps = {
   styleReferences: BatchStyleReference[];
   styles: StyleOption[];
   availableCredits: number;
+  requiredCredits: number;
   error?: string | null;
   action: (formData: FormData) => Promise<void>;
 };
@@ -140,6 +141,7 @@ export function GalleryBatchNewScreen({
   styleReferences,
   styles,
   availableCredits,
+  requiredCredits,
   error,
   action,
 }: GalleryBatchNewScreenProps) {
@@ -156,7 +158,6 @@ export function GalleryBatchNewScreen({
   const [productTypes, setProductTypes] = useState<Record<string, string>>(() =>
     Object.fromEntries(assets.map((asset) => [asset.id, normalizeProductType(asset.productType)])),
   );
-  const requiredCredits = assets.length;
   const hasEnoughCredits = availableCredits >= requiredCredits;
   const selectedPreset = outputPresets.find((preset) => preset.id === outputPreset) ?? outputPresets[0];
   const selectedStyleData = useMemo(

@@ -25,6 +25,7 @@ import {
 import { PriceAmountInput } from "@/features/admin/components/price-amount-input";
 import { BILLING_PLAN_COLOR_PRESETS, normalizeBillingPlanColorPreset } from "@/lib/billing-plan-colors";
 import { requireAdminOrSalesSession } from "@/lib/auth/session";
+import { creditUnitsToVisibleCredits } from "@/lib/credit-units";
 import {
   approvePurchaseRequestAction,
   createBillingPackageAction,
@@ -182,7 +183,14 @@ function PackageFormFields({
       </div>
       <div className="grid gap-3 sm:grid-cols-4">
         <Field label="خروجی">
-          <input name="credits" type="number" min={0} required defaultValue={billingPackage?.credits} className={fieldClass} />
+          <input
+            name="credits"
+            type="number"
+            min={0}
+            required
+            defaultValue={billingPackage ? creditUnitsToVisibleCredits(billingPackage.credits) : undefined}
+            className={fieldClass}
+          />
         </Field>
         <Field label="پروژه">
           <input name="projectLimit" type="number" min={0} defaultValue={billingPackage?.projectLimit ?? ""} placeholder="بدون سقف" className={fieldClass} />
@@ -297,7 +305,7 @@ function PackagesTab({ packages }: { packages: BillingPackageWithCounts[] }) {
                     </span>
                     <span className="hidden text-xs text-slate-400 md:inline">
                       {billingPackage.projectLimit !== null ? `${faNum(billingPackage.projectLimit)} پروژه · ` : ""}
-                      {faNum(billingPackage.credits)} خروجی · {faNum(usageCount)} استفاده
+                      {faNum(creditUnitsToVisibleCredits(billingPackage.credits))} خروجی · {faNum(usageCount)} استفاده
                     </span>
                   </>
                 }

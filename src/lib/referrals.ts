@@ -5,6 +5,7 @@ import {
   SALES_CODE_BATCH_SIZE,
   SALES_CODE_CREDITS,
 } from "@/lib/credits";
+import { creditUnitsToVisibleCredits } from "@/lib/credit-units";
 import { db } from "@/lib/db";
 
 export function normalizeReferralCode(value: string) {
@@ -130,7 +131,7 @@ export async function applyReferralOrSalesCodeForUser(
       },
     });
 
-    return { status: "sales_code", credited: salesCode.creditAmount };
+    return { status: "sales_code", credited: creditUnitsToVisibleCredits(salesCode.creditAmount) };
   }
 
   const existingReferral = await tx.referral.findUnique({
@@ -232,5 +233,5 @@ export async function grantReferralRewardAfterFirstPurchase(
     },
   });
 
-  return { granted: true as const, rewardCredits };
+  return { granted: true as const, rewardCredits: creditUnitsToVisibleCredits(rewardCredits), rewardCreditUnits: rewardCredits };
 }

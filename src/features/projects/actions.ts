@@ -114,8 +114,8 @@ function supportingAssetCreateData(supportingAssets: Array<{ id: string }>) {
   }));
 }
 
-async function reserveCreditOrState(userId: string) {
-  const reservation = await reserveGenerationCredit({ userId });
+async function reserveCreditOrState(userId: string, vertical: VerticalId) {
+  const reservation = await reserveGenerationCredit({ userId, vertical });
   if (!reservation.ok) {
     return { ok: false as const, error: reservation.error };
   }
@@ -236,7 +236,7 @@ export async function createProjectAction(
       return { error: "برای اجرای تست داخلی، یک ورودی کوتاه ثبت کنید." };
     }
 
-    const reserved = await reserveCreditOrState(session.userId);
+    const reserved = await reserveCreditOrState(session.userId, vertical);
     if (!reserved.ok) {
       return { error: reserved.error };
     }
@@ -364,6 +364,7 @@ export async function createProjectAction(
 
           const reservation = await reserveGenerationCreditInTransaction(tx, {
             userId: session.userId,
+            vertical,
             reserveProject: false,
           });
           if (!reservation.ok) {
@@ -425,7 +426,7 @@ export async function createProjectAction(
           return { error: "فرصت نسخه دیگر برای این پروژه در دسترس نیست. دوباره از صفحه نتیجه اقدام کنید یا نسخه عادی بسازید." };
         }
       } else {
-        const reserved = await reserveCreditOrState(session.userId);
+        const reserved = await reserveCreditOrState(session.userId, vertical);
         if (!reserved.ok) {
           return { error: reserved.error };
         }
@@ -482,7 +483,7 @@ export async function createProjectAction(
     return { error: "لطفا تصویر محصول را انتخاب کنید." };
   }
 
-  const reserved = await reserveCreditOrState(session.userId);
+  const reserved = await reserveCreditOrState(session.userId, vertical);
   if (!reserved.ok) {
     return { error: reserved.error };
   }
@@ -871,6 +872,7 @@ export async function retryProjectAction(formData: FormData) {
       const reservation = await reserveGenerationCreditInTransaction(tx, {
         userId: session.userId,
         projectId: project.id,
+        vertical,
         reserveProject: !project.variantParentId,
       });
       if (!reservation.ok) {

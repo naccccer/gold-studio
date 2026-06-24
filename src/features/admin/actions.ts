@@ -15,6 +15,7 @@ import { normalizeLoginIdentifier } from "@/lib/auth/identifier";
 import { hashPassword } from "@/lib/auth/password";
 import { getSubscriptionPeriod, logAdminAudit } from "@/lib/billing";
 import { normalizeBillingPlanColorPreset } from "@/lib/billing-plan-colors";
+import { creditUnitsToVisibleCredits, visibleCreditsToCreditUnits } from "@/lib/credit-units";
 import { INITIAL_SIGNUP_CREDITS } from "@/lib/credits";
 import { processImageProject } from "@/lib/generation/jobs";
 import { createAdminBroadcastNotification, createAdminUserNotification } from "@/lib/notifications";
@@ -476,7 +477,7 @@ export async function createBillingPackageAction(formData: FormData) {
   const title = text(formData, "title");
   const description = text(formData, "description");
   const priceAmount = integer(formData, "priceAmount");
-  const credits = integer(formData, "credits");
+  const credits = visibleCreditsToCreditUnits(integer(formData, "credits"));
   const projectLimit = type === "SUBSCRIPTION" ? optionalInteger(formData, "projectLimit") : null;
   const freeVariantLimit = type === "SUBSCRIPTION" ? Math.max(0, integer(formData, "freeVariantLimit", 2)) : 0;
   const periodDays = type === "SUBSCRIPTION" ? Math.max(1, integer(formData, "periodDays", 30)) : null;
@@ -521,7 +522,7 @@ export async function updateBillingPackageAction(formData: FormData) {
   const title = text(formData, "title");
   const description = text(formData, "description");
   const priceAmount = integer(formData, "priceAmount");
-  const credits = integer(formData, "credits");
+  const credits = visibleCreditsToCreditUnits(integer(formData, "credits"));
   const projectLimit = type === "SUBSCRIPTION" ? optionalInteger(formData, "projectLimit") : null;
   const freeVariantLimit = type === "SUBSCRIPTION" ? Math.max(0, integer(formData, "freeVariantLimit", 2)) : 0;
   const periodDays = type === "SUBSCRIPTION" ? Math.max(1, integer(formData, "periodDays", 30)) : null;
@@ -635,7 +636,7 @@ export async function duplicateBillingPackageAction(formData: FormData) {
 export async function adjustUserCreditsAction(formData: FormData) {
   const session = await requireAdminOrSalesSession();
   const userId = text(formData, "userId");
-  const delta = integer(formData, "delta");
+  const delta = visibleCreditsToCreditUnits(integer(formData, "delta"));
   const reason = text(formData, "reason");
 
   if (!userId || delta === 0 || !reason) {
@@ -671,7 +672,7 @@ export async function adjustUserCreditsAction(formData: FormData) {
       targetType: "User",
       targetId: userId,
       summary: `اعتبار کاربر ${delta > 0 ? "افزایش" : "کاهش"} یافت.`,
-      metadata: { delta, reason },
+      metadata: { deltaCredits: creditUnitsToVisibleCredits(delta), deltaCreditUnits: delta, reason },
     });
   }
 
@@ -711,7 +712,7 @@ export async function createSalesReferralCodesAction(formData: FormData) {
 export async function updateUserCreditsAction(formData: FormData) {
   const session = await requireAdminSession();
   const userId = text(formData, "userId");
-  const credits = integer(formData, "credits");
+  const credits = visibleCreditsToCreditUnits(integer(formData, "credits"));
   if (!userId || credits < 0) return;
 
   const reason = "تنظیم مستقیم اعتبار از فرم قدیمی ادمین";
@@ -744,7 +745,7 @@ export async function updateUserCreditsAction(formData: FormData) {
       targetType: "User",
       targetId: userId,
       summary: "اعتبار کاربر تنظیم شد.",
-      metadata: { targetCredits: credits, reason },
+      metadata: { targetCredits: creditUnitsToVisibleCredits(credits), targetCreditUnits: credits, reason },
     });
   }
 
@@ -1078,7 +1079,7 @@ export async function assignCustomSubscriptionAction(formData: FormData) {
   const userId = text(formData, "userId");
   const customTitle = text(formData, "customTitle") || "پلن اختصاصی";
   const projectLimit = integer(formData, "projectLimit");
-  const creditsPerPeriod = integer(formData, "creditsPerPeriod");
+  const creditsPerPeriod = visibleCreditsToCreditUnits(integer(formData, "creditsPerPeriod"));
   const periodDays = Math.max(1, integer(formData, "periodDays", 30));
   const freeVariantLimit = Math.max(0, integer(formData, "freeVariantLimit", 0));
   const notes = text(formData, "notes");
@@ -1113,7 +1114,13 @@ export async function assignCustomSubscriptionAction(formData: FormData) {
     targetType: "UserSubscription",
     targetId: subscription.id,
     summary: `پلن اختصاصی ${customTitle} به کاربر اختصاص یافت.`,
-    metadata: { projectLimit, creditsPerPeriod, periodDays, freeVariantLimit },
+    metadata: {
+      projectLimit,
+      creditsPerPeriod: creditUnitsToVisibleCredits(creditsPerPeriod),
+      creditUnitsPerPeriod: creditsPerPeriod,
+      periodDays,
+      freeVariantLimit,
+    },
   });
   revalidateAdmin();
 }
@@ -1164,7 +1171,7 @@ export async function assignCreditPackAction(formData: FormData) {
       targetType: "CreditEvent",
       targetId: result.event.id,
       summary: `بسته اعتباری ${result.billingPackage.title} به کاربر اختصاص یافت.`,
-      metadata: { packageId, credits: result.billingPackage.credits },
+      metadata: { packageId, credits: creditUnitsToVisibleCredits(result.billingPackage.credits), creditUnits: result.billingPackage.credits },
     });
   }
 

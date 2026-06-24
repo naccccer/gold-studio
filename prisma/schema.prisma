@@ -144,7 +144,7 @@ model User {
   passwordHash          String
   role                  UserRole           @default(USER)
   sessionVersion        Int                @default(0)
-  credits               Int                @default(3)
+  credits               Int                @default(300)
   reservedCredits       Int                @default(0)
   projects              Project[]
   assets                ProductAsset[]
@@ -571,6 +571,7 @@ model GenerationCreditReservation {
   subscriptionId String?
   subscription   UserSubscription?                 @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
   source         GenerationCreditReservationSource
+  creditUnits    Int                               @default(300)
   reservesProject Boolean                          @default(false)
   status         GenerationCreditReservationStatus @default(RESERVED)
   capturedAt     DateTime?
@@ -591,7 +592,7 @@ model Referral {
   inviteeId     String        @unique
   invitee       User          @relation("InviteeReferral", fields: [inviteeId], references: [id], onDelete: Cascade)
   codeUsed      String
-  rewardCredits Int           @default(5)
+  rewardCredits Int           @default(500)
   rewardGrantedAt DateTime?
   rewardPurchaseRequestId String? @unique
   rewardPurchaseRequest PurchaseRequest? @relation("ReferralRewardPurchase", fields: [rewardPurchaseRequestId], references: [id], onDelete: SetNull)
@@ -606,7 +607,7 @@ model Referral {
 model SalesReferralCode {
   id               String   @id @default(cuid())
   code             String   @unique
-  creditAmount     Int      @default(5)
+  creditAmount     Int      @default(500)
   batchKey         String
   salespersonName  String?
   note             String?  @db.Text

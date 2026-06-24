@@ -25,10 +25,8 @@ Feature-branch implementation must not mutate the main app database until the wo
 Required database workflow for implementation phases:
 
 1. Confirm the current `DATABASE_URL` is not production, staging, or the main local launch database.
-2. Create a phase-specific local database before applying migrations. Recommended names:
+2. Use the shared isolated Codex execution database for this multi-vertical branch:
    - `gold_studio_phase1_codex`
-   - `gold_studio_phase1_claude`
-   - `gold_studio_phase2_codex`
 3. Point the current shell session to that test database before running Prisma commands:
 
    ```powershell
@@ -222,7 +220,7 @@ Implement later:
 Run the full verification suite only at the end of each phase, after that phase is functionally complete and before the phase commit/push:
 
 ```powershell
-$env:DATABASE_URL="mysql://root@127.0.0.1:3306/gold_studio_phaseN_agent?allowPublicKeyRetrieval=true"
+$env:DATABASE_URL="mysql://root@127.0.0.1:3306/gold_studio_phase1_codex?allowPublicKeyRetrieval=true"
 npm run check:prompts
 npm run check:model-routing
 npm run check:readiness
@@ -239,3 +237,4 @@ For UI phases, manually review the `393x852` mobile layout target. Capture scree
 
 - 2026-06-24: Roadmap created on `codex/multi-vertical-platform`. No product implementation started yet.
 - 2026-06-24: Phase 1 Vertical Foundation implemented on `codex/phase-1-vertical-foundation`: added the central vertical registry and host resolver, stored `vertical` on behavior-critical records with a jewelry backfill, scoped user gallery/projects/styles/ready samples to the current vertical, and added lightweight admin vertical filters/labels. Existing Jewelry behavior remains the default.
+- 2026-06-24: Phase 2 Credit Units implemented on `codex/multi-vertical-platform`: migrated spendable credit balances, reservations, packages, subscriptions, credit events, referrals, and sales codes to internal units; added centralized credit unit helpers; charged generation by vertical (`jewelry` 300 units, `food` 100 units); kept user/admin displays in visible credits; and verified migrations against `gold_studio_phase1_codex`, not `gold_studio`.

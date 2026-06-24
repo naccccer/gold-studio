@@ -6,11 +6,12 @@ import { after } from "next/server";
 import { requireUserSession } from "@/lib/auth/session";
 import {
   attachGenerationCreditReservation,
-  getAvailableGenerationCredits,
+  getAvailableGenerationCreditUnits,
   releaseGenerationCreditReservation,
   reserveGenerationCredit,
 } from "@/lib/billing";
 import { NO_CREDITS_ERROR } from "@/lib/credits";
+import { getGenerationCreditUnitCost } from "@/lib/credit-units";
 import { db } from "@/lib/db";
 import { buildGenerationPrompt } from "@/lib/ai/generation-prompt";
 import { getCurrentVertical } from "@/lib/current-vertical";
@@ -171,8 +172,9 @@ export async function createBatchFromGalleryAction(formData: FormData) {
     );
   }
 
-  const availableCredits = await getAvailableGenerationCredits(session.userId);
-  if (availableCredits < assets.length) {
+  const requiredCreditUnits = assets.length * getGenerationCreditUnitCost(vertical);
+  const availableCreditUnits = await getAvailableGenerationCreditUnits(session.userId);
+  if (availableCreditUnits < requiredCreditUnits) {
     redirect(`/gallery/batches/new?assetIds=${encodeURIComponent(assetIds.join(","))}&error=${encodeURIComponent(NO_CREDITS_ERROR)}`);
   }
 
@@ -193,7 +195,7 @@ export async function createBatchFromGalleryAction(formData: FormData) {
 
   try {
     for (const asset of assets) {
-      const reservation = await reserveGenerationCredit({ userId: session.userId, batchId: batch.id });
+      const reservation = await reserveGenerationCredit({ userId: session.userId, batchId: batch.id, vertical });
       if (!reservation.ok) {
         throw new Error(reservation.error);
       }

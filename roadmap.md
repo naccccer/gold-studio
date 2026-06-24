@@ -40,10 +40,11 @@ Multi-vertical expansion is tracked in `docs/multi-vertical-roadmap.md`. The imp
 - Admin style management now uploads style preview images directly with an inline preview instead of asking operators to paste image URLs.
 - Admin console copy is being kept terse and operational, with redundant helper text removed, style preview uploads in place, and style metrics moved into a focused admin stats tab.
 - Multi-vertical Phase 1 is implemented: the app has a central vertical registry, host-based current vertical resolution, jewelry-default vertical storage/backfill on behavior-critical records, user-facing gallery/project/style/sample scoping, and lightweight admin vertical filters/labels.
+- Multi-vertical Phase 2 is implemented: credit accounting now stores internal units, user/admin displays remain in visible credits, Jewelry generation costs 3 visible credits, and Food cost support is ready at 1 visible credit.
 
 ## Next Priorities
 
-- Execute `docs/multi-vertical-roadmap.md` phase by phase on `codex/multi-vertical-platform`, continuing with Phase 2: Credit Units.
+- Continue `docs/multi-vertical-roadmap.md` with Phase 3: Ovala Food User Experience on `codex/multi-vertical-platform`.
 - Launch operations: keep production worker/watchdog/backup scheduler active in PM2, verify real Liara/Avalai generation, storage display URLs, provider cost, backups, and failed-state recovery on the deployment target.
 - Release QA: route QA across auth, home, gallery, new project, project detail, projects, notifications, quality reviews, account, billing, support, settings, and admin.
 - Mobile polish: check the `393x852` mobile layout target for Farsi wrapping, RTL controls, bottom navigation, action placement, calm motion, and accidental scrolling.

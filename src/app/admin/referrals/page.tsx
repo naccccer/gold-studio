@@ -21,6 +21,7 @@ import { createSalesReferralCodesAction } from "@/features/admin/actions";
 import { CopySalesCodesButton } from "@/features/admin/components/copy-sales-codes-button";
 import { requireAdminOrSalesSession } from "@/lib/auth/session";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
+import { creditUnitsToVisibleCredits } from "@/lib/credit-units";
 import { SALES_CODE_BATCH_SIZE, SALES_CODE_CREDITS } from "@/lib/credits";
 import { db } from "@/lib/db";
 
@@ -101,7 +102,7 @@ export default async function AdminReferralsPage({ searchParams }: AdminReferral
             summary={
               <>
                 <Ticket className="h-4 w-4 text-slate-400" />
-                ساخت batch جدید ({faNum(SALES_CODE_BATCH_SIZE)} کد، هر کد {faNum(SALES_CODE_CREDITS)} اعتبار)
+                ساخت batch جدید ({faNum(SALES_CODE_BATCH_SIZE)} کد، هر کد {faNum(creditUnitsToVisibleCredits(SALES_CODE_CREDITS))} اعتبار)
               </>
             }
           >
@@ -197,7 +198,7 @@ export default async function AdminReferralsPage({ searchParams }: AdminReferral
                     <p className="font-mono text-xs font-semibold" dir="ltr">
                       {code.code}
                     </p>
-                    <p className="text-xs text-slate-400">{faNum(code.creditAmount)} اعتبار</p>
+                    <p className="text-xs text-slate-400">{faNum(creditUnitsToVisibleCredits(code.creditAmount))} اعتبار</p>
                   </td>
                   <td className={cellClass}>
                     <p className="font-medium">{code.salespersonName || "بدون فروشنده"}</p>
@@ -256,7 +257,7 @@ export default async function AdminReferralsPage({ searchParams }: AdminReferral
                   {referral.codeUsed}
                 </td>
                 <td className={cellClass}>
-                  <p className="tabular-nums">{faNum(referral.rewardCredits)} اعتبار</p>
+                  <p className="tabular-nums">{faNum(creditUnitsToVisibleCredits(referral.rewardCredits))} اعتبار</p>
                   <p className="text-xs text-slate-400">
                     {referral.rewardGrantedAt ? `اعطاشده ${formatAdminDate(referral.rewardGrantedAt)}` : "منتظر اولین خرید"}
                   </p>
