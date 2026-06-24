@@ -23,7 +23,7 @@ import { approveQualityReviewWithRefund, rejectQualityReview } from "@/lib/quali
 import {
   ensureReadyStyleReferenceSampleDirectory,
   getReadyStyleReferenceSample,
-  readyStyleReferenceSampleDirectory,
+  readyStyleReferenceSampleDirectoryForVertical,
 } from "@/lib/ready-style-reference-samples";
 import {
   createSalesReferralCodeBatch,
@@ -208,18 +208,28 @@ function homeCarouselAdminPath(vertical: UserVisibleVerticalId, slideId?: string
   return `/admin/home?${params.toString()}`;
 }
 
+function readySamplesAdminPath(vertical: UserVisibleVerticalId, error?: string) {
+  const params = new URLSearchParams({ vertical });
+  if (error) {
+    params.set("error", error);
+  }
+
+  return `/admin/assets/samples?${params.toString()}`;
+}
+
 export async function uploadReadyStyleReferenceSampleAction(formData: FormData) {
   const session = await requireAdminSession();
+  const vertical = normalizeUserVisibleVerticalId(text(formData, "vertical"));
   const image = formData.get("image");
   if (!(image instanceof File) || image.size === 0) {
-    redirect("/admin/assets/samples");
+    redirect(readySamplesAdminPath(vertical));
   }
 
   try {
     const buffer = await normalizeReadySampleImage(image);
-    const fileName = `${slugFromFileName(image.name)}-${randomUUID().slice(0, 8)}.webp`;
-    await ensureReadyStyleReferenceSampleDirectory();
-    await writeFile(path.join(readyStyleReferenceSampleDirectory, fileName), buffer, { flag: "wx" });
+    const fileName = `ready-sample-${slugFromFileName(image.name)}-${randomUUID().slice(0, 8)}.webp`;
+    await ensureReadyStyleReferenceSampleDirectory(vertical);
+    await writeFile(path.join(readyStyleReferenceSampleDirectoryForVertical(vertical), fileName), buffer, { flag: "wx" });
 
     await logAdminAudit({
       actorAdminId: session.userId,
@@ -227,26 +237,27 @@ export async function uploadReadyStyleReferenceSampleAction(formData: FormData) 
       targetType: "ReadyStyleReferenceSample",
       targetId: fileName,
       summary: "نمونه آماده عمومی آپلود شد.",
-      metadata: { fileName, originalName: image.name || null },
+      metadata: { fileName, originalName: image.name || null, vertical },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "آپلود نمونه آماده کامل نشد.";
-    redirect(`/admin/assets/samples?error=${encodeURIComponent(message)}`);
+    redirect(readySamplesAdminPath(vertical, message));
   }
 
   revalidatePath("/admin/assets/samples");
   revalidatePath("/account/style-references");
-  redirect("/admin/assets/samples");
+  redirect(readySamplesAdminPath(vertical));
 }
 
 export async function deleteReadyStyleReferenceSampleAction(formData: FormData) {
   const session = await requireAdminSession();
   const sampleId = text(formData, "sampleId");
+  const vertical = normalizeUserVisibleVerticalId(text(formData, "vertical"));
   if (!sampleId) {
     return;
   }
 
-  const sample = await getReadyStyleReferenceSample(sampleId);
+  const sample = await getReadyStyleReferenceSample(sampleId, vertical);
   if (!sample) {
     return;
   }
@@ -258,12 +269,12 @@ export async function deleteReadyStyleReferenceSampleAction(formData: FormData) 
     targetType: "ReadyStyleReferenceSample",
     targetId: sample.fileName,
     summary: "نمونه آماده عمومی حذف شد.",
-    metadata: { fileName: sample.fileName },
+    metadata: { fileName: sample.fileName, vertical },
   });
 
   revalidatePath("/admin/assets/samples");
   revalidatePath("/account/style-references");
-  redirect("/admin/assets/samples");
+  redirect(readySamplesAdminPath(vertical));
 }
 
 export async function updateProviderSettingsAction(formData: FormData) {

@@ -35,10 +35,11 @@ export default async function AdminReferenceAssetsPage({ searchParams }: AdminRe
   const status = params?.status ?? "READY";
   const vision = params?.vision ?? "";
   const vertical = params?.vertical && params.vertical !== "ALL" ? normalizeVerticalId(params.vertical) : "ALL";
+  const verticalWhere: Prisma.StyleReferenceAssetWhereInput = vertical === "ALL" ? {} : { vertical };
 
   const where: Prisma.StyleReferenceAssetWhereInput = {
     ...(status === "ALL" ? {} : { status: status as "READY" | "ARCHIVED" }),
-    ...(vertical === "ALL" ? {} : { vertical }),
+    ...verticalWhere,
     ...(vision === "analyzed" ? { visionAnalyzedAt: { not: null } } : {}),
     ...(vision === "error" ? { visionError: { not: null } } : {}),
     ...(q
@@ -65,9 +66,9 @@ export default async function AdminReferenceAssetsPage({ searchParams }: AdminRe
       take: 120,
       include: { user: true, _count: { select: { projects: true, batches: true } } },
     }),
-    db.styleReferenceAsset.count({ where: { status: "READY" } }),
-    db.styleReferenceAsset.count({ where: { status: "ARCHIVED" } }),
-    db.styleReferenceAsset.count({ where: { visionError: { not: null } } }),
+    db.styleReferenceAsset.count({ where: { ...verticalWhere, status: "READY" } }),
+    db.styleReferenceAsset.count({ where: { ...verticalWhere, status: "ARCHIVED" } }),
+    db.styleReferenceAsset.count({ where: { ...verticalWhere, visionError: { not: null } } }),
   ]);
 
   const selected = assets.find((asset) => asset.id === params?.asset) ?? assets[0] ?? null;
@@ -95,10 +96,10 @@ export default async function AdminReferenceAssetsPage({ searchParams }: AdminRe
 
       <TabNav
         tabs={[
-          { href: "/admin/assets", label: "تصاویر منبع کاربران", active: false },
+          { href: `/admin/assets${vertical === "ALL" ? "" : `?vertical=${vertical}`}`, label: "تصاویر منبع کاربران", active: false },
           { href: "/admin/assets/references", label: "عکس‌های نمونه کاربران", active: true },
-          { href: "/admin/assets/samples", label: "نمونه‌های آماده", active: false },
-          { href: "/admin/assets/outputs", label: "خروجی‌ها", active: false },
+          { href: `/admin/assets/samples?vertical=${vertical === "food" ? "food" : "jewelry"}`, label: "نمونه‌های آماده", active: false },
+          { href: `/admin/assets/outputs${vertical === "ALL" ? "" : `?vertical=${vertical}`}`, label: "خروجی‌ها", active: false },
         ]}
       />
 

@@ -22,7 +22,8 @@ import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { db } from "@/lib/db";
 import { requireAdminSession } from "@/lib/auth/session";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
-import { getVerticalLabel } from "@/lib/verticals";
+import { formatCreditUnits, getGenerationCreditUnitCost } from "@/lib/credit-units";
+import { getVerticalLabel, normalizeVerticalId } from "@/lib/verticals";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +56,9 @@ export default async function AdminProjectDetailPage({ params }: AdminProjectDet
   const referenceUrl = project.referenceAsset
     ? storageUrlFromKeyOrUrl(project.referenceAsset.storageKey, project.referenceAsset.fileUrl)
     : null;
+  const defaultCostUnits = getGenerationCreditUnitCost(normalizeVerticalId(project.vertical));
+  const latestReservation = project.creditReservations[0];
+  const operationalCostUnits = latestReservation?.creditUnits ?? defaultCostUnits;
 
   return (
     <>
@@ -125,6 +129,7 @@ export default async function AdminProjectDetailPage({ params }: AdminProjectDet
                 },
                 { label: "شناسه کاربر", value: getUserIdentifier(project.user), dir: "ltr" },
                 { label: "Vertical", value: getVerticalLabel(project.vertical) },
+                { label: "هزینه تولید", value: `${formatCreditUnits(operationalCostUnits)} اعتبار (${operationalCostUnits} units)`, dir: "ltr" },
                 { label: "سبک", value: project.style.name },
                 { label: "قالب خروجی", value: project.outputPreset, dir: "ltr" },
                 { label: "آخرین آپدیت", value: formatAdminDate(project.updatedAt) },
@@ -152,6 +157,9 @@ export default async function AdminProjectDetailPage({ params }: AdminProjectDet
                     <span className="flex items-center gap-3">
                       <StatusDot status={reservation.source} />
                       <StatusDot status={reservation.status} />
+                    </span>
+                    <span className="font-medium text-navy-950" dir="ltr">
+                      {formatCreditUnits(reservation.creditUnits)} credits / {reservation.creditUnits} units
                     </span>
                     <span className="text-slate-400">{formatAdminDate(reservation.createdAt)}</span>
                   </div>

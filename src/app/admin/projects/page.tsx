@@ -19,6 +19,7 @@ import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { db } from "@/lib/db";
 import { requireAdminSession } from "@/lib/auth/session";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
+import { formatCreditUnits, getGenerationCreditUnitCost } from "@/lib/credit-units";
 import { getVerticalLabel, normalizeVerticalId, USER_VISIBLE_VERTICAL_IDS, VERTICALS } from "@/lib/verticals";
 
 export const dynamic = "force-dynamic";
@@ -55,12 +56,13 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
   const styleId = params?.styleId;
   const includeArchived = params?.archived === "all";
   const vertical = params?.vertical && params.vertical !== "ALL" ? normalizeVerticalId(params.vertical) : "ALL";
+  const verticalWhere: Prisma.ProjectWhereInput = vertical === "ALL" ? {} : { vertical };
 
   const where: Prisma.ProjectWhereInput = {
     ...(includeArchived ? {} : { archivedAt: null }),
     ...(status !== "ALL" ? { status: status as "QUEUED" | "PROCESSING" | "COMPLETED" | "FAILED" } : {}),
     ...(styleId ? { styleId } : {}),
-    ...(vertical === "ALL" ? {} : { vertical }),
+    ...verticalWhere,
     ...(q
       ? {
           OR: [
@@ -85,6 +87,7 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
         style: { select: { id: true, name: true } },
         sourceAsset: { select: { storageKey: true } },
         providerEvents: { orderBy: { createdAt: "desc" }, take: 1 },
+        creditReservations: { orderBy: { createdAt: "desc" }, take: 1, select: { creditUnits: true, status: true } },
       },
     }),
     db.creativeStyle.findMany({
@@ -92,10 +95,10 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
       select: { id: true, name: true },
     }),
-    db.project.count({ where: { status: "QUEUED", archivedAt: null } }),
-    db.project.count({ where: { status: "PROCESSING", archivedAt: null } }),
-    db.project.count({ where: { status: "FAILED", archivedAt: null } }),
-    db.project.count({ where: { status: "COMPLETED", archivedAt: null } }),
+    db.project.count({ where: { ...verticalWhere, status: "QUEUED", archivedAt: null } }),
+    db.project.count({ where: { ...verticalWhere, status: "PROCESSING", archivedAt: null } }),
+    db.project.count({ where: { ...verticalWhere, status: "FAILED", archivedAt: null } }),
+    db.project.count({ where: { ...verticalWhere, status: "COMPLETED", archivedAt: null } }),
   ]);
 
   const countByStatus: Record<string, number | undefined> = {
@@ -154,7 +157,7 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
 
       <Surface>
         <ConsoleTable
-          head={["پروژه", "کاربر", "Vertical", "سبک", "وضعیت", "آخرین رویداد", "زمان"]}
+          head={["پروژه", "کاربر", "Vertical", "هزینه", "سبک", "وضعیت", "آخرین رویداد", "زمان"]}
           empty={<EmptyState title="پروژه‌ای با این فیلتر پیدا نشد." />}
         >
           {projects.map((project) => {
@@ -163,6 +166,7 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
               storageUrlFromKeyOrUrl(project.sourceAsset?.storageKey, project.sourceImageUrl) ||
               uploadPreview.src;
             const lastEvent = project.providerEvents[0];
+            const costUnits = project.creditReservations[0]?.creditUnits ?? getGenerationCreditUnitCost(normalizeVerticalId(project.vertical));
 
             return (
               <tr key={project.id}>
@@ -195,6 +199,12 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
                 </td>
                 <td className={cellClass}>
                   {getVerticalLabel(project.vertical)}
+                </td>
+                <td className={cellClass}>
+                  <p>{formatCreditUnits(costUnits)} اعتبار</p>
+                  <p className="text-xs text-slate-400" dir="ltr">
+                    {costUnits} units
+                  </p>
                 </td>
                 <td className={cellClass}>
                   <p>{project.style.name}</p>

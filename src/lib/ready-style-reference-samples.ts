@@ -138,9 +138,13 @@ export type ReadyStyleReferenceSample = {
   updatedAt: Date;
 };
 
-async function listSampleDirectoryFiles() {
+export function readyStyleReferenceSampleDirectoryForVertical(vertical: VerticalId = DEFAULT_VERTICAL_ID) {
+  return vertical === "food" ? foodReadyStyleReferenceSampleDirectory : readyStyleReferenceSampleDirectory;
+}
+
+async function listSampleDirectoryFiles(vertical: VerticalId = DEFAULT_VERTICAL_ID) {
   try {
-    return await readdir(readyStyleReferenceSampleDirectory);
+    return await readdir(readyStyleReferenceSampleDirectoryForVertical(vertical));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return [];
@@ -192,13 +196,17 @@ function fallbackTitleFromId(id: string) {
     .join(" ");
 }
 
-export async function ensureReadyStyleReferenceSampleDirectory() {
-  await mkdir(readyStyleReferenceSampleDirectory, { recursive: true });
+export async function ensureReadyStyleReferenceSampleDirectory(vertical: VerticalId = DEFAULT_VERTICAL_ID) {
+  await mkdir(readyStyleReferenceSampleDirectoryForVertical(vertical), { recursive: true });
 }
 
 export async function getReadyStyleReferenceSamples(vertical: VerticalId = DEFAULT_VERTICAL_ID): Promise<ReadyStyleReferenceSample[]> {
-  const directoryFiles = vertical === "food" ? [] : await listSampleDirectoryFiles();
-  const fileNames = vertical === "food" ? foodSampleFiles : Array.from(new Set([...sampleFiles, ...directoryFiles]));
+  const directoryFiles = await listSampleDirectoryFiles(vertical);
+  const uploadedFoodSampleFiles = directoryFiles.filter((fileName) => fileName.startsWith("ready-sample-"));
+  const fileNames =
+    vertical === "food"
+      ? Array.from(new Set([...foodSampleFiles, ...uploadedFoodSampleFiles]))
+      : Array.from(new Set([...sampleFiles, ...directoryFiles]));
   const basePath = vertical === "food" ? foodReadyStyleReferenceSamplePublicBasePath : readyStyleReferenceSamplePublicBasePath;
   const metadataById = vertical === "food" ? foodSampleMetadata : sampleMetadata;
   const samples = await Promise.all(

@@ -14,6 +14,7 @@ import {
   TabNav,
 } from "@/features/admin/components/console";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
+import { formatCreditUnits, getGenerationCreditUnitCost } from "@/lib/credit-units";
 import { db } from "@/lib/db";
 import { requireAdminSession } from "@/lib/auth/session";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
@@ -63,6 +64,7 @@ export default async function AdminOutputsPage({ searchParams }: AdminOutputsPag
         user: true,
         style: { select: { name: true } },
         sourceAsset: { select: { storageKey: true } },
+        creditReservations: { orderBy: { createdAt: "desc" }, take: 1, select: { creditUnits: true } },
       },
     }),
     db.project.count({
@@ -102,9 +104,9 @@ export default async function AdminOutputsPage({ searchParams }: AdminOutputsPag
 
       <TabNav
         tabs={[
-          { href: "/admin/assets", label: "تصاویر منبع کاربران", active: false },
-          { href: "/admin/assets/references", label: "عکس‌های نمونه کاربران", active: false },
-          { href: "/admin/assets/samples", label: "نمونه‌های آماده", active: false },
+          { href: `/admin/assets${vertical === "ALL" ? "" : `?vertical=${vertical}`}`, label: "تصاویر منبع کاربران", active: false },
+          { href: `/admin/assets/references${vertical === "ALL" ? "" : `?vertical=${vertical}`}`, label: "عکس‌های نمونه کاربران", active: false },
+          { href: `/admin/assets/samples?vertical=${vertical === "food" ? "food" : "jewelry"}`, label: "نمونه‌های آماده", active: false },
           { href: "/admin/assets/outputs", label: "خروجی‌ها", active: true },
         ]}
       />
@@ -186,6 +188,12 @@ export default async function AdminOutputsPage({ searchParams }: AdminOutputsPag
                     },
                     { label: "شناسه کاربر", value: getUserIdentifier(selected.project.user), dir: "ltr" },
                     { label: "Vertical", value: getVerticalLabel(selected.project.vertical) },
+                    {
+                      label: "هزینه تولید",
+                      value: `${formatCreditUnits(
+                        selected.project.creditReservations[0]?.creditUnits ?? getGenerationCreditUnitCost(normalizeVerticalId(selected.project.vertical)),
+                      )} اعتبار`,
+                    },
                     { label: "سبک", value: selected.project.style.name },
                     { label: "قالب خروجی", value: selected.project.outputPreset, dir: "ltr" },
                     { label: "تکمیل", value: formatAdminFullDate(selected.project.updatedAt) },
