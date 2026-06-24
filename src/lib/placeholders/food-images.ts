@@ -67,7 +67,8 @@ export const foodHomeUgc = image("food-home-ugc.webp", {
 
 export const foodRestaurantPlate = image("food-restaurant-plate.webp", {
   alt: "عکس بشقاب رستورانی با چیدمان حرفه‌ای",
-  title: "بشقاب رستورانی",
+  title: "ظرف و سروینگ",
+  styleLabel: "ظرف و سروینگ",
 });
 
 export const foodDessertStrawberry = image("food-dessert-strawberry.webp", {
@@ -77,7 +78,7 @@ export const foodDessertStrawberry = image("food-dessert-strawberry.webp", {
 
 export const foodStyleSamples = [
   foodMenuCatalog,
-  foodMinimal,
+  foodRestaurantPlate,
   foodCafeItem,
   foodDrinkSocial,
   foodDishNatural,

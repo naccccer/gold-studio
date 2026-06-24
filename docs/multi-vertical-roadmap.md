@@ -143,8 +143,8 @@ Implement:
 - New project flow defaults to Food and never asks the user to choose Jewelry vs Food inside the Food host.
 - Food product types should cover real restaurant and cafe inventory for Snappfood and Instagram sellers: Persian/rice dishes, grill, sandwiches/fried items, pizza/fast-food, healthy bowls, cafe breakfast, hot drinks, cold drinks, desserts, bakery, packaged items, and a safe fallback.
 - Six Food styles:
-  - Menu/catalog
-  - Clean background
+  - Menu/catalog with clean background
+  - Serving vessel
   - Sample photo
   - Instagram post
   - Cafe/restaurant table
@@ -285,4 +285,6 @@ For UI phases, manually review the `393x852` mobile layout target. Capture scree
 - 2026-06-24: Phase 5 Admin And Operations implemented on `codex/multi-vertical-platform`: tightened vertical filtering across admin assets, reference assets, ready samples, projects, outputs, and quality reviews; made ready sample upload/delete vertical-aware for Jewelry and Food; scoped operational counters to the selected vertical; and surfaced project credit-unit costs on project, output, and quality-review inspection paths. No schema migration was needed.
 - 2026-06-24: Validation Gate Before Phase 6 completed on `codex/multi-vertical-platform`: audited Jewelry/Food host routing, local Food override, user/admin vertical scoping, provider routing, prompt policy, and credit-unit costs against `gold_studio_phase1_codex`; fixed local reserved-vertical routing so Clothing/Furniture cannot activate before Phase 6. Phase 6 was not started.
 - 2026-06-24: Food style and product taxonomy refined after initial Food launch: replaced placeholder-like Food product types with restaurant/cafe inventory categories, expanded Food to six visible styles for Snappfood and Instagram workflows, added a Food-specific sample-photo style, and updated prompt refinements for the new Food item categories.
+- 2026-06-24: Food style controls added for the six user-visible Food styles: menu angle/surface, clean background surface/tone, sample-photo matching/crop, Instagram text placement/mood, cafe-restaurant context/detail level, and packaging angle/label priority.
+- 2026-06-24: Food style set refined again: merged clean background into menu/catalog, hid the separate clean-background style, and added a serving-vessel style focused on the plate, bowl, cup, glass, wrapper, box, or takeaway container holding the item.
 - 2026-06-24: Post-gate Food/Jewelry polish documented: Jewelry/Food dev shortcuts are the supported local switching path, Food sample-reference behavior is tracked separately from Jewelry sample-reference behavior, style-reference icons use the saved/bookmark metaphor, and Phase 6 remains on hold.
