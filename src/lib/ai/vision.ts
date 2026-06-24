@@ -1,5 +1,10 @@
 import { normalizeProductType, type ProductType } from "@/lib/product-types";
 import { imageProvider, normalizeImageProvider, type ImageProvider } from "@/lib/ai/provider";
+import {
+  buildVisionAnalysisPrompt,
+  buildVisionContextTruthSourcePrompt,
+} from "@/lib/ai/vertical-prompt-rules";
+import { DEFAULT_VERTICAL_ID, type VerticalId } from "@/lib/verticals";
 
 const DEFAULT_LIARA_BASE_URL = "https://ai.liara.ir/api/69fe30c50bb427e049d327f6/v1";
 const DEFAULT_LIARA_VISION_MODEL = "google/gemini-2.0-flash-lite-001";
@@ -42,6 +47,7 @@ type AnalyzeProductImageInput = {
   sourceBuffer: Buffer;
   mimeType: string;
   provider?: ImageProvider;
+  vertical?: VerticalId;
 };
 
 type ChatCompletionResponse = {
@@ -196,9 +202,9 @@ function normalizeDifferenceList(value: unknown) {
     .slice(0, 8);
 }
 
-export function normalizeVisionMetadata(raw: unknown): ProductVisionMetadata {
+export function normalizeVisionMetadata(raw: unknown, vertical: VerticalId = DEFAULT_VERTICAL_ID): ProductVisionMetadata {
   const value = typeof raw === "object" && raw !== null ? raw as Record<string, unknown> : {};
-  const productType = normalizeProductType(value.productType);
+  const productType = normalizeProductType(value.productType, vertical);
 
   return {
     shortTitle: normalizeShortTitle(value.shortTitle, productType),
@@ -235,7 +241,7 @@ export function normalizeQualityReviewVisionMetadata(raw: unknown): QualityRevie
   };
 }
 
-function parseVisionMetadata(content: unknown) {
+function parseVisionMetadata(content: unknown, vertical: VerticalId = DEFAULT_VERTICAL_ID) {
   const text = Array.isArray(content)
     ? content.map((part) => {
         if (typeof part === "string") return part;
@@ -250,7 +256,7 @@ function parseVisionMetadata(content: unknown) {
     throw new Error("Vision response was empty.");
   }
 
-  return normalizeVisionMetadata(JSON.parse(extractJsonObject(text)));
+  return normalizeVisionMetadata(JSON.parse(extractJsonObject(text)), vertical);
 }
 
 function parseStyleReferenceVisionMetadata(content: unknown) {
@@ -293,10 +299,12 @@ export async function analyzeProductImageWithLiara({
   sourceBuffer,
   mimeType,
   provider: providerOverride,
+  vertical = DEFAULT_VERTICAL_ID,
 }: AnalyzeProductImageInput): Promise<ProductVisionMetadata> {
   const { apiKey, baseURL, model, provider } = getVisionConfig(providerOverride);
   const imageUrl = `data:${mimeType};base64,${sourceBuffer.toString("base64")}`;
-  const prompt = [
+  const prompt = buildVisionAnalysisPrompt(vertical);
+  void [
     "You are a vision assistant for Ovala, a Persian RTL jewelry product-photo app.",
     "Analyze the uploaded product photo. The photo may be low quality, poorly lit, cropped, or have a busy background.",
     "Return ONLY valid JSON. Do not use markdown. Do not add explanations.",
@@ -347,7 +355,7 @@ export async function analyzeProductImageWithLiara({
   }
 
   const result = await response.json() as ChatCompletionResponse;
-  return parseVisionMetadata(result.choices?.[0]?.message?.content);
+  return parseVisionMetadata(result.choices?.[0]?.message?.content, vertical);
 }
 
 export async function analyzeStyleReferenceImageWithLiara({
@@ -477,8 +485,10 @@ export function buildVisionPromptContext(input: {
   productType?: string | null;
   visionDescription?: string | null;
   visionConfidence?: number | null;
+  vertical?: VerticalId;
 }) {
-  const productType = normalizeProductType(input.productType);
+  const vertical = input.vertical ?? DEFAULT_VERTICAL_ID;
+  const productType = normalizeProductType(input.productType, vertical);
   const description = normalizeDescription(input.visionDescription);
   const confidence = clampConfidence(input.visionConfidence);
 
@@ -488,7 +498,7 @@ export function buildVisionPromptContext(input: {
 
   return [
     `Product metadata: user-confirmed type is "${productType}"; visual description: "${description}".`,
-    "Use this only as supporting context. The input image remains the source of truth for product identity, materials, color, stones, shape, engravings, and all visible details.",
+    buildVisionContextTruthSourcePrompt(vertical),
   ].join("\n");
 }
 

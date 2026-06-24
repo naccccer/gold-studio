@@ -2,6 +2,7 @@ import { analyzeProductImageWithLiara, serializeQualityIssues, visionModel } fro
 import { getProviderSettings } from "@/lib/ai/provider-settings";
 import { db } from "@/lib/db";
 import { readStoredUpload } from "@/lib/uploads";
+import { normalizeVerticalId } from "@/lib/verticals";
 
 function errorText(error: unknown) {
   return error instanceof Error ? error.message.slice(0, 1000) : "Vision analysis failed.";
@@ -21,6 +22,7 @@ export async function analyzeAndStoreProductAssetVision(assetId: string) {
     where: { id: assetId },
     select: {
       id: true,
+      vertical: true,
       storageKey: true,
       mimeType: true,
       productType: true,
@@ -41,6 +43,7 @@ export async function analyzeAndStoreProductAssetVision(assetId: string) {
       sourceBuffer: source.buffer,
       mimeType: source.mimeType,
       provider: visionProvider,
+      vertical: normalizeVerticalId(asset.vertical),
     });
 
     try {

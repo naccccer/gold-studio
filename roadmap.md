@@ -42,10 +42,11 @@ Multi-vertical expansion is tracked in `docs/multi-vertical-roadmap.md`. The imp
 - Multi-vertical Phase 1 is implemented: the app has a central vertical registry, host-based current vertical resolution, jewelry-default vertical storage/backfill on behavior-critical records, user-facing gallery/project/style/sample scoping, and lightweight admin vertical filters/labels.
 - Multi-vertical Phase 2 is implemented: credit accounting now stores internal units, user/admin displays remain in visible credits, Jewelry generation costs 3 visible credits, and Food cost support is ready at 1 visible credit.
 - Multi-vertical Phase 3 is implemented: `food.ovala.ir` and `OVALA_LOCAL_VERTICAL=food` now present a dedicated Ovala Food user experience with Food copy, Food product types, Food-only styles/samples/assets, vertical-scoped home carousel records/fallbacks, Food fallback gallery/project visuals, and Food-scoped user flows on the shared account, wallet, admin, database, and worker.
+- Multi-vertical Phase 4 is implemented: generation prompt assembly, provider suffixes, and product vision analysis are vertical-aware; Jewelry prompt safeguards remain protected, while Food prompts preserve appetite appeal, freshness, plating, packaging, labels, and dish/drink/package identity.
 
 ## Next Priorities
 
-- Continue `docs/multi-vertical-roadmap.md` with Phase 4: vertical-aware prompt architecture on `codex/multi-vertical-platform`.
+- Continue `docs/multi-vertical-roadmap.md` with Phase 5: admin and operations hardening on `codex/multi-vertical-platform`.
 - Launch operations: keep production worker/watchdog/backup scheduler active in PM2, verify real Liara/Avalai generation, storage display URLs, provider cost, backups, and failed-state recovery on the deployment target.
 - Release QA: route QA across auth, home, gallery, new project, project detail, projects, notifications, quality reviews, account, billing, support, settings, and admin.
 - Mobile polish: check the `393x852` mobile layout target for Farsi wrapping, RTL controls, bottom navigation, action placement, calm motion, and accidental scrolling.

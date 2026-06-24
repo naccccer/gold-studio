@@ -263,7 +263,7 @@ export async function createProjectAction(
       throw error;
     }
 
-    after(() => processTextProject({ projectId: project.id, textPrompt, stylePrompt }));
+    after(() => processTextProject({ projectId: project.id, textPrompt, stylePrompt, vertical }));
     redirect(`/projects/${project.id}`);
   }
 

@@ -7,6 +7,7 @@ import { getProviderSettings } from "@/lib/ai/provider-settings";
 import { db } from "@/lib/db";
 import { readStoredUpload } from "@/lib/uploads";
 import type { ImageProvider } from "@/lib/ai/provider";
+import { DEFAULT_VERTICAL_ID, type VerticalId } from "@/lib/verticals";
 
 const MIN_REFERENCE_CONFIDENCE = 0.35;
 
@@ -39,7 +40,11 @@ export function normalizeReferencePromptMetadata(input: StyleReferencePromptMeta
   };
 }
 
-export function buildSampleReferencePromptContext(input?: StyleReferencePromptMetadata | null, productImageCount = 1) {
+export function buildSampleReferencePromptContext(
+  input?: StyleReferencePromptMetadata | null,
+  productImageCount = 1,
+  vertical: VerticalId = DEFAULT_VERTICAL_ID,
+) {
   const metadata = input ? normalizeReferencePromptMetadata(input) : null;
   const safeProductImageCount = Math.max(1, productImageCount);
   const sampleImageNumber = safeProductImageCount + 1;
@@ -55,18 +60,32 @@ export function buildSampleReferencePromptContext(input?: StyleReferencePromptMe
         metadata.visionSubjectDescription,
     );
 
-  const promptParts = [
-    "Strict sample-scene product replacement mode:",
-    `Use image ${sampleImageNumber} as the target scene and composition. Keep its non-product scene recognizable: hand, wrist, fingers, skin, body context, water, surface, props, lighting, camera angle, perspective, reflections, color palette, mood, and framing when present.`,
-    `Replace only the product/jewelry/accessory subject in image ${sampleImageNumber} with the user's product from ${productImageLabel}.`,
-    `Use ${productImageLabel} as the only product identity source. The uploaded product is locked: preserve its shape, proportions, silhouette, metal color, gemstone count and placement, visible chain or front-facing clasp design when naturally visible, watch face, engravings, setting, material finish, visible defects, and all visible details.`,
-    `Do not morph, redesign, restyle, recolor, simplify, re-stone, unnaturally resize proportions, replace, or reinterpret the user's product to fit image ${sampleImageNumber}.`,
-    `Place the exact product believably into image ${sampleImageNumber}: match perspective, scale, contact shadows, occlusion, reflections, lighting direction, depth of field, hand/finger wrapping, water distortion, and physical interaction with the scene when present.`,
-    "Do not expose, invent, duplicate, or relocate hidden backs, rear clasps, closures, posts, undersides, or hardware just to show construction details.",
-    `Do not copy or retain the sample product identity from image ${sampleImageNumber}; only the sample scene around the product should remain.`,
-    `If there is conflict between preserving product identity from ${productImageLabel} and matching the sample product pose, preserve product identity and adapt the placement naturally within the sample scene.`,
-    "The result should look like the sample photo scene with the original sample product swapped for the user's exact uploaded product.",
-  ];
+  const promptParts =
+    vertical === "food"
+      ? [
+          "Strict sample-scene food item replacement mode:",
+          `Use image ${sampleImageNumber} as the target scene and composition. Keep its non-item scene recognizable: table, plate, cup, glassware, wrapper, surface, props, lighting, camera angle, perspective, reflections, color palette, mood, freshness cues, and framing when present.`,
+          `Replace only the food, drink, plate, cup, package, or menu-item subject in image ${sampleImageNumber} with the user's item from ${productImageLabel}.`,
+          `Use ${productImageLabel} as the only item identity source. The uploaded item is locked: preserve its dish or drink type, portion shape, plating, packaging, label placement, garnish, sauce pattern, ingredient layout, texture, color, serving vessel, visible freshness cues, and all visible details.`,
+          `Do not morph, redesign, restyle, recolor, simplify, change cuisine, change flavor, change brand, change serving size, replace, or reinterpret the user's item to fit image ${sampleImageNumber}.`,
+          `Place the exact item believably into image ${sampleImageNumber}: match perspective, scale, contact shadows, occlusion, reflections, lighting direction, depth of field, condensation, steam only when physically plausible, and plate/table interaction when present.`,
+          "Do not invent new label text, fake logos, extra dishes, extra cups, unrelated ingredients, people, hands, messy leftovers, or unsafe-looking food.",
+          `Do not copy or retain the sample item identity from image ${sampleImageNumber}; only the sample scene around the item should remain.`,
+          `If there is conflict between preserving item identity from ${productImageLabel} and matching the sample item pose, preserve item identity and adapt the placement naturally within the sample scene.`,
+          "The result should look like the sample photo scene with the original sample item swapped for the user's exact uploaded food, drink, or packaged product.",
+        ]
+      : [
+          "Strict sample-scene product replacement mode:",
+          `Use image ${sampleImageNumber} as the target scene and composition. Keep its non-product scene recognizable: hand, wrist, fingers, skin, body context, water, surface, props, lighting, camera angle, perspective, reflections, color palette, mood, and framing when present.`,
+          `Replace only the product/jewelry/accessory subject in image ${sampleImageNumber} with the user's product from ${productImageLabel}.`,
+          `Use ${productImageLabel} as the only product identity source. The uploaded product is locked: preserve its shape, proportions, silhouette, metal color, gemstone count and placement, visible chain or front-facing clasp design when naturally visible, watch face, engravings, setting, material finish, visible defects, and all visible details.`,
+          `Do not morph, redesign, restyle, recolor, simplify, re-stone, unnaturally resize proportions, replace, or reinterpret the user's product to fit image ${sampleImageNumber}.`,
+          `Place the exact product believably into image ${sampleImageNumber}: match perspective, scale, contact shadows, occlusion, reflections, lighting direction, depth of field, hand/finger wrapping, water distortion, and physical interaction with the scene when present.`,
+          "Do not expose, invent, duplicate, or relocate hidden backs, rear clasps, closures, posts, undersides, or hardware just to show construction details.",
+          `Do not copy or retain the sample product identity from image ${sampleImageNumber}; only the sample scene around the product should remain.`,
+          `If there is conflict between preserving product identity from ${productImageLabel} and matching the sample product pose, preserve product identity and adapt the placement naturally within the sample scene.`,
+          "The result should look like the sample photo scene with the original sample product swapped for the user's exact uploaded product.",
+        ];
 
   if (hasReliableMetadata && metadata) {
     promptParts.push(buildSampleReferenceVisionPromptContext(metadata));

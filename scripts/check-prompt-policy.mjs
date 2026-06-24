@@ -5,6 +5,7 @@ import ts from "typescript";
 
 const source = await readFile(new URL("../src/lib/ai/style-policy.ts", import.meta.url), "utf8");
 const generationPromptSource = await readFile(new URL("../src/lib/ai/generation-prompt.ts", import.meta.url), "utf8");
+const verticalPromptRulesSource = await readFile(new URL("../src/lib/ai/vertical-prompt-rules.ts", import.meta.url), "utf8");
 const sampleReferenceSource = await readFile(new URL("../src/lib/style-reference-vision.ts", import.meta.url), "utf8");
 const avalaiSource = await readFile(new URL("../src/lib/ai/avalai.ts", import.meta.url), "utf8");
 const liaraSource = await readFile(new URL("../src/lib/ai/liara.ts", import.meta.url), "utf8");
@@ -51,16 +52,28 @@ const sampleReferencePrompt = buildProductOnlyIsolationPrompt({
 });
 assert.equal(sampleReferencePrompt, "", "sample reference should not receive product-only isolation");
 
-const samplePolicySource = [generationPromptSource, sampleReferenceSource, avalaiSource, liaraSource].join("\n");
+const promptArchitectureSource = [generationPromptSource, verticalPromptRulesSource].join("\n");
+const samplePolicySource = [generationPromptSource, verticalPromptRulesSource, sampleReferenceSource, avalaiSource, liaraSource].join("\n");
 
-assert.match(generationPromptSource, /Final necklace-on-model correction/i, "necklace model prompts should end with a final clasp correction");
-assert.match(generationPromptSource, /Default policy: do not show a clasp in a necklace-on-model image/i, "necklace model prompts should default to no visible clasp");
-assert.match(generationPromptSource, /Ignore any earlier generic instruction to preserve or show clasp details/i, "necklace model prompts should override generic clasp preservation");
-assert.match(generationPromptSource, /normal back clasp is completely hidden behind the neck/i, "necklace model prompts should allow hidden rear clasps");
-assert.match(generationPromptSource, /Never alter the pose, chain path, camera angle, crop, or product geometry to make a rear clasp visible/i, "necklace model prompts should forbid unnatural clasp exposure");
-assert.match(generationPromptSource, /no visible lobster clasp, spring-ring clasp, hook clasp, rear fastener/i, "necklace model prompts should explicitly ban visible normal clasp hardware");
-assert.match(generationPromptSource, /Do not render that rear clasp in the worn model output/i, "necklace supporting images should not force rear clasp visibility");
-assert.match(generationPromptSource, /decorative front-facing clasp or front closure/i, "necklace model prompts should allow only true front clasps");
+assert.match(promptArchitectureSource, /Final necklace-on-model correction/i, "necklace model prompts should end with a final clasp correction");
+assert.match(promptArchitectureSource, /Default policy: do not show a clasp in a necklace-on-model image/i, "necklace model prompts should default to no visible clasp");
+assert.match(promptArchitectureSource, /Ignore any earlier generic instruction to preserve or show clasp details/i, "necklace model prompts should override generic clasp preservation");
+assert.match(promptArchitectureSource, /normal back clasp is completely hidden behind the neck/i, "necklace model prompts should allow hidden rear clasps");
+assert.match(promptArchitectureSource, /Never alter the pose, chain path, camera angle, crop, or product geometry to make a rear clasp visible/i, "necklace model prompts should forbid unnatural clasp exposure");
+assert.match(promptArchitectureSource, /no visible lobster clasp, spring-ring clasp, hook clasp, rear fastener/i, "necklace model prompts should explicitly ban visible normal clasp hardware");
+assert.match(promptArchitectureSource, /Do not render that rear clasp in the worn model output/i, "necklace supporting images should not force rear clasp visibility");
+assert.match(promptArchitectureSource, /decorative front-facing clasp or front closure/i, "necklace model prompts should allow only true front clasps");
+
+assert.match(promptArchitectureSource, /Ovala Food vertical rules/i, "Food prompts should have a dedicated vertical rule block");
+assert.match(promptArchitectureSource, /Preserve appetite appeal/i, "Food prompts should optimize for appetite appeal");
+assert.match(promptArchitectureSource, /plating, packaging, label placement, garnish, sauce pattern/i, "Food prompts should preserve plating, packaging, labels, garnish, and sauces");
+assert.match(promptArchitectureSource, /Do not turn the item into a different dish, drink, dessert, package, flavor, brand, serving size, or cuisine/i, "Food prompts should forbid identity drift");
+assert.match(promptArchitectureSource, /Packaged food or drink refinement/i, "Food prompts should include packaged item refinements");
+assert.match(promptArchitectureSource, /Drink refinement/i, "Food prompts should include drink refinements");
+assert.match(promptArchitectureSource, /Restaurant plate refinement/i, "Food prompts should include restaurant plate refinements");
+assert.match(samplePolicySource, /food item replacement mode/i, "Food sample-reference prompts should replace food items, not jewelry");
+assert.match(samplePolicySource, /Do not invent new label text, fake logos/i, "Food prompts should protect labels and brands");
+assert.match(samplePolicySource, /food or drink product image/i, "Provider suffixes should include Food-specific image instructions");
 
 assert.match(samplePolicySource, /only locked product identity source/i, "sample style should lock uploaded product identity");
 assert.match(samplePolicySource, /only product identity source/i, "sample style should treat uploaded images as the only product identity source");
@@ -114,7 +127,7 @@ assertOrder(
   ],
   "Liara multipart image order should be source, supporting products, then sample reference",
 );
-assert.match(avalaiSource, /generationPromptSuffix\(Boolean\(referenceBuffer\)\)/, "Avalai should use the reference-scene suffix when a sample scene is present");
-assert.match(liaraSource, /generationPromptSuffix\(Boolean\(referenceImage\)\)/, "Liara should use the reference-scene suffix when a sample scene is present");
+assert.match(avalaiSource, /generationPromptSuffix\(vertical, Boolean\(referenceBuffer\)\)/, "Avalai should use the vertical-aware reference-scene suffix when a sample scene is present");
+assert.match(liaraSource, /generationPromptSuffix\(vertical, Boolean\(referenceImage\)\)/, "Liara should use the vertical-aware reference-scene suffix when a sample scene is present");
 
 console.log("Prompt policy checks passed.");
