@@ -41,7 +41,7 @@ export function middleware(request: NextRequest) {
     return applyLocalVerticalOverride(request, NextResponse.redirect(loginUrl));
   }
 
-  if (request.nextUrl.searchParams.has("vertical") && isLocalDevelopmentHost(host)) {
+  if (request.nextUrl.searchParams.has("vertical") && isLocalDevelopmentHost(host) && !pathname.startsWith("/admin")) {
     const cleanUrl = request.nextUrl.clone();
     cleanUrl.searchParams.delete("vertical");
     return applyLocalVerticalOverride(request, NextResponse.redirect(cleanUrl));
