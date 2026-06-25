@@ -1,9 +1,12 @@
 import "server-only";
 
-import { headers } from "next/headers";
-import { resolveVerticalFromHost } from "@/lib/verticals";
+import { cookies, headers } from "next/headers";
+import { LOCAL_VERTICAL_COOKIE_NAME, resolveVerticalFromHost } from "@/lib/verticals";
 
 export async function getCurrentVertical() {
-  const headerList = await headers();
-  return resolveVerticalFromHost(headerList.get("x-forwarded-host") ?? headerList.get("host"));
+  const [headerList, cookieStore] = await Promise.all([headers(), cookies()]);
+  return resolveVerticalFromHost(
+    headerList.get("x-forwarded-host") ?? headerList.get("host"),
+    cookieStore.get(LOCAL_VERTICAL_COOKIE_NAME)?.value,
+  );
 }

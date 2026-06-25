@@ -39,26 +39,31 @@ const sampleFiles = [
   "style-ref-watch-blue-editorial.webp",
   "style-ref-watch-clean-catalog.webp",
   "style-ref-watch-dark-leather.webp",
+  "style-ref-art-minimal-ring-white.webp",
+  "style-ref-dark-chain-velvet.webp",
+  "style-ref-plaster-pearl-earring.webp",
+  "style-ref-dark-luxury-watch.webp",
+  "style-ref-frosted-silver-ring.webp",
+  "style-ref-burgundy-necklace.webp",
+  "style-ref-minimal-pearl-earrings.webp",
+  "style-ref-sage-sunglasses.webp",
   "wood-ring.webp",
 ];
 
 const foodSampleFiles = [
-  "food-cafe-item.webp",
-  "food-dessert-chocolate.webp",
   "food-packaged.webp",
   "food-restaurant-plate.webp",
-  "food-dessert-strawberry.webp",
-  "food-dish-natural.webp",
-  "food-drink-social.webp",
-  "food-home-ugc.webp",
   "food-menu-catalog.webp",
-  "food-ref-dark-dessert-ceramic.webp",
-  "food-ref-iced-berry-drink.webp",
-  "food-ref-latte-pastry-cafe.webp",
-  "food-ref-pasta-editorial.webp",
-  "food-style-luxury.webp",
   "food-style-minimal.webp",
-  "food-style-social.webp",
+  "food-ref-minimal-matcha-white.webp",
+  "food-ref-dark-chocolate-dessert.webp",
+  "food-ref-art-stone-appetizer.webp",
+  "food-ref-fancy-amber-drink.webp",
+  "food-ref-minimal-pasta-catalog.webp",
+  "food-ref-dark-fine-dining.webp",
+  "food-ref-graphic-croissant.webp",
+  "food-ref-clean-takeaway-cup.webp",
+  "food-style-luxury.webp",
 ];
 
 const sampleMetadata: Record<string, { title: string; alt: string }> = {
@@ -170,6 +175,38 @@ const sampleMetadata: Record<string, { title: string; alt: string }> = {
     title: "ساعت چرمی تیره",
     alt: "نمونه عکس ساعت چرمی روی زمینه مشکی با انعکاس لوکس",
   },
+  "style-ref-art-minimal-ring-white": {
+    title: "مینیمال سفید",
+    alt: "نمونه عکس انگشتر طلایی تنها روی زمینه سفید نرم با فضای منفی زیاد",
+  },
+  "style-ref-dark-chain-velvet": {
+    title: "زنجیر روی مخمل تیره",
+    alt: "نمونه عکس زنجیر طلایی روی مخمل مشکی با نور ادیتوریال تیره",
+  },
+  "style-ref-plaster-pearl-earring": {
+    title: "گوشواره روی بلوک گچی",
+    alt: "نمونه عکس گوشواره مرواریدی روی بلوک گچی با سایه هندسی آرتیستیک",
+  },
+  "style-ref-dark-luxury-watch": {
+    title: "ساعت لوکس تیره",
+    alt: "نمونه عکس ساعت لوکس روی سنگ تیره با بازتاب کنترل‌شده",
+  },
+  "style-ref-frosted-silver-ring": {
+    title: "نقره روی شیشه مات",
+    alt: "نمونه عکس انگشتر نقره‌ای روی شیشه مات با حس آبی و سرد",
+  },
+  "style-ref-burgundy-necklace": {
+    title: "گردنبند روی ساتن زرشکی",
+    alt: "نمونه عکس گردنبند روی ساتن زرشکی با حال‌وهوای ادیتوریال فَنسی",
+  },
+  "style-ref-minimal-pearl-earrings": {
+    title: "مروارید مینیمال",
+    alt: "نمونه عکس گوشواره مرواریدی روی سنگ روشن با ترکیب‌بندی ساده و آرام",
+  },
+  "style-ref-sage-sunglasses": {
+    title: "اکسسوری سبز گرافیکی",
+    alt: "نمونه عکس عینک طلایی روی زمینه سبز ملایم با سایه گرافیکی تمیز",
+  },
   "wood-ring": {
     title: "انگشتر و چوب",
     alt: "نمونه عکس انگشتر با بافت چوبی",
@@ -213,21 +250,37 @@ const foodSampleMetadata: Record<string, { title: string; alt: string }> = {
     title: "منوی کاتالوگی",
     alt: "نمونه عکس غذا برای منوی آنلاین با کادر ساده و خوانا",
   },
-  "food-ref-dark-dessert-ceramic": {
-    title: "دسر روی سرامیک تیره",
-    alt: "نمونه عکس دسر حرفه‌ای روی ظرف سرامیکی تیره با نور کنترل‌شده",
+  "food-ref-minimal-matcha-white": {
+    title: "نوشیدنی مینیمال سفید",
+    alt: "نمونه عکس نوشیدنی سبز روی زمینه سفید خلوت با فضای منفی زیاد",
   },
-  "food-ref-iced-berry-drink": {
-    title: "نوشیدنی یخی بری",
-    alt: "نمونه عکس نوشیدنی یخی رنگی با لیوان شفاف و حس کافه‌ای حرفه‌ای",
+  "food-ref-dark-chocolate-dessert": {
+    title: "دسر تیره ادیتوریال",
+    alt: "نمونه عکس دسر شکلاتی روی بشقاب مشکی با نورپردازی تیره و حرفه‌ای",
   },
-  "food-ref-latte-pastry-cafe": {
-    title: "لاته و شیرینی کافه",
-    alt: "نمونه عکس لاته و شیرینی با نور پنجره و چیدمان پینترستی",
+  "food-ref-art-stone-appetizer": {
+    title: "بشقاب آرتیستیک سنگی",
+    alt: "نمونه عکس پیش‌غذا روی بشقاب سنگی با سایه هندسی و ترکیب‌بندی هنری",
   },
-  "food-ref-pasta-editorial": {
-    title: "پاستای ادیتوریال",
-    alt: "نمونه عکس غذای رستورانی با سس براق، چیدمان حرفه‌ای و بک‌گراند مینیمال",
+  "food-ref-fancy-amber-drink": {
+    title: "نوشیدنی فَنسی تیره",
+    alt: "نمونه عکس نوشیدنی کهربایی روی سطح بازتابی با حال‌وهوای بار لوکس",
+  },
+  "food-ref-minimal-pasta-catalog": {
+    title: "پاستای مینیمال",
+    alt: "نمونه عکس پاستا روی بشقاب سفید با پس‌زمینه ساده و کاتالوگی",
+  },
+  "food-ref-dark-fine-dining": {
+    title: "فاین‌داینینگ تیره",
+    alt: "نمونه عکس بشقاب رستورانی لوکس روی زمینه تیره با چیدمان خلوت",
+  },
+  "food-ref-graphic-croissant": {
+    title: "شیرینی گرافیکی",
+    alt: "نمونه عکس کروسان روی کاغذ رنگی با سایه سخت و جهت هنری مدرن",
+  },
+  "food-ref-clean-takeaway-cup": {
+    title: "لیوان بیرون‌بر تمیز",
+    alt: "نمونه عکس لیوان نوشیدنی بیرون‌بر روی سطح خنثی با زاویه کاتالوگی",
   },
   "food-style-luxury": {
     title: "لوکس رستورانی",

@@ -35,7 +35,12 @@ Multi-vertical expansion is tracked in `docs/multi-vertical-roadmap.md` on `code
 - Food is active through `food.ovala.ir` and local `npm run dev:food`.
 - Jewelry remains the default host/local behavior and can be forced locally with `npm run dev:jewelry`.
 - Food now uses restaurant/cafe product types, six visible launch styles, a Food-specific sample-photo style (`food_style_sample_reference`), and Food-aware sample-reference prompt/routing paths.
-- Food ready style references now include a broader Pinterest-like set across cafe drinks, desserts, clean menu catalog shots, social compositions, and restaurant plating.
+- Food ready style references now include a more varied set across minimal catalog, dark editorial, art photography, fancy drinks, graphic bakery, packaging, and restaurant plating.
+- Food style coverage now folds editorial/art photography, fancy drink/dessert, dark premium, and packaging directions into the six-style catalog so ready samples map to generation capabilities without adding extra top-level choices.
+- Food visible style cards now use six distinct generated preview images, with a selective Iranian catalog cue and clearer separation between catalog, serving vessel, sample-reference, social, natural cafe/restaurant, and premium/editorial directions.
+- Food menu/catalog plain-white handling now treats the default white surface as an empty seamless catalog background, not a light stone/tabletop surface, so marketplace-style outputs can stay truly white except for natural contact shadow.
+- Food UI uses a limited orange `--accent-base` in place of the jewelry gold accent; derived accent shades, focus rings, Food-specific orange action gradients, selected states, and the borderless center navigation action inherit from the shared accent system while the shared Ovala layout, surfaces, typography, and component system stay unchanged.
+- Local vertical preview can be switched with a localhost-only `?vertical=food` / `?vertical=jewelry` cookie override, so Food accent and vertical-scoped UI can be checked without changing `.env` or restarting the dev server.
 - Style-reference entry points use a saved/bookmark-style icon treatment; save-to-samples menu actions use the matching archive-add icon.
 
 ## Next Priorities

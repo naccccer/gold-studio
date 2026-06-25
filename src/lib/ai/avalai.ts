@@ -444,7 +444,7 @@ function buildImageContent({
       type: "text",
       text:
         vertical === "food"
-          ? "Sample scene reference. This image is scene and composition only, not item identity. Keep its non-item scene recognizable, including table, plate, cup, glassware, wrapper, surface, props, lighting, shadows, reflections, camera angle, lens feel, crop, and freshness cues when present. Replace only the sample food, drink, plate, cup, package, or menu item with the uploaded item identity from the primary item reference. Do not copy or retain the sample item identity."
+          ? "Sample scene reference. This image is scene and composition only, not item identity. Keep its non-item scene recognizable, including table, plate, cup, glassware, wrapper, surface, props, lighting, shadows, reflections, camera angle, lens feel, crop, and freshness cues when present. Replace the sample food, drink, plate, cup, package, or menu item with the core item identity from the primary item reference, allowing controlled advertising polish without changing the menu item, flavor, brand, or SKU. Do not copy or retain the sample item identity."
           : "Sample scene reference. This image is scene and composition only, not product identity. Keep its non-product scene recognizable, including hand, wrist, fingers, skin, water, surface, props, lighting, shadows, reflections, camera angle, lens feel, crop, and pose when present. Replace only the sample product/jewelry/accessory with the uploaded product identity from the primary product reference. Do not copy or retain the sample product identity.",
     });
     content.push({ type: "image_url", image_url: { url: toDataUrl(referenceBuffer, referenceMimeType || "image/jpeg") } });

@@ -15,18 +15,19 @@
   --border: #dcd1bf;
   --border-strong: #bfa98a;
   --border-soft: #ffffff;
-  --accent: #b28b52;
-  --accent-bright: #c7a96b;
-  --accent-hover: #a87f47;
-  --accent-deep: #8b6835;
-  --accent-soft: #ecdec8;
-  --accent-wash: #efe2cd;
+  --accent-base: #b28b52;
+  --accent: var(--accent-base);
+  --accent-bright: color-mix(in srgb, var(--accent-base) 74%, #ffd98f);
+  --accent-hover: color-mix(in srgb, var(--accent-base) 88%, #171411);
+  --accent-deep: color-mix(in srgb, var(--accent-base) 70%, #171411);
+  --accent-soft: color-mix(in srgb, var(--accent-base) 25%, #fff6e8);
+  --accent-wash: color-mix(in srgb, var(--accent-base) 18%, #fff8ef);
   --accent-foreground: #2b2117;
   --danger: #983b34;
   --danger-bright: #d92d20;
   --danger-hover: #b42318;
   --danger-soft: #f4dfdc;
-  --focus: #b28b52;
+  --focus: var(--accent-base);
   --studio-background: #0d0c0a;
   --studio-surface: #11100e;
   --studio-surface-raised: #1a1713;
@@ -34,6 +35,9 @@
   --studio-border: #3a352e;
   --studio-text: #fffdf9;
   --studio-text-muted: #d8d1c5;
+  --accent-gradient-start: color-mix(in srgb, var(--accent-base) 24%, #fff0bd);
+  --accent-gradient-mid: color-mix(in srgb, var(--accent-base) 78%, #f1bd68);
+  --accent-gradient-end: color-mix(in srgb, var(--accent-base) 74%, #171411);
   --gold-gradient-start: #f8df9f;
   --gold-gradient-mid: #d8a552;
   --gold-gradient-end: #9a672a;
@@ -50,9 +54,10 @@
   --shadow-image: 0 28px 58px -46px rgba(17, 16, 14, 0.7);
   --shadow-image-strong: 0 28px 58px -46px rgba(17, 16, 14, 0.82);
   --shadow-menu: 0 24px 60px -34px rgba(17, 16, 14, 0.82);
-  --shadow-gold-action: 0 18px 38px -24px rgba(216, 165, 82, 0.9);
+  --shadow-accent-action: 0 18px 38px -24px color-mix(in srgb, var(--accent-base) 82%, transparent);
+  --shadow-gold-action: var(--shadow-accent-action);
   --shadow-studio-frame: 0 38px 100px -64px rgba(0, 0, 0, 1);
-  --shadow-focus: 0 0 0 3px rgba(178, 139, 82, 0.2);
+  --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--accent-base) 22%, transparent);
   --motion-duration-micro: 170ms;
   --motion-duration-standard: 260ms;
   --motion-duration-reveal: 460ms;
@@ -60,6 +65,19 @@
   --motion-ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
   --motion-ease-interactive: cubic-bezier(0.2, 0, 0, 1);
   --motion-ease-state: cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+[data-vertical="food"] {
+  --accent-base: #d97836;
+  --accent-bright: color-mix(in srgb, var(--accent-base) 78%, #ffd7ad);
+  --accent-hover: color-mix(in srgb, var(--accent-base) 86%, #1b0c05);
+  --accent-deep: color-mix(in srgb, var(--accent-base) 74%, #1b0c05);
+  --accent-soft: color-mix(in srgb, var(--accent-base) 28%, #fff0e5);
+  --accent-wash: color-mix(in srgb, var(--accent-base) 22%, #fff3ea);
+  --accent-foreground: #2c170d;
+  --accent-gradient-start: #f3bd7d;
+  --accent-gradient-mid: #de8845;
+  --accent-gradient-end: #b85f25;
 }
 
 @theme inline {

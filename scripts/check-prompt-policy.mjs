@@ -68,7 +68,12 @@ assert.match(promptArchitectureSource, /decorative front-facing clasp or front c
 
 assert.match(promptArchitectureSource, /Ovala Food vertical rules/i, "Food prompts should have a dedicated vertical rule block");
 assert.match(promptArchitectureSource, /Preserve appetite appeal/i, "Food prompts should optimize for appetite appeal");
-assert.match(promptArchitectureSource, /plating, packaging, label placement, garnish, sauce pattern/i, "Food prompts should preserve plating, packaging, labels, garnish, and sauces");
+assert.match(promptArchitectureSource, /Food is allowed more advertising freedom than jewelry/i, "Food prompts should allow controlled advertising freedom");
+assert.match(promptArchitectureSource, /controlled advertising improvements/i, "Food prompts should support controlled commercial polish");
+assert.match(promptArchitectureSource, /core menu\/product identity/i, "Food prompts should preserve core identity instead of jewelry-like exact geometry");
+assert.match(promptArchitectureSource, /package shape, label placement, portion logic, key ingredients/i, "Food prompts should preserve package labels, portion logic, and key ingredients");
+assert.match(promptArchitectureSource, /Plain white catalog override/i, "Food catalog prompts should protect true empty white backgrounds");
+assert.match(promptArchitectureSource, /no tabletop, stone, ceramic, marble, wood, fabric, paper grain/i, "Food catalog prompts should forbid material textures on plain white backgrounds");
 assert.match(promptArchitectureSource, /Do not turn the item into a different dish, drink, dessert, package, flavor, brand, serving size, or cuisine/i, "Food prompts should forbid identity drift");
 assert.match(promptArchitectureSource, /Packaged food or drink refinement/i, "Food prompts should include packaged item refinements");
 assert.match(promptArchitectureSource, /Drink refinement/i, "Food prompts should include drink refinements");

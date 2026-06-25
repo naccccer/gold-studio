@@ -646,7 +646,7 @@ export function GalleryCropScreen({ uploadId, onClose, progressLabel }: GalleryC
                   step={0.01}
                   value={zoom}
                   onChange={(event) => setZoom(Number(event.target.value))}
-                  className="w-full accent-[#c89f61]"
+                  className="w-full accent-accent"
                 />
                 <p className="hidden">
                   تصویر را جابه‌جا کنید تا محصول داخل قاب دقیق قرار بگیرد. بعد از تایید، همین نسخه در گالری ذخیره می‌شود.

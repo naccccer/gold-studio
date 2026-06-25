@@ -63,16 +63,17 @@ export function buildSampleReferencePromptContext(
   const promptParts =
     vertical === "food"
       ? [
-          "Strict sample-scene food item replacement mode:",
+          "Sample-scene food item replacement mode with controlled advertising polish:",
           `Use image ${sampleImageNumber} as the target scene and composition. Keep its non-item scene recognizable: table, plate, cup, glassware, wrapper, surface, props, lighting, camera angle, perspective, reflections, color palette, mood, freshness cues, and framing when present.`,
-          `Replace only the food, drink, plate, cup, package, or menu-item subject in image ${sampleImageNumber} with the user's item from ${productImageLabel}.`,
-          `Use ${productImageLabel} as the only item identity source. The uploaded item is locked: preserve its dish or drink type, portion shape, plating, packaging, label placement, garnish, sauce pattern, ingredient layout, texture, color, serving vessel, visible freshness cues, and all visible details.`,
-          `Do not morph, redesign, restyle, recolor, simplify, change cuisine, change flavor, change brand, change serving size, replace, or reinterpret the user's item to fit image ${sampleImageNumber}.`,
-          `Place the exact item believably into image ${sampleImageNumber}: match perspective, scale, contact shadows, occlusion, reflections, lighting direction, depth of field, condensation, steam only when physically plausible, and plate/table interaction when present.`,
+          `Replace the food, drink, plate, cup, package, or menu-item subject in image ${sampleImageNumber} with the user's item from ${productImageLabel}.`,
+          `Use ${productImageLabel} as the core item identity source. Preserve recognizability: dish or drink type, cuisine/flavor family when visible, package shape, label placement, portion logic, key ingredients, texture family, color family, serving vessel, and freshness cues.`,
+          "Food may be improved for advertising: cleaner plating, tidier garnish, clearer sauce/cream/glaze, stronger appetizing highlights, realistic condensation or steam only when plausible, cleaner plate/cup/package presentation, and more intentional surface styling.",
+          `Do not change cuisine, change flavor, change brand, change SKU, replace, or reinterpret the user's item into a different menu item to fit image ${sampleImageNumber}.`,
+          `Place the item believably into image ${sampleImageNumber}: match perspective, scale, contact shadows, occlusion, reflections, lighting direction, depth of field, condensation, steam only when physically plausible, and plate/table interaction when present.`,
           "Do not invent new label text, fake logos, extra dishes, extra cups, unrelated ingredients, people, hands, messy leftovers, or unsafe-looking food.",
           `Do not copy or retain the sample item identity from image ${sampleImageNumber}; only the sample scene around the item should remain.`,
-          `If there is conflict between preserving item identity from ${productImageLabel} and matching the sample item pose, preserve item identity and adapt the placement naturally within the sample scene.`,
-          "The result should look like the sample photo scene with the original sample item swapped for the user's exact uploaded food, drink, or packaged product.",
+          `If there is conflict between preserving item recognizability from ${productImageLabel} and matching the sample item pose, preserve the user's menu/product identity and adapt the placement naturally within the sample scene.`,
+          "The result should look like the sample photo scene with the original sample item swapped for a polished advertising version of the user's food, drink, or packaged product.",
         ]
       : [
           "Strict sample-scene product replacement mode:",

@@ -27,12 +27,13 @@ export const JEWELRY_SAMPLE_REFERENCE_BASE_PROMPT = [
 
 const FOOD_SAMPLE_REFERENCE_BASE_PROMPT = [
   "Act as a senior food and drink retoucher doing scene-preserving product replacement.",
-  "The uploaded food, drink, dessert, cafe item, restaurant plate, or packaged product image or images are the only locked item identity source.",
+  "The uploaded food, drink, dessert, cafe item, restaurant plate, or packaged product image or images define the core menu/product identity, not an exact jewelry-like geometry lock.",
   "Use the selected sample image as the target scene, composition, camera angle, lighting, mood, background, surface, props, table setting, freshness cues, and non-item context only; it is not an identity reference.",
-  "Replace only the sample food, drink, plate, cup, package, or menu item in the sample scene with the user's uploaded item, as if the original sample item was removed and the uploaded item was realistically placed there.",
+  "Recognize and preserve the sample's photographic language when present: minimal white negative space, dark editorial contrast, art-photography geometry, hard graphic shadows, fine-dining restraint, fancy drink reflections, clean packaging angles, or simple catalog presentation.",
+  "Replace the sample food, drink, plate, cup, package, or menu item in the sample scene with the uploaded item, allowing controlled advertising improvements to neatness, freshness, plating polish, garnish tidiness, sauce/cream/glaze clarity, condensation, plate/cup/package cleanliness, and surface styling.",
   "Keep the sample scene recognizable, including plate/table context, surface, props, glassware, napkins, condensation, steam only when believable, shadows, reflections, crop, lens feel, and appetite appeal when they are part of the sample composition.",
-  "The user's uploaded item is locked: preserve its exact dish or drink type, portion shape, plating, packaging, label placement, garnish, sauce pattern, ingredient layout, texture, color, serving vessel, and visible freshness cues.",
-  "Do not copy, mix in, or retain the sample item identity. Do not redesign, simplify, restyle, recolor, change cuisine, change flavor, change brand, unnaturally resize the serving, or invent a different food or drink.",
+  "Preserve the uploaded item's core identity and recognizability: dish or drink type, cuisine/flavor family when visible, package shape, label placement, portion logic, key ingredients, texture family, serving vessel, and freshness cues.",
+  "Do not copy, mix in, or retain the sample item identity. Do not change cuisine, flavor, brand, SKU, or turn the item into a different food, drink, dessert, package, or drastically different serving size.",
 ].join(" ");
 
 const JEWELRY_GENERATION_PROMPT_SUFFIX = [
@@ -47,7 +48,9 @@ const JEWELRY_GENERATION_PROMPT_SUFFIX = [
 
 const FOOD_GENERATION_PROMPT_SUFFIX = [
   "Return one final premium food or drink product image based on the input item photo.",
-  "The input item is the strict identity reference. Preserve the exact dish, drink, dessert, cafe item, restaurant plate, or packaged item identity: portion shape, plating, packaging, label placement, garnish, sauce pattern, ingredient layout, texture, color, serving vessel, and visible freshness cues.",
+  "The input item defines the core menu/product identity, but Food may receive controlled advertising improvements. Preserve the dish, drink, dessert, cafe item, restaurant plate, or packaged item recognizability: item category, cuisine/flavor family when visible, package shape, label placement, portion logic, key ingredients, texture family, color family, serving vessel, and freshness cues.",
+  "Plain white catalog override: if the selected style/control asks for a white, bright simple, or seamless clean background, keep the background empty, smooth, and texture-free with no tabletop, stone, ceramic, marble, wood, fabric, paper grain, props, stains, patterns, or wall/floor horizon. Use only a subtle realistic contact shadow.",
+  "You may improve commercial appeal through cleaner plating, tidier garnish, more appetizing highlights, better sauce/cream/glaze definition, realistic condensation or steam only when plausible, cleaner plate/cup/package presentation, and more intentional surface styling.",
   "Do not turn the item into a different dish, drink, dessert, package, flavor, brand, serving size, cuisine, or menu item.",
   "Do not invent logos, fake brand text, unrelated labels, extra dishes, extra cups, people, hands, bitten leftovers, messy spills, or unsafe-looking food.",
   "Do not default every output to an extreme macro close-up. Prefer appetizing commercial framing with clean negative space and readable item detail, while allowing closer detail framing when it clearly benefits the selected style.",
@@ -67,9 +70,10 @@ const JEWELRY_REFERENCE_SCENE_PROMPT_SUFFIX = [
 
 const FOOD_REFERENCE_SCENE_PROMPT_SUFFIX = [
   "Return one final premium food or drink product image using the provided image order and labels.",
-  "The primary item identity reference and any supporting item angles are the only food, drink, package, label, plating, and ingredient identity sources.",
+  "The primary item reference and any supporting item angles define the core food, drink, package, label, plating, and ingredient identity, with controlled advertising freedom for polish and appetite appeal.",
   "The sample scene reference is scene and composition only, not item identity. Replace only the sample food, drink, plate, cup, package, or menu item with the uploaded item.",
-  "Preserve the exact uploaded item identity: dish or drink type, portion shape, plating, package shape, label placement, visible brand marks without inventing new text, garnish, sauce pattern, ingredient layout, texture, color, serving vessel, and freshness cues.",
+  "Preserve the uploaded item recognizability: dish or drink type, cuisine/flavor family when visible, portion logic, package shape, label placement, visible brand marks without inventing new text, key ingredients, texture family, color family, serving vessel, and freshness cues.",
+  "Allow commercial improvements to plating neatness, garnish tidiness, sauce/cream/glaze clarity, freshness, condensation, plate/cup/package cleanliness, and surface styling when they keep the same menu item.",
   "Do not copy, mix in, retain, or reinterpret the sample item identity.",
   "Integrate the uploaded item realistically into the sample scene with believable perspective, scale, contact shadows, occlusion, reflections, lighting, depth of field, condensation, steam only when physically plausible, and plate/table interaction when present.",
   "Avoid AI-looking gloss, CGI, plastic food, over-saturation, fake steam overload, melted or mushy textures, distorted packaging, unreadable fake labels, surreal lighting, and impossible plating.",
@@ -98,13 +102,31 @@ export function buildVerticalFoundationPrompt(vertical: VerticalId, context: Sty
     "Ovala Food vertical rules:",
     `Treat the uploaded subject as a commercial food and drink item. User-confirmed item type: "${productType}".`,
     "Preserve appetite appeal while keeping the item honest, edible, and physically plausible.",
-    "The input image remains the source of truth for dish/drink/package identity, ingredients, plating, package shape, label placement, and serving size.",
-    "Clean up lighting, background, surface styling, and presentation only where it improves commercial photography without changing the menu item.",
+    "The input image remains the source of truth for core dish/drink/package identity, key ingredients, package shape, label placement, serving vessel, and portion logic.",
+    "Food is allowed more advertising freedom than jewelry: improve freshness, neatness, plating polish, garnish tidiness, sauce/cream/glaze clarity, condensation, and surface styling when it makes the same menu item more sellable and does not conflict with the selected background control.",
+    "Do not change the item into a different cuisine, flavor, brand, SKU, menu item, or drastically different serving size.",
   ].join("\n");
 }
 
 export function buildStyleCompositionPrompt(vertical: VerticalId, styleId: string) {
   if (vertical === "food") {
+    if (styleId === "food_style_menu_catalog") {
+      return [
+        "Food menu/catalog composition: prioritize practical catalog readability over editorial styling.",
+        "If the selected surface/background is white, bright simple, or seamless, create a plain empty white catalog image: no stone, ceramic, marble, wood, fabric, paper grain, visible tabletop, wall/floor horizon, props, stains, patterns, or decorative surface texture.",
+        "The food, drink, cup, plate, package, or wrapper may cast a soft natural contact shadow, but the background itself must remain blank and clean.",
+      ].join("\n");
+    }
+
+    if (styleId === "food_style_luxury") {
+      return [
+        "Food premium/editorial composition: treat the image like refined commercial food photography rather than a basic menu packshot.",
+        "Depending on controls and item type, the style may lean dark editorial, minimal art photography, graphic shadow, fine dining, fancy drink/dessert, or premium packaging.",
+        "Use deliberate negative space, controlled shadows, sculptural or polished surfaces, elegant reflections, quiet props only when useful, and premium contrast that keeps the item appetizing and physically believable.",
+        "The food, drink, dessert, or package must remain recognizable as the same menu/product item; do not let art direction hide the serving vessel, label area, key ingredients, or texture family.",
+      ].join("\n");
+    }
+
     if (styleId !== "food_style_instagram_social") {
       return "";
     }
@@ -141,7 +163,7 @@ export function buildCompositionPrompt(vertical: VerticalId, context: StylePromp
       "Food composition: keep the item clearly readable, appetizing, and commercially useful.",
       "Show enough of the plate, glass, package, wrapper, label area, or serving vessel to understand the item identity and scale.",
       "For normal menu/catalog outputs, avoid extreme macro-only crops and avoid hiding important edges, labels, garnish, layers, or ingredient structure.",
-      "Use clean negative space and supporting surface context when it improves menu, delivery app, social, or website usability.",
+      "Use clean negative space. Add supporting surface context only when it improves menu, delivery app, social, or website usability and does not conflict with a selected plain white or seamless background.",
     ].join("\n");
   }
 
@@ -169,7 +191,8 @@ export function buildFineDetailPrompt(vertical: VerticalId, context: StylePrompt
   if (vertical === "food") {
     return [
       buildFoodProductTypePrompt(productType),
-      "Fine detail priority: preserve the exact food or drink identity, plating, portion shape, packaging, label placement, garnish, sauce pattern, texture, color, and visible freshness cues.",
+      "Fine detail priority: preserve the recognizable food or drink identity, packaging and label placement, serving vessel, key ingredients, texture family, color family, and visible freshness cues.",
+      "Controlled advertising polish is allowed: cleaner plating, tidier garnish, stronger appetizing highlights, clearer sauce/cream/glaze, realistic condensation, and neater package or cup presentation.",
       "Do not turn the item into a different dish, drink, dessert, package, flavor, brand, serving size, or cuisine. Keep ingredient details crisp and appetizing without making the result look synthetic.",
     ].join("\n");
   }
@@ -248,7 +271,7 @@ export function buildFinalHumanWearableCorrectionPrompt(vertical: VerticalId, co
 
 export function buildVisionContextTruthSourcePrompt(vertical: VerticalId) {
   if (vertical === "food") {
-    return "Use this only as supporting context. The input image remains the source of truth for food/drink/package identity, portion, plating, packaging, label placement, ingredients, color, texture, and all visible details.";
+    return "Use this only as supporting context. The input image remains the source of truth for core food/drink/package identity, portion logic, packaging, label placement, key ingredients, color family, texture family, and serving vessel; controlled advertising polish is allowed when it keeps the same menu/product item.";
   }
 
   return "Use this only as supporting context. The input image remains the source of truth for product identity, materials, color, stones, shape, engravings, and all visible details.";

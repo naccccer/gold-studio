@@ -1,8 +1,24 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { sessionCookieName } from "@/lib/auth/session-cookie";
+import { isLocalDevelopmentHost, LOCAL_VERTICAL_COOKIE_NAME, normalizeUserVisibleVerticalId } from "@/lib/verticals";
 
 const COOKIE_NAME = sessionCookieName();
+
+function applyLocalVerticalOverride(request: NextRequest, response: NextResponse) {
+  const requestedVertical = request.nextUrl.searchParams.get("vertical");
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  if (!requestedVertical || !isLocalDevelopmentHost(host)) {
+    return response;
+  }
+
+  response.cookies.set(LOCAL_VERTICAL_COOKIE_NAME, normalizeUserVisibleVerticalId(requestedVertical), {
+    path: "/",
+    sameSite: "lax",
+  });
+
+  return response;
+}
 
 export function middleware(request: NextRequest) {
   const hasSession = Boolean(request.cookies.get(COOKIE_NAME)?.value);
@@ -21,10 +37,16 @@ export function middleware(request: NextRequest) {
 
   if (needsAuth && !hasSession) {
     const loginUrl = new URL("/login", request.url);
-    return NextResponse.redirect(loginUrl);
+    return applyLocalVerticalOverride(request, NextResponse.redirect(loginUrl));
   }
 
-  return NextResponse.next();
+  if (request.nextUrl.searchParams.has("vertical")) {
+    const cleanUrl = request.nextUrl.clone();
+    cleanUrl.searchParams.delete("vertical");
+    return applyLocalVerticalOverride(request, NextResponse.redirect(cleanUrl));
+  }
+
+  return applyLocalVerticalOverride(request, NextResponse.next());
 }
 
 export const config = {

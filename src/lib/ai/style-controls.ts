@@ -79,25 +79,25 @@ const controlInstructions: Record<string, Record<string, string>> = {
     front: "Food menu angle: use a front or slight three-quarter product angle for cups, bottles, packages, tall desserts, sandwiches, or layered items where height matters.",
   },
   foodMenuSurface: {
-    white: "Food menu and clean-background surface: use a clean soft-white or very light neutral background for consistent delivery-app catalog thumbnails.",
+    white: "Food menu/catalog plain white background: use a pure white or clean soft-white empty seamless background for marketplace and delivery-app catalog thumbnails. No visible tabletop, stone, ceramic, marble, wood, fabric, paper grain, wall/floor horizon, props, patterns, stains, texture, or material surface. Use only a subtle realistic contact shadow directly under the item.",
     stone: "Food menu and clean-background surface: use a light matte stone or ceramic surface with subtle texture, keeping the item crisp and menu-ready.",
     wood: "Food menu and clean-background surface: use a clean pale wood or warm restaurant tabletop surface, restrained and not rustic clutter.",
     dark: "Food menu and clean-background surface: use a refined dark matte surface only when it improves contrast; keep food color and edges readable.",
   },
   foodBackgroundSurface: {
-    seamless: "Food clean background surface: use a seamless smooth studio background with no props, horizon line, folds, stains, or visual clutter.",
+    seamless: "Food clean background surface: use a seamless smooth empty studio background with no props, horizon line, tabletop texture, material grain, folds, stains, patterns, or visual clutter.",
     stone: "Food clean background surface: use a light matte stone or ceramic surface with subtle believable contact shadows.",
     wood: "Food clean background surface: use a clean pale wood surface suitable for cafe and restaurant menu imagery.",
     counter: "Food clean background surface: use a clean stainless, counter, or matte prep-surface feel without kitchen mess.",
   },
   foodBackgroundTone: {
-    white: "Food background tone: clean soft white for maximum menu readability.",
+    white: "Food background tone: pure white or clean soft white for maximum catalog readability; keep it empty and texture-free except for natural contact shadow.",
     lightGray: "Food background tone: very light neutral gray, clean and modern.",
     warm: "Food background tone: subtle warm off-white or pale natural surface; avoid beige-heavy or dull colors.",
     dark: "Food background tone: controlled dark neutral with readable edges and appetizing food color.",
   },
   foodSampleMatch: {
-    strict: "Food sample-photo matching: follow the selected sample scene closely for angle, crop, lighting, surface, and mood while replacing only the sample item with the uploaded item identity.",
+    strict: "Food sample-photo matching: follow the selected sample scene closely for angle, crop, lighting, surface, and mood while replacing the sample item with the uploaded item's core menu/product identity and controlled advertising polish.",
     balanced: "Food sample-photo matching: use the sample as a strong direction for lighting, surface, camera angle, and mood, but adapt crop and scale where needed to keep the uploaded item appetizing and readable.",
     flexible: "Food sample-photo matching: borrow the sample's general mood and surface language, but prioritize the uploaded item's best commercial presentation and menu readability.",
   },
@@ -124,6 +124,7 @@ const controlInstructions: Record<string, Record<string, string>> = {
     offer: "Food social mood: energetic sales-campaign composition suitable for discount, launch, or limited-time offer graphics, with clear empty space for copy.",
     premium: "Food social mood: more premium, editorial, and restrained, with refined light and richer but realistic contrast.",
     cozy: "Food social mood: warm cafe or restaurant feeling, natural and inviting without clutter or low-light dullness.",
+    darkGraphic: "Food social mood: darker or more graphic advertising composition with bold negative space, crisp shadows, and controlled contrast while keeping the item appetizing and readable.",
   },
   foodSceneContext: {
     cafeTable: "Food scene context: use a clean cafe table setting with restrained surface details, cup, napkin, saucer, or pastry context only when helpful.",
@@ -136,6 +137,12 @@ const controlInstructions: Record<string, Record<string, string>> = {
     threeQuarter: "Packaged item angle: use a premium three-quarter product angle showing package depth, cap, side folds, cup shape, bottle shape, or box structure.",
     top: "Packaged item angle: use a top-down layout for flat boxes, trays, wrappers, or grouped takeaway packaging when it improves catalog readability.",
     hero: "Packaged item angle: use a stronger hero product angle for Instagram and catalog use, with clean negative space and realistic reflections.",
+  },
+  foodPremiumDirection: {
+    darkEditorial: "Premium direction: dark editorial food photography with refined low-key lighting, controlled highlights, deep but readable shadows, and a premium restaurant or magazine feel.",
+    minimalArt: "Premium direction: minimal art-photography styling with white or pale negative space, sculptural placement, clean geometry, and very restrained props.",
+    fancyDrinkDessert: "Premium direction: fancy drink or dessert styling with elegant reflections, condensation, foam, glaze, layers, cream, garnish, and polished cafe mood only when the uploaded item supports it.",
+    premiumPackaging: "Premium direction: premium packaging presentation for boxes, wrappers, cups, bottles, cans, delivery containers, or branded products with clear shape, label area, and realistic reflections.",
   },
 };
 
@@ -232,6 +239,7 @@ function rangeInstruction(key: string, value: number) {
     foodPropLevel: `Food prop level: ${level}; use props only when they clarify restaurant/cafe context and never let them compete with the item.`,
     foodFreshness: `Freshness emphasis: ${level}; gently improve freshness, color, steam/condensation only when physically plausible, and texture without making the food look fake or over-processed.`,
     foodVesselFocus: `Serving vessel focus: ${level}; keep the food or drink as the hero while making the plate, bowl, cup, glass, wrapper, box, or container cleaner, more intentional, and commercially presentable.`,
+    foodPremiumPolish: `Premium advertising polish: ${level}; improve neatness, freshness, plating, garnish, sauce/cream/glaze clarity, condensation, reflections, and package/cup/plate cleanliness while keeping the same menu or product identity.`,
   };
 
   return map[key] ?? `${key}: ${level}.`;
