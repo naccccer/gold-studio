@@ -43,6 +43,18 @@ export const viewport: Viewport = {
   themeColor: "#14110d",
 };
 
+const verticalBootstrapScript = `
+(() => {
+  const host = window.location.hostname.toLowerCase();
+  const cookie = document.cookie.split("; ").find((item) => item.startsWith("ovala_local_vertical="));
+  const localVertical = cookie ? decodeURIComponent(cookie.split("=").slice(1).join("=")) : "";
+  const vertical = host === "food" || host.startsWith("food.") ? "food" : localVertical;
+  if (vertical === "food" || vertical === "jewelry") {
+    document.documentElement.dataset.vertical = vertical;
+  }
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -50,6 +62,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fa" dir="rtl" className={`${vazirmatn.variable} ${doran.variable} h-full`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: verticalBootstrapScript }} />
+      </head>
       <body className="min-h-screen bg-background text-foreground antialiased">{children}</body>
     </html>
   );

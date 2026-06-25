@@ -8,10 +8,12 @@ import {
   resolveModelRoutingDecision,
   type ProviderModelAttempt,
 } from "@/lib/ai/provider-settings";
+import { isSampleReferenceStyleId } from "@/lib/ai/style-policy";
 import { captureGenerationCreditReservation, logProviderEvent, releaseGenerationCreditReservation } from "@/lib/billing";
 import { db } from "@/lib/db";
 import { buildSampleReferenceVisionPromptContext, ensureStyleReferenceVision } from "@/lib/style-reference-vision";
 import { readStoredUpload, saveGeneratedImage } from "@/lib/uploads";
+import { DEFAULT_VERTICAL_ID, normalizeVerticalId, type VerticalId } from "@/lib/verticals";
 
 const DEFAULT_STALE_PROCESSING_MS = 90 * 60 * 1000;
 const DEFAULT_WORKER_LIMIT = 1;
@@ -129,6 +131,7 @@ async function generateImageWithModelFallback({
   stylePrompt,
   outputPreset,
   referenceUsed,
+  vertical,
 }: {
   projectId: string;
   styleId: string;
@@ -140,6 +143,7 @@ async function generateImageWithModelFallback({
   stylePrompt: string;
   outputPreset?: string | null;
   referenceUsed: boolean;
+  vertical: VerticalId;
 }): Promise<GeneratedImageResult> {
   const errors: Array<{ attempt: ProviderModelAttempt; error: unknown }> = [];
   const providerSettings = await getProviderSettings();
@@ -167,6 +171,7 @@ async function generateImageWithModelFallback({
         stylePrompt,
         outputPreset,
         model: attempt.model,
+        vertical,
       });
       await logProviderEvent({
         projectId,
@@ -208,11 +213,13 @@ async function generateTextImageWithModelFallback({
   prompt,
   stylePrompt,
   outputPreset,
+  vertical = DEFAULT_VERTICAL_ID,
 }: {
   projectId: string;
   prompt: string;
   stylePrompt: string;
   outputPreset: string;
+  vertical?: VerticalId;
 }): Promise<GeneratedImageResult> {
   const errors: Array<{ attempt: ProviderModelAttempt; error: unknown }> = [];
   const providerSettings = await getProviderSettings();
@@ -228,6 +235,7 @@ async function generateTextImageWithModelFallback({
         stylePrompt,
         outputPreset,
         model: attempt.model,
+        vertical,
       });
       await logProviderEvent({
         projectId,
@@ -407,7 +415,7 @@ async function enrichPromptWithReferenceVision(project: {
   prompt: string;
   referenceAssetId: string | null;
 }) {
-  if (project.styleId !== "style_sample_reference" || !project.referenceAssetId) {
+  if (!isSampleReferenceStyleId(project.styleId) || !project.referenceAssetId) {
     return project.prompt;
   }
 
@@ -466,7 +474,7 @@ export async function processImageProject(projectId: string) {
       throw new Error("تصویر ورودی پروژه پیدا نشد.");
     }
 
-    if (project.styleId === "style_sample_reference" && !project.referenceAsset) {
+    if (isSampleReferenceStyleId(project.styleId) && !project.referenceAsset) {
       throw new Error("برای سبک عکس نمونه، فایل نمونه پروژه پیدا نشد.");
     }
 
@@ -494,6 +502,7 @@ export async function processImageProject(projectId: string) {
       stylePrompt,
       outputPreset: project.outputPreset,
       referenceUsed: Boolean(project.referenceAsset),
+      vertical: normalizeVerticalId(project.vertical),
     });
     const result = await saveGeneratedImage(generatedImage.imageBuffer, generatedImage.mimeType);
 
@@ -538,10 +547,12 @@ export async function processTextProject({
   projectId,
   textPrompt,
   stylePrompt,
+  vertical = DEFAULT_VERTICAL_ID,
 }: {
   projectId: string;
   textPrompt: string;
   stylePrompt: string;
+  vertical?: VerticalId;
 }) {
   const claimed = await claimQueuedProject(projectId);
   if (!claimed) {
@@ -554,6 +565,7 @@ export async function processTextProject({
       prompt: textPrompt,
       stylePrompt,
       outputPreset: "post",
+      vertical,
     });
     const result = await saveGeneratedImage(generatedImage.imageBuffer, generatedImage.mimeType);
 

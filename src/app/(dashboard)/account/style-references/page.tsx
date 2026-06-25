@@ -1,5 +1,6 @@
 import { StyleReferenceGalleryScreen } from "@/features/style-references/screens/style-reference-gallery-screen";
 import { requireUserSession } from "@/lib/auth/session";
+import { getCurrentVertical } from "@/lib/current-vertical";
 import { db } from "@/lib/db";
 import { getReadyStyleReferenceSamples } from "@/lib/ready-style-reference-samples";
 import { storagePublicUrl } from "@/lib/storage";
@@ -12,10 +13,11 @@ export default async function StyleReferencesPage({
   searchParams?: Promise<{ error?: string }>;
 }) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const params = await searchParams;
   const [assets, readySamples] = await Promise.all([
     db.styleReferenceAsset.findMany({
-      where: { userId: session.userId, status: "READY", archivedAt: null },
+      where: { userId: session.userId, vertical, status: "READY", archivedAt: null },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -25,7 +27,7 @@ export default async function StyleReferencesPage({
         createdAt: true,
       },
     }),
-    getReadyStyleReferenceSamples(),
+    getReadyStyleReferenceSamples(vertical),
   ]);
 
   return (

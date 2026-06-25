@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { sampleReferenceStyleIdForVertical } from "@/lib/ai/style-policy";
 import { requireUserSession } from "@/lib/auth/session";
+import { getCurrentVertical } from "@/lib/current-vertical";
 import { db } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getReadyStyleReferenceSample } from "@/lib/ready-style-reference-samples";
@@ -12,6 +14,7 @@ import { saveStyleReferenceFile } from "@/lib/uploads";
 
 export async function uploadStyleReferenceAction(formData: FormData) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const limited = await checkRateLimit({
     scope: "style-reference:upload",
     identifier: session.userId,
@@ -32,6 +35,7 @@ export async function uploadStyleReferenceAction(formData: FormData) {
     await db.styleReferenceAsset.create({
       data: {
         userId: session.userId,
+        vertical,
         fileUrl: uploaded.publicUrl,
         storageKey: uploaded.storageKey,
         mimeType: uploaded.mimeType,
@@ -53,8 +57,9 @@ export async function uploadStyleReferenceAction(formData: FormData) {
 
 export async function createStyleReferenceFromSampleAction(formData: FormData) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const sampleId = String(formData.get("sampleId") ?? "").trim();
-  const sample = await getReadyStyleReferenceSample(sampleId);
+  const sample = await getReadyStyleReferenceSample(sampleId, vertical);
 
   if (!sample) {
     redirect("/account/style-references");
@@ -70,17 +75,18 @@ export async function createStyleReferenceFromSampleAction(formData: FormData) {
     redirect(`/account/style-references?error=${encodeURIComponent(limited.error)}`);
   }
 
-  const asset = await createOrFindStyleReferenceFromReadySample(session.userId, sample.id);
+  const asset = await createOrFindStyleReferenceFromReadySample(session.userId, sample.id, vertical);
 
   if ("error" in asset) {
     redirect(`/account/style-references?error=${encodeURIComponent(asset.error)}`);
   }
 
-  redirect(`/projects/new?styleId=style_sample_reference&referenceAssetId=${asset.id}`);
+  redirect(`/projects/new?styleId=${sampleReferenceStyleIdForVertical(vertical)}&referenceAssetId=${asset.id}`);
 }
 
 export async function renameStyleReferenceAction(formData: FormData) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const assetId = String(formData.get("assetId") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim();
 
@@ -89,7 +95,7 @@ export async function renameStyleReferenceAction(formData: FormData) {
   }
 
   await db.styleReferenceAsset.updateMany({
-    where: { id: assetId, userId: session.userId, status: "READY", archivedAt: null },
+    where: { id: assetId, userId: session.userId, vertical, status: "READY", archivedAt: null },
     data: { title },
   });
 
@@ -98,6 +104,7 @@ export async function renameStyleReferenceAction(formData: FormData) {
 
 export async function archiveStyleReferenceAction(formData: FormData) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const assetIds = formData.getAll("assetId").map(String).map((id) => id.trim()).filter(Boolean);
 
   if (assetIds.length === 0) {
@@ -105,7 +112,7 @@ export async function archiveStyleReferenceAction(formData: FormData) {
   }
 
   const assets = await db.styleReferenceAsset.findMany({
-    where: { id: { in: assetIds }, userId: session.userId, status: "READY", archivedAt: null },
+    where: { id: { in: assetIds }, userId: session.userId, vertical, status: "READY", archivedAt: null },
     select: {
       id: true,
       storageKey: true,
@@ -123,6 +130,7 @@ export async function archiveStyleReferenceAction(formData: FormData) {
       where: {
         id: { in: deletableAssets.map((asset) => asset.id) },
         userId: session.userId,
+        vertical,
         status: "READY",
         archivedAt: null,
       },
@@ -148,6 +156,7 @@ export async function archiveStyleReferenceAction(formData: FormData) {
       where: {
         id: { in: usedAssets.map((asset) => asset.id) },
         userId: session.userId,
+        vertical,
         status: "READY",
         archivedAt: null,
       },

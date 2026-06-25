@@ -3,7 +3,11 @@ type StylePolicyStyle = {
   controls?: Array<{ key: string }>;
 };
 
+export const JEWELRY_SAMPLE_REFERENCE_STYLE_ID = "style_sample_reference";
+export const FOOD_SAMPLE_REFERENCE_STYLE_ID = "food_style_sample_reference";
+
 const HUMAN_WEARABLE_STYLE_IDS = new Set(["style_with_model"]);
+const SAMPLE_REFERENCE_STYLE_IDS = new Set([JEWELRY_SAMPLE_REFERENCE_STYLE_ID, FOOD_SAMPLE_REFERENCE_STYLE_ID]);
 const HUMAN_WEARABLE_CONTROL_KEYS = new Set([
   "modelGender",
   "modelNationality",
@@ -12,6 +16,15 @@ const HUMAN_WEARABLE_CONTROL_KEYS = new Set([
   "fullHijab",
   "modesty",
 ]);
+
+export function isSampleReferenceStyleId(styleId?: string | null) {
+  const normalized = styleId?.trim() || "";
+  return SAMPLE_REFERENCE_STYLE_IDS.has(normalized);
+}
+
+export function sampleReferenceStyleIdForVertical(vertical?: string | null) {
+  return vertical === "food" ? FOOD_SAMPLE_REFERENCE_STYLE_ID : JEWELRY_SAMPLE_REFERENCE_STYLE_ID;
+}
 
 export function isHumanWearableStyle(style: StylePolicyStyle) {
   if (style.id && HUMAN_WEARABLE_STYLE_IDS.has(style.id)) {
@@ -22,7 +35,7 @@ export function isHumanWearableStyle(style: StylePolicyStyle) {
 }
 
 export function isProductOnlyStyle(style: StylePolicyStyle) {
-  if (style.id === "style_sample_reference") {
+  if (isSampleReferenceStyleId(style.id)) {
     return false;
   }
 

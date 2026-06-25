@@ -30,6 +30,7 @@ import {
 } from "@/features/admin/actions";
 import { db } from "@/lib/db";
 import { requireAdminSession } from "@/lib/auth/session";
+import { getVerticalLabel, normalizeVerticalId, USER_VISIBLE_VERTICAL_IDS, VERTICALS } from "@/lib/verticals";
 import { StylePreviewUploadField } from "./style-preview-upload-field";
 
 export const dynamic = "force-dynamic";
@@ -59,14 +60,16 @@ const tabs = [
 type TabKey = (typeof tabs)[number]["key"];
 
 type AdminStylesPageProps = {
-  searchParams?: Promise<{ style?: string; tab?: string; new?: string }>;
+  searchParams?: Promise<{ style?: string; tab?: string; new?: string; vertical?: string }>;
 };
 
 export default async function AdminStylesPage({ searchParams }: AdminStylesPageProps) {
   await requireAdminSession();
 
   const params = await searchParams;
+  const vertical = normalizeVerticalId(params?.vertical);
   const styles = await db.creativeStyle.findMany({
+    where: { vertical },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     include: {
       controls: { orderBy: { sortOrder: "asc" } },
@@ -87,7 +90,7 @@ export default async function AdminStylesPage({ searchParams }: AdminStylesPageP
         title="کاتالوگ سبک‌ها"
         meta={<span>{faNum(visibleCount)} از {faNum(styles.length)} فعال</span>}
         actions={
-          <Link href="/admin/styles?new=1" className={btnPrimary}>
+          <Link href={`/admin/styles?vertical=${vertical}&new=1`} className={btnPrimary}>
             <Add className="h-4 w-4" />
             سبک جدید
           </Link>
@@ -96,10 +99,18 @@ export default async function AdminStylesPage({ searchParams }: AdminStylesPageP
 
       <TabNav
         tabs={[
-          { href: "/admin/styles", label: "سبک‌ها", active: !showingStats },
-          { href: "/admin/styles?tab=stats", label: "آمار", active: showingStats },
+          { href: `/admin/styles?vertical=${vertical}`, label: "سبک‌ها", active: !showingStats },
+          { href: `/admin/styles?vertical=${vertical}&tab=stats`, label: "آمار", active: showingStats },
         ]}
       />
+
+      <div className="flex flex-wrap items-center gap-2">
+        {USER_VISIBLE_VERTICAL_IDS.map((item) => (
+          <Link key={item} href={`/admin/styles?vertical=${item}`} className={`${item === vertical ? btnPrimary : btnSecondary} h-8`}>
+            {VERTICALS[item].label}
+          </Link>
+        ))}
+      </div>
 
       {showingStats ? <StylesStatsPanel styles={styles} /> : null}
 
@@ -117,7 +128,7 @@ export default async function AdminStylesPage({ searchParams }: AdminStylesPageP
                 return (
                   <Link
                     key={style.id}
-                    href={`/admin/styles?style=${style.id}`}
+                    href={`/admin/styles?vertical=${vertical}&style=${style.id}`}
                     aria-current={isSelected ? "true" : undefined}
                     className={`flex items-center gap-3 px-3 py-2.5 transition ${isSelected ? "bg-navy-50" : "hover:bg-navy-25"}`}
                   >
@@ -133,6 +144,7 @@ export default async function AdminStylesPage({ searchParams }: AdminStylesPageP
                         label={isEffectivelyUserVisible(style) ? "قابل استفاده" : "پنهان"}
                         className="!text-[11px] !text-slate-500"
                       />
+                      <span className="block text-[11px] text-slate-400">{getVerticalLabel(style.vertical)}</span>
                     </span>
                   </Link>
                 );
@@ -142,7 +154,7 @@ export default async function AdminStylesPage({ searchParams }: AdminStylesPageP
         </Surface>
 
         {creating ? (
-          <CreateStylePanel nextSortOrder={styles.length * 10 + 10} />
+          <CreateStylePanel nextSortOrder={styles.length * 10 + 10} vertical={vertical} />
         ) : selected ? (
           <StyleDetail key={selected.id} style={selected} activeTab={activeTab} />
         ) : (
@@ -156,12 +168,12 @@ export default async function AdminStylesPage({ searchParams }: AdminStylesPageP
   );
 }
 
-function CreateStylePanel({ nextSortOrder }: { nextSortOrder: number }) {
+function CreateStylePanel({ nextSortOrder, vertical }: { nextSortOrder: number; vertical: string }) {
   return (
     <Surface>
       <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
         <h2 className="text-sm font-semibold text-navy-950">سبک جدید</h2>
-        <Link href="/admin/styles" className={btnSecondary}>
+        <Link href={`/admin/styles?vertical=${vertical}`} className={btnSecondary}>
           انصراف
         </Link>
       </div>
@@ -176,6 +188,15 @@ function CreateStylePanel({ nextSortOrder }: { nextSortOrder: number }) {
         </div>
         <Field label="توضیح UI">
           <input name="description" required className={fieldClass} />
+        </Field>
+        <Field label="Vertical">
+          <select name="vertical" defaultValue={vertical} className={fieldClass}>
+            {USER_VISIBLE_VERTICAL_IDS.map((item) => (
+              <option key={item} value={item}>
+                {VERTICALS[item].label}
+              </option>
+            ))}
+          </select>
         </Field>
         <Field label="پرامپت داخلی">
           <textarea name="prompt" required rows={5} dir="ltr" className={`${textareaClass} text-left font-mono text-xs leading-6`} />
@@ -223,11 +244,11 @@ function StylesStatsPanel({ styles }: { styles: StyleWithRelations[] }) {
         {styles.map((style) => (
           <tr key={style.id}>
             <td className={cellClass}>
-              <Link href={`/admin/styles?style=${style.id}`} className="font-medium hover:text-navy-700 hover:underline">
+              <Link href={`/admin/styles?vertical=${style.vertical}&style=${style.id}`} className="font-medium hover:text-navy-700 hover:underline">
                 {style.name}
               </Link>
               <p className="text-xs text-slate-400" dir="ltr">
-                {style.id}
+                {style.id} · {getVerticalLabel(style.vertical)}
               </p>
             </td>
             <td className={cellClass}>
@@ -261,13 +282,14 @@ function StyleDetail({ style, activeTab }: { style: StyleWithRelations; activeTa
             <h2 className="truncate text-base font-semibold text-navy-950">{style.name}</h2>
             <p className="mt-0.5 text-xs text-slate-500">
               <StatusDot status={visible ? "ACTIVE" : "PAUSED"} label={visible ? "فعال" : "پنهان"} />
+              <span className="mr-2 text-slate-400">{getVerticalLabel(style.vertical)}</span>
             </p>
           </div>
         </div>
         <div className="px-5">
           <TabNav
             tabs={tabs.map((tab) => ({
-              href: `/admin/styles?style=${style.id}&tab=${tab.key}`,
+              href: `/admin/styles?vertical=${style.vertical}&style=${style.id}&tab=${tab.key}`,
               label: tab.label,
               active: activeTab === tab.key,
               count: tab.key === "controls" ? style.controls.length : undefined,
@@ -298,6 +320,7 @@ function HiddenStyleFields({
   return (
     <>
       <input type="hidden" name="styleId" value={style.id} />
+      <input type="hidden" name="vertical" value={style.vertical} />
       {except.includes("name") ? null : <input type="hidden" name="name" value={style.name} />}
       {except.includes("description") ? null : <input type="hidden" name="description" value={style.description} />}
       {except.includes("prompt") ? null : <input type="hidden" name="prompt" value={style.prompt} />}

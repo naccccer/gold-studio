@@ -14,14 +14,16 @@ import {
   TabNav,
 } from "@/features/admin/components/console";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
+import { formatCreditUnits, getGenerationCreditUnitCost } from "@/lib/credit-units";
 import { db } from "@/lib/db";
 import { requireAdminSession } from "@/lib/auth/session";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
+import { getVerticalLabel, normalizeVerticalId, USER_VISIBLE_VERTICAL_IDS, VERTICALS } from "@/lib/verticals";
 
 export const dynamic = "force-dynamic";
 
 type AdminOutputsPageProps = {
-  searchParams?: Promise<{ q?: string; project?: string }>;
+  searchParams?: Promise<{ q?: string; project?: string; vertical?: string }>;
 };
 
 export default async function AdminOutputsPage({ searchParams }: AdminOutputsPageProps) {
@@ -29,10 +31,12 @@ export default async function AdminOutputsPage({ searchParams }: AdminOutputsPag
 
   const params = await searchParams;
   const q = params?.q?.trim();
+  const vertical = params?.vertical && params.vertical !== "ALL" ? normalizeVerticalId(params.vertical) : "ALL";
 
   const where: Prisma.ProjectWhereInput = {
     status: "COMPLETED",
     archivedAt: null,
+    ...(vertical === "ALL" ? {} : { vertical }),
     OR: [{ resultStorageKey: { not: null } }, { resultImageUrl: { not: null } }],
     ...(q
       ? {
@@ -41,6 +45,7 @@ export default async function AdminOutputsPage({ searchParams }: AdminOutputsPag
               OR: [
                 { id: { contains: q } },
                 { title: { contains: q } },
+                { vertical: { contains: q } },
                 { style: { name: { contains: q } } },
                 { user: { OR: [{ email: { contains: q } }, { phone: { contains: q } }, { name: { contains: q } }] } },
               ],
@@ -59,10 +64,16 @@ export default async function AdminOutputsPage({ searchParams }: AdminOutputsPag
         user: true,
         style: { select: { name: true } },
         sourceAsset: { select: { storageKey: true } },
+        creditReservations: { orderBy: { createdAt: "desc" }, take: 1, select: { creditUnits: true } },
       },
     }),
     db.project.count({
-      where: { status: "COMPLETED", archivedAt: null, OR: [{ resultStorageKey: { not: null } }, { resultImageUrl: { not: null } }] },
+      where: {
+        status: "COMPLETED",
+        archivedAt: null,
+        ...(vertical === "ALL" ? {} : { vertical }),
+        OR: [{ resultStorageKey: { not: null } }, { resultImageUrl: { not: null } }],
+      },
     }),
   ]);
 
@@ -79,6 +90,7 @@ export default async function AdminOutputsPage({ searchParams }: AdminOutputsPag
   const projectHref = (projectId: string) => {
     const query = new URLSearchParams();
     if (q) query.set("q", q);
+    if (vertical !== "ALL") query.set("vertical", vertical);
     query.set("project", projectId);
     return `/admin/assets/outputs?${query.toString()}`;
   };
@@ -92,14 +104,22 @@ export default async function AdminOutputsPage({ searchParams }: AdminOutputsPag
 
       <TabNav
         tabs={[
-          { href: "/admin/assets", label: "تصاویر منبع کاربران", active: false },
-          { href: "/admin/assets/references", label: "عکس‌های نمونه کاربران", active: false },
-          { href: "/admin/assets/samples", label: "نمونه‌های آماده", active: false },
+          { href: `/admin/assets${vertical === "ALL" ? "" : `?vertical=${vertical}`}`, label: "تصاویر منبع کاربران", active: false },
+          { href: `/admin/assets/references${vertical === "ALL" ? "" : `?vertical=${vertical}`}`, label: "عکس‌های نمونه کاربران", active: false },
+          { href: `/admin/assets/samples?vertical=${vertical === "food" ? "food" : "jewelry"}`, label: "نمونه‌های آماده", active: false },
           { href: "/admin/assets/outputs", label: "خروجی‌ها", active: true },
         ]}
       />
 
       <form className="flex items-center gap-2">
+        <select name="vertical" defaultValue={vertical} className={`${inlineFieldClass} w-36`}>
+          <option value="ALL">All verticals</option>
+          {USER_VISIBLE_VERTICAL_IDS.map((item) => (
+            <option key={item} value={item}>
+              {VERTICALS[item].label}
+            </option>
+          ))}
+        </select>
         <input name="q" defaultValue={q} placeholder="جست‌وجو" className={`${inlineFieldClass} w-64`} />
         <button className={`${btnSecondary} h-8`}>جست‌وجو</button>
       </form>
@@ -167,6 +187,13 @@ export default async function AdminOutputsPage({ searchParams }: AdminOutputsPag
                       ),
                     },
                     { label: "شناسه کاربر", value: getUserIdentifier(selected.project.user), dir: "ltr" },
+                    { label: "Vertical", value: getVerticalLabel(selected.project.vertical) },
+                    {
+                      label: "هزینه تولید",
+                      value: `${formatCreditUnits(
+                        selected.project.creditReservations[0]?.creditUnits ?? getGenerationCreditUnitCost(normalizeVerticalId(selected.project.vertical)),
+                      )} اعتبار`,
+                    },
                     { label: "سبک", value: selected.project.style.name },
                     { label: "قالب خروجی", value: selected.project.outputPreset, dir: "ltr" },
                     { label: "تکمیل", value: formatAdminFullDate(selected.project.updatedAt) },

@@ -8,8 +8,8 @@ export function ProviderSwitch({ selectedProvider }: { selectedProvider: ImagePr
       <p className="text-xs font-medium text-slate-600">Provider فعال</p>
       <div className="grid grid-cols-2 gap-1.5 rounded-lg border border-slate-200 bg-navy-25 p-1">
         {[
-          { value: "liara", label: "Liara", hint: "مسیر اصلی" },
-          { value: "avalai", label: "Avalai", hint: "تست 2K" },
+          { value: "avalai", label: "Avalai", hint: "مسیر اصلی" },
+          { value: "liara", label: "Liara", hint: "پشتیبان" },
         ].map((item) => (
           <label key={item.value} className="cursor-pointer">
             <input

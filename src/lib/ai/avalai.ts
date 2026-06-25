@@ -1,6 +1,8 @@
 import { getOutputPresetSpec } from "@/lib/output-presets";
 import { clampNon4KImageSetting } from "@/lib/ai/model-routing";
+import { buildGenerationPromptSuffix } from "@/lib/ai/vertical-prompt-rules";
 import type { GeneratedImageResult } from "@/lib/ai/provider";
+import { DEFAULT_VERTICAL_ID, type VerticalId } from "@/lib/verticals";
 
 const DEFAULT_AVALAI_BASE_URL = "https://api.avalai.ir/v1";
 const DEFAULT_AVALAI_IMAGE_MODEL = "gemini-3.1-flash-image";
@@ -23,25 +25,6 @@ const RETRYABLE_NETWORK_PATTERNS = [
   "fetch failed",
   "tls connection",
 ];
-const GENERATION_PROMPT_SUFFIX = [
-  "Return one final premium studio product image based on the input product photo.",
-  "The input product is the strict identity reference. Preserve the exact product shape, proportions, silhouette, metal color, gemstone count and placement, visible chain or front-facing clasp design when naturally visible, watch face, engravings, material finish, and all visible jewelry details.",
-  "Do not expose, invent, duplicate, or relocate hidden backs, rear clasps, closures, posts, undersides, or hardware just to show construction details.",
-  "Do not redesign, simplify, add, remove, replace, resize, recolor, or hallucinate product parts.",
-  "Do not default every output to a tight close-up. Prefer balanced studio framing with clean negative space around the product, while allowing closer detail framing when it clearly benefits the product or selected style.",
-  "Make the image look like a real high-end studio photograph with natural optics, believable lighting, realistic reflections, and true material texture.",
-  "Avoid AI-looking gloss, CGI, 3D render, plastic surfaces, over-smoothing, over-sharpening, artificial sparkle, surreal lighting, distorted geometry, and fake luxury effects.",
-].join("\n");
-const REFERENCE_SCENE_PROMPT_SUFFIX = [
-  "Return one final premium product image using the provided image order and labels.",
-  "The primary product identity reference and any supporting product angles are the only product identity sources.",
-  "The sample scene reference is scene and composition only, not product identity. Replace only the sample product/jewelry/accessory with the uploaded product.",
-  "Preserve the exact uploaded product shape, proportions, silhouette, metal color, gemstone count and placement, visible chain or front-facing clasp design when naturally visible, watch face, engravings, setting, material finish, visible defects, and all visible jewelry details.",
-  "Do not copy, mix in, retain, or reinterpret the sample product identity.",
-  "Integrate the uploaded product realistically into the sample scene with believable perspective, scale, contact shadows, occlusion, reflections, lighting, depth of field, hand/finger wrapping, water distortion, and physical placement when present.",
-  "Avoid AI-looking gloss, CGI, 3D render, plastic surfaces, over-smoothing, over-sharpening, artificial sparkle, surreal lighting, distorted geometry, and fake luxury effects.",
-].join("\n");
-
 type PreparedImage = {
   buffer: Buffer;
   mimeType: string;
@@ -56,6 +39,7 @@ type GenerateImageInput = {
   stylePrompt: string;
   outputPreset?: string | null;
   model?: string | null;
+  vertical?: VerticalId;
 };
 
 type GenerateTextImageInput = {
@@ -63,6 +47,7 @@ type GenerateTextImageInput = {
   stylePrompt: string;
   outputPreset?: string | null;
   model?: string | null;
+  vertical?: VerticalId;
 };
 
 type ChatImage = {
@@ -172,8 +157,8 @@ function extensionFromMimeType(mimeType: string) {
   return "jpg";
 }
 
-function generationPromptSuffix(hasReferenceScene: boolean) {
-  return hasReferenceScene ? REFERENCE_SCENE_PROMPT_SUFFIX : GENERATION_PROMPT_SUFFIX;
+function generationPromptSuffix(vertical: VerticalId, hasReferenceScene: boolean) {
+  return buildGenerationPromptSuffix(vertical, hasReferenceScene);
 }
 
 function dataUrlToImage(url: string) {
@@ -441,9 +426,10 @@ function buildImageContent({
   referenceBuffer,
   referenceMimeType,
   stylePrompt,
+  vertical = DEFAULT_VERTICAL_ID,
 }: Omit<GenerateImageInput, "outputPreset" | "model">): ChatContentPart[] {
   const content: ChatContentPart[] = [
-    { type: "text", text: `${stylePrompt}\n\n${generationPromptSuffix(Boolean(referenceBuffer))}` },
+    { type: "text", text: `${stylePrompt}\n\n${generationPromptSuffix(vertical, Boolean(referenceBuffer))}` },
     { type: "text", text: "Primary product identity reference. This uploaded image is the locked product source:" },
     { type: "image_url", image_url: { url: toDataUrl(sourceBuffer, mimeType) } },
   ];
@@ -456,7 +442,10 @@ function buildImageContent({
   if (referenceBuffer) {
     content.push({
       type: "text",
-      text: "Sample scene reference. This image is scene and composition only, not product identity. Keep its non-product scene recognizable, including hand, wrist, fingers, skin, water, surface, props, lighting, shadows, reflections, camera angle, lens feel, crop, and pose when present. Replace only the sample product/jewelry/accessory with the uploaded product identity from the primary product reference. Do not copy or retain the sample product identity.",
+      text:
+        vertical === "food"
+          ? "Sample scene reference. This image is scene and composition only, not item identity. Keep its non-item scene recognizable, including table, plate, cup, glassware, wrapper, surface, props, lighting, shadows, reflections, camera angle, lens feel, crop, and freshness cues when present. Replace the sample food, drink, plate, cup, package, or menu item with the core item identity from the primary item reference, allowing controlled advertising polish without changing the menu item, flavor, brand, or SKU. Do not copy or retain the sample item identity."
+          : "Sample scene reference. This image is scene and composition only, not product identity. Keep its non-product scene recognizable, including hand, wrist, fingers, skin, water, surface, props, lighting, shadows, reflections, camera angle, lens feel, crop, and pose when present. Replace only the sample product/jewelry/accessory with the uploaded product identity from the primary product reference. Do not copy or retain the sample product identity.",
     });
     content.push({ type: "image_url", image_url: { url: toDataUrl(referenceBuffer, referenceMimeType || "image/jpeg") } });
   }
@@ -527,6 +516,7 @@ async function generateTextWithOpenAIImageModel({
   stylePrompt,
   outputPreset,
   model: selectedModel,
+  vertical = DEFAULT_VERTICAL_ID,
 }: GenerateTextImageInput): Promise<GeneratedImageResult> {
   const { apiKey, baseURL, model, openAIImageQuality, responseFormat } = getAvalaiConfig();
   const imageModel = selectedModel?.trim() || model;
@@ -541,7 +531,7 @@ async function generateTextWithOpenAIImageModel({
           body: appendResponseFormat(
             {
               model: imageModel,
-              prompt: `${prompt}\n\n${stylePrompt}\n\nReturn one final premium studio product image suitable for e-commerce.`,
+              prompt: `${prompt}\n\n${stylePrompt}\n\n${generationPromptSuffix(vertical, false)}`,
               size: getOpenAIImageSize(outputPreset),
               quality: openAIImageQuality,
               n: 1,
@@ -574,6 +564,7 @@ async function generateStyledWithOpenAIImageModel({
   stylePrompt,
   outputPreset,
   model: selectedModel,
+  vertical = DEFAULT_VERTICAL_ID,
 }: GenerateImageInput): Promise<GeneratedImageResult> {
   const { apiKey, baseURL, model, openAIImageQuality, responseFormat } = getAvalaiConfig();
   const imageModel = selectedModel?.trim() || model;
@@ -582,7 +573,7 @@ async function generateStyledWithOpenAIImageModel({
     return await withTransientRetry(async () => {
       const form = new FormData();
       form.append("model", imageModel);
-      form.append("prompt", `${stylePrompt}\n\n${generationPromptSuffix(Boolean(referenceBuffer))}`);
+      form.append("prompt", `${stylePrompt}\n\n${generationPromptSuffix(vertical, Boolean(referenceBuffer))}`);
       form.append("size", getOpenAIImageSize(outputPreset));
       form.append("quality", openAIImageQuality);
       if (responseFormat) {
@@ -639,6 +630,7 @@ export async function generateStyledImageWithAvalai({
   stylePrompt,
   outputPreset,
   model,
+  vertical = DEFAULT_VERTICAL_ID,
 }: GenerateImageInput) {
   if (isOpenAIImageModel(model?.trim() || avalaiModel())) {
     return generateStyledWithOpenAIImageModel({
@@ -650,6 +642,7 @@ export async function generateStyledImageWithAvalai({
       stylePrompt,
       outputPreset,
       model,
+      vertical,
     });
   }
 
@@ -661,19 +654,20 @@ export async function generateStyledImageWithAvalai({
       referenceBuffer,
       referenceMimeType,
       stylePrompt,
+      vertical,
     }),
     outputPreset,
     model,
   });
 }
 
-export async function generateTextImageWithAvalai({ prompt, stylePrompt, outputPreset, model }: GenerateTextImageInput) {
+export async function generateTextImageWithAvalai({ prompt, stylePrompt, outputPreset, model, vertical = DEFAULT_VERTICAL_ID }: GenerateTextImageInput) {
   if (isOpenAIImageModel(model?.trim() || avalaiModel())) {
-    return generateTextWithOpenAIImageModel({ prompt, stylePrompt, outputPreset, model });
+    return generateTextWithOpenAIImageModel({ prompt, stylePrompt, outputPreset, model, vertical });
   }
 
   return generateWithAvalai({
-    content: `${prompt}\n\n${stylePrompt}\n\nReturn one final premium studio product image suitable for e-commerce.`,
+    content: `${prompt}\n\n${stylePrompt}\n\n${generationPromptSuffix(vertical, false)}`,
     outputPreset,
     model,
   });

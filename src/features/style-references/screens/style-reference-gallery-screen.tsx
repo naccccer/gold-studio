@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type MouseEvent } from "react";
-import { Camera, CloseCircle, DocumentUpload, Edit2, Gallery, TickCircle, Trash } from "vuesax-icons-react";
+import { Archive, Camera, CloseCircle, DocumentUpload, Edit2, TickCircle, Trash } from "vuesax-icons-react";
 import { buttonClasses, Button, IconButton } from "@/components/ui/button";
 import { ConfirmAction } from "@/components/ui/confirm-action";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -169,7 +169,7 @@ export function StyleReferenceGalleryScreen({ assets, emptySamples = [], error }
         <header className="flex items-center gap-3 px-1">
           <div className="flex min-w-0 items-center gap-3">
             <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-wash text-accent-deep">
-              <Gallery aria-hidden={true} className="h-4.5 w-4.5" />
+              <Archive aria-hidden={true} className="h-4.5 w-4.5" />
             </span>
             <h1 className="truncate text-base font-semibold text-foreground">گالری نمونه‌ها</h1>
           </div>

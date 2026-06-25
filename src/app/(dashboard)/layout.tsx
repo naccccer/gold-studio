@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { requireUserSession } from "@/lib/auth/session";
 import { getUserDisplayName } from "@/lib/auth/user-identity";
 import { getUserCreditSummary } from "@/lib/billing";
+import { getCurrentVertical } from "@/lib/current-vertical";
 import { db } from "@/lib/db";
 import { getUserNotificationSummary } from "@/lib/notifications";
 
@@ -12,6 +13,7 @@ export default async function DashboardLayout({
   children: ReactNode;
 }>) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const [user, creditSummary, notificationSummary] = await Promise.all([
     db.user.findUnique({
       where: { id: session.userId },
@@ -37,6 +39,7 @@ export default async function DashboardLayout({
       }))}
       needsNameOnboarding={needsNameOnboarding}
       showStartGuide={showStartGuide}
+      vertical={vertical}
     >
       {children}
     </DashboardFrame>

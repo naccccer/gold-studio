@@ -84,7 +84,8 @@ export function BrandLogo({ variant = "wordmark", className = "", priority = fal
         width={logo.width}
         height={logo.height}
         alt={logo.alt}
-        priority={priority}
+        preload={priority}
+        loading={priority ? "eager" : undefined}
         className={["object-contain object-center", logo.className].join(" ")}
       />
     </span>

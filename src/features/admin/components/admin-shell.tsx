@@ -54,7 +54,7 @@ const navGroups = [
 ];
 
 const titleBySegment: Record<string, string> = {
-  admin: "کنسول",
+  admin: "ادمین",
   users: "کاربران",
   home: "خانه اپ",
   billing: "پرداخت",
@@ -108,7 +108,7 @@ export function AdminShell({ children, role }: { children: React.ReactNode; role
         <aside className="hidden w-56 shrink-0 flex-col bg-navy-950 px-3 py-5 lg:flex lg:sticky lg:top-0 lg:h-screen">
           <Link href="/admin" className="px-2.5">
             <span className="block text-base font-bold leading-7 text-white">اوالا</span>
-            <span className="block text-[11px] text-navy-300">کنسول عملیات</span>
+            <span className="block text-[11px] text-navy-300">پنل ادمین</span>
           </Link>
 
           <nav className="mt-6 flex-1 space-y-5" aria-label="ناوبری ادمین">

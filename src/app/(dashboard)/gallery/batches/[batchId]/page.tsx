@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { GalleryBatchScreen } from "@/features/gallery/screens/gallery-batch-screen";
 import { requireUserSession } from "@/lib/auth/session";
+import { getCurrentVertical } from "@/lib/current-vertical";
 import { db } from "@/lib/db";
 import { storagePublicUrl } from "@/lib/storage";
 
@@ -10,9 +11,10 @@ export default async function GalleryBatchPage({
   params: Promise<{ batchId: string }>;
 }) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const { batchId } = await params;
   const batch = await db.generationBatch.findFirst({
-    where: { id: batchId, userId: session.userId },
+    where: { id: batchId, userId: session.userId, vertical },
     include: {
       style: {
         select: { name: true },

@@ -7,11 +7,14 @@ import {
 } from "@/features/gallery/screens/gallery-batch-new-screen";
 import { requireUserSession } from "@/lib/auth/session";
 import { getAvailableGenerationCredits } from "@/lib/billing";
+import { creditUnitsToVisibleCredits, getGenerationCreditUnitCost } from "@/lib/credit-units";
+import { getCurrentVertical } from "@/lib/current-vertical";
 import { db } from "@/lib/db";
 import { getReadyStyleReferenceSamples } from "@/lib/ready-style-reference-samples";
 import { storagePublicUrl } from "@/lib/storage";
 import { READY_SAMPLE_ORIGINAL_NAME_PREFIX } from "@/lib/style-reference-ready-samples";
 import { getUserVisibleStyles } from "@/lib/styles";
+import { getVerticalContent } from "@/lib/vertical-content";
 
 export default async function NewGalleryBatchPage({
   searchParams,
@@ -19,6 +22,8 @@ export default async function NewGalleryBatchPage({
   searchParams?: Promise<{ assetIds?: string; error?: string }>;
 }) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
+  const content = getVerticalContent(vertical);
   const params = await searchParams;
   const assetIds = Array.from(new Set((params?.assetIds ?? "").split(",").map((id) => id.trim()).filter(Boolean)));
 
@@ -31,6 +36,7 @@ export default async function NewGalleryBatchPage({
       where: {
         id: { in: assetIds },
         userId: session.userId,
+        vertical,
         status: "READY",
         archivedAt: null,
       },
@@ -44,7 +50,7 @@ export default async function NewGalleryBatchPage({
       },
     }),
     db.styleReferenceAsset.findMany({
-      where: { userId: session.userId, status: "READY", archivedAt: null },
+      where: { userId: session.userId, vertical, status: "READY", archivedAt: null },
       orderBy: { createdAt: "desc" },
       take: 12,
       select: {
@@ -54,8 +60,8 @@ export default async function NewGalleryBatchPage({
         originalName: true,
       },
     }),
-    getReadyStyleReferenceSamples(),
-    getUserVisibleStyles(),
+    getReadyStyleReferenceSamples(vertical),
+    getUserVisibleStyles(vertical),
     getAvailableGenerationCredits(session.userId),
   ]);
 
@@ -90,7 +96,10 @@ export default async function NewGalleryBatchPage({
       }))}
       styleReferences={displayStyleReferences}
       styles={styles}
+      vertical={vertical}
+      content={content}
       availableCredits={availableCredits}
+      requiredCredits={assets.length * creditUnitsToVisibleCredits(getGenerationCreditUnitCost(vertical))}
       error={params?.error}
       action={createBatchFromGalleryAction}
     />

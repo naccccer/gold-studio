@@ -144,7 +144,7 @@ model User {
   passwordHash          String
   role                  UserRole           @default(USER)
   sessionVersion        Int                @default(0)
-  credits               Int                @default(3)
+  credits               Int                @default(300)
   reservedCredits       Int                @default(0)
   projects              Project[]
   assets                ProductAsset[]
@@ -180,6 +180,7 @@ model Project {
   id               String                @id @default(cuid())
   userId           String
   user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vertical         String                @default("jewelry")
   sourceAssetId    String?
   sourceAsset      ProductAsset?         @relation(fields: [sourceAssetId], references: [id], onDelete: SetNull)
   referenceAssetId String?
@@ -207,7 +208,9 @@ model Project {
   updatedAt        DateTime              @updatedAt
 
   @@index([userId, createdAt])
+  @@index([userId, vertical, createdAt])
   @@index([userId, archivedAt])
+  @@index([userId, vertical, archivedAt])
   @@index([status, createdAt])
   @@index([status, updatedAt])
   @@index([sourceAssetId])
@@ -220,6 +223,7 @@ model Project {
 model StyleCategory {
   id        String          @id @default(cuid())
   slug      String          @unique
+  vertical  String          @default("jewelry")
   name      String
   sortOrder Int             @default(0)
   styles    CreativeStyle[]
@@ -231,6 +235,7 @@ model CreativeStyle {
   id              String            @id @default(cuid())
   categoryId      String?
   category        StyleCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  vertical        String            @default("jewelry")
   name            String
   description     String
   prompt          String            @db.Text
@@ -248,6 +253,7 @@ model CreativeStyle {
 
   @@index([categoryId])
   @@index([isActive, isUserVisible, sortOrder])
+  @@index([vertical, isActive, isUserVisible, sortOrder])
 }
 
 model StyleVariant {
@@ -301,6 +307,7 @@ model ProductAsset {
   id           String                @id @default(cuid())
   userId       String
   user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vertical     String                @default("jewelry")
   collectionId String?
   collection   AssetCollection?      @relation(fields: [collectionId], references: [id], onDelete: SetNull)
   fileUrl      String
@@ -327,7 +334,9 @@ model ProductAsset {
   updatedAt    DateTime              @updatedAt
 
   @@index([userId, createdAt])
+  @@index([userId, vertical, createdAt])
   @@index([userId, archivedAt])
+  @@index([userId, vertical, archivedAt])
   @@index([collectionId])
 }
 
@@ -350,6 +359,7 @@ model StyleReferenceAsset {
   id           String                    @id @default(cuid())
   userId       String
   user         User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vertical     String                    @default("jewelry")
   fileUrl      String
   storageKey   String
   mimeType     String
@@ -373,13 +383,16 @@ model StyleReferenceAsset {
   updatedAt    DateTime                  @updatedAt
 
   @@index([userId, createdAt])
+  @@index([userId, vertical, createdAt])
   @@index([userId, archivedAt])
+  @@index([userId, vertical, archivedAt])
 }
 
 model GenerationBatch {
   id           String                @id @default(cuid())
   userId       String
   user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vertical     String                @default("jewelry")
   title        String?
   styleId      String
   style        CreativeStyle         @relation(fields: [styleId], references: [id], onDelete: Restrict)
@@ -393,6 +406,7 @@ model GenerationBatch {
   updatedAt    DateTime              @updatedAt
 
   @@index([userId, createdAt])
+  @@index([userId, vertical, createdAt])
   @@index([status, updatedAt])
   @@index([styleId])
   @@index([referenceAssetId])
@@ -557,6 +571,7 @@ model GenerationCreditReservation {
   subscriptionId String?
   subscription   UserSubscription?                 @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
   source         GenerationCreditReservationSource
+  creditUnits    Int                               @default(300)
   reservesProject Boolean                          @default(false)
   status         GenerationCreditReservationStatus @default(RESERVED)
   capturedAt     DateTime?
@@ -577,7 +592,7 @@ model Referral {
   inviteeId     String        @unique
   invitee       User          @relation("InviteeReferral", fields: [inviteeId], references: [id], onDelete: Cascade)
   codeUsed      String
-  rewardCredits Int           @default(5)
+  rewardCredits Int           @default(500)
   rewardGrantedAt DateTime?
   rewardPurchaseRequestId String? @unique
   rewardPurchaseRequest PurchaseRequest? @relation("ReferralRewardPurchase", fields: [rewardPurchaseRequestId], references: [id], onDelete: SetNull)
@@ -592,7 +607,7 @@ model Referral {
 model SalesReferralCode {
   id               String   @id @default(cuid())
   code             String   @unique
-  creditAmount     Int      @default(5)
+  creditAmount     Int      @default(500)
   batchKey         String
   salespersonName  String?
   note             String?  @db.Text
@@ -636,6 +651,7 @@ model SupportSettings {
 
 model HomeCarouselSlide {
   id               String   @id @default(cuid())
+  vertical         String   @default("jewelry")
   title            String?
   beforeImageUrl   String
   beforeStorageKey String?
@@ -649,6 +665,7 @@ model HomeCarouselSlide {
   updatedAt        DateTime @updatedAt
 
   @@index([isActive, sortOrder])
+  @@index([vertical, isActive, sortOrder])
   @@index([sortOrder, createdAt])
 }
 

@@ -16,7 +16,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   danger: "bg-[#8f241f] text-white shadow-[0_14px_26px_-20px_rgba(143,36,31,0.85)] hover:bg-[#741b18]",
   ghost: "text-muted hover:bg-surface-soft hover:text-foreground",
   "studio-primary":
-    "border border-[#ffd98f]/45 bg-[linear-gradient(135deg,var(--gold-gradient-start)_0%,var(--gold-gradient-mid)_48%,var(--gold-gradient-end)_100%)] !text-studio-control shadow-[var(--shadow-gold-action)] hover:brightness-105",
+    "border border-accent-bright/45 bg-[linear-gradient(135deg,var(--accent-gradient-start)_0%,var(--accent-gradient-mid)_48%,var(--accent-gradient-end)_100%)] !text-studio-control shadow-[var(--shadow-accent-action)] hover:brightness-105",
   "studio-secondary":
     "bg-white/[0.15] !text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_14px_28px_-22px_rgba(0,0,0,0.75)] hover:bg-white/[0.22]",
   admin: "bg-surface-soft text-foreground shadow-[0_12px_24px_-22px_rgba(17,16,14,0.55)] hover:bg-surface",

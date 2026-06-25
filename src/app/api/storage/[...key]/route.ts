@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { isAllowedStorageKey, isPublicStorageKey, readStorageObject } from "@/lib/storage";
+import { resolveVerticalFromRequest, type VerticalId } from "@/lib/verticals";
 
 const DISPLAY_IMAGE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
@@ -13,7 +14,7 @@ function storageFileName(storageKey: string) {
   return storageKey.split("/").pop()?.replace(/[^\w.-]/g, "_") || "download";
 }
 
-async function canReadStorageKey(storageKey: string) {
+async function canReadStorageKey(storageKey: string, vertical: VerticalId) {
   if (isPublicStorageKey(storageKey)) {
     return true;
   }
@@ -49,11 +50,11 @@ async function canReadStorageKey(storageKey: string) {
   }
 
   const ownedObject = await Promise.all([
-    db.productAsset.findFirst({ where: { storageKey: { in: storageKeys }, userId: session.userId }, select: { id: true } }),
-    db.styleReferenceAsset.findFirst({ where: { storageKey: { in: storageKeys }, userId: session.userId }, select: { id: true } }),
-    db.project.findFirst({ where: { sourceImageUrl: storageUrl, userId: session.userId }, select: { id: true } }),
-    db.project.findFirst({ where: { resultStorageKey: { in: storageKeys }, userId: session.userId }, select: { id: true } }),
-    db.project.findFirst({ where: { resultImageUrl: storageUrl, userId: session.userId }, select: { id: true } }),
+    db.productAsset.findFirst({ where: { storageKey: { in: storageKeys }, userId: session.userId, vertical }, select: { id: true } }),
+    db.styleReferenceAsset.findFirst({ where: { storageKey: { in: storageKeys }, userId: session.userId, vertical }, select: { id: true } }),
+    db.project.findFirst({ where: { sourceImageUrl: storageUrl, userId: session.userId, vertical }, select: { id: true } }),
+    db.project.findFirst({ where: { resultStorageKey: { in: storageKeys }, userId: session.userId, vertical }, select: { id: true } }),
+    db.project.findFirst({ where: { resultImageUrl: storageUrl, userId: session.userId, vertical }, select: { id: true } }),
     db.purchaseRequest.findFirst({ where: { receiptStorageKey: { in: storageKeys }, userId: session.userId }, select: { id: true } }),
     db.purchaseRequest.findFirst({ where: { receiptImageUrl: storageUrl, userId: session.userId }, select: { id: true } }),
   ]);
@@ -62,7 +63,7 @@ async function canReadStorageKey(storageKey: string) {
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ key: string[] }> },
 ) {
   const { key } = await context.params;
@@ -72,7 +73,7 @@ export async function GET(
     return NextResponse.json({ error: "Invalid storage key." }, { status: 400 });
   }
 
-  if (!(await canReadStorageKey(storageKey))) {
+  if (!(await canReadStorageKey(storageKey, resolveVerticalFromRequest(request)))) {
     return NextResponse.json({ error: "File not found." }, { status: 404 });
   }
 

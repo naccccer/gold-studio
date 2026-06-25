@@ -42,6 +42,7 @@ import { AdminNotificationForm } from "@/features/admin/components/admin-notific
 import { requireAdminOrSalesSession } from "@/lib/auth/session";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { getUserCreditSummary } from "@/lib/billing";
+import { creditUnitsToVisibleCredits } from "@/lib/credit-units";
 import { db } from "@/lib/db";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
 
@@ -277,7 +278,7 @@ function BillingTab({
               <select name="packageId" className={fieldClass}>
                 {creditPackages.map((billingPackage) => (
                   <option key={billingPackage.id} value={billingPackage.id}>
-                    {billingPackage.title} · {faNum(billingPackage.credits)} اعتبار
+                    {billingPackage.title} · {faNum(creditUnitsToVisibleCredits(billingPackage.credits))} اعتبار
                   </option>
                 ))}
               </select>
@@ -338,7 +339,7 @@ function BillingTab({
               <td className={`${cellClass} tabular-nums`}>
                 <div className="grid gap-1 text-xs text-slate-500">
                   <span>
-                    خروجی: {faNum(subscription.creditsUsedThisPeriod)} / {faNum(subscription.creditsPerPeriod)}
+                    خروجی: {faNum(creditUnitsToVisibleCredits(subscription.creditsUsedThisPeriod))} / {faNum(creditUnitsToVisibleCredits(subscription.creditsPerPeriod))}
                   </span>
                   <span>
                     پروژه: {subscription.projectLimit === null ? "بدون سقف" : `${faNum(subscription.projectsUsedThisPeriod)} / ${faNum(subscription.projectLimit)}`}
@@ -430,13 +431,13 @@ function BillingTab({
               <div key={event.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm first:pt-0 last:pb-0">
                 <span className="flex min-w-0 items-center gap-3">
                   <span className={`w-12 shrink-0 font-semibold tabular-nums ${event.delta >= 0 ? "text-emerald-700" : "text-rose-700"}`} dir="ltr">
-                    {event.delta > 0 ? `+${faNum(event.delta)}` : faNum(event.delta)}
+                    {event.delta > 0 ? `+${faNum(creditUnitsToVisibleCredits(event.delta))}` : faNum(creditUnitsToVisibleCredits(event.delta))}
                   </span>
                   <span className="truncate text-xs text-slate-500">{event.reason}</span>
                 </span>
                 <span className="flex shrink-0 items-center gap-3 text-xs text-slate-400">
                   <span className="tabular-nums" dir="ltr">
-                    {faNum(event.balanceBefore)} ← {faNum(event.balanceAfter)}
+                    {faNum(creditUnitsToVisibleCredits(event.balanceBefore))} ← {faNum(creditUnitsToVisibleCredits(event.balanceAfter))}
                   </span>
                   {formatAdminDate(event.createdAt)}
                 </span>

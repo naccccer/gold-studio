@@ -1,6 +1,9 @@
 import type { Prisma } from "@/generated/prisma";
+import { imageProvider } from "@/lib/ai/provider";
 import { db } from "@/lib/db";
 import { FREE_VARIANT_LIMIT, NO_CREDITS_ERROR, NO_PROJECT_QUOTA_ERROR } from "@/lib/credits";
+import { creditUnitsToVisibleCredits, getGenerationCreditUnitCost } from "@/lib/credit-units";
+import type { VerticalId } from "@/lib/verticals";
 
 export async function logAdminAudit({
   actorAdminId,
@@ -51,7 +54,7 @@ export async function logProviderEvent({
   await db.providerEvent.create({
     data: {
       projectId: projectId || null,
-      provider: provider || "liara",
+      provider: provider || imageProvider(),
       operation,
       status,
       model: model || null,
@@ -67,13 +70,19 @@ export async function reserveGenerationCredit({
   projectId,
   batchId,
   reserveProject = true,
+  vertical = "jewelry",
+  creditUnits,
 }: {
   userId: string;
   projectId?: string | null;
   batchId?: string | null;
   reserveProject?: boolean;
+  vertical?: VerticalId;
+  creditUnits?: number;
 }) {
-  return db.$transaction((tx) => reserveGenerationCreditInTransaction(tx, { userId, projectId, batchId, reserveProject }));
+  return db.$transaction((tx) =>
+    reserveGenerationCreditInTransaction(tx, { userId, projectId, batchId, reserveProject, vertical, creditUnits }),
+  );
 }
 
 export async function reserveGenerationCreditInTransaction(
@@ -83,14 +92,19 @@ export async function reserveGenerationCreditInTransaction(
     projectId,
     batchId,
     reserveProject = true,
+    vertical = "jewelry",
+    creditUnits,
   }: {
     userId: string;
     projectId?: string | null;
     batchId?: string | null;
     reserveProject?: boolean;
+    vertical?: VerticalId;
+    creditUnits?: number;
   },
 ) {
   const now = new Date();
+  const requiredCreditUnits = creditUnits ?? getGenerationCreditUnitCost(vertical);
   const subscriptions = await tx.$queryRaw<
     Array<{
       id: string;
@@ -114,10 +128,10 @@ export async function reserveGenerationCreditInTransaction(
     `;
   const cappedSubscriptionActive = reserveProject && subscriptions.some((item) => item.projectLimit !== null);
   const subscriptionOutputAvailable = subscriptions.some(
-    (item) => item.creditsUsedThisPeriod + item.reservedCredits < item.creditsPerPeriod,
+    (item) => item.creditsUsedThisPeriod + item.reservedCredits + requiredCreditUnits <= item.creditsPerPeriod,
   );
   const subscription = subscriptions.find((item) => {
-    const hasOutputCapacity = item.creditsUsedThisPeriod + item.reservedCredits < item.creditsPerPeriod;
+    const hasOutputCapacity = item.creditsUsedThisPeriod + item.reservedCredits + requiredCreditUnits <= item.creditsPerPeriod;
     const hasProjectCapacity =
       !reserveProject ||
       item.projectLimit === null ||
@@ -134,7 +148,7 @@ export async function reserveGenerationCreditInTransaction(
         reservedProjects: subscription.reservedProjects,
       },
       data: {
-        reservedCredits: { increment: 1 },
+        reservedCredits: { increment: requiredCreditUnits },
         ...(reserveProject && subscription.projectLimit !== null ? { reservedProjects: { increment: 1 } } : {}),
       },
     });
@@ -148,6 +162,7 @@ export async function reserveGenerationCreditInTransaction(
         batchId: batchId || null,
         source: "SUBSCRIPTION",
         subscriptionId: subscription.id,
+        creditUnits: requiredCreditUnits,
         reservesProject: reserveProject && subscription.projectLimit !== null,
       },
     });
@@ -167,13 +182,13 @@ export async function reserveGenerationCreditInTransaction(
       FOR UPDATE
     `;
 
-  if (!user || user.credits - user.reservedCredits < 1) {
+  if (!user || user.credits - user.reservedCredits < requiredCreditUnits) {
     return { ok: false as const, error: NO_CREDITS_ERROR };
   }
 
   const updatedUser = await tx.user.updateMany({
     where: { id: userId, reservedCredits: user.reservedCredits },
-    data: { reservedCredits: { increment: 1 } },
+    data: { reservedCredits: { increment: requiredCreditUnits } },
   });
   if (updatedUser.count === 0) {
     return { ok: false as const, error: NO_CREDITS_ERROR };
@@ -184,6 +199,7 @@ export async function reserveGenerationCreditInTransaction(
       projectId: projectId || null,
       batchId: batchId || null,
       source: "CREDIT_BALANCE",
+      creditUnits: requiredCreditUnits,
       reservesProject: false,
     },
   });
@@ -264,8 +280,8 @@ export async function captureGenerationCreditReservation({
       await tx.userSubscription.update({
         where: { id: subscription.id },
         data: {
-          reservedCredits: { decrement: 1 },
-          creditsUsedThisPeriod: { increment: 1 },
+          reservedCredits: { decrement: reservation.creditUnits },
+          creditsUsedThisPeriod: { increment: reservation.creditUnits },
           ...(reservation.reservesProject
             ? {
                 reservedProjects: { decrement: 1 },
@@ -277,9 +293,9 @@ export async function captureGenerationCreditReservation({
       await tx.creditEvent.create({
         data: {
           userId: reservation.userId,
-          delta: -1,
-          balanceBefore: Math.max(1, subscription.creditsPerPeriod - subscription.creditsUsedThisPeriod),
-          balanceAfter: Math.max(0, subscription.creditsPerPeriod - subscription.creditsUsedThisPeriod - 1),
+          delta: -reservation.creditUnits,
+          balanceBefore: Math.max(reservation.creditUnits, subscription.creditsPerPeriod - subscription.creditsUsedThisPeriod),
+          balanceAfter: Math.max(0, subscription.creditsPerPeriod - subscription.creditsUsedThisPeriod - reservation.creditUnits),
           reason: "مصرف اعتبار اشتراک پس از ساخت موفق خروجی",
           source: "SUBSCRIPTION",
           packageId: subscription.packageId,
@@ -302,16 +318,16 @@ export async function captureGenerationCreditReservation({
       await tx.user.update({
         where: { id: reservation.userId },
         data: {
-          reservedCredits: { decrement: 1 },
-          credits: { decrement: 1 },
+          reservedCredits: { decrement: reservation.creditUnits },
+          credits: { decrement: reservation.creditUnits },
         },
       });
       await tx.creditEvent.create({
         data: {
           userId: reservation.userId,
-          delta: -1,
+          delta: -reservation.creditUnits,
           balanceBefore: user.credits,
-          balanceAfter: user.credits - 1,
+          balanceAfter: user.credits - reservation.creditUnits,
           reason: "مصرف اعتبار کیف پول پس از ساخت موفق خروجی",
           source: "GENERATION",
         },
@@ -344,7 +360,7 @@ export async function releaseGenerationCreditReservation({
       await tx.userSubscription.update({
         where: { id: reservation.subscriptionId },
         data: {
-          reservedCredits: { decrement: 1 },
+          reservedCredits: { decrement: reservation.creditUnits },
           ...(reservation.reservesProject ? { reservedProjects: { decrement: 1 } } : {}),
         },
       });
@@ -353,7 +369,7 @@ export async function releaseGenerationCreditReservation({
     if (reservation.source === "CREDIT_BALANCE") {
       await tx.user.update({
         where: { id: reservation.userId },
-        data: { reservedCredits: { decrement: 1 } },
+        data: { reservedCredits: { decrement: reservation.creditUnits } },
       });
     }
 
@@ -367,8 +383,13 @@ export async function releaseGenerationCreditReservation({
 }
 
 export async function getAvailableGenerationCredits(userId: string) {
+  const units = await getAvailableGenerationCreditUnits(userId);
+  return creditUnitsToVisibleCredits(units);
+}
+
+export async function getAvailableGenerationCreditUnits(userId: string) {
   const summary = await getUserCreditSummary(userId);
-  return summary.totalAvailableCredits;
+  return summary.totalAvailableCreditUnits;
 }
 
 export async function getEffectiveFreeVariantLimit(userId: string) {
@@ -415,30 +436,39 @@ export async function getUserCreditSummary(userId: string) {
     }),
   ]);
 
-  const subscriptionCredits = subscriptions.reduce(
+  const subscriptionCreditUnits = subscriptions.reduce(
     (sum, subscription) =>
       sum + Math.max(0, subscription.creditsPerPeriod - subscription.creditsUsedThisPeriod - subscription.reservedCredits),
     0,
   );
-  const walletCredits = Math.max(0, (user?.credits ?? 0) - (user?.reservedCredits ?? 0));
+  const walletCreditUnits = Math.max(0, (user?.credits ?? 0) - (user?.reservedCredits ?? 0));
+  const reservedWalletCreditUnits = user?.reservedCredits ?? 0;
+  const totalAvailableCreditUnits = subscriptionCreditUnits + walletCreditUnits;
   const subscriptionProjects = subscriptions.reduce((sum, subscription) => {
     if (subscription.projectLimit === null) return sum;
     return sum + Math.max(0, subscription.projectLimit - subscription.projectsUsedThisPeriod - subscription.reservedProjects);
   }, 0);
 
   return {
-    walletCredits,
-    reservedWalletCredits: user?.reservedCredits ?? 0,
-    subscriptionCredits,
+    walletCreditUnits,
+    reservedWalletCreditUnits,
+    subscriptionCreditUnits,
+    totalAvailableCreditUnits,
+    walletCredits: creditUnitsToVisibleCredits(walletCreditUnits),
+    reservedWalletCredits: creditUnitsToVisibleCredits(reservedWalletCreditUnits),
+    subscriptionCredits: creditUnitsToVisibleCredits(subscriptionCreditUnits),
     subscriptionProjects,
-    totalAvailableCredits: subscriptionCredits + walletCredits,
+    totalAvailableCredits: creditUnitsToVisibleCredits(totalAvailableCreditUnits),
     activeSubscription: subscriptions[0]
       ? {
           title: subscriptions[0].customTitle || subscriptions[0].package?.title || "پلن اختصاصی",
           colorPreset: subscriptions[0].package?.colorPreset ?? "amber",
-          creditsPerPeriod: subscriptions[0].creditsPerPeriod,
-          creditsUsedThisPeriod: subscriptions[0].creditsUsedThisPeriod,
-          reservedCredits: subscriptions[0].reservedCredits,
+          creditUnitsPerPeriod: subscriptions[0].creditsPerPeriod,
+          creditUnitsUsedThisPeriod: subscriptions[0].creditsUsedThisPeriod,
+          reservedCreditUnits: subscriptions[0].reservedCredits,
+          creditsPerPeriod: creditUnitsToVisibleCredits(subscriptions[0].creditsPerPeriod),
+          creditsUsedThisPeriod: creditUnitsToVisibleCredits(subscriptions[0].creditsUsedThisPeriod),
+          reservedCredits: creditUnitsToVisibleCredits(subscriptions[0].reservedCredits),
           projectLimit: subscriptions[0].projectLimit,
           projectsUsedThisPeriod: subscriptions[0].projectsUsedThisPeriod,
           reservedProjects: subscriptions[0].reservedProjects,

@@ -15,6 +15,7 @@ import { normalizeLoginIdentifier } from "@/lib/auth/identifier";
 import { hashPassword } from "@/lib/auth/password";
 import { getSubscriptionPeriod, logAdminAudit } from "@/lib/billing";
 import { normalizeBillingPlanColorPreset } from "@/lib/billing-plan-colors";
+import { creditUnitsToVisibleCredits, visibleCreditsToCreditUnits } from "@/lib/credit-units";
 import { INITIAL_SIGNUP_CREDITS } from "@/lib/credits";
 import { processImageProject } from "@/lib/generation/jobs";
 import { createAdminBroadcastNotification, createAdminUserNotification } from "@/lib/notifications";
@@ -22,7 +23,7 @@ import { approveQualityReviewWithRefund, rejectQualityReview } from "@/lib/quali
 import {
   ensureReadyStyleReferenceSampleDirectory,
   getReadyStyleReferenceSample,
-  readyStyleReferenceSampleDirectory,
+  readyStyleReferenceSampleDirectoryForVertical,
 } from "@/lib/ready-style-reference-samples";
 import {
   createSalesReferralCodeBatch,
@@ -31,6 +32,7 @@ import {
 } from "@/lib/referrals";
 import { deleteStorageObject } from "@/lib/storage";
 import { saveHomeCarouselFile, saveStylePreviewFile } from "@/lib/uploads";
+import { normalizeUserVisibleVerticalId, normalizeVerticalId, type UserVisibleVerticalId } from "@/lib/verticals";
 
 function text(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -197,18 +199,37 @@ async function getCarouselImageInput(formData: FormData, fileKey: string, urlKey
   return { publicUrl: fallbackUrl, storageKey: fallbackStorageKey };
 }
 
+function homeCarouselAdminPath(vertical: UserVisibleVerticalId, slideId?: string) {
+  const params = new URLSearchParams({ vertical });
+  if (slideId) {
+    params.set("slide", slideId);
+  }
+
+  return `/admin/home?${params.toString()}`;
+}
+
+function readySamplesAdminPath(vertical: UserVisibleVerticalId, error?: string) {
+  const params = new URLSearchParams({ vertical });
+  if (error) {
+    params.set("error", error);
+  }
+
+  return `/admin/assets/samples?${params.toString()}`;
+}
+
 export async function uploadReadyStyleReferenceSampleAction(formData: FormData) {
   const session = await requireAdminSession();
+  const vertical = normalizeUserVisibleVerticalId(text(formData, "vertical"));
   const image = formData.get("image");
   if (!(image instanceof File) || image.size === 0) {
-    redirect("/admin/assets/samples");
+    redirect(readySamplesAdminPath(vertical));
   }
 
   try {
     const buffer = await normalizeReadySampleImage(image);
-    const fileName = `${slugFromFileName(image.name)}-${randomUUID().slice(0, 8)}.webp`;
-    await ensureReadyStyleReferenceSampleDirectory();
-    await writeFile(path.join(readyStyleReferenceSampleDirectory, fileName), buffer, { flag: "wx" });
+    const fileName = `ready-sample-${slugFromFileName(image.name)}-${randomUUID().slice(0, 8)}.webp`;
+    await ensureReadyStyleReferenceSampleDirectory(vertical);
+    await writeFile(path.join(readyStyleReferenceSampleDirectoryForVertical(vertical), fileName), buffer, { flag: "wx" });
 
     await logAdminAudit({
       actorAdminId: session.userId,
@@ -216,26 +237,27 @@ export async function uploadReadyStyleReferenceSampleAction(formData: FormData) 
       targetType: "ReadyStyleReferenceSample",
       targetId: fileName,
       summary: "نمونه آماده عمومی آپلود شد.",
-      metadata: { fileName, originalName: image.name || null },
+      metadata: { fileName, originalName: image.name || null, vertical },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "آپلود نمونه آماده کامل نشد.";
-    redirect(`/admin/assets/samples?error=${encodeURIComponent(message)}`);
+    redirect(readySamplesAdminPath(vertical, message));
   }
 
   revalidatePath("/admin/assets/samples");
   revalidatePath("/account/style-references");
-  redirect("/admin/assets/samples");
+  redirect(readySamplesAdminPath(vertical));
 }
 
 export async function deleteReadyStyleReferenceSampleAction(formData: FormData) {
   const session = await requireAdminSession();
   const sampleId = text(formData, "sampleId");
+  const vertical = normalizeUserVisibleVerticalId(text(formData, "vertical"));
   if (!sampleId) {
     return;
   }
 
-  const sample = await getReadyStyleReferenceSample(sampleId);
+  const sample = await getReadyStyleReferenceSample(sampleId, vertical);
   if (!sample) {
     return;
   }
@@ -247,12 +269,12 @@ export async function deleteReadyStyleReferenceSampleAction(formData: FormData) 
     targetType: "ReadyStyleReferenceSample",
     targetId: sample.fileName,
     summary: "نمونه آماده عمومی حذف شد.",
-    metadata: { fileName: sample.fileName },
+    metadata: { fileName: sample.fileName, vertical },
   });
 
   revalidatePath("/admin/assets/samples");
   revalidatePath("/account/style-references");
-  redirect("/admin/assets/samples");
+  redirect(readySamplesAdminPath(vertical));
 }
 
 export async function updateProviderSettingsAction(formData: FormData) {
@@ -291,6 +313,7 @@ export async function updateProviderSettingsAction(formData: FormData) {
 
 export async function createHomeCarouselSlideAction(formData: FormData) {
   const session = await requireAdminSession();
+  const vertical = normalizeUserVisibleVerticalId(text(formData, "vertical"));
   const before = await getCarouselImageInput(formData, "beforeImage", "beforeImageUrl");
   const afterImage = await getCarouselImageInput(formData, "afterImage", "afterImageUrl");
 
@@ -300,6 +323,7 @@ export async function createHomeCarouselSlideAction(formData: FormData) {
 
   const slide = await db.homeCarouselSlide.create({
     data: {
+      vertical,
       title: text(formData, "title") || null,
       beforeImageUrl: before.publicUrl,
       beforeStorageKey: before.storageKey,
@@ -318,12 +342,12 @@ export async function createHomeCarouselSlideAction(formData: FormData) {
     targetType: "HomeCarouselSlide",
     targetId: slide.id,
     summary: "اسلاید کاروسل خانه ساخته شد.",
-    metadata: { title: slide.title, sortOrder: slide.sortOrder, isActive: slide.isActive },
+    metadata: { title: slide.title, vertical, sortOrder: slide.sortOrder, isActive: slide.isActive },
   });
 
   revalidatePath("/admin/home");
   revalidatePath("/dashboard");
-  redirect(`/admin/home?slide=${slide.id}`);
+  redirect(homeCarouselAdminPath(vertical, slide.id));
 }
 
 export async function updateHomeCarouselSlideAction(formData: FormData) {
@@ -333,6 +357,7 @@ export async function updateHomeCarouselSlideAction(formData: FormData) {
 
   const current = await db.homeCarouselSlide.findUnique({ where: { id: slideId } });
   if (!current) return;
+  const vertical = normalizeUserVisibleVerticalId(text(formData, "vertical") || current.vertical);
 
   const before = await getCarouselImageInput(
     formData,
@@ -356,6 +381,7 @@ export async function updateHomeCarouselSlideAction(formData: FormData) {
   const slide = await db.homeCarouselSlide.update({
     where: { id: slideId },
     data: {
+      vertical,
       title: text(formData, "title") || null,
       beforeImageUrl: before.publicUrl,
       beforeStorageKey: before.storageKey,
@@ -374,12 +400,12 @@ export async function updateHomeCarouselSlideAction(formData: FormData) {
     targetType: "HomeCarouselSlide",
     targetId: slide.id,
     summary: "اسلاید کاروسل خانه به‌روزرسانی شد.",
-    metadata: { title: slide.title, sortOrder: slide.sortOrder, isActive: slide.isActive },
+    metadata: { title: slide.title, vertical, sortOrder: slide.sortOrder, isActive: slide.isActive },
   });
 
   revalidatePath("/admin/home");
   revalidatePath("/dashboard");
-  redirect(`/admin/home?slide=${slide.id}`);
+  redirect(homeCarouselAdminPath(vertical, slide.id));
 }
 
 export async function deleteHomeCarouselSlideAction(formData: FormData) {
@@ -389,6 +415,7 @@ export async function deleteHomeCarouselSlideAction(formData: FormData) {
 
   const slide = await db.homeCarouselSlide.findUnique({ where: { id: slideId } });
   if (!slide) return;
+  const vertical = normalizeUserVisibleVerticalId(text(formData, "vertical") || slide.vertical);
 
   await db.homeCarouselSlide.delete({ where: { id: slideId } });
 
@@ -407,12 +434,12 @@ export async function deleteHomeCarouselSlideAction(formData: FormData) {
     targetType: "HomeCarouselSlide",
     targetId: slide.id,
     summary: "اسلاید کاروسل خانه حذف شد.",
-    metadata: { title: slide.title },
+    metadata: { title: slide.title, vertical },
   });
 
   revalidatePath("/admin/home");
   revalidatePath("/dashboard");
-  redirect("/admin/home");
+  redirect(homeCarouselAdminPath(vertical));
 }
 
 function isAvailableToUsers(formData: FormData) {
@@ -475,7 +502,7 @@ export async function createBillingPackageAction(formData: FormData) {
   const title = text(formData, "title");
   const description = text(formData, "description");
   const priceAmount = integer(formData, "priceAmount");
-  const credits = integer(formData, "credits");
+  const credits = visibleCreditsToCreditUnits(integer(formData, "credits"));
   const projectLimit = type === "SUBSCRIPTION" ? optionalInteger(formData, "projectLimit") : null;
   const freeVariantLimit = type === "SUBSCRIPTION" ? Math.max(0, integer(formData, "freeVariantLimit", 2)) : 0;
   const periodDays = type === "SUBSCRIPTION" ? Math.max(1, integer(formData, "periodDays", 30)) : null;
@@ -520,7 +547,7 @@ export async function updateBillingPackageAction(formData: FormData) {
   const title = text(formData, "title");
   const description = text(formData, "description");
   const priceAmount = integer(formData, "priceAmount");
-  const credits = integer(formData, "credits");
+  const credits = visibleCreditsToCreditUnits(integer(formData, "credits"));
   const projectLimit = type === "SUBSCRIPTION" ? optionalInteger(formData, "projectLimit") : null;
   const freeVariantLimit = type === "SUBSCRIPTION" ? Math.max(0, integer(formData, "freeVariantLimit", 2)) : 0;
   const periodDays = type === "SUBSCRIPTION" ? Math.max(1, integer(formData, "periodDays", 30)) : null;
@@ -634,7 +661,7 @@ export async function duplicateBillingPackageAction(formData: FormData) {
 export async function adjustUserCreditsAction(formData: FormData) {
   const session = await requireAdminOrSalesSession();
   const userId = text(formData, "userId");
-  const delta = integer(formData, "delta");
+  const delta = visibleCreditsToCreditUnits(integer(formData, "delta"));
   const reason = text(formData, "reason");
 
   if (!userId || delta === 0 || !reason) {
@@ -670,7 +697,7 @@ export async function adjustUserCreditsAction(formData: FormData) {
       targetType: "User",
       targetId: userId,
       summary: `اعتبار کاربر ${delta > 0 ? "افزایش" : "کاهش"} یافت.`,
-      metadata: { delta, reason },
+      metadata: { deltaCredits: creditUnitsToVisibleCredits(delta), deltaCreditUnits: delta, reason },
     });
   }
 
@@ -710,7 +737,7 @@ export async function createSalesReferralCodesAction(formData: FormData) {
 export async function updateUserCreditsAction(formData: FormData) {
   const session = await requireAdminSession();
   const userId = text(formData, "userId");
-  const credits = integer(formData, "credits");
+  const credits = visibleCreditsToCreditUnits(integer(formData, "credits"));
   if (!userId || credits < 0) return;
 
   const reason = "تنظیم مستقیم اعتبار از فرم قدیمی ادمین";
@@ -743,7 +770,7 @@ export async function updateUserCreditsAction(formData: FormData) {
       targetType: "User",
       targetId: userId,
       summary: "اعتبار کاربر تنظیم شد.",
-      metadata: { targetCredits: credits, reason },
+      metadata: { targetCredits: creditUnitsToVisibleCredits(credits), targetCreditUnits: credits, reason },
     });
   }
 
@@ -1077,7 +1104,7 @@ export async function assignCustomSubscriptionAction(formData: FormData) {
   const userId = text(formData, "userId");
   const customTitle = text(formData, "customTitle") || "پلن اختصاصی";
   const projectLimit = integer(formData, "projectLimit");
-  const creditsPerPeriod = integer(formData, "creditsPerPeriod");
+  const creditsPerPeriod = visibleCreditsToCreditUnits(integer(formData, "creditsPerPeriod"));
   const periodDays = Math.max(1, integer(formData, "periodDays", 30));
   const freeVariantLimit = Math.max(0, integer(formData, "freeVariantLimit", 0));
   const notes = text(formData, "notes");
@@ -1112,7 +1139,13 @@ export async function assignCustomSubscriptionAction(formData: FormData) {
     targetType: "UserSubscription",
     targetId: subscription.id,
     summary: `پلن اختصاصی ${customTitle} به کاربر اختصاص یافت.`,
-    metadata: { projectLimit, creditsPerPeriod, periodDays, freeVariantLimit },
+    metadata: {
+      projectLimit,
+      creditsPerPeriod: creditUnitsToVisibleCredits(creditsPerPeriod),
+      creditUnitsPerPeriod: creditsPerPeriod,
+      periodDays,
+      freeVariantLimit,
+    },
   });
   revalidateAdmin();
 }
@@ -1163,7 +1196,7 @@ export async function assignCreditPackAction(formData: FormData) {
       targetType: "CreditEvent",
       targetId: result.event.id,
       summary: `بسته اعتباری ${result.billingPackage.title} به کاربر اختصاص یافت.`,
-      metadata: { packageId, credits: result.billingPackage.credits },
+      metadata: { packageId, credits: creditUnitsToVisibleCredits(result.billingPackage.credits), creditUnits: result.billingPackage.credits },
     });
   }
 
@@ -1611,6 +1644,7 @@ export async function updateCreativeStyleAction(formData: FormData) {
   const prompt = text(formData, "prompt");
   const previewImageUrl = await getStylePreviewImageUrl(formData, text(formData, "currentPreviewImageUrl"));
   const sortOrder = integer(formData, "sortOrder");
+  const vertical = normalizeVerticalId(text(formData, "vertical"));
 
   if (!styleId || !name || !description || !prompt || !previewImageUrl) {
     return;
@@ -1630,6 +1664,7 @@ export async function updateCreativeStyleAction(formData: FormData) {
       description,
       prompt,
       previewImageUrl,
+      vertical,
       sortOrder,
       isActive: availableToUsers,
       isUserVisible: availableToUsers,
@@ -1644,6 +1679,7 @@ export async function updateCreativeStyleAction(formData: FormData) {
     summary: `سبک ${name} ویرایش شد.`,
     metadata: {
       previousName: previous?.name,
+      vertical,
       promptChanged: previous?.prompt !== prompt,
       wasUserVisible: previous?.isUserVisible,
       isUserVisible: availableToUsers,
@@ -1661,6 +1697,7 @@ export async function createCreativeStyleAction(formData: FormData) {
   const description = text(formData, "description");
   const prompt = text(formData, "prompt");
   const previewImageUrl = await getStylePreviewImageUrl(formData, "/images/placeholders/jewelry/style-minimal.webp");
+  const vertical = normalizeVerticalId(text(formData, "vertical"));
 
   if (!name || !description || !prompt || !previewImageUrl) {
     return;
@@ -1674,6 +1711,7 @@ export async function createCreativeStyleAction(formData: FormData) {
       description,
       prompt,
       previewImageUrl,
+      vertical,
       sortOrder: integer(formData, "sortOrder"),
       isActive: availableToUsers,
       isUserVisible: availableToUsers,
@@ -1686,6 +1724,7 @@ export async function createCreativeStyleAction(formData: FormData) {
     targetType: "CreativeStyle",
     targetId: style.id,
     summary: `سبک ${name} ساخته شد.`,
+    metadata: { vertical },
   });
 
   revalidatePath("/admin/styles");

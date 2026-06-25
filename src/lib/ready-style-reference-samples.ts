@@ -2,9 +2,12 @@ import "server-only";
 
 import { access, mkdir, readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
+import { DEFAULT_VERTICAL_ID, type VerticalId } from "@/lib/verticals";
 
 export const readyStyleReferenceSamplePublicBasePath = "/images/Samples";
 export const readyStyleReferenceSampleDirectory = path.join(process.cwd(), "public", "images", "Samples");
+const foodReadyStyleReferenceSamplePublicBasePath = "/images/placeholders/food";
+const foodReadyStyleReferenceSampleDirectory = path.join(process.cwd(), "public", "images", "placeholders", "food");
 
 const allowedSampleExtensions = new Set([".webp"]);
 
@@ -21,7 +24,46 @@ const sampleFiles = [
   "neckless-editorial-wooddecor.webp",
   "Ring-Redbg.webp",
   "shadow.webp",
+  "style-ref-blue-pendant-warm.webp",
+  "style-ref-chain-editorial-magazine.webp",
+  "style-ref-diamond-ring-black.webp",
+  "style-ref-diamond-stack-minimal.webp",
+  "style-ref-gem-earrings-leaf.webp",
+  "style-ref-gold-hoops-stone.webp",
+  "style-ref-gold-set-dark-stone.webp",
+  "style-ref-hoop-earring-model.webp",
+  "style-ref-layered-necklace-model.webp",
+  "style-ref-rings-satin-hand.webp",
+  "style-ref-rose-rings-box.webp",
+  "style-ref-snake-chain-black.webp",
+  "style-ref-watch-blue-editorial.webp",
+  "style-ref-watch-clean-catalog.webp",
+  "style-ref-watch-dark-leather.webp",
+  "style-ref-art-minimal-ring-white.webp",
+  "style-ref-dark-chain-velvet.webp",
+  "style-ref-plaster-pearl-earring.webp",
+  "style-ref-dark-luxury-watch.webp",
+  "style-ref-frosted-silver-ring.webp",
+  "style-ref-burgundy-necklace.webp",
+  "style-ref-minimal-pearl-earrings.webp",
+  "style-ref-sage-sunglasses.webp",
   "wood-ring.webp",
+];
+
+const foodSampleFiles = [
+  "food-packaged.webp",
+  "food-restaurant-plate.webp",
+  "food-menu-catalog.webp",
+  "food-style-minimal.webp",
+  "food-ref-minimal-matcha-white.webp",
+  "food-ref-dark-chocolate-dessert.webp",
+  "food-ref-art-stone-appetizer.webp",
+  "food-ref-fancy-amber-drink.webp",
+  "food-ref-minimal-pasta-catalog.webp",
+  "food-ref-dark-fine-dining.webp",
+  "food-ref-graphic-croissant.webp",
+  "food-ref-clean-takeaway-cup.webp",
+  "food-style-luxury.webp",
 ];
 
 const sampleMetadata: Record<string, { title: string; alt: string }> = {
@@ -73,9 +115,184 @@ const sampleMetadata: Record<string, { title: string; alt: string }> = {
     title: "سایه نرم",
     alt: "نمونه عکس جواهر با سایه نرم",
   },
+  "style-ref-blue-pendant-warm": {
+    title: "گردنبند با نور گرم",
+    alt: "نمونه عکس گردنبند طلایی با آویز آبی و نور گرم ادیتوریال",
+  },
+  "style-ref-chain-editorial-magazine": {
+    title: "زنجیر روی مجله",
+    alt: "نمونه عکس زنجیر طلایی روی مجله با نور طبیعی و عمق میدان کم",
+  },
+  "style-ref-diamond-ring-black": {
+    title: "انگشتر روی زمینه تیره",
+    alt: "نمونه عکس انگشتر نگین‌دار روی سطح مشکی با نور کنترل‌شده",
+  },
+  "style-ref-diamond-stack-minimal": {
+    title: "چیدمان مینیمال نگین",
+    alt: "نمونه عکس انگشتر و نگین روی زمینه روشن با چیدمان مینیمال",
+  },
+  "style-ref-gem-earrings-leaf": {
+    title: "گوشواره سنگی",
+    alt: "نمونه عکس گوشواره سنگی روی برگ سبز با کنتراست رنگی واضح",
+  },
+  "style-ref-gold-hoops-stone": {
+    title: "گوشواره طلایی و سنگ",
+    alt: "نمونه عکس گوشواره طلایی کنار سنگ با سایه نرم و فضای استودیویی",
+  },
+  "style-ref-gold-set-dark-stone": {
+    title: "ست طلایی تیره",
+    alt: "نمونه عکس ست طلایی روی سنگ تیره با نورپردازی لوکس",
+  },
+  "style-ref-hoop-earring-model": {
+    title: "گوشواره با مدل",
+    alt: "نمونه عکس گوشواره حلقه‌ای روی مدل با قاب نزدیک و طبیعی",
+  },
+  "style-ref-layered-necklace-model": {
+    title: "گردنبند لایه‌ای",
+    alt: "نمونه عکس گردنبند و انگشتر روی مدل با لباس روشن",
+  },
+  "style-ref-rings-satin-hand": {
+    title: "انگشتر روی ساتن",
+    alt: "نمونه عکس انگشترهای ظریف روی دست و پارچه ساتن",
+  },
+  "style-ref-rose-rings-box": {
+    title: "انگشتر رزگلد در جعبه",
+    alt: "نمونه عکس انگشترهای رزگلد داخل جعبه مخملی روشن",
+  },
+  "style-ref-snake-chain-black": {
+    title: "زنجیر طلایی روی مشکی",
+    alt: "نمونه عکس زنجیر تخت طلایی روی لباس مشکی با حس ادیتوریال",
+  },
+  "style-ref-watch-blue-editorial": {
+    title: "ساعت طلایی آبی",
+    alt: "نمونه عکس ساعت طلایی با انعکاس و پس‌زمینه آبی ادیتوریال",
+  },
+  "style-ref-watch-clean-catalog": {
+    title: "ساعت کاتالوگی روشن",
+    alt: "نمونه عکس ساعت روی زمینه روشن برای خروجی کاتالوگی تمیز",
+  },
+  "style-ref-watch-dark-leather": {
+    title: "ساعت چرمی تیره",
+    alt: "نمونه عکس ساعت چرمی روی زمینه مشکی با انعکاس لوکس",
+  },
+  "style-ref-art-minimal-ring-white": {
+    title: "مینیمال سفید",
+    alt: "نمونه عکس انگشتر طلایی تنها روی زمینه سفید نرم با فضای منفی زیاد",
+  },
+  "style-ref-dark-chain-velvet": {
+    title: "زنجیر روی مخمل تیره",
+    alt: "نمونه عکس زنجیر طلایی روی مخمل مشکی با نور ادیتوریال تیره",
+  },
+  "style-ref-plaster-pearl-earring": {
+    title: "گوشواره روی بلوک گچی",
+    alt: "نمونه عکس گوشواره مرواریدی روی بلوک گچی با سایه هندسی آرتیستیک",
+  },
+  "style-ref-dark-luxury-watch": {
+    title: "ساعت لوکس تیره",
+    alt: "نمونه عکس ساعت لوکس روی سنگ تیره با بازتاب کنترل‌شده",
+  },
+  "style-ref-frosted-silver-ring": {
+    title: "نقره روی شیشه مات",
+    alt: "نمونه عکس انگشتر نقره‌ای روی شیشه مات با حس آبی و سرد",
+  },
+  "style-ref-burgundy-necklace": {
+    title: "گردنبند روی ساتن زرشکی",
+    alt: "نمونه عکس گردنبند روی ساتن زرشکی با حال‌وهوای ادیتوریال فَنسی",
+  },
+  "style-ref-minimal-pearl-earrings": {
+    title: "مروارید مینیمال",
+    alt: "نمونه عکس گوشواره مرواریدی روی سنگ روشن با ترکیب‌بندی ساده و آرام",
+  },
+  "style-ref-sage-sunglasses": {
+    title: "اکسسوری سبز گرافیکی",
+    alt: "نمونه عکس عینک طلایی روی زمینه سبز ملایم با سایه گرافیکی تمیز",
+  },
   "wood-ring": {
     title: "انگشتر و چوب",
     alt: "نمونه عکس انگشتر با بافت چوبی",
+  },
+};
+
+const foodSampleMetadata: Record<string, { title: string; alt: string }> = {
+  "food-cafe-item": {
+    title: "چیدمان کافه",
+    alt: "نمونه چیدمان کروسان و قهوه برای عکس کافه",
+  },
+  "food-dessert-chocolate": {
+    title: "دسر شکلاتی",
+    alt: "نمونه عکس دسر شکلاتی با نور استودیویی",
+  },
+  "food-packaged": {
+    title: "بسته‌بندی غذا",
+    alt: "نمونه عکس غذای بسته‌بندی‌شده برای فروش آنلاین",
+  },
+  "food-restaurant-plate": {
+    title: "بشقاب رستورانی",
+    alt: "نمونه چیدمان بشقاب رستورانی مینیمال",
+  },
+  "food-dessert-strawberry": {
+    title: "دسر توت‌فرنگی",
+    alt: "نمونه عکس دسر توت‌فرنگی برای منوی رستوران",
+  },
+  "food-dish-natural": {
+    title: "بشقاب با نور طبیعی",
+    alt: "نمونه عکس غذای رستورانی با نور طبیعی و چیدمان تمیز",
+  },
+  "food-drink-social": {
+    title: "نوشیدنی اجتماعی",
+    alt: "نمونه عکس نوشیدنی برای پست شبکه اجتماعی",
+  },
+  "food-home-ugc": {
+    title: "حس خانگی تمیز",
+    alt: "نمونه عکس غذا با حس خانگی، نور نرم و کادر مناسب شبکه اجتماعی",
+  },
+  "food-menu-catalog": {
+    title: "منوی کاتالوگی",
+    alt: "نمونه عکس غذا برای منوی آنلاین با کادر ساده و خوانا",
+  },
+  "food-ref-minimal-matcha-white": {
+    title: "نوشیدنی مینیمال سفید",
+    alt: "نمونه عکس نوشیدنی سبز روی زمینه سفید خلوت با فضای منفی زیاد",
+  },
+  "food-ref-dark-chocolate-dessert": {
+    title: "دسر تیره ادیتوریال",
+    alt: "نمونه عکس دسر شکلاتی روی بشقاب مشکی با نورپردازی تیره و حرفه‌ای",
+  },
+  "food-ref-art-stone-appetizer": {
+    title: "بشقاب آرتیستیک سنگی",
+    alt: "نمونه عکس پیش‌غذا روی بشقاب سنگی با سایه هندسی و ترکیب‌بندی هنری",
+  },
+  "food-ref-fancy-amber-drink": {
+    title: "نوشیدنی فَنسی تیره",
+    alt: "نمونه عکس نوشیدنی کهربایی روی سطح بازتابی با حال‌وهوای بار لوکس",
+  },
+  "food-ref-minimal-pasta-catalog": {
+    title: "پاستای مینیمال",
+    alt: "نمونه عکس پاستا روی بشقاب سفید با پس‌زمینه ساده و کاتالوگی",
+  },
+  "food-ref-dark-fine-dining": {
+    title: "فاین‌داینینگ تیره",
+    alt: "نمونه عکس بشقاب رستورانی لوکس روی زمینه تیره با چیدمان خلوت",
+  },
+  "food-ref-graphic-croissant": {
+    title: "شیرینی گرافیکی",
+    alt: "نمونه عکس کروسان روی کاغذ رنگی با سایه سخت و جهت هنری مدرن",
+  },
+  "food-ref-clean-takeaway-cup": {
+    title: "لیوان بیرون‌بر تمیز",
+    alt: "نمونه عکس لیوان نوشیدنی بیرون‌بر روی سطح خنثی با زاویه کاتالوگی",
+  },
+  "food-style-luxury": {
+    title: "لوکس رستورانی",
+    alt: "نمونه عکس غذا با نورپردازی لوکس و چیدمان مناسب رستوران",
+  },
+  "food-style-minimal": {
+    title: "مینیمال روشن",
+    alt: "نمونه عکس غذا با زمینه روشن، سایه نرم و فضای تمیز",
+  },
+  "food-style-social": {
+    title: "اجتماعی پینترستی",
+    alt: "نمونه عکس غذا و نوشیدنی برای شبکه اجتماعی با حس پینترستی",
   },
 };
 
@@ -88,6 +305,7 @@ const legacyIdByStem: Record<string, string> = {
 };
 
 export type ReadyStyleReferenceSample = {
+  vertical: VerticalId;
   id: string;
   fileName: string;
   filePath: string;
@@ -98,9 +316,13 @@ export type ReadyStyleReferenceSample = {
   updatedAt: Date;
 };
 
-async function listSampleDirectoryFiles() {
+export function readyStyleReferenceSampleDirectoryForVertical(vertical: VerticalId = DEFAULT_VERTICAL_ID) {
+  return vertical === "food" ? foodReadyStyleReferenceSampleDirectory : readyStyleReferenceSampleDirectory;
+}
+
+async function listSampleDirectoryFiles(vertical: VerticalId = DEFAULT_VERTICAL_ID) {
   try {
-    return await readdir(readyStyleReferenceSampleDirectory);
+    return await readdir(readyStyleReferenceSampleDirectoryForVertical(vertical));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return [];
@@ -110,7 +332,14 @@ async function listSampleDirectoryFiles() {
   }
 }
 
-function samplePathCandidates(fileName: string) {
+function samplePathCandidates(fileName: string, vertical: VerticalId = DEFAULT_VERTICAL_ID) {
+  if (vertical === "food") {
+    return [
+      path.join(process.cwd(), "public", "images", "placeholders", "food", fileName),
+      path.join(process.cwd(), ".next", "standalone", "public", "images", "placeholders", "food", fileName),
+    ];
+  }
+
   return [
     path.join(process.cwd(), "public", "images", "Samples", fileName),
     path.join(process.cwd(), "public", "images", "samples", fileName),
@@ -119,8 +348,8 @@ function samplePathCandidates(fileName: string) {
   ];
 }
 
-async function findExistingSampleFilePath(fileName: string) {
-  for (const candidate of samplePathCandidates(fileName)) {
+async function findExistingSampleFilePath(fileName: string, vertical: VerticalId = DEFAULT_VERTICAL_ID) {
+  for (const candidate of samplePathCandidates(fileName, vertical)) {
     try {
       await access(candidate);
       return candidate;
@@ -129,7 +358,7 @@ async function findExistingSampleFilePath(fileName: string) {
     }
   }
 
-  return path.join(readyStyleReferenceSampleDirectory, fileName);
+  return path.join(vertical === "food" ? foodReadyStyleReferenceSampleDirectory : readyStyleReferenceSampleDirectory, fileName);
 }
 
 function sampleIdFromFileName(fileName: string) {
@@ -145,45 +374,54 @@ function fallbackTitleFromId(id: string) {
     .join(" ");
 }
 
-export async function ensureReadyStyleReferenceSampleDirectory() {
-  await mkdir(readyStyleReferenceSampleDirectory, { recursive: true });
+export async function ensureReadyStyleReferenceSampleDirectory(vertical: VerticalId = DEFAULT_VERTICAL_ID) {
+  await mkdir(readyStyleReferenceSampleDirectoryForVertical(vertical), { recursive: true });
 }
 
-export async function getReadyStyleReferenceSamples(): Promise<ReadyStyleReferenceSample[]> {
-  const directoryFiles = await listSampleDirectoryFiles();
-  const fileNames = Array.from(new Set([...sampleFiles, ...directoryFiles]));
+export async function getReadyStyleReferenceSamples(vertical: VerticalId = DEFAULT_VERTICAL_ID): Promise<ReadyStyleReferenceSample[]> {
+  const directoryFiles = await listSampleDirectoryFiles(vertical);
+  const uploadedFoodSampleFiles = directoryFiles.filter((fileName) => fileName.startsWith("ready-sample-"));
+  const fileNames =
+    vertical === "food"
+      ? Array.from(new Set([...foodSampleFiles, ...uploadedFoodSampleFiles]))
+      : Array.from(new Set([...sampleFiles, ...directoryFiles]));
+  const basePath = vertical === "food" ? foodReadyStyleReferenceSamplePublicBasePath : readyStyleReferenceSamplePublicBasePath;
+  const metadataById = vertical === "food" ? foodSampleMetadata : sampleMetadata;
   const samples = await Promise.all(
     fileNames
       .filter((fileName) => allowedSampleExtensions.has(path.extname(fileName).toLowerCase()))
       .map(async (fileName) => {
         const id = sampleIdFromFileName(fileName);
-        const metadata = sampleMetadata[id];
-        const filePath = await findExistingSampleFilePath(fileName);
+        const metadata = metadataById[id];
+        const filePath = await findExistingSampleFilePath(fileName, vertical);
         const info = await stat(filePath).catch(() => null);
 
         return {
+          vertical,
           id,
           fileName,
           filePath,
-          fileUrl: `${readyStyleReferenceSamplePublicBasePath}/${encodeURIComponent(fileName)}`,
+          fileUrl: `${basePath}/${encodeURIComponent(fileName)}`,
           title: metadata?.title ?? fallbackTitleFromId(id),
-          alt: metadata?.alt ?? "نمونه آماده عکس جواهر",
+          alt: metadata?.alt ?? (vertical === "food" ? "نمونه آماده عکس غذا و نوشیدنی" : "نمونه آماده عکس جواهر"),
           size: info?.size ?? 0,
           updatedAt: info?.mtime ?? new Date(0),
         };
       }),
   );
 
-  return samples.sort((left, right) => left.fileName.localeCompare(right.fileName, "en"));
+  return samples
+    .filter((sample) => sample.vertical === vertical)
+    .sort((left, right) => left.fileName.localeCompare(right.fileName, "en"));
 }
 
-export async function getReadyStyleReferenceSample(sampleId: string) {
-  const samples = await getReadyStyleReferenceSamples();
+export async function getReadyStyleReferenceSample(sampleId: string, vertical: VerticalId = DEFAULT_VERTICAL_ID) {
+  const samples = await getReadyStyleReferenceSamples(vertical);
   return samples.find((sample) => sample.id === sampleId) ?? null;
 }
 
 export async function readReadyStyleReferenceSample(sample: ReadyStyleReferenceSample) {
-  for (const candidate of samplePathCandidates(sample.fileName)) {
+  for (const candidate of samplePathCandidates(sample.fileName, sample.vertical)) {
     try {
       return await readFile(candidate);
     } catch (error) {

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { BillingScreen } from "@/features/account/screens/billing-screen";
 import { requireUserSession } from "@/lib/auth/session";
+import { creditUnitsToVisibleCredits } from "@/lib/credit-units";
 import { db } from "@/lib/db";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
 
@@ -68,7 +69,10 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
 
   return (
     <BillingScreen
-      packages={packages}
+      packages={packages.map((billingPackage) => ({
+        ...billingPackage,
+        credits: creditUnitsToVisibleCredits(billingPackage.credits),
+      }))}
       purchaseRequests={purchaseRequests.map((request) => ({
         ...request,
         receiptImageUrl: storageUrlFromKeyOrUrl(request.receiptStorageKey, request.receiptImageUrl),

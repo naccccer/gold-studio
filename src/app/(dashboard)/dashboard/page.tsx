@@ -1,4 +1,5 @@
 import { DashboardHomeScreen } from "@/features/dashboard/screens/dashboard-home-screen";
+import { getCurrentVertical } from "@/lib/current-vertical";
 import { db } from "@/lib/db";
 import { requireUserSession } from "@/lib/auth/session";
 import { getActiveHomeCarouselImages } from "@/lib/home-carousel";
@@ -6,13 +7,14 @@ import { storagePublicUrl } from "@/lib/storage";
 
 export default async function DashboardPage() {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
 
   const [user, projectCount, completedCount, recentProjects, carouselImages] = await Promise.all([
     db.user.findUnique({ where: { id: session.userId } }),
-    db.project.count({ where: { userId: session.userId, archivedAt: null } }),
-    db.project.count({ where: { userId: session.userId, status: "COMPLETED", archivedAt: null } }),
+    db.project.count({ where: { userId: session.userId, vertical, archivedAt: null } }),
+    db.project.count({ where: { userId: session.userId, vertical, status: "COMPLETED", archivedAt: null } }),
     db.project.findMany({
-      where: { userId: session.userId, archivedAt: null },
+      where: { userId: session.userId, vertical, archivedAt: null },
       orderBy: { createdAt: "desc" },
       take: 3,
       select: {
@@ -31,7 +33,7 @@ export default async function DashboardPage() {
         createdAt: true,
       },
     }),
-    getActiveHomeCarouselImages(),
+    getActiveHomeCarouselImages(vertical),
   ]);
 
   return (

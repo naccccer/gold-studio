@@ -88,7 +88,26 @@ Generate Prisma Client, apply any newer migrations, and start:
 npm run db:generate
 npx prisma migrate deploy
 npm run dev
+npm run dev:food
 ```
+
+## Local Vertical Switching
+
+Use the vertical dev shortcuts when localhost should behave like a specific Ovala product:
+
+```powershell
+npm run dev:jewelry
+npm run dev:food
+```
+
+These commands start the normal Next.js dev server and set `OVALA_LOCAL_VERTICAL` only for that terminal process. Stop the server with `Ctrl+C`, then run the other command to switch.
+
+- `npm run dev:jewelry`: default Jewelry localhost behavior.
+- `npm run dev:food`: Food localhost behavior, matching `food.ovala.ir`.
+- `npm run dev`: normal host-based behavior; localhost falls back to Jewelry unless that shell already has `OVALA_LOCAL_VERTICAL`.
+- When the normal dev server is already running, open `/gallery?vertical=food` or `/gallery?vertical=jewelry` on localhost to set the local preview vertical cookie without editing `.env`.
+
+Do not use local Clothing or Furniture overrides yet. Those verticals are reserved IDs only until Phase 6 intentionally starts.
 
 ## Admin Access
 

@@ -1,10 +1,12 @@
 import type { Prisma, QualityReviewReason } from "@/generated/prisma";
 import { analyzeQualityReviewImagesWithLiara, visionModel } from "@/lib/ai/vision";
 import { getProviderSettings } from "@/lib/ai/provider-settings";
+import { getGenerationCreditUnitCost } from "@/lib/credit-units";
 import { db } from "@/lib/db";
 import { createUserNotification } from "@/lib/notifications";
 import { isAllowedStorageKey, readStorageObject } from "@/lib/storage";
 import { readStoredUpload } from "@/lib/uploads";
+import { normalizeVerticalId } from "@/lib/verticals";
 
 const REVIEW_REASON_LABELS: Record<QualityReviewReason, string> = {
   PRODUCT_CHANGED: "محصول در خروجی عوض شده",
@@ -138,7 +140,7 @@ export async function approveQualityReviewWithRefund({
     const review = await tx.qualityReview.findFirst({
       where: { id: reviewId, status: "PENDING", refundCreditEventId: null },
       include: {
-        project: { select: { id: true, title: true } },
+        project: { select: { id: true, title: true, vertical: true } },
       },
     });
 
@@ -151,6 +153,7 @@ export async function approveQualityReviewWithRefund({
       orderBy: { capturedAt: "desc" },
     });
     const reason = `بازگشت اعتبار بابت بررسی کیفیت پروژه ${review.project.title || review.project.id}`;
+    const refundCreditUnits = capturedReservation?.creditUnits ?? getGenerationCreditUnitCost(normalizeVerticalId(review.project.vertical));
     let creditEvent;
 
     if (capturedReservation?.source === "SUBSCRIPTION" && capturedReservation.subscriptionId) {
@@ -168,7 +171,7 @@ export async function approveQualityReviewWithRefund({
         await tx.userSubscription.update({
           where: { id: subscription.id },
           data: {
-            creditsUsedThisPeriod: { decrement: 1 },
+            creditsUsedThisPeriod: { decrement: capturedReservation.creditUnits },
             ...(capturedReservation.reservesProject && subscription.projectsUsedThisPeriod > 0
               ? { projectsUsedThisPeriod: { decrement: 1 } }
               : {}),
@@ -178,9 +181,9 @@ export async function approveQualityReviewWithRefund({
           data: {
             userId: review.userId,
             actorAdminId: adminId,
-            delta: 1,
+            delta: capturedReservation.creditUnits,
             balanceBefore: Math.max(0, subscription.creditsPerPeriod - subscription.creditsUsedThisPeriod),
-            balanceAfter: Math.max(0, subscription.creditsPerPeriod - subscription.creditsUsedThisPeriod + 1),
+            balanceAfter: Math.max(0, subscription.creditsPerPeriod - subscription.creditsUsedThisPeriod + capturedReservation.creditUnits),
             reason,
             source: "QUALITY_REFUND",
             packageId: subscription.packageId,
@@ -198,15 +201,15 @@ export async function approveQualityReviewWithRefund({
 
       await tx.user.update({
         where: { id: review.userId },
-        data: { credits: { increment: 1 } },
+        data: { credits: { increment: refundCreditUnits } },
       });
       creditEvent = await tx.creditEvent.create({
         data: {
           userId: review.userId,
           actorAdminId: adminId,
-          delta: 1,
+          delta: refundCreditUnits,
           balanceBefore: user.credits,
-          balanceAfter: user.credits + 1,
+          balanceAfter: user.credits + refundCreditUnits,
           reason,
           source: "QUALITY_REFUND",
         },
@@ -228,7 +231,7 @@ export async function approveQualityReviewWithRefund({
       {
         userId: review.userId,
         title: "اعتبار شما برگشت داده شد",
-        body: "درخواست بررسی خروجی تایید شد و یک اعتبار به حساب شما برگشت.",
+        body: "درخواست بررسی خروجی تایید شد و اعتبار مصرف‌شده به حساب شما برگشت.",
         type: "QUALITY_REVIEW",
         source: "QUALITY_REVIEW",
         href: `/projects/${review.projectId}`,

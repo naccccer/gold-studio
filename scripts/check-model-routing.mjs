@@ -3,21 +3,68 @@ import { Buffer } from "node:buffer";
 import { readFile } from "node:fs/promises";
 import ts from "typescript";
 
-const source = await readFile(new URL("../src/lib/ai/model-routing.ts", import.meta.url), "utf8");
-const { outputText } = ts.transpileModule(source, {
-  compilerOptions: {
-    module: ts.ModuleKind.ES2022,
-    target: ts.ScriptTarget.ES2022,
-  },
-});
-const moduleUrl = `data:text/javascript;base64,${Buffer.from(outputText).toString("base64")}`;
-const { clampNon4KImageSetting, providerImageModelsForRouting, resolveModelRoutingDecision } = await import(moduleUrl);
+function transpile(source) {
+  return ts.transpileModule(source, {
+    compilerOptions: {
+      module: ts.ModuleKind.ES2022,
+      target: ts.ScriptTarget.ES2022,
+    },
+  }).outputText;
+}
 
-const hardStyles = ["style_with_model", "style_sample_reference"];
+const stylePolicySource = await readFile(new URL("../src/lib/ai/style-policy.ts", import.meta.url), "utf8");
+const source = await readFile(new URL("../src/lib/ai/model-routing.ts", import.meta.url), "utf8");
+const bundledSource = [
+  stylePolicySource.replace(/\bexport\s+/g, ""),
+  source.replace(/^import \{ isSampleReferenceStyleId \} from "@\/lib\/ai\/style-policy";\r?\n\r?\n/u, ""),
+].join("\n");
+const outputText = transpile(bundledSource);
+const providerSource = await readFile(new URL("../src/lib/ai/provider.ts", import.meta.url), "utf8");
+const providerOutputText = transpile(providerSource);
+const moduleUrl = `data:text/javascript;base64,${Buffer.from(outputText).toString("base64")}`;
+const providerModuleUrl = `data:text/javascript;base64,${Buffer.from(providerOutputText).toString("base64")}`;
+const { clampNon4KImageSetting, providerImageModelsForRouting, resolveModelRoutingDecision } = await import(moduleUrl);
+const { imageProvider, normalizeImageProvider } = await import(providerModuleUrl);
+
+const originalProviderEnv = {
+  IMAGE_PROVIDER: process.env.IMAGE_PROVIDER,
+  AI_IMAGE_PROVIDER: process.env.AI_IMAGE_PROVIDER,
+  IMAGE_GENERATION_PROVIDER: process.env.IMAGE_GENERATION_PROVIDER,
+};
+
+try {
+  delete process.env.IMAGE_PROVIDER;
+  delete process.env.AI_IMAGE_PROVIDER;
+  delete process.env.IMAGE_GENERATION_PROVIDER;
+  assert.equal(imageProvider(), "avalai", "Avalai should be the default image provider");
+  assert.equal(normalizeImageProvider("avalai"), "avalai");
+  assert.equal(normalizeImageProvider("liara"), "liara");
+  assert.equal(normalizeImageProvider("unknown"), "avalai");
+
+  process.env.IMAGE_PROVIDER = "liara";
+  assert.equal(imageProvider(), "liara", "Liara should remain selectable as the fallback provider");
+
+  process.env.IMAGE_PROVIDER = "avalai";
+  assert.equal(imageProvider(), "avalai");
+} finally {
+  for (const [key, value] of Object.entries(originalProviderEnv)) {
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
+}
+
+const hardStyles = ["style_with_model", "style_sample_reference", "food_style_sample_reference"];
 for (const styleId of hardStyles) {
   const decision = resolveModelRoutingDecision({ styleId, operation: "image.edit" });
   assert.equal(decision.routing, "hard", `${styleId} should use hard routing`);
-  assert.equal(decision.reason, styleId, `${styleId} should be recorded as routing reason`);
+  assert.equal(
+    decision.reason,
+    styleId === "style_with_model" ? "style_with_model" : "style_sample_reference",
+    `${styleId} should be recorded as routing reason`,
+  );
 }
 
 for (const styleId of ["style_clean_white", "style_social_media", "style_soft_editorial", "style_dramatic_dark"]) {

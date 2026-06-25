@@ -13,7 +13,7 @@ import {
   DocumentUpload,
   Edit2,
   Eye,
-  GalleryAdd,
+  ArchiveAdd,
   Magicpen,
   TickCircle,
   Trash,
@@ -44,7 +44,7 @@ import {
 } from "@/features/gallery/client-upload-store";
 import { GalleryCropScreen } from "@/features/gallery/screens/gallery-crop-screen";
 import type { StyleOption } from "@/features/projects/presets";
-import { uploadPreview } from "@/lib/placeholders/jewelry-images";
+import type { VerticalContent } from "@/lib/vertical-content";
 
 export type GalleryAssetItem = {
   id: string;
@@ -58,6 +58,7 @@ export type GalleryAssetItem = {
 type GalleryScreenProps = {
   assets: GalleryAssetItem[];
   styles: StyleOption[];
+  content: VerticalContent;
   deleteNotice?: "deleted" | "partial" | "archived" | "restored";
   undoAssetIds?: string;
 };
@@ -72,7 +73,7 @@ function scrollGalleryToTop() {
   });
 }
 
-export function GalleryScreen({ assets, styles, deleteNotice, undoAssetIds }: GalleryScreenProps) {
+export function GalleryScreen({ assets, styles, content, deleteNotice, undoAssetIds }: GalleryScreenProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -278,12 +279,12 @@ export function GalleryScreen({ assets, styles, deleteNotice, undoAssetIds }: Ga
 
         {assets.length === 0 ? (
           <EmptyState
-            title="هنوز عکسی در گالری ندارید."
+            title={content.galleryEmptyTitle}
             className="pt-2"
             media={
               <Image
-                src={uploadPreview.src}
-                alt={uploadPreview.alt}
+                src={content.placeholders.uploadPreview.src}
+                alt={content.placeholders.uploadPreview.alt}
                 fill
                 priority
                 className="object-cover object-[46%_55%]"
@@ -295,7 +296,7 @@ export function GalleryScreen({ assets, styles, deleteNotice, undoAssetIds }: Ga
           <section className="grid grid-cols-2 gap-3">
             {assets.map((asset) => {
               const selected = selectedIds.includes(asset.id);
-              const title = asset.title || asset.originalName || "تصویر محصول";
+              const title = asset.title || asset.originalName || content.galleryImageFallbackTitle;
 
               return (
                 <article key={asset.id} className="relative" data-selection-card>
@@ -372,8 +373,8 @@ export function GalleryScreen({ assets, styles, deleteNotice, undoAssetIds }: Ga
                       <form action={saveGalleryAssetAsStyleReferenceAction}>
                         <input type="hidden" name="assetId" value={asset.id} />
                         <button type="submit" className={contextMenuItemClasses}>
-                          <GalleryAdd aria-hidden={true} className="h-3.5 w-3.5" />
-                          ذخیره در نمونه‌ها
+                          <ArchiveAdd aria-hidden={true} className="h-3.5 w-3.5" />
+                          {content.gallerySaveReferenceLabel}
                         </button>
                       </form>
                       <form action={renameAssetAction} className="space-y-1.5 px-1 py-1.5">
@@ -430,14 +431,14 @@ export function GalleryScreen({ assets, styles, deleteNotice, undoAssetIds }: Ga
           <div className="pointer-events-auto grid grid-cols-2 gap-3 rounded-[1.25rem] border border-dashed border-accent/58 bg-surface/95 p-3 shadow-[0_18px_42px_-30px_rgba(17,16,14,0.32)] backdrop-blur">
             <label htmlFor="gallery-file-input" className={buttonClasses({ className: "h-12 w-full rounded-[1rem]" })}>
               <DocumentUpload aria-hidden={true} className="h-4 w-4" />
-              آپلود عکس
+              {content.galleryUploadLabel}
             </label>
             <label
               htmlFor="gallery-camera-input"
               className={buttonClasses({ variant: "secondary", className: "h-12 w-full rounded-[1rem]" })}
             >
               <Camera aria-hidden={true} className="h-4 w-4" />
-              دوربین
+              {content.galleryCameraLabel}
             </label>
           </div>
         ) : (

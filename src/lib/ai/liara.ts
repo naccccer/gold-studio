@@ -1,7 +1,9 @@
 import type { ImagesResponse } from "openai/resources/images";
 import sharp from "sharp";
 import { clampNon4KImageSetting } from "@/lib/ai/model-routing";
+import { buildGenerationPromptSuffix } from "@/lib/ai/vertical-prompt-rules";
 import { getOutputPresetSpec } from "@/lib/output-presets";
+import { DEFAULT_VERTICAL_ID, type VerticalId } from "@/lib/verticals";
 
 const DEFAULT_LIARA_BASE_URL = "https://ai.liara.ir/api/69fe30c50bb427e049d327f6/v1";
 const DEFAULT_LIARA_IMAGE_MODEL = "google/gemini-3-pro-image-preview";
@@ -28,25 +30,6 @@ const RETRYABLE_NETWORK_PATTERNS = [
   "fetch failed",
   "tls connection",
 ];
-const GENERATION_PROMPT_SUFFIX = [
-  "Return one final premium studio product image based on the input product photo.",
-  "The input product is the strict identity reference. Preserve the exact product shape, proportions, silhouette, metal color, gemstone count and placement, visible chain or front-facing clasp design when naturally visible, watch face, engravings, material finish, and all visible jewelry details.",
-  "Do not expose, invent, duplicate, or relocate hidden backs, rear clasps, closures, posts, undersides, or hardware just to show construction details.",
-  "Do not redesign, simplify, add, remove, replace, resize, recolor, or hallucinate product parts.",
-  "Do not default every output to a tight close-up. Prefer balanced studio framing with clean negative space around the product, while allowing closer detail framing when it clearly benefits the product or selected style.",
-  "Make the image look like a real high-end studio photograph with natural optics, believable lighting, realistic reflections, and true material texture.",
-  "Avoid AI-looking gloss, CGI, 3D render, plastic surfaces, over-smoothing, over-sharpening, artificial sparkle, surreal lighting, distorted geometry, and fake luxury effects.",
-].join("\n");
-const REFERENCE_SCENE_PROMPT_SUFFIX = [
-  "Return one final premium product image using the provided image order and labels.",
-  "The primary product identity reference and any supporting product angles are the only product identity sources.",
-  "The sample scene reference is scene and composition only, not product identity. Replace only the sample product/jewelry/accessory with the uploaded product.",
-  "Preserve the exact uploaded product shape, proportions, silhouette, metal color, gemstone count and placement, visible chain or front-facing clasp design when naturally visible, watch face, engravings, setting, material finish, visible defects, and all visible jewelry details.",
-  "Do not copy, mix in, retain, or reinterpret the sample product identity.",
-  "Integrate the uploaded product realistically into the sample scene with believable perspective, scale, contact shadows, occlusion, reflections, lighting, depth of field, hand/finger wrapping, water distortion, and physical placement when present.",
-  "Avoid AI-looking gloss, CGI, 3D render, plastic surfaces, over-smoothing, over-sharpening, artificial sparkle, surreal lighting, distorted geometry, and fake luxury effects.",
-].join("\n");
-
 type GenerateImageInput = {
   sourceBuffer: Buffer;
   mimeType: string;
@@ -56,6 +39,7 @@ type GenerateImageInput = {
   stylePrompt: string;
   outputPreset?: string | null;
   model?: string | null;
+  vertical?: VerticalId;
 };
 
 type GenerateTextImageInput = {
@@ -63,6 +47,7 @@ type GenerateTextImageInput = {
   stylePrompt: string;
   outputPreset?: string | null;
   model?: string | null;
+  vertical?: VerticalId;
 };
 
 type PreparedFormImage = {
@@ -189,8 +174,8 @@ function extensionFromMimeType(mimeType: string) {
   return "jpg";
 }
 
-function generationPromptSuffix(hasReferenceScene: boolean) {
-  return hasReferenceScene ? REFERENCE_SCENE_PROMPT_SUFFIX : GENERATION_PROMPT_SUFFIX;
+function generationPromptSuffix(vertical: VerticalId, hasReferenceScene: boolean) {
+  return buildGenerationPromptSuffix(vertical, hasReferenceScene);
 }
 
 async function prepareEditImageForModel(buffer: Buffer, mimeType: string, model: string): Promise<PreparedFormImage> {
@@ -467,6 +452,7 @@ export async function generateStyledImageWithLiara({
   stylePrompt,
   outputPreset,
   model: selectedModel,
+  vertical = DEFAULT_VERTICAL_ID,
 }: GenerateImageInput): Promise<LiaraImageResult> {
   const { apiKey, baseURL, model, quality, size } = getLiaraConfig();
   const imageModel = selectedModel?.trim() || model;
@@ -480,7 +466,7 @@ export async function generateStyledImageWithLiara({
         : null;
       const form = new FormData();
       form.append("model", imageModel);
-      form.append("prompt", `${stylePrompt}\n\n${generationPromptSuffix(Boolean(referenceImage))}`);
+      form.append("prompt", `${stylePrompt}\n\n${generationPromptSuffix(vertical, Boolean(referenceImage))}`);
       form.append("size", imageSize);
       form.append("quality", getImageQuality(quality, imageModel));
       form.append(
@@ -538,6 +524,7 @@ export async function generateTextImageWithLiara({
   stylePrompt,
   outputPreset,
   model: selectedModel,
+  vertical = DEFAULT_VERTICAL_ID,
 }: GenerateTextImageInput): Promise<LiaraImageResult> {
   const { apiKey, baseURL, model, quality, size } = getLiaraConfig();
   const imageModel = selectedModel?.trim() || model;
@@ -552,7 +539,7 @@ export async function generateTextImageWithLiara({
           path: "/images/generations",
           body: {
             model: imageModel,
-            prompt: `${prompt}\n\n${stylePrompt}\n\nReturn one final premium studio product image suitable for e-commerce.`,
+            prompt: `${prompt}\n\n${stylePrompt}\n\n${generationPromptSuffix(vertical, false)}`,
             size: imageSize,
             quality: getImageQuality(quality, imageModel),
             n: 1,

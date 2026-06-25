@@ -6,6 +6,7 @@ import {
 } from "@/features/account/components/account-subpage";
 import { requireUserSession } from "@/lib/auth/session";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
+import { creditUnitsToVisibleCredits } from "@/lib/credit-units";
 import { db } from "@/lib/db";
 import { ensureUserReferralCode } from "@/lib/referrals";
 
@@ -62,7 +63,7 @@ export default async function AccountReferralPage() {
               </p>
               <p className="mt-2 text-[11px] font-medium text-muted">
                 {referral.rewardGrantedAt
-                  ? `${referral.rewardCredits.toLocaleString("fa-IR")} اعتبار پرداخت شد`
+                  ? `${creditUnitsToVisibleCredits(referral.rewardCredits).toLocaleString("fa-IR")} اعتبار پرداخت شد`
                   : "در انتظار اولین خرید تاییدشده"}
               </p>
             </div>
@@ -78,7 +79,7 @@ export default async function AccountReferralPage() {
           rewardEvents.map((event) => (
             <div key={event.id} className="flex items-center justify-between rounded-[0.95rem] bg-white/62 px-3 py-2.5 text-xs">
               <span className="text-muted">{event.reason}</span>
-              <span className="font-semibold text-foreground">{event.delta.toLocaleString("fa-IR")}</span>
+              <span className="font-semibold text-foreground">{creditUnitsToVisibleCredits(event.delta).toLocaleString("fa-IR")}</span>
             </div>
           ))
         )}

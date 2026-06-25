@@ -1,6 +1,8 @@
 import { db } from "@/lib/db";
+import { foodPlaceholderImages } from "@/lib/placeholders/food-images";
 import { homeHero, styleSamples } from "@/lib/placeholders/jewelry-images";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
+import { DEFAULT_VERTICAL_ID, type VerticalId } from "@/lib/verticals";
 
 export type HomeCarouselImage = {
   src: string;
@@ -18,15 +20,30 @@ export function fallbackHomeCarouselImages(): HomeCarouselImage[] {
   ];
 }
 
-export async function getActiveHomeCarouselImages(): Promise<HomeCarouselImage[]> {
+export function fallbackFoodHomeCarouselImages(): HomeCarouselImage[] {
+  const { homeHero: foodHomeHero, styleSamples: foodStyleSamples, archiveItems } = foodPlaceholderImages;
+
+  return [
+    { src: foodHomeHero.src, alt: foodHomeHero.alt, beforeSrc: foodStyleSamples[1]?.src, beforeAlt: foodStyleSamples[1]?.alt },
+    { src: foodStyleSamples[0].src, alt: foodStyleSamples[0].alt, beforeSrc: archiveItems[1]?.src, beforeAlt: archiveItems[1]?.alt },
+    { src: foodStyleSamples[3].src, alt: foodStyleSamples[3].alt, beforeSrc: archiveItems[2]?.src, beforeAlt: archiveItems[2]?.alt },
+    { src: foodStyleSamples[4].src, alt: foodStyleSamples[4].alt, beforeSrc: archiveItems[4]?.src, beforeAlt: archiveItems[4]?.alt },
+  ];
+}
+
+function fallbackHomeCarouselImagesForVertical(vertical: VerticalId) {
+  return vertical === "food" ? fallbackFoodHomeCarouselImages() : fallbackHomeCarouselImages();
+}
+
+export async function getActiveHomeCarouselImages(vertical: VerticalId = DEFAULT_VERTICAL_ID): Promise<HomeCarouselImage[]> {
   const slides = await db.homeCarouselSlide.findMany({
-    where: { isActive: true },
+    where: { vertical, isActive: true },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     take: 8,
   });
 
   if (slides.length === 0) {
-    return fallbackHomeCarouselImages();
+    return fallbackHomeCarouselImagesForVertical(vertical);
   }
 
   return slides.map((slide) => ({

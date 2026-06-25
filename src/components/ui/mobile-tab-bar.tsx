@@ -59,18 +59,19 @@ export function MobileTabBar({ tabs, centerAction }: MobileTabBarProps) {
             );
           })}
 
-          <Link
-            href={centerAction.href}
-            data-start-guide-target="new-project"
-            aria-label={centerAction.label}
-            aria-current={centerActive ? "page" : undefined}
-            className={[
-              "motion-nav-item mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full border text-surface shadow-[0_18px_34px_-22px_rgba(43,33,23,0.9)]",
-              centerActive ? "border-foreground bg-foreground" : "border-[#d8bd8d] bg-[#c89f61] hover:bg-[#bb9256]",
-            ].join(" ")}
-          >
-            <Add aria-hidden="true" className="h-5 w-5" />
-          </Link>
+          <div data-start-guide-target="new-project" className="mx-auto flex h-12 w-12 items-center justify-center rounded-full">
+            <Link
+              href={centerAction.href}
+              aria-label={centerAction.label}
+              aria-current={centerActive ? "page" : undefined}
+              className={[
+                "motion-nav-item inline-flex h-12 w-12 items-center justify-center rounded-full text-surface shadow-[0_18px_34px_-22px_rgba(43,33,23,0.9)]",
+                centerActive ? "bg-foreground" : "bg-[var(--accent-base)] hover:bg-accent-hover",
+              ].join(" ")}
+            >
+              <Add aria-hidden="true" className="h-5 w-5" />
+            </Link>
+          </div>
 
           {tabs.slice(2).map((tab) => {
             const Icon = icons[tab.icon];

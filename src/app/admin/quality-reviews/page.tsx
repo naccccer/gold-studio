@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { Prisma } from "@/generated/prisma";
 import { CloseCircle, TickCircle } from "vuesax-icons-react";
 import {
   btnDanger,
@@ -18,16 +19,18 @@ import {
 } from "@/features/admin/components/console";
 import { approveQualityReviewAction, rejectQualityReviewAction } from "@/features/admin/actions";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
+import { formatCreditUnits, getGenerationCreditUnitCost } from "@/lib/credit-units";
 import { db } from "@/lib/db";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { qualityReviewReasonLabel } from "@/lib/quality-review";
 import { requireAdminSession } from "@/lib/auth/session";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
+import { getVerticalLabel, normalizeVerticalId, USER_VISIBLE_VERTICAL_IDS, VERTICALS } from "@/lib/verticals";
 
 export const dynamic = "force-dynamic";
 
 type AdminQualityReviewsPageProps = {
-  searchParams?: Promise<{ status?: string }>;
+  searchParams?: Promise<{ status?: string; vertical?: string }>;
 };
 
 function normalizeStatus(value?: string) {
@@ -50,7 +53,19 @@ export default async function AdminQualityReviewsPage({ searchParams }: AdminQua
 
   const params = await searchParams;
   const status = normalizeStatus(params?.status);
-  const where = status === "ALL" ? {} : { status: status as "PENDING" | "APPROVED" | "REJECTED" };
+  const vertical = params?.vertical && params.vertical !== "ALL" ? normalizeVerticalId(params.vertical) : "ALL";
+  const verticalWhere: Prisma.QualityReviewWhereInput = vertical === "ALL" ? {} : { project: { vertical } };
+  const where: Prisma.QualityReviewWhereInput = {
+    ...verticalWhere,
+    ...(status === "ALL" ? {} : { status: status as "PENDING" | "APPROVED" | "REJECTED" }),
+  };
+  const statusHref = (nextStatus: string) => {
+    const query = new URLSearchParams();
+    if (nextStatus !== "PENDING") query.set("status", nextStatus);
+    if (vertical !== "ALL") query.set("vertical", vertical);
+    const value = query.toString();
+    return `/admin/quality-reviews${value ? `?${value}` : ""}`;
+  };
   const [reviews, pendingCount, approvedCount, rejectedCount] = await Promise.all([
     db.qualityReview.findMany({
       where,
@@ -62,14 +77,15 @@ export default async function AdminQualityReviewsPage({ searchParams }: AdminQua
           include: {
             style: { select: { name: true } },
             sourceAsset: { select: { storageKey: true, fileUrl: true } },
+            creditReservations: { orderBy: { createdAt: "desc" }, take: 1, select: { creditUnits: true } },
           },
         },
         reviewedByAdmin: { select: { name: true, email: true, phone: true } },
       },
     }),
-    db.qualityReview.count({ where: { status: "PENDING" } }),
-    db.qualityReview.count({ where: { status: "APPROVED" } }),
-    db.qualityReview.count({ where: { status: "REJECTED" } }),
+    db.qualityReview.count({ where: { ...verticalWhere, status: "PENDING" } }),
+    db.qualityReview.count({ where: { ...verticalWhere, status: "APPROVED" } }),
+    db.qualityReview.count({ where: { ...verticalWhere, status: "REJECTED" } }),
   ]);
 
   return (
@@ -85,14 +101,28 @@ export default async function AdminQualityReviewsPage({ searchParams }: AdminQua
         }
       />
 
-      <SegmentedLinks
-        items={[
-          { href: "/admin/quality-reviews", label: "در انتظار", active: status === "PENDING", count: pendingCount },
-          { href: "/admin/quality-reviews?status=APPROVED", label: "تاییدشده", active: status === "APPROVED", count: approvedCount },
-          { href: "/admin/quality-reviews?status=REJECTED", label: "ردشده", active: status === "REJECTED", count: rejectedCount },
-          { href: "/admin/quality-reviews?status=ALL", label: "همه", active: status === "ALL" },
-        ]}
-      />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <SegmentedLinks
+          items={[
+            { href: statusHref("PENDING"), label: "در انتظار", active: status === "PENDING", count: pendingCount },
+            { href: statusHref("APPROVED"), label: "تاییدشده", active: status === "APPROVED", count: approvedCount },
+            { href: statusHref("REJECTED"), label: "ردشده", active: status === "REJECTED", count: rejectedCount },
+            { href: statusHref("ALL"), label: "همه", active: status === "ALL" },
+          ]}
+        />
+        <form className="flex items-center gap-2">
+          {status !== "PENDING" ? <input type="hidden" name="status" value={status} /> : null}
+          <select name="vertical" defaultValue={vertical} className={`${fieldClass} h-8 w-36 text-xs`}>
+            <option value="ALL">All verticals</option>
+            {USER_VISIBLE_VERTICAL_IDS.map((item) => (
+              <option key={item} value={item}>
+                {VERTICALS[item].label}
+              </option>
+            ))}
+          </select>
+          <button className={`${btnSecondary} h-8`}>اعمال</button>
+        </form>
+      </div>
 
       {reviews.length === 0 ? (
         <Surface className="p-8">
@@ -104,6 +134,8 @@ export default async function AdminQualityReviewsPage({ searchParams }: AdminQua
             const sourceUrl = storageUrlFromKeyOrUrl(review.project.sourceAsset?.storageKey, review.project.sourceAsset?.fileUrl) || uploadPreview.src;
             const resultUrl = storageUrlFromKeyOrUrl(review.project.resultStorageKey, review.project.resultImageUrl) || uploadPreview.src;
             const aiScore = typeof review.aiScore === "number" ? `${Math.round(review.aiScore * 100).toLocaleString("fa-IR")}٪` : "نامشخص";
+            const costUnits =
+              review.project.creditReservations[0]?.creditUnits ?? getGenerationCreditUnitCost(normalizeVerticalId(review.project.vertical));
 
             return (
               <Surface key={review.id}>
@@ -133,6 +165,8 @@ export default async function AdminQualityReviewsPage({ searchParams }: AdminQua
                     <KeyValueList
                       items={[
                         { label: "دلیل کاربر", value: qualityReviewReasonLabel(review.reason) },
+                        { label: "Vertical", value: getVerticalLabel(review.project.vertical) },
+                        { label: "هزینه/بازگشت", value: `${formatCreditUnits(costUnits)} اعتبار (${costUnits} units)`, dir: "ltr" },
                         { label: "سبک", value: review.project.style.name },
                         { label: "ثبت درخواست", value: formatAdminDate(review.createdAt) },
                         { label: "پیشنهاد AI", value: recommendationLabel(review.aiRecommendation) },

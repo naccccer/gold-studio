@@ -4,6 +4,16 @@
 
 Ovala is a mobile-first Farsi RTL web app for turning low-quality jewelry, gold, watch, and luxury accessory photos into premium studio-style product images.
 
+## Collaboration Rules
+
+- Be objective, outcome-focused, and optimization-minded. Do not act like a yes-man; challenge weak assumptions, point out better options, and prioritize the best result over agreement or reassurance.
+- Assume the developer may be new to software/product work and may not know which questions to ask.
+- Proactively explain missing concepts, hidden risks, tradeoffs, and likely next questions before giving commands or recommendations.
+- Move step by step. Give one short, concrete action at a time when safety, complexity, cost, data, or production behavior matters.
+- Before risky operations such as `git pull`, `npm install`, `prisma migrate deploy`, `npm run db:deploy`, `pm2 restart`, DNS changes, storage changes, or provider changes, first call out the risk, the rollback option, and the exact stop point.
+- Always suggest both app-level backups and hosting/provider snapshots when available before production changes.
+- Do not assume the user knows terms like snapshot, rollback, migration, PM2, DNS, proxy, worker, environment variables, build, lint, branch, merge, or cache; define them briefly when they become relevant.
+
 ## Current Direction
 
 - Professional, minimal, premium, image-led, and easy for non-technical users.

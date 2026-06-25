@@ -6,11 +6,18 @@ import {
   sendPasswordResetOtpAction,
   sendSignupOtpAction,
 } from "@/features/auth/actions";
+import { getCurrentVertical } from "@/lib/current-vertical";
+import { getVerticalContent } from "@/lib/vertical-content";
 
-export default function SignupPage() {
+export default async function SignupPage() {
+  const vertical = await getCurrentVertical();
+  const content = getVerticalContent(vertical);
+
   return (
     <AuthEntryStage
       initialPanel="signup"
+      contextLabel={content.authContextLabel}
+      hint={content.authHint}
       loginAction={loginAction}
       sendSignupAction={sendSignupOtpAction}
       verifySignupAction={completeSignupAction}

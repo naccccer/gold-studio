@@ -22,11 +22,12 @@ import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { db } from "@/lib/db";
 import { requireAdminSession } from "@/lib/auth/session";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
+import { getVerticalLabel, normalizeVerticalId, USER_VISIBLE_VERTICAL_IDS, VERTICALS } from "@/lib/verticals";
 
 export const dynamic = "force-dynamic";
 
 type AdminAssetsPageProps = {
-  searchParams?: Promise<{ q?: string; status?: string; vision?: string; asset?: string }>;
+  searchParams?: Promise<{ q?: string; status?: string; vision?: string; asset?: string; vertical?: string }>;
 };
 
 export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageProps) {
@@ -36,9 +37,12 @@ export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageP
   const q = params?.q?.trim();
   const status = params?.status ?? "READY";
   const vision = params?.vision ?? "";
+  const vertical = params?.vertical && params.vertical !== "ALL" ? normalizeVerticalId(params.vertical) : "ALL";
+  const verticalWhere: Prisma.ProductAssetWhereInput = vertical === "ALL" ? {} : { vertical };
 
   const where: Prisma.ProductAssetWhereInput = {
     ...(status === "ALL" ? {} : { status: status as "READY" | "ARCHIVED" }),
+    ...verticalWhere,
     ...(vision === "analyzed" ? { visionAnalyzedAt: { not: null } } : {}),
     ...(vision === "error" ? { visionError: { not: null } } : {}),
     ...(q
@@ -48,6 +52,7 @@ export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageP
             { title: { contains: q } },
             { originalName: { contains: q } },
             { storageKey: { contains: q } },
+            { vertical: { contains: q } },
             { productType: { contains: q } },
             { visionShortTitle: { contains: q } },
             { visionDescription: { contains: q } },
@@ -67,9 +72,9 @@ export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageP
         _count: { select: { projects: true, supportingProjects: true, batchItems: true } },
       },
     }),
-    db.productAsset.count({ where: { status: "READY" } }),
-    db.productAsset.count({ where: { status: "ARCHIVED" } }),
-    db.productAsset.count({ where: { visionError: { not: null } } }),
+    db.productAsset.count({ where: { ...verticalWhere, status: "READY" } }),
+    db.productAsset.count({ where: { ...verticalWhere, status: "ARCHIVED" } }),
+    db.productAsset.count({ where: { ...verticalWhere, visionError: { not: null } } }),
   ]);
 
   const selected = assets.find((asset) => asset.id === params?.asset) ?? assets[0] ?? null;
@@ -77,6 +82,7 @@ export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageP
   const baseQuery = (next: { status?: string; vision?: string }) => {
     const query = new URLSearchParams();
     if (q) query.set("q", q);
+    if (vertical !== "ALL") query.set("vertical", vertical);
     query.set("status", next.status ?? status);
     const nextVision = next.vision !== undefined ? next.vision : vision;
     if (nextVision) query.set("vision", nextVision);
@@ -97,9 +103,9 @@ export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageP
       <TabNav
         tabs={[
           { href: "/admin/assets", label: "تصاویر منبع کاربران", active: true },
-          { href: "/admin/assets/references", label: "عکس‌های نمونه کاربران", active: false },
-          { href: "/admin/assets/samples", label: "نمونه‌های آماده", active: false },
-          { href: "/admin/assets/outputs", label: "خروجی‌ها", active: false },
+          { href: `/admin/assets/references${vertical === "ALL" ? "" : `?vertical=${vertical}`}`, label: "عکس‌های نمونه کاربران", active: false },
+          { href: `/admin/assets/samples?vertical=${vertical === "food" ? "food" : "jewelry"}`, label: "نمونه‌های آماده", active: false },
+          { href: `/admin/assets/outputs${vertical === "ALL" ? "" : `?vertical=${vertical}`}`, label: "خروجی‌ها", active: false },
         ]}
       />
 
@@ -115,6 +121,14 @@ export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageP
         <form className="flex items-center gap-2">
           <input type="hidden" name="status" value={status} />
           {vision ? <input type="hidden" name="vision" value={vision} /> : null}
+          <select name="vertical" defaultValue={vertical} className={`${inlineFieldClass} w-36`}>
+            <option value="ALL">All verticals</option>
+            {USER_VISIBLE_VERTICAL_IDS.map((item) => (
+              <option key={item} value={item}>
+                {VERTICALS[item].label}
+              </option>
+            ))}
+          </select>
           <input name="q" defaultValue={q} placeholder="جست‌وجو" className={`${inlineFieldClass} w-64`} />
           <button className={`${btnSecondary} h-8`}>جست‌وجو</button>
         </form>
@@ -219,6 +233,7 @@ function AssetDetailPanel({ asset }: { asset: AssetWithRelations }) {
               ),
             },
             { label: "شناسه مالک", value: getUserIdentifier(asset.user), dir: "ltr" },
+            { label: "Vertical", value: getVerticalLabel(asset.vertical) },
             {
               label: "استفاده",
               value: usedTotal > 0 ? `${faNum(asset._count.projects)} پروژه · ${faNum(asset._count.supportingProjects)} کمکی` : "استفاده نشده",

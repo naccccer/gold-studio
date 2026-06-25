@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getReadyStyleReferenceSample, readReadyStyleReferenceSample } from "@/lib/ready-style-reference-samples";
 import { buildStorageKey, saveStorageObject } from "@/lib/storage";
+import { DEFAULT_VERTICAL_ID, type VerticalId } from "@/lib/verticals";
 
 export const READY_SAMPLE_ORIGINAL_NAME_PREFIX = "ready-sample:";
 
@@ -13,8 +14,9 @@ const STYLE_REFERENCE_UPLOAD_DIR = path.join("uploads", "style-references");
 export async function createOrFindStyleReferenceFromReadySample(
   userId: string,
   sampleId: string,
+  vertical: VerticalId = DEFAULT_VERTICAL_ID,
 ): Promise<{ id: string } | { error: string }> {
-  const sample = await getReadyStyleReferenceSample(sampleId);
+  const sample = await getReadyStyleReferenceSample(sampleId, vertical);
 
   if (!sample) {
     return { error: "نمونه آماده انتخاب‌شده پیدا نشد." };
@@ -24,6 +26,7 @@ export async function createOrFindStyleReferenceFromReadySample(
   const existing = await db.styleReferenceAsset.findFirst({
     where: {
       userId,
+      vertical,
       status: "READY",
       archivedAt: null,
       originalName,
@@ -46,6 +49,7 @@ export async function createOrFindStyleReferenceFromReadySample(
     const asset = await db.styleReferenceAsset.create({
       data: {
         userId,
+        vertical,
         fileUrl: publicUrl,
         storageKey,
         mimeType: "image/webp",

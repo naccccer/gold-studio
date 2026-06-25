@@ -1,10 +1,15 @@
 export type ImageProvider = "liara" | "avalai";
 
-const DEFAULT_IMAGE_PROVIDER: ImageProvider = "liara";
+const DEFAULT_IMAGE_PROVIDER: ImageProvider = "avalai";
 
 export function normalizeImageProvider(value: string | null | undefined): ImageProvider {
-  if (value?.trim().toLowerCase() === "avalai") {
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === "avalai") {
     return "avalai";
+  }
+
+  if (normalized === "liara") {
+    return "liara";
   }
 
   return DEFAULT_IMAGE_PROVIDER;

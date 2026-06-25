@@ -14,6 +14,8 @@ import {
   reserveGenerationCreditInTransaction,
 } from "@/lib/billing";
 import { buildGenerationPrompt } from "@/lib/ai/generation-prompt";
+import { isSampleReferenceStyleId } from "@/lib/ai/style-policy";
+import { getCurrentVertical } from "@/lib/current-vertical";
 import { processImageProject, processTextProject } from "@/lib/generation/jobs";
 import { normalizeOutputPreset } from "@/lib/output-presets";
 import { pickVisionTitle, retryProjectVisionTitle } from "@/lib/product-vision";
@@ -29,6 +31,7 @@ import {
   saveTextPromptSourceImage,
   saveUploadedFile,
 } from "@/lib/uploads";
+import type { VerticalId } from "@/lib/verticals";
 
 export type ProjectFormState = {
   error?: string;
@@ -75,7 +78,7 @@ function supportingAssetIdsFromFormData(formData: FormData, sourceAssetId?: stri
   return ids;
 }
 
-async function resolveSupportingAssets(formData: FormData, userId: string, sourceAssetId?: string | null) {
+async function resolveSupportingAssets(formData: FormData, userId: string, vertical: VerticalId, sourceAssetId?: string | null) {
   const supportingAssetIds = supportingAssetIdsFromFormData(formData, sourceAssetId);
   if (supportingAssetIds.length > MAX_SUPPORTING_PRODUCT_IMAGES) {
     return { error: "برای هر پروژه حداکثر دو عکس تکمیلی می‌توانید اضافه کنید." };
@@ -89,6 +92,7 @@ async function resolveSupportingAssets(formData: FormData, userId: string, sourc
     where: {
       id: { in: supportingAssetIds },
       userId,
+      vertical,
       status: "READY",
       archivedAt: null,
     },
@@ -111,8 +115,8 @@ function supportingAssetCreateData(supportingAssets: Array<{ id: string }>) {
   }));
 }
 
-async function reserveCreditOrState(userId: string) {
-  const reservation = await reserveGenerationCredit({ userId });
+async function reserveCreditOrState(userId: string, vertical: VerticalId) {
+  const reservation = await reserveGenerationCredit({ userId, vertical });
   if (!reservation.ok) {
     return { ok: false as const, error: reservation.error };
   }
@@ -132,15 +136,15 @@ function versionedProjectTitle(title: string | null, versionNumber: number) {
   return `${baseTitle} - نسخه ${versionNumber.toLocaleString("fa-IR")}`;
 }
 
-async function resolveReferenceAssetForStyle(styleId: string, formData: FormData, userId: string) {
-  if (styleId !== "style_sample_reference") {
+async function resolveReferenceAssetForStyle(styleId: string, formData: FormData, userId: string, vertical: VerticalId) {
+  if (!isSampleReferenceStyleId(styleId)) {
     return null;
   }
 
   const referenceAssetId = String(formData.get("referenceAssetId") ?? "").trim();
   if (referenceAssetId) {
     const referenceAsset = await db.styleReferenceAsset.findFirst({
-      where: { id: referenceAssetId, userId, status: "READY", archivedAt: null },
+      where: { id: referenceAssetId, userId, vertical, status: "READY", archivedAt: null },
       select: { id: true },
     });
 
@@ -153,7 +157,7 @@ async function resolveReferenceAssetForStyle(styleId: string, formData: FormData
 
   const readySampleId = String(formData.get("readySampleId") ?? "").trim();
   if (readySampleId) {
-    return createOrFindStyleReferenceFromReadySample(userId, readySampleId);
+    return createOrFindStyleReferenceFromReadySample(userId, readySampleId, vertical);
   }
 
   const referenceImage = formData
@@ -168,6 +172,7 @@ async function resolveReferenceAssetForStyle(styleId: string, formData: FormData
   const referenceAsset = await db.styleReferenceAsset.create({
     data: {
       userId,
+      vertical,
       fileUrl: uploaded.publicUrl,
       storageKey: uploaded.storageKey,
       mimeType: uploaded.mimeType,
@@ -185,6 +190,7 @@ export async function createProjectAction(
   formData: FormData,
 ): Promise<ProjectFormState> {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const limited = await checkRateLimit({
     scope: "generation:create",
     identifier: session.userId,
@@ -200,16 +206,16 @@ export async function createProjectAction(
   const sourceAssetId = String(formData.get("sourceAssetId") ?? "").trim();
   const freeVariantParentId = String(formData.get("freeVariantParentId") ?? "").trim();
   const submittedProductType = String(formData.get("productType") ?? "").trim();
-  const selectedProductType = normalizeProductType(submittedProductType);
+  const selectedProductType = normalizeProductType(submittedProductType, vertical);
   const outputPreset = normalizeOutputPreset(formData.get("outputPreset"));
   const styleId = String(formData.get("styleId") ?? "");
-  const style = await getStyleForGeneration(styleId);
+  const style = await getStyleForGeneration(styleId, vertical);
 
   if (!style) {
     return { error: "سبک انتخاب‌شده معتبر نیست." };
   }
 
-  const referenceAsset = await resolveReferenceAssetForStyle(style.id, formData, session.userId);
+  const referenceAsset = await resolveReferenceAssetForStyle(style.id, formData, session.userId, vertical);
   if (referenceAsset && "error" in referenceAsset) {
     return { error: referenceAsset.error };
   }
@@ -219,7 +225,7 @@ export async function createProjectAction(
     return readyUser;
   }
 
-  const stylePrompt = buildGenerationPrompt({ style, formData });
+  const stylePrompt = buildGenerationPrompt({ style, formData, vertical });
 
   if (mode === "text") {
     if (session.role !== "ADMIN") {
@@ -231,7 +237,7 @@ export async function createProjectAction(
       return { error: "برای اجرای تست داخلی، یک ورودی کوتاه ثبت کنید." };
     }
 
-    const reserved = await reserveCreditOrState(session.userId);
+    const reserved = await reserveCreditOrState(session.userId, vertical);
     if (!reserved.ok) {
       return { error: reserved.error };
     }
@@ -242,6 +248,7 @@ export async function createProjectAction(
       project = await db.project.create({
         data: {
           userId: session.userId,
+          vertical,
           title: title || "تست داخلی متن به تصویر",
           sourceImageUrl,
           outputPreset,
@@ -257,20 +264,20 @@ export async function createProjectAction(
       throw error;
     }
 
-    after(() => processTextProject({ projectId: project.id, textPrompt, stylePrompt }));
+    after(() => processTextProject({ projectId: project.id, textPrompt, stylePrompt, vertical }));
     redirect(`/projects/${project.id}`);
   }
 
   if (sourceAssetId) {
     const asset = await db.productAsset.findFirst({
-      where: { id: sourceAssetId, userId: session.userId, status: "READY", archivedAt: null },
+      where: { id: sourceAssetId, userId: session.userId, vertical, status: "READY", archivedAt: null },
     });
 
     if (!asset) {
       return { error: "تصویر گالری یافت نشد." };
     }
 
-    const supportingAssets = await resolveSupportingAssets(formData, session.userId, asset.id);
+    const supportingAssets = await resolveSupportingAssets(formData, session.userId, vertical, asset.id);
     if ("error" in supportingAssets) {
       return { error: supportingAssets.error };
     }
@@ -279,6 +286,7 @@ export async function createProjectAction(
     const projectPrompt = buildGenerationPrompt({
       style,
       formData,
+      vertical,
       vision: {
         productType: selectedProductType,
         visionDescription: asset.visionDescription,
@@ -310,6 +318,7 @@ export async function createProjectAction(
             where: {
               id: freeVariantParentId,
               userId: session.userId,
+              vertical,
               status: "COMPLETED",
               sourceAssetId: asset.id,
               archivedAt: null,
@@ -326,6 +335,7 @@ export async function createProjectAction(
           const usedFreeVariants = await tx.project.count({
             where: {
               userId: session.userId,
+              vertical,
               variantParentId: parent.id,
               archivedAt: null,
               status: "COMPLETED",
@@ -340,6 +350,7 @@ export async function createProjectAction(
             where: {
               id: parent.id,
               userId: session.userId,
+              vertical,
               status: "COMPLETED",
               sourceAssetId: asset.id,
               archivedAt: null,
@@ -355,6 +366,7 @@ export async function createProjectAction(
 
           const reservation = await reserveGenerationCreditInTransaction(tx, {
             userId: session.userId,
+            vertical,
             reserveProject: false,
           });
           if (!reservation.ok) {
@@ -363,19 +375,20 @@ export async function createProjectAction(
 
           if (asset.productType !== selectedProductType) {
             await tx.productAsset.updateMany({
-              where: { id: asset.id, userId: session.userId, status: "READY", archivedAt: null },
+              where: { id: asset.id, userId: session.userId, vertical, status: "READY", archivedAt: null },
               data: { productType: selectedProductType },
             });
           }
 
           const existingCount = await tx.project.count({
-            where: { userId: session.userId, sourceAssetId: asset.id, archivedAt: null },
+            where: { userId: session.userId, vertical, sourceAssetId: asset.id, archivedAt: null },
           });
 
           const createdProject = await tx.project.create({
             data: {
               id: freeVariantId,
               userId: session.userId,
+              vertical,
               sourceAssetId: asset.id,
               title: versionedProjectTitle(projectTitle, existingCount + 1),
               sourceImageUrl: asset.fileUrl,
@@ -415,24 +428,25 @@ export async function createProjectAction(
           return { error: "فرصت نسخه دیگر برای این پروژه در دسترس نیست. دوباره از صفحه نتیجه اقدام کنید یا نسخه عادی بسازید." };
         }
       } else {
-        const reserved = await reserveCreditOrState(session.userId);
+        const reserved = await reserveCreditOrState(session.userId, vertical);
         if (!reserved.ok) {
           return { error: reserved.error };
         }
         reservationId = reserved.reservationId;
         if (asset.productType !== selectedProductType) {
           await db.productAsset.updateMany({
-            where: { id: asset.id, userId: session.userId, status: "READY", archivedAt: null },
+            where: { id: asset.id, userId: session.userId, vertical, status: "READY", archivedAt: null },
             data: { productType: selectedProductType },
           });
         }
         const existingCount = await db.project.count({
-          where: { userId: session.userId, sourceAssetId: asset.id, archivedAt: null },
+          where: { userId: session.userId, vertical, sourceAssetId: asset.id, archivedAt: null },
         });
 
         project = await db.project.create({
           data: {
             userId: session.userId,
+            vertical,
             sourceAssetId: asset.id,
             title: versionedProjectTitle(projectTitle, existingCount + 1),
             sourceImageUrl: asset.fileUrl,
@@ -471,7 +485,7 @@ export async function createProjectAction(
     return { error: "لطفا تصویر محصول را انتخاب کنید." };
   }
 
-  const reserved = await reserveCreditOrState(session.userId);
+  const reserved = await reserveCreditOrState(session.userId, vertical);
   if (!reserved.ok) {
     return { error: reserved.error };
   }
@@ -483,6 +497,7 @@ export async function createProjectAction(
     asset = await db.productAsset.create({
       data: {
         userId: session.userId,
+        vertical,
         fileUrl: uploaded.publicUrl,
         storageKey: uploaded.storageKey,
         mimeType: uploaded.mimeType,
@@ -495,6 +510,7 @@ export async function createProjectAction(
     const projectPrompt = buildGenerationPrompt({
       style,
       formData,
+      vertical,
       vision: {
         productType: selectedProductType,
         visionDescription: null,
@@ -506,6 +522,7 @@ export async function createProjectAction(
     project = await db.project.create({
       data: {
         userId: session.userId,
+        vertical,
         sourceAssetId: asset.id,
         title: pickVisionTitle({
           userTitle: title,
@@ -536,6 +553,7 @@ export async function createProjectAction(
 
 export async function renameProjectAction(formData: FormData) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const projectId = String(formData.get("projectId") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim();
 
@@ -544,7 +562,7 @@ export async function renameProjectAction(formData: FormData) {
   }
 
   await db.project.updateMany({
-    where: { id: projectId, userId: session.userId, archivedAt: null },
+    where: { id: projectId, userId: session.userId, vertical, archivedAt: null },
     data: { title },
   });
 
@@ -575,6 +593,7 @@ function resultStorageKeyFromUrl(value?: string | null) {
 
 export async function saveProjectResultAsStyleReferenceAction(formData: FormData) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const projectId = String(formData.get("projectId") ?? "").trim();
 
   if (!projectId) {
@@ -582,7 +601,7 @@ export async function saveProjectResultAsStyleReferenceAction(formData: FormData
   }
 
   const project = await db.project.findFirst({
-    where: { id: projectId, userId: session.userId, status: "COMPLETED", archivedAt: null },
+    where: { id: projectId, userId: session.userId, vertical, status: "COMPLETED", archivedAt: null },
     select: {
       title: true,
       resultImageUrl: true,
@@ -606,6 +625,7 @@ export async function saveProjectResultAsStyleReferenceAction(formData: FormData
     await db.styleReferenceAsset.create({
       data: {
         userId: session.userId,
+        vertical,
         fileUrl: copied.publicUrl,
         storageKey: copied.storageKey,
         mimeType: copied.mimeType,
@@ -624,6 +644,7 @@ export async function saveProjectResultAsStyleReferenceAction(formData: FormData
 
 export async function createQualityReviewAction(formData: FormData) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const limited = await checkRateLimit({
     scope: "quality-review:create",
     identifier: session.userId,
@@ -643,7 +664,7 @@ export async function createQualityReviewAction(formData: FormData) {
   }
 
   const project = await db.project.findFirst({
-    where: { id: projectId, userId: session.userId, status: "COMPLETED", archivedAt: null },
+    where: { id: projectId, userId: session.userId, vertical, status: "COMPLETED", archivedAt: null },
     select: {
       id: true,
       resultImageUrl: true,
@@ -690,15 +711,16 @@ export async function createQualityReviewAction(formData: FormData) {
 
 export async function updateProjectProductTypeAction(formData: FormData) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const projectId = String(formData.get("projectId") ?? "").trim();
-  const productType = normalizeProductType(formData.get("productType"));
+  const productType = normalizeProductType(formData.get("productType"), vertical);
 
   if (!projectId) {
     return;
   }
 
   const project = await db.project.findFirst({
-    where: { id: projectId, userId: session.userId, archivedAt: null },
+    where: { id: projectId, userId: session.userId, vertical, archivedAt: null },
     select: { sourceAssetId: true },
   });
 
@@ -707,7 +729,7 @@ export async function updateProjectProductTypeAction(formData: FormData) {
   }
 
   await db.productAsset.updateMany({
-    where: { id: project.sourceAssetId, userId: session.userId, status: "READY", archivedAt: null },
+    where: { id: project.sourceAssetId, userId: session.userId, vertical, status: "READY", archivedAt: null },
     data: { productType },
   });
 
@@ -717,6 +739,7 @@ export async function updateProjectProductTypeAction(formData: FormData) {
 
 export async function archiveProjectAction(formData: FormData) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const projectIds = formData.getAll("projectId").map(String).map((id) => id.trim()).filter(Boolean);
 
   if (projectIds.length === 0) {
@@ -724,7 +747,7 @@ export async function archiveProjectAction(formData: FormData) {
   }
 
   await db.project.updateMany({
-    where: { id: { in: projectIds }, userId: session.userId, archivedAt: null },
+    where: { id: { in: projectIds }, userId: session.userId, vertical, archivedAt: null },
     data: { archivedAt: new Date() },
   });
 
@@ -734,6 +757,7 @@ export async function archiveProjectAction(formData: FormData) {
 
 export async function restoreProjectAction(formData: FormData) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const projectId = String(formData.get("projectId") ?? "").trim();
 
   if (!projectId) {
@@ -741,7 +765,7 @@ export async function restoreProjectAction(formData: FormData) {
   }
 
   await db.project.updateMany({
-    where: { id: projectId, userId: session.userId, archivedAt: { not: null } },
+    where: { id: projectId, userId: session.userId, vertical, archivedAt: { not: null } },
     data: { archivedAt: null },
   });
 
@@ -752,6 +776,7 @@ export async function restoreProjectAction(formData: FormData) {
 
 export async function deleteArchivedProjectAction(formData: FormData) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const projectId = String(formData.get("projectId") ?? "").trim();
 
   if (!projectId) {
@@ -759,7 +784,7 @@ export async function deleteArchivedProjectAction(formData: FormData) {
   }
 
   const project = await db.project.findFirst({
-    where: { id: projectId, userId: session.userId, archivedAt: { not: null } },
+    where: { id: projectId, userId: session.userId, vertical, archivedAt: { not: null } },
     select: { id: true, resultStorageKey: true },
   });
 
@@ -772,6 +797,7 @@ export async function deleteArchivedProjectAction(formData: FormData) {
     ? await db.project.count({
         where: {
           id: { not: project.id },
+          vertical,
           resultStorageKey,
         },
       })
@@ -799,6 +825,7 @@ export async function deleteArchivedProjectAction(formData: FormData) {
 
 export async function retryProjectAction(formData: FormData) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const limited = await checkRateLimit({
     scope: "generation:retry",
     identifier: session.userId,
@@ -816,7 +843,7 @@ export async function retryProjectAction(formData: FormData) {
   }
 
   const project = await db.project.findFirst({
-    where: { id: projectId, userId: session.userId, status: { in: ["FAILED", "COMPLETED"] }, archivedAt: null },
+    where: { id: projectId, userId: session.userId, vertical, status: { in: ["FAILED", "COMPLETED"] }, archivedAt: null },
     select: { id: true, sourceAssetId: true, status: true, resultImageUrl: true, resultStorageKey: true, variantParentId: true },
   });
 
@@ -848,6 +875,7 @@ export async function retryProjectAction(formData: FormData) {
       const reservation = await reserveGenerationCreditInTransaction(tx, {
         userId: session.userId,
         projectId: project.id,
+        vertical,
         reserveProject: !project.variantParentId,
       });
       if (!reservation.ok) {
@@ -855,7 +883,7 @@ export async function retryProjectAction(formData: FormData) {
       }
 
       const updated = await tx.project.updateMany({
-        where: { id: project.id, userId: session.userId, status: project.status, archivedAt: null },
+        where: { id: project.id, userId: session.userId, vertical, status: project.status, archivedAt: null },
         data: { status: "QUEUED", errorMessage: null, resultImageUrl: null, resultStorageKey: null },
       });
 

@@ -7,6 +7,8 @@ import {
 } from "@/features/projects/components/new-project-form";
 import type { ProjectFormState } from "@/features/projects/actions";
 import type { StyleOption } from "@/features/projects/presets";
+import type { VerticalContent } from "@/lib/vertical-content";
+import type { VerticalId } from "@/lib/verticals";
 
 type NewProjectScreenProps = {
   action: (
@@ -17,6 +19,8 @@ type NewProjectScreenProps = {
   readyStyleReferences: ReadyStyleReferenceOption[];
   styleReferences: StyleReferenceOption[];
   styles: StyleOption[];
+  vertical: VerticalId;
+  content: VerticalContent;
   selectedAssetId?: string;
   selectedReferenceId?: string;
   freeVariantParentId?: string;
@@ -31,6 +35,8 @@ export function NewProjectScreen({
   readyStyleReferences,
   styleReferences,
   styles,
+  vertical,
+  content,
   selectedAssetId,
   selectedReferenceId,
   freeVariantParentId,
@@ -46,6 +52,8 @@ export function NewProjectScreen({
         readyStyleReferences={readyStyleReferences}
         styleReferences={styleReferences}
         styles={styles}
+        vertical={vertical}
+        content={content}
         selectedAssetId={selectedAssetId}
         selectedReferenceId={selectedReferenceId}
         freeVariantParentId={freeVariantParentId}

@@ -7,6 +7,7 @@ import { analyzeAndStoreProductAssetVision } from "@/lib/product-vision";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { generateNumericSupportCode, logSupportError } from "@/lib/support-code";
 import { saveUploadedFile } from "@/lib/uploads";
+import { resolveVerticalFromRequest } from "@/lib/verticals";
 
 function uploadErrorMessage(error: unknown) {
   if (error instanceof Error && error.message.trim()) {
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
   if (!session) {
     return NextResponse.json({ error: "نشست کاربر معتبر نیست." }, { status: 401 });
   }
+  const vertical = resolveVerticalFromRequest(request);
 
   const limited = await checkRateLimit({
     scope: "gallery:upload",
@@ -48,6 +50,7 @@ export async function POST(request: Request) {
     const asset = await db.productAsset.create({
       data: {
         userId: session.userId,
+        vertical,
         fileUrl: uploaded.publicUrl,
         storageKey: uploaded.storageKey,
         mimeType: uploaded.mimeType,

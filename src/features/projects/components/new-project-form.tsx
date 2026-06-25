@@ -35,9 +35,11 @@ import {
   StyleToggleControl,
 } from "@/features/projects/components/style-choice-control";
 import type { StyleControlOption, StyleOption } from "@/features/projects/presets";
+import { isSampleReferenceStyleId } from "@/lib/ai/style-policy";
 import { NO_CREDITS_ERROR } from "@/lib/credits";
-import { uploadPreview } from "@/lib/placeholders/jewelry-images";
-import { DEFAULT_PRODUCT_TYPE, normalizeProductType, productTypeLabel, PRODUCT_TYPES } from "@/lib/product-types";
+import { getDefaultProductType, getProductTypes, normalizeProductType, productTypeLabel } from "@/lib/product-types";
+import type { VerticalContent } from "@/lib/vertical-content";
+import type { VerticalId } from "@/lib/verticals";
 
 const INITIAL_STATE: ProjectFormState = {};
 
@@ -75,6 +77,8 @@ type NewProjectFormProps = {
   selectedReferenceId?: string;
   freeVariantParentId?: string;
   styles: StyleOption[];
+  vertical: VerticalId;
+  content: VerticalContent;
   defaultOutputPreset?: OutputPresetId;
   initialStep?: WizardStep;
   initialStyleId?: string;
@@ -85,12 +89,6 @@ type WizardStep = "source" | "size" | "style";
 type StyleControl = NonNullable<StyleOption["controls"]>[number];
 type CropUploadPurpose = "source" | "supporting";
 const MAX_SUPPORTING_PRODUCT_IMAGES = 2;
-
-const topBarTitles: Record<WizardStep, string> = {
-  source: "آپلود عکس محصول",
-  size: "ابعاد و نوع محصول",
-  style: "انتخاب سبک",
-};
 
 function StepScrollPanel({ children }: { children: React.ReactNode }) {
   return (
@@ -206,6 +204,8 @@ export function NewProjectForm({
   selectedReferenceId,
   freeVariantParentId,
   styles,
+  vertical,
+  content,
   defaultOutputPreset = "post",
   initialStep,
   initialStyleId,
@@ -242,10 +242,18 @@ export function NewProjectForm({
   const [referenceUploadPreview, setReferenceUploadPreview] = useState<string | null>(null);
   const [styleControlValues, setStyleControlValues] = useState<Record<string, string>>(() => getInitialStyleControlValues(defaultStyle));
   const [openStyleControl, setOpenStyleControl] = useState<string | null>(null);
-  const [productType, setProductType] = useState(normalizeProductType(explicitSelectedAsset?.productType));
+  const [productType, setProductType] = useState(normalizeProductType(explicitSelectedAsset?.productType, vertical));
   const [sourcePreparing, setSourcePreparing] = useState(false);
   const [sourceError, setSourceError] = useState<string | null>(null);
   const fileInputRequestRef = useRef(0);
+  const productTypes = getProductTypes(vertical);
+  const defaultProductType = getDefaultProductType(vertical);
+  const uploadPreview = content.placeholders.uploadPreview;
+  const topBarTitles: Record<WizardStep, string> = {
+    source: content.newProjectSourceTitle,
+    size: content.newProjectSizeTitle,
+    style: content.newProjectStyleTitle,
+  };
 
   const selectedStyleData = useMemo(
     () => styles.find((preset) => preset.id === selectedStyle) ?? defaultStyle,
@@ -253,7 +261,7 @@ export function NewProjectForm({
   );
 
   const styleControls = selectedStyleData?.controls ?? [];
-  const isSampleReferenceStyle = selectedStyleData?.id === "style_sample_reference";
+  const isSampleReferenceStyle = isSampleReferenceStyleId(selectedStyleData?.id);
   const outputPresetItems = outputPresets.map((preset) => ({
     value: preset.id,
     label: preset.label,
@@ -293,7 +301,7 @@ export function NewProjectForm({
       setSelectedAsset(null);
       setSupportingAssets([]);
       setSupportingPanelOpen(false);
-      setProductType(DEFAULT_PRODUCT_TYPE);
+      setProductType(defaultProductType);
     }
 
     const pendingUpload = createPendingGalleryUpload(file, source);
@@ -348,7 +356,7 @@ export function NewProjectForm({
     setSelectedAsset(asset);
     setSupportingAssets((current) => current.filter((item) => item.id !== asset.id));
     setSupportingPanelOpen(false);
-    setProductType(normalizeProductType(asset.productType));
+    setProductType(normalizeProductType(asset.productType, vertical));
   }
 
   function clearSource() {
@@ -469,7 +477,7 @@ export function NewProjectForm({
     <>
     <form action={formAction} className="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
       <AppTopBar
-        title={step === "source" ? "آپلود عکس محصول" : topBarTitles[step]}
+        title={topBarTitles[step]}
         onBack={handleTopBarBack}
         logoVariant="mark-light"
         tone="dark"
@@ -552,13 +560,13 @@ export function NewProjectForm({
 
           {sourcePreparing ? (
             <p className="rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-2 text-xs leading-6 text-surface/72">
-              در حال آماده‌سازی عکس برای آپلود...
+              {content.sourcePreparingLabel}
             </p>
           ) : null}
 
           {sourceError ? (
             <div className="rounded-[1rem] border border-danger/24 bg-danger-soft/92 px-3 py-3 text-danger shadow-[0_18px_32px_-26px_rgba(152,59,52,0.42)]">
-              <p className="text-sm font-semibold">عکس آماده نشد</p>
+              <p className="text-sm font-semibold">{content.sourceErrorTitle}</p>
               <p className="mt-1 text-[12px] leading-6 text-danger/88">{sourceError}</p>
             </div>
           ) : null}
@@ -566,7 +574,7 @@ export function NewProjectForm({
           {visibleGalleryAssets.length > 0 ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-medium text-surface/72">انتخاب سریع از گالری</p>
+                <p className="text-xs font-medium text-surface/72">{content.sourceReadyLabel}</p>
                 {galleryAssets.length > visibleGalleryAssets.length ? (
                   <ButtonLink href="/gallery" variant="ghost" className="min-h-8 px-0 text-xs !text-surface/72 hover:!text-surface">
                     دیدن همه
@@ -576,7 +584,7 @@ export function NewProjectForm({
               <div className="grid grid-cols-4 gap-3">
                 {visibleGalleryAssets.map((asset) => {
                   const isSelected = selectedAsset?.id === asset.id;
-                  const title = asset.title || asset.originalName || "تصویر محصول";
+                  const title = asset.title || asset.originalName || content.galleryImageFallbackTitle;
 
                   return (
                     <button
@@ -616,8 +624,8 @@ export function NewProjectForm({
               className="flex w-full items-center justify-between gap-3 rounded-[1rem] border border-white/10 bg-white/[0.04] px-3 py-2.5 text-right transition hover:border-white/18 hover:bg-white/[0.07]"
             >
               <span className="min-w-0">
-                <span className="block text-xs font-medium text-surface/78">محصولم جزئیات بیشتری دارد</span>
-                <span className="mt-0.5 block text-[11px] leading-5 text-surface/48">اختیاری، فقط برای زاویه یا قفل و نگین پیچیده</span>
+                <span className="block text-xs font-medium text-surface/78">{content.supportingTriggerTitle}</span>
+                <span className="mt-0.5 block text-[11px] leading-5 text-surface/48">{content.supportingTriggerDescription}</span>
               </span>
               <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/12 bg-white/[0.06] text-surface/72">
                 <Add aria-hidden={true} className="h-4 w-4" />
@@ -630,13 +638,13 @@ export function NewProjectForm({
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-xs font-medium text-surface/82">زاویه‌های کمکی</p>
+                    <p className="text-xs font-medium text-surface/82">{content.supportingSectionTitle}</p>
                     <span className="rounded-full border border-white/10 bg-white/[0.05] px-2 py-0.5 text-[10px] leading-4 text-surface/56">
                       اختیاری
                     </span>
                   </div>
                   <p className="mt-1 text-[11px] leading-5 text-surface/54">
-                    اگر محصول از یک عکس کامل مشخص است، این بخش را رد کنید.
+                    {content.supportingSectionDescription}
                   </p>
                 </div>
                 {!hasSupportingAssets ? (
@@ -653,7 +661,7 @@ export function NewProjectForm({
               {hasSupportingAssets ? (
                 <div className="grid grid-cols-2 gap-3">
                   {supportingAssets.map((asset) => {
-                    const title = asset.title || asset.originalName || "زاویه کمکی محصول";
+                    const title = asset.title || asset.originalName || content.supportingFallbackTitle;
 
                     return (
                       <div key={asset.id} className="relative">
@@ -694,7 +702,7 @@ export function NewProjectForm({
                   })}
                 >
                   <Add aria-hidden={true} className="h-3.5 w-3.5" />
-                  افزودن زاویه
+                  {content.supportingAddLabel}
                 </label>
               </div>
             </section>
@@ -725,18 +733,18 @@ export function NewProjectForm({
 
           <section className="rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-3">
             <label htmlFor="new-project-product-type" className="mb-2 block text-xs font-medium text-surface/72">
-              نوع محصول (در صورت مغایرت تغییر دهید)
+              {content.productTypeFieldLabel} ({content.productTypeHelp})
             </label>
             <div className="relative">
               <select
                 id="new-project-product-type"
                 value={productType}
-                onChange={(event) => setProductType(normalizeProductType(event.target.value))}
+                onChange={(event) => setProductType(normalizeProductType(event.target.value, vertical))}
                 className="min-h-10 w-full appearance-none rounded-full border border-white/12 bg-white/[0.08] py-0 pr-3 pl-10 text-sm font-semibold text-surface outline-none transition focus:border-white/28"
               >
-                {PRODUCT_TYPES.map((item) => (
+                {productTypes.map((item) => (
                   <option key={item} value={item} className="bg-[#171411] text-white">
-                    {productTypeLabel(item)}
+                    {productTypeLabel(item, vertical)}
                   </option>
                 ))}
               </select>
@@ -751,8 +759,8 @@ export function NewProjectForm({
               className="flex w-full items-center justify-between gap-3 rounded-[1rem] border border-white/10 bg-white/[0.04] px-3 py-2.5 text-right transition hover:border-white/18 hover:bg-white/[0.07]"
             >
               <span className="min-w-0">
-                <span className="block text-xs font-medium text-surface/78">محصولم جزئیات بیشتری دارد</span>
-                <span className="mt-0.5 block text-[11px] leading-5 text-surface/48">اختیاری، فقط برای زاویه یا قفل و نگین پیچیده</span>
+                <span className="block text-xs font-medium text-surface/78">{content.supportingTriggerTitle}</span>
+                <span className="mt-0.5 block text-[11px] leading-5 text-surface/48">{content.supportingTriggerDescription}</span>
               </span>
               <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/12 bg-white/[0.06] text-surface/72">
                 <Add aria-hidden={true} className="h-4 w-4" />
@@ -765,13 +773,13 @@ export function NewProjectForm({
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-xs font-medium text-surface/82">زاویه‌های کمکی</p>
+                    <p className="text-xs font-medium text-surface/82">{content.supportingSectionTitle}</p>
                     <span className="rounded-full border border-white/10 bg-white/[0.05] px-2 py-0.5 text-[10px] leading-4 text-surface/56">
                       اختیاری
                     </span>
                   </div>
                   <p className="mt-1 text-[11px] leading-5 text-surface/54">
-                    اگر محصول از یک عکس کامل مشخص است، این بخش را رد کنید.
+                    {content.supportingSectionDescription}
                   </p>
                 </div>
                 {!hasSupportingAssets ? (
@@ -788,7 +796,7 @@ export function NewProjectForm({
               {hasSupportingAssets ? (
                 <div className="grid grid-cols-2 gap-3">
                   {supportingAssets.map((asset) => {
-                    const title = asset.title || asset.originalName || "زاویه کمکی محصول";
+                    const title = asset.title || asset.originalName || content.supportingFallbackTitle;
 
                     return (
                       <div key={asset.id} className="relative">
@@ -829,7 +837,7 @@ export function NewProjectForm({
                   })}
                 >
                   <Add aria-hidden={true} className="h-3.5 w-3.5" />
-                  افزودن زاویه
+                  {content.supportingAddLabel}
                 </label>
               </div>
             </section>
@@ -955,7 +963,7 @@ export function NewProjectForm({
           {isSampleReferenceStyle ? (
             <section className="space-y-3 rounded-[1rem] border border-white/12 bg-white/[0.06] px-3 py-3">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-medium text-surface/72">عکس نمونه</p>
+                <p className="text-xs font-medium text-surface/72">{content.sampleReferenceTitle}</p>
                 <label htmlFor="project-reference-file-input" className={buttonClasses({ variant: "studio-secondary", className: "min-h-9 rounded-full px-3 text-xs" })}>
                   <DocumentUpload aria-hidden={true} className="h-3.5 w-3.5" />
                   آپلود
@@ -996,7 +1004,7 @@ export function NewProjectForm({
                   })}
                   {styleReferences.map((reference) => {
                     const checked = selectedReference?.id === reference.id;
-                    const title = reference.title || reference.originalName || "عکس نمونه";
+                    const title = reference.title || reference.originalName || content.sampleReferenceTitle;
 
                     return (
                       <button
@@ -1031,11 +1039,11 @@ export function NewProjectForm({
                 <div className="flex items-center gap-3 rounded-[0.9rem] border border-white/14 bg-white/[0.04] px-3 py-2">
                   <JewelryImageFrame aspect="square" selected treatment="quiet" className="h-16 w-16 shrink-0 rounded-[0.9rem]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={referenceUploadPreview} alt="پیش‌نمایش عکس نمونه" className="h-full w-full object-cover" />
+                    <img src={referenceUploadPreview} alt={`پیش‌نمایش ${content.sampleReferenceTitle}`} className="h-full w-full object-cover" />
                   </JewelryImageFrame>
                   <div className="flex min-w-0 items-center gap-2 text-xs text-surface/84">
                     <ImageIcon aria-hidden={true} className="h-4 w-4 shrink-0 text-accent-bright" />
-                    <span>نمونه آپلودی</span>
+                    <span>{content.uploadedSampleLabel}</span>
                   </div>
                 </div>
               ) : null}
