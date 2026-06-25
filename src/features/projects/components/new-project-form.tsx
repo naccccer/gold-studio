@@ -196,6 +196,24 @@ function getResolvedStyleControlValue(control: StyleControl, values: Record<stri
   return values[control.key] ?? getControlDefaultValue(control);
 }
 
+function isRawImageFilenameTitle(value: string | null | undefined) {
+  const title = value?.trim();
+  return Boolean(title && (/\.(avif|gif|heic|jpeg|jpg|png|webp)$/i.test(title) || title.includes("_")));
+}
+
+function assetDisplayTitle(
+  asset: Pick<GalleryAssetOption, "title" | "visionShortTitle" | "originalName">,
+  fallback: string,
+) {
+  const resolvedTitle = asset.title || asset.visionShortTitle || asset.originalName || fallback;
+  const namingPending = !asset.visionShortTitle && isRawImageFilenameTitle(resolvedTitle);
+
+  return {
+    title: namingPending ? "در حال نام‌گذاری..." : resolvedTitle,
+    namingPending,
+  };
+}
+
 export function NewProjectForm({
   action,
   galleryAssets,
@@ -591,7 +609,7 @@ export function NewProjectForm({
               <div className="grid grid-cols-4 gap-3">
                 {visibleGalleryAssets.map((asset) => {
                   const isSelected = selectedAsset?.id === asset.id;
-                  const title = asset.title || asset.visionShortTitle || asset.originalName || content.galleryImageFallbackTitle;
+                  const { title, namingPending } = assetDisplayTitle(asset, content.galleryImageFallbackTitle);
 
                   return (
                     <button
@@ -614,6 +632,11 @@ export function NewProjectForm({
                         {isSelected ? (
                           <span className="absolute left-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-surface">
                             <TickCircle aria-hidden={true} className="h-3.5 w-3.5" />
+                          </span>
+                        ) : null}
+                        {namingPending ? (
+                          <span className="absolute bottom-1.5 right-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-black/38 text-white backdrop-blur">
+                            <span className="h-3 w-3 animate-spin rounded-full border border-white/28 border-t-white/90" aria-hidden={true} />
                           </span>
                         ) : null}
                       </JewelryImageFrame>
@@ -668,7 +691,7 @@ export function NewProjectForm({
               {hasSupportingAssets ? (
                 <div className="grid grid-cols-2 gap-3">
                   {supportingAssets.map((asset) => {
-                    const title = asset.title || asset.visionShortTitle || asset.originalName || content.supportingFallbackTitle;
+                    const { title, namingPending } = assetDisplayTitle(asset, content.supportingFallbackTitle);
 
                     return (
                       <div key={asset.id} className="relative">
@@ -690,6 +713,12 @@ export function NewProjectForm({
                           >
                             <CloseCircle aria-hidden={true} className="h-4 w-4" />
                           </button>
+                          {namingPending ? (
+                            <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/42 px-2 py-1 text-[10px] text-white backdrop-blur">
+                              <span className="h-3 w-3 animate-spin rounded-full border border-white/28 border-t-white/90" aria-hidden={true} />
+                              در حال نام‌گذاری
+                            </span>
+                          ) : null}
                         </JewelryImageFrame>
                       </div>
                     );
@@ -803,7 +832,7 @@ export function NewProjectForm({
               {hasSupportingAssets ? (
                 <div className="grid grid-cols-2 gap-3">
                   {supportingAssets.map((asset) => {
-                    const title = asset.title || asset.visionShortTitle || asset.originalName || content.supportingFallbackTitle;
+                    const { title, namingPending } = assetDisplayTitle(asset, content.supportingFallbackTitle);
 
                     return (
                       <div key={asset.id} className="relative">
@@ -825,6 +854,12 @@ export function NewProjectForm({
                           >
                             <CloseCircle aria-hidden={true} className="h-4 w-4" />
                           </button>
+                          {namingPending ? (
+                            <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/42 px-2 py-1 text-[10px] text-white backdrop-blur">
+                              <span className="h-3 w-3 animate-spin rounded-full border border-white/28 border-t-white/90" aria-hidden={true} />
+                              در حال نام‌گذاری
+                            </span>
+                          ) : null}
                         </JewelryImageFrame>
                       </div>
                     );

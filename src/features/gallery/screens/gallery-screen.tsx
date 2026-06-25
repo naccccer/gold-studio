@@ -74,6 +74,21 @@ function scrollGalleryToTop() {
   });
 }
 
+function isRawImageFilenameTitle(value: string | null | undefined) {
+  const title = value?.trim();
+  return Boolean(title && (/\.(avif|gif|heic|jpeg|jpg|png|webp)$/i.test(title) || title.includes("_")));
+}
+
+function assetDisplayTitle(asset: Pick<GalleryAssetItem, "title" | "visionShortTitle" | "originalName">, fallback: string) {
+  const resolvedTitle = asset.title || asset.visionShortTitle || asset.originalName || fallback;
+  const namingPending = !asset.visionShortTitle && isRawImageFilenameTitle(resolvedTitle);
+
+  return {
+    title: namingPending ? "در حال نام‌گذاری..." : resolvedTitle,
+    namingPending,
+  };
+}
+
 export function GalleryScreen({ assets, styles, content, deleteNotice, undoAssetIds }: GalleryScreenProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -291,7 +306,7 @@ export function GalleryScreen({ assets, styles, content, deleteNotice, undoAsset
           <section className="grid grid-cols-2 gap-3">
             {assets.map((asset) => {
               const selected = selectedIds.includes(asset.id);
-              const title = asset.title || asset.visionShortTitle || asset.originalName || content.galleryImageFallbackTitle;
+              const { title, namingPending } = assetDisplayTitle(asset, content.galleryImageFallbackTitle);
 
               return (
                 <article key={asset.id} className="relative" data-selection-card>
@@ -329,6 +344,9 @@ export function GalleryScreen({ assets, styles, content, deleteNotice, undoAsset
                           aria-hidden={true}
                         />
                         <p className="relative z-10 flex min-h-11 items-center truncate pl-12 text-xs font-semibold text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)]">
+                          {namingPending ? (
+                            <span className="ml-1.5 inline-flex h-3.5 w-3.5 shrink-0 animate-spin rounded-full border border-white/28 border-t-white/90" aria-hidden={true} />
+                          ) : null}
                           {title}
                         </p>
                         <p className="hidden">
