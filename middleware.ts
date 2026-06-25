@@ -23,6 +23,7 @@ function applyLocalVerticalOverride(request: NextRequest, response: NextResponse
 export function middleware(request: NextRequest) {
   const hasSession = Boolean(request.cookies.get(COOKIE_NAME)?.value);
   const pathname = request.nextUrl.pathname;
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
 
   if (pathname.startsWith("/uploads/")) {
     return new Response("Not found", { status: 404 });
@@ -40,7 +41,7 @@ export function middleware(request: NextRequest) {
     return applyLocalVerticalOverride(request, NextResponse.redirect(loginUrl));
   }
 
-  if (request.nextUrl.searchParams.has("vertical")) {
+  if (request.nextUrl.searchParams.has("vertical") && isLocalDevelopmentHost(host)) {
     const cleanUrl = request.nextUrl.clone();
     cleanUrl.searchParams.delete("vertical");
     return applyLocalVerticalOverride(request, NextResponse.redirect(cleanUrl));
