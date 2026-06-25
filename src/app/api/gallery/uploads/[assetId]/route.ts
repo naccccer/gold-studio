@@ -94,6 +94,8 @@ export async function PATCH(
     select: {
       id: true,
       fileUrl: true,
+      title: true,
+      originalName: true,
     },
   });
 
@@ -110,11 +112,15 @@ export async function PATCH(
     select: {
       id: true,
       fileUrl: true,
+      title: true,
+      originalName: true,
     },
   });
 
   return NextResponse.json({
     assetId: updatedAsset.id,
     fileUrl: updatedAsset.fileUrl,
+    title: updatedAsset.title,
+    originalName: updatedAsset.originalName,
   });
 }

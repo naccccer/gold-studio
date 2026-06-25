@@ -51,6 +51,7 @@ export type GalleryAssetItem = {
   fileUrl: string;
   title: string | null;
   originalName: string | null;
+  visionShortTitle: string | null;
   createdAt: Date;
   projects: Array<{ id: string; status: string }>;
 };
@@ -78,10 +79,11 @@ export function GalleryScreen({ assets, styles, content, deleteNotice, undoAsset
   const searchParams = useSearchParams();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [cropQueue, setCropQueue] = useState<string[]>([]);
+  const [activeCropUploadId, setActiveCropUploadId] = useState<string | null>(null);
   const [pickerError, setPickerError] = useState<string | null>(null);
   const longPressTimerRef = useRef<number | null>(null);
   const longPressTriggeredRef = useRef(false);
-  const cropUploadId = searchParams.get("cropUploadId");
+  const cropUploadId = activeCropUploadId;
   const selectedCount = selectedIds.length;
   const batchHref = `/gallery/batches/new?assetIds=${encodeURIComponent(selectedIds.join(","))}`;
   const undoIds = (undoAssetIds ?? "").split(",").map((id) => id.trim()).filter(Boolean);
@@ -180,10 +182,7 @@ export function GalleryScreen({ assets, styles, content, deleteNotice, undoAsset
         void startPendingGalleryUpload(pendingUpload.id);
       });
       setCropQueue(pendingUploads.map((upload) => upload.id));
-
-      const nextParams = new URLSearchParams(searchParams.toString());
-      nextParams.set("cropUploadId", pendingUploads[0].id);
-      router.push(`/gallery?${nextParams.toString()}`, { scroll: false });
+      setActiveCropUploadId(pendingUploads[0].id);
     } catch (error) {
       setPickerError(error instanceof Error ? error.message : "شروع آپلود تصویر ممکن نشد.");
     }
@@ -195,8 +194,6 @@ export function GalleryScreen({ assets, styles, content, deleteNotice, undoAsset
 
   function closeCropOverlay(options?: { refresh?: boolean; selectedAssetId?: string }) {
     const uploadId = cropUploadId;
-    const nextParams = new URLSearchParams(searchParams.toString());
-    nextParams.delete("cropUploadId");
     const queueIndex = uploadId ? cropQueue.indexOf(uploadId) : -1;
     const nextUploadId = options?.selectedAssetId && queueIndex >= 0 ? cropQueue[queueIndex + 1] : undefined;
 
@@ -205,8 +202,7 @@ export function GalleryScreen({ assets, styles, content, deleteNotice, undoAsset
     }
 
     if (nextUploadId) {
-      nextParams.set("cropUploadId", nextUploadId);
-      router.replace(`/gallery?${nextParams.toString()}`, { scroll: false });
+      setActiveCropUploadId(nextUploadId);
       router.refresh();
       return;
     }
@@ -220,8 +216,7 @@ export function GalleryScreen({ assets, styles, content, deleteNotice, undoAsset
     }
 
     setCropQueue([]);
-    const nextQuery = nextParams.toString();
-    router.replace(nextQuery ? `/gallery?${nextQuery}` : "/gallery", { scroll: false });
+    setActiveCropUploadId(null);
     scrollGalleryToTop();
 
     if (uploadId) {
@@ -296,7 +291,7 @@ export function GalleryScreen({ assets, styles, content, deleteNotice, undoAsset
           <section className="grid grid-cols-2 gap-3">
             {assets.map((asset) => {
               const selected = selectedIds.includes(asset.id);
-              const title = asset.title || asset.originalName || content.galleryImageFallbackTitle;
+              const title = asset.title || asset.visionShortTitle || asset.originalName || content.galleryImageFallbackTitle;
 
               return (
                 <article key={asset.id} className="relative" data-selection-card>

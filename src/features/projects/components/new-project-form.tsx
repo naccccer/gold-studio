@@ -48,6 +48,7 @@ export type GalleryAssetOption = {
   fileUrl: string;
   title: string | null;
   originalName: string | null;
+  visionShortTitle?: string | null;
   productType: string | null;
 };
 
@@ -447,7 +448,13 @@ export function NewProjectForm({
     router.push("/gallery");
   }
 
-  function handleCropClose(options?: { refresh?: boolean; selectedAssetId?: string; selectedAssetFileUrl?: string }) {
+  function handleCropClose(options?: {
+    refresh?: boolean;
+    selectedAssetId?: string;
+    selectedAssetFileUrl?: string;
+    selectedAssetTitle?: string | null;
+    selectedAssetOriginalName?: string | null;
+  }) {
     setCropUploadId(null);
     setSourcePreparing(false);
 
@@ -455,8 +462,8 @@ export function NewProjectForm({
       const uploadedAsset: GalleryAssetOption = {
         id: options.selectedAssetId,
         fileUrl: options.selectedAssetFileUrl,
-        title: null,
-        originalName: null,
+        title: options.selectedAssetTitle ?? null,
+        originalName: options.selectedAssetOriginalName ?? null,
         productType,
       };
 
@@ -584,7 +591,7 @@ export function NewProjectForm({
               <div className="grid grid-cols-4 gap-3">
                 {visibleGalleryAssets.map((asset) => {
                   const isSelected = selectedAsset?.id === asset.id;
-                  const title = asset.title || asset.originalName || content.galleryImageFallbackTitle;
+                  const title = asset.title || asset.visionShortTitle || asset.originalName || content.galleryImageFallbackTitle;
 
                   return (
                     <button
@@ -661,7 +668,7 @@ export function NewProjectForm({
               {hasSupportingAssets ? (
                 <div className="grid grid-cols-2 gap-3">
                   {supportingAssets.map((asset) => {
-                    const title = asset.title || asset.originalName || content.supportingFallbackTitle;
+                    const title = asset.title || asset.visionShortTitle || asset.originalName || content.supportingFallbackTitle;
 
                     return (
                       <div key={asset.id} className="relative">
@@ -796,7 +803,7 @@ export function NewProjectForm({
               {hasSupportingAssets ? (
                 <div className="grid grid-cols-2 gap-3">
                   {supportingAssets.map((asset) => {
-                    const title = asset.title || asset.originalName || content.supportingFallbackTitle;
+                    const title = asset.title || asset.visionShortTitle || asset.originalName || content.supportingFallbackTitle;
 
                     return (
                       <div key={asset.id} className="relative">

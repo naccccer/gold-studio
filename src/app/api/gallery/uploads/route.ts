@@ -79,6 +79,7 @@ export async function POST(request: Request) {
       assetId: asset.id,
       fileUrl: asset.fileUrl,
       title: asset.title ?? uploaded.originalName,
+      originalName: uploaded.originalName,
     });
   } catch (error) {
     const supportCode = generateNumericSupportCode();

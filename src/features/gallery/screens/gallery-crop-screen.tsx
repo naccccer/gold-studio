@@ -14,7 +14,13 @@ import {
 
 type GalleryCropScreenProps = {
   uploadId: string;
-  onClose: (options?: { refresh?: boolean; selectedAssetId?: string; selectedAssetFileUrl?: string }) => void;
+  onClose: (options?: {
+    refresh?: boolean;
+    selectedAssetId?: string;
+    selectedAssetFileUrl?: string;
+    selectedAssetTitle?: string | null;
+    selectedAssetOriginalName?: string | null;
+  }) => void;
   progressLabel?: string;
 };
 
@@ -225,7 +231,7 @@ async function buildCroppedFile(
     }, "image/jpeg", 0.9);
   });
 
-  const baseName = upload.file.name.replace(/\.[^.]+$/, "") || "gallery-crop";
+  const baseName = (upload.file?.name ?? upload.originalName ?? "gallery-crop").replace(/\.[^.]+$/, "") || "gallery-crop";
   return new File([blob], `${baseName}-crop.jpg`, { type: "image/jpeg" });
 }
 
@@ -276,7 +282,14 @@ export function GalleryCropScreen({ uploadId, onClose, progressLabel }: GalleryC
     ? normalizeCropRect(cropRect, frameSize)
     : getInitialCropRect(frameSize, displayedImageBounds);
 
-  function closeModal(options?: { refresh?: boolean; discard?: boolean; selectedAssetId?: string; selectedAssetFileUrl?: string }) {
+  function closeModal(options?: {
+    refresh?: boolean;
+    discard?: boolean;
+    selectedAssetId?: string;
+    selectedAssetFileUrl?: string;
+    selectedAssetTitle?: string | null;
+    selectedAssetOriginalName?: string | null;
+  }) {
     const shouldDiscard = options?.discard ?? true;
     if (upload) {
       if (shouldDiscard) {
@@ -290,6 +303,8 @@ export function GalleryCropScreen({ uploadId, onClose, progressLabel }: GalleryC
       refresh: options?.refresh,
       selectedAssetId: options?.selectedAssetId,
       selectedAssetFileUrl: options?.selectedAssetFileUrl,
+      selectedAssetTitle: options?.selectedAssetTitle,
+      selectedAssetOriginalName: options?.selectedAssetOriginalName,
     });
   }
 
@@ -415,6 +430,8 @@ export function GalleryCropScreen({ uploadId, onClose, progressLabel }: GalleryC
         discard: false,
         selectedAssetId: confirmed.assetId,
         selectedAssetFileUrl: confirmed.fileUrl,
+        selectedAssetTitle: confirmed.title,
+        selectedAssetOriginalName: confirmed.originalName,
       });
     } catch (error) {
       setLocalError(error instanceof Error ? error.message : "بازگشت به گالری بدون کراپ انجام نشد.");
@@ -450,6 +467,8 @@ export function GalleryCropScreen({ uploadId, onClose, progressLabel }: GalleryC
         discard: false,
         selectedAssetId: cropped.assetId,
         selectedAssetFileUrl: cropped.fileUrl,
+        selectedAssetTitle: cropped.title,
+        selectedAssetOriginalName: cropped.originalName,
       });
     } catch (error) {
       setLocalError(error instanceof Error ? error.message : "ذخیره کراپ انجام نشد.");

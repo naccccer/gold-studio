@@ -13,11 +13,13 @@ export type PendingUploadStatus =
 export type PendingGalleryUpload = {
   id: string;
   source: PendingUploadSource;
-  file: File;
+  file?: File;
   previewUrl: string;
   status: PendingUploadStatus;
   assetId?: string;
   fileUrl?: string;
+  title?: string | null;
+  originalName?: string | null;
   error?: string;
   supportCode?: string;
 };
@@ -26,11 +28,14 @@ type UploadRouteSuccess = {
   assetId: string;
   fileUrl: string;
   title: string | null;
+  originalName?: string | null;
 };
 
 type CropRouteSuccess = {
   assetId: string;
   fileUrl: string;
+  title?: string | null;
+  originalName?: string | null;
 };
 
 type UploadRouteError = {
@@ -44,6 +49,12 @@ const INITIAL_UPLOAD_JPEG_QUALITY = 0.86;
 const uploads = new Map<string, PendingGalleryUpload>();
 const listeners = new Set<() => void>();
 const uploadPromises = new Map<string, Promise<PendingGalleryUpload>>();
+const SESSION_STORAGE_PREFIX = "ovala.pendingGalleryUpload.";
+
+type PersistedPendingGalleryUpload = Pick<
+  PendingGalleryUpload,
+  "id" | "source" | "previewUrl" | "status" | "assetId" | "fileUrl" | "title" | "originalName"
+>;
 
 function emit() {
   for (const listener of listeners) {
@@ -66,6 +77,75 @@ function updateUpload(uploadId: string, patch: Partial<PendingGalleryUpload>) {
     ...current,
     ...patch,
   });
+}
+
+function persistRecoverableUpload(upload: PendingGalleryUpload) {
+  if (typeof window === "undefined" || !upload.assetId || !upload.fileUrl) {
+    return;
+  }
+
+  const persisted: PersistedPendingGalleryUpload = {
+    id: upload.id,
+    source: upload.source,
+    previewUrl: upload.fileUrl,
+    status: upload.status,
+    assetId: upload.assetId,
+    fileUrl: upload.fileUrl,
+    title: upload.title ?? null,
+    originalName: upload.originalName ?? upload.file?.name ?? null,
+  };
+
+  try {
+    window.sessionStorage.setItem(`${SESSION_STORAGE_PREFIX}${upload.id}`, JSON.stringify(persisted));
+  } catch {
+    // Recovery persistence is best effort; the in-memory upload is the primary state.
+  }
+}
+
+function removePersistedUpload(uploadId: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.sessionStorage.removeItem(`${SESSION_STORAGE_PREFIX}${uploadId}`);
+  } catch {
+    // Best effort cleanup.
+  }
+}
+
+function restorePersistedUpload(uploadId: string) {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const raw = window.sessionStorage.getItem(`${SESSION_STORAGE_PREFIX}${uploadId}`);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as Partial<PersistedPendingGalleryUpload>;
+    if (parsed.id !== uploadId || !parsed.assetId || !parsed.fileUrl) {
+      return null;
+    }
+
+    const restored: PendingGalleryUpload = {
+      id: uploadId,
+      source: parsed.source === "camera" ? "camera" : "files",
+      previewUrl: parsed.fileUrl,
+      status: parsed.status === "cropped" ? "cropped" : "uploaded",
+      assetId: parsed.assetId,
+      fileUrl: parsed.fileUrl,
+      title: typeof parsed.title === "string" ? parsed.title : null,
+      originalName: typeof parsed.originalName === "string" ? parsed.originalName : null,
+    };
+
+    uploads.set(uploadId, restored);
+    return restored;
+  } catch {
+    return null;
+  }
 }
 
 function parseErrorPayload(payload: unknown, fallback: string) {
@@ -177,7 +257,7 @@ export function createPendingGalleryUpload(file: File, source: PendingUploadSour
 }
 
 export function getPendingGalleryUpload(uploadId: string) {
-  return uploads.get(uploadId) ?? null;
+  return uploads.get(uploadId) ?? restorePersistedUpload(uploadId);
 }
 
 export function usePendingGalleryUpload(uploadId: string | null) {
@@ -186,7 +266,7 @@ export function usePendingGalleryUpload(uploadId: string | null) {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    () => (uploadId ? uploads.get(uploadId) ?? null : null),
+    () => (uploadId ? uploads.get(uploadId) ?? restorePersistedUpload(uploadId) : null),
     () => null,
   );
 }
@@ -199,6 +279,7 @@ export function clearPendingGalleryUpload(uploadId: string) {
 
   uploads.delete(uploadId);
   uploadPromises.delete(uploadId);
+  removePersistedUpload(uploadId);
   emit();
 }
 
@@ -216,6 +297,10 @@ export function startPendingGalleryUpload(uploadId: string) {
   const task = (async () => {
     let uploadFile: File;
     try {
+      if (!current.file) {
+        throw new Error("فایل انتخاب‌شده در مرورگر در دسترس نیست. دوباره عکس را انتخاب کنید.");
+      }
+
       uploadFile = await prepareInitialUploadFile(current.file);
     } catch (error) {
       const message = error instanceof Error ? error.message : "آماده‌سازی تصویر برای آپلود کامل نشد.";
@@ -252,11 +337,14 @@ export function startPendingGalleryUpload(uploadId: string) {
       status: "uploaded" as const,
       assetId: payload.assetId,
       fileUrl: payload.fileUrl,
+      title: payload.title ?? null,
+      originalName: payload.originalName ?? current.file?.name ?? null,
       error: undefined,
       supportCode: undefined,
     };
 
     setUpload(uploadId, uploaded);
+    persistRecoverableUpload(uploaded);
     return uploaded;
   })();
 
@@ -265,7 +353,7 @@ export function startPendingGalleryUpload(uploadId: string) {
 }
 
 export async function waitForPendingGalleryUpload(uploadId: string) {
-  const current = uploads.get(uploadId);
+  const current = uploads.get(uploadId) ?? restorePersistedUpload(uploadId);
   if (!current) {
     throw new Error("آپلود انتخاب‌شده پیدا نشد.");
   }
@@ -308,11 +396,14 @@ export async function confirmPendingGalleryUpload(uploadId: string) {
     status: "uploaded" as const,
     assetId: payload.assetId,
     fileUrl: payload.fileUrl,
+    title: payload.title ?? readyUpload.title ?? null,
+    originalName: payload.originalName ?? readyUpload.originalName ?? null,
     error: undefined,
     supportCode: undefined,
   };
 
   setUpload(uploadId, nextUpload);
+  persistRecoverableUpload(nextUpload);
   return nextUpload;
 }
 
@@ -353,16 +444,19 @@ export async function applyCropToPendingUpload(uploadId: string, croppedFile: Fi
     status: "cropped" as const,
     assetId: payload.assetId,
     fileUrl: payload.fileUrl,
+    title: payload.title ?? readyUpload.title ?? null,
+    originalName: payload.originalName ?? readyUpload.originalName ?? croppedFile.name,
     error: undefined,
     supportCode: undefined,
   };
 
   setUpload(uploadId, nextUpload);
+  persistRecoverableUpload(nextUpload);
   return nextUpload;
 }
 
 export async function discardPendingGalleryUpload(uploadId: string) {
-  const current = uploads.get(uploadId);
+  const current = uploads.get(uploadId) ?? restorePersistedUpload(uploadId);
   if (!current) {
     return;
   }

@@ -29,6 +29,7 @@ export default async function NewProjectPage({
         storageKey: true,
         title: true,
         originalName: true,
+        visionShortTitle: true,
         productType: true,
       },
     }),

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { after } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { analyzeAndStoreProductAssetVision } from "@/lib/product-vision";
+import { analyzeAndStoreProductAssetVision, isRawImageFilenameTitle } from "@/lib/product-vision";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { generateNumericSupportCode, logSupportError } from "@/lib/support-code";
 import { saveUploadedFile } from "@/lib/uploads";
@@ -63,6 +63,10 @@ export async function POST(
 
   try {
     const uploaded = await saveUploadedFile(image);
+    const preservedTitle =
+      asset.title && asset.title !== asset.originalName && !isRawImageFilenameTitle(asset.title)
+        ? asset.title
+        : null;
     const updatedAsset = await db.productAsset.update({
       where: { id: asset.id },
       data: {
@@ -70,7 +74,7 @@ export async function POST(
         storageKey: uploaded.storageKey,
         mimeType: uploaded.mimeType,
         originalName: asset.originalName || uploaded.originalName,
-        title: asset.title || asset.originalName || uploaded.originalName,
+        title: preservedTitle,
         status: "READY",
         archivedAt: null,
         visionShortTitle: null,
@@ -90,7 +94,7 @@ export async function POST(
     });
     after(async () => {
       const analyzed = await analyzeAndStoreProductAssetVision(updatedAsset.id);
-      if (!updatedAsset.title && analyzed?.visionShortTitle) {
+      if (!preservedTitle && analyzed?.visionShortTitle) {
         await db.productAsset.update({
           where: { id: updatedAsset.id },
           data: { title: analyzed.visionShortTitle },
@@ -101,6 +105,8 @@ export async function POST(
     return NextResponse.json({
       assetId: updatedAsset.id,
       fileUrl: updatedAsset.fileUrl,
+      title: updatedAsset.title,
+      originalName: asset.originalName || uploaded.originalName,
     });
   } catch (error) {
     const supportCode = generateNumericSupportCode(asset.id);

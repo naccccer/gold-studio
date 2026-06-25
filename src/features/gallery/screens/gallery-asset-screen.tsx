@@ -13,6 +13,7 @@ export type GalleryAssetDetail = {
   fileUrl: string;
   title: string | null;
   originalName: string | null;
+  visionShortTitle: string | null;
   notes: string | null;
   productType: string | null;
   createdAt: Date;
@@ -42,7 +43,7 @@ const statusLabelMap: Record<string, string> = {
 
 export function GalleryAssetScreen({ asset, vertical, content }: GalleryAssetScreenProps) {
   const uploadPreview = content.placeholders.uploadPreview;
-  const title = asset.title || asset.originalName || content.galleryImageFallbackTitle;
+  const title = asset.title || asset.visionShortTitle || asset.originalName || content.galleryImageFallbackTitle;
 
   return (
     <PageShell maxWidth="lg" className="space-y-5 pb-4">
