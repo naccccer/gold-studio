@@ -42,6 +42,8 @@ import type { VerticalContent } from "@/lib/vertical-content";
 import type { VerticalId } from "@/lib/verticals";
 
 const INITIAL_STATE: ProjectFormState = {};
+const NAMING_REFRESH_INTERVAL_MS = 2500;
+const NAMING_REFRESH_MAX_ATTEMPTS = 8;
 
 export type GalleryAssetOption = {
   id: string;
@@ -265,6 +267,7 @@ export function NewProjectForm({
   const [sourcePreparing, setSourcePreparing] = useState(false);
   const [sourceError, setSourceError] = useState<string | null>(null);
   const fileInputRequestRef = useRef(0);
+  const namingRefreshAttemptsRef = useRef(0);
   const productTypes = getProductTypes(vertical);
   const defaultProductType = getDefaultProductType(vertical);
   const uploadPreview = content.placeholders.uploadPreview;
@@ -290,8 +293,19 @@ export function NewProjectForm({
       </span>
     ),
   }));
-  const visibleGalleryAssets = galleryAssets.slice(0, 4);
-  const currentImageSrc = selectedAsset?.fileUrl ?? null;
+  const visibleGalleryAssets = useMemo(() => galleryAssets.slice(0, 4), [galleryAssets]);
+  const selectedAssetDisplay = useMemo(() => {
+    if (!selectedAsset) {
+      return null;
+    }
+
+    return galleryAssets.find((asset) => asset.id === selectedAsset.id) ?? selectedAsset;
+  }, [galleryAssets, selectedAsset]);
+  const supportingAssetsDisplay = useMemo(
+    () => supportingAssets.map((asset) => galleryAssets.find((item) => item.id === asset.id) ?? asset),
+    [galleryAssets, supportingAssets],
+  );
+  const currentImageSrc = selectedAssetDisplay?.fileUrl ?? null;
   const hasSource = Boolean(currentImageSrc);
   const hasSupportingAssets = supportingAssets.length > 0;
   const shouldShowSupportingPanel = supportingPanelOpen || hasSupportingAssets;
@@ -301,6 +315,43 @@ export function NewProjectForm({
   const canSubmitWithReference = canSubmit && (!isSampleReferenceStyle || Boolean(selectedReference || selectedReadySampleId || referenceUploadPreview));
   const canAddSupportingAsset = hasSource && supportingAssets.length < MAX_SUPPORTING_PRODUCT_IMAGES && !sourcePreparing;
   const shouldShowBillingShortcut = state.error === NO_CREDITS_ERROR;
+
+  useEffect(() => {
+    const visiblePending = visibleGalleryAssets.some((asset) =>
+      assetDisplayTitle(asset, content.galleryImageFallbackTitle).namingPending,
+    );
+    const selectedPending = selectedAssetDisplay
+      ? assetDisplayTitle(selectedAssetDisplay, content.galleryImageFallbackTitle).namingPending
+      : false;
+    const supportingPending = supportingAssetsDisplay.some((asset) =>
+      assetDisplayTitle(asset, content.supportingFallbackTitle).namingPending,
+    );
+    const hasPendingNaming = visiblePending || selectedPending || supportingPending;
+
+    if (!hasPendingNaming) {
+      namingRefreshAttemptsRef.current = 0;
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      if (namingRefreshAttemptsRef.current >= NAMING_REFRESH_MAX_ATTEMPTS) {
+        window.clearInterval(interval);
+        return;
+      }
+
+      namingRefreshAttemptsRef.current += 1;
+      router.refresh();
+    }, NAMING_REFRESH_INTERVAL_MS);
+
+    return () => window.clearInterval(interval);
+  }, [
+    content.galleryImageFallbackTitle,
+    content.supportingFallbackTitle,
+    router,
+    selectedAssetDisplay,
+    supportingAssetsDisplay,
+    visibleGalleryAssets,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -690,7 +741,7 @@ export function NewProjectForm({
               </div>
               {hasSupportingAssets ? (
                 <div className="grid grid-cols-2 gap-3">
-                  {supportingAssets.map((asset) => {
+                  {supportingAssetsDisplay.map((asset) => {
                     const { title, namingPending } = assetDisplayTitle(asset, content.supportingFallbackTitle);
 
                     return (
@@ -831,7 +882,7 @@ export function NewProjectForm({
               </div>
               {hasSupportingAssets ? (
                 <div className="grid grid-cols-2 gap-3">
-                  {supportingAssets.map((asset) => {
+                  {supportingAssetsDisplay.map((asset) => {
                     const { title, namingPending } = assetDisplayTitle(asset, content.supportingFallbackTitle);
 
                     return (

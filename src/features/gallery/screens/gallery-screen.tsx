@@ -66,6 +66,8 @@ type GalleryScreenProps = {
 
 const MAX_BATCH_UPLOAD_FILES = 10;
 const DELETE_NOTICE_DURATION_MS = 4200;
+const NAMING_REFRESH_INTERVAL_MS = 2500;
+const NAMING_REFRESH_MAX_ATTEMPTS = 8;
 
 function scrollGalleryToTop() {
   requestAnimationFrame(() => {
@@ -98,6 +100,7 @@ export function GalleryScreen({ assets, styles, content, deleteNotice, undoAsset
   const [pickerError, setPickerError] = useState<string | null>(null);
   const longPressTimerRef = useRef<number | null>(null);
   const longPressTriggeredRef = useRef(false);
+  const namingRefreshAttemptsRef = useRef(0);
   const cropUploadId = activeCropUploadId;
   const selectedCount = selectedIds.length;
   const batchHref = `/gallery/batches/new?assetIds=${encodeURIComponent(selectedIds.join(","))}`;
@@ -107,6 +110,29 @@ export function GalleryScreen({ assets, styles, content, deleteNotice, undoAsset
     cropUploadId && cropQueueIndex >= 0 && cropQueue.length > 1
       ? `${(cropQueueIndex + 1).toLocaleString("fa-IR")}/${cropQueue.length.toLocaleString("fa-IR")}`
       : undefined;
+
+  useEffect(() => {
+    const hasPendingNaming = assets.some((asset) =>
+      assetDisplayTitle(asset, content.galleryImageFallbackTitle).namingPending,
+    );
+
+    if (!hasPendingNaming) {
+      namingRefreshAttemptsRef.current = 0;
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      if (namingRefreshAttemptsRef.current >= NAMING_REFRESH_MAX_ATTEMPTS) {
+        window.clearInterval(interval);
+        return;
+      }
+
+      namingRefreshAttemptsRef.current += 1;
+      router.refresh();
+    }, NAMING_REFRESH_INTERVAL_MS);
+
+    return () => window.clearInterval(interval);
+  }, [assets, content.galleryImageFallbackTitle, router]);
 
   useEffect(() => {
     if (!deleteNotice) {
