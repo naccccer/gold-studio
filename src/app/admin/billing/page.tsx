@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Add, Copy, ReceiptText, Save2 } from "vuesax-icons-react";
+import { Add, ArrowDown2, Copy, ReceiptText, Save2 } from "vuesax-icons-react";
 import type { Prisma } from "@/generated/prisma";
 import { ConfirmAction } from "@/components/ui/confirm-action";
 import {
@@ -251,10 +251,16 @@ function packageTypeLabel(type: BillingPackageWithCounts["type"]) {
 
 function PackageEditor({ billingPackage }: { billingPackage: BillingPackageWithCounts }) {
   return (
-    <form action={updateBillingPackageAction} className="grid max-w-2xl gap-3">
+    <form action={updateBillingPackageAction} className="grid gap-3">
       <input type="hidden" name="packageId" value={billingPackage.id} />
       <input type="hidden" name="type" value={billingPackage.type} />
       <input type="hidden" name="currency" value={billingPackage.currency} />
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-navy-25 px-3 py-2">
+        <span className="text-xs font-semibold text-navy-950">ویرایش بسته</span>
+        <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 shadow-sm" dir="ltr">
+          {billingPackage.vertical}
+        </span>
+      </div>
       <PackageFormFields billingPackage={billingPackage} />
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
         <div className="flex gap-1.5">
@@ -289,9 +295,8 @@ function PackageDisclosure({ billingPackage }: { billingPackage: BillingPackageW
   )?.swatch;
 
   return (
-    <Disclosure
-      flush
-      summary={
+    <details className="group min-w-0">
+      <summary className="flex cursor-pointer select-none list-none items-center justify-between gap-3 px-4 py-3 text-sm transition hover:bg-navy-25/70 group-open:bg-navy-50/80 [&::-webkit-details-marker]:hidden">
         <span className="grid min-w-0 flex-1 gap-1 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
           <span className="flex min-w-0 items-center gap-2">
             <StatusDot status={billingPackage.isActive ? "ACTIVE" : "PAUSED"} label="" />
@@ -308,10 +313,14 @@ function PackageDisclosure({ billingPackage }: { billingPackage: BillingPackageW
             <span>{faNum(usageCount)} استفاده</span>
           </span>
         </span>
-      }
-    >
-      <PackageEditor billingPackage={billingPackage} />
-    </Disclosure>
+        <ArrowDown2 aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-slate-400 transition duration-200 group-open:rotate-180" />
+      </summary>
+      <div className="border-y border-slate-200 bg-slate-50 px-3 pb-3 pt-3">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <PackageEditor billingPackage={billingPackage} />
+        </div>
+      </div>
+    </details>
   );
 }
 
