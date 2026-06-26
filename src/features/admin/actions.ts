@@ -552,13 +552,6 @@ export async function createBillingPackageAction(formData: FormData) {
 export async function updateBillingPackageAction(formData: FormData) {
   const session = await requireAdminSession();
   const packageId = text(formData, "packageId");
-  const submittedVertical = text(formData, "vertical");
-  const currentPackage = packageId
-    ? await db.billingPackage.findUnique({ where: { id: packageId }, select: { vertical: true } })
-    : null;
-  const vertical = submittedVertical
-    ? normalizeUserVisibleVerticalId(submittedVertical)
-    : normalizeUserVisibleVerticalId(currentPackage?.vertical);
   const type = text(formData, "type") === "SUBSCRIPTION" ? "SUBSCRIPTION" : "CREDIT_PACK";
   const title = text(formData, "title");
   const description = text(formData, "description");
@@ -576,7 +569,6 @@ export async function updateBillingPackageAction(formData: FormData) {
     where: { id: packageId },
     data: {
       type,
-      vertical,
       title,
       description,
       priceAmount,

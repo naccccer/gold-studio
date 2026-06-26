@@ -38,6 +38,7 @@ import {
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { db } from "@/lib/db";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
+import { getVerticalLabel, USER_VISIBLE_VERTICAL_IDS, VERTICALS } from "@/lib/verticals";
 
 export const dynamic = "force-dynamic";
 
@@ -240,7 +241,120 @@ function PackageFormFields({
   );
 }
 
+function packageUsageCount(billingPackage: BillingPackageWithCounts) {
+  return billingPackage.type === "SUBSCRIPTION" ? billingPackage._count.subscriptions : billingPackage._count.creditEvents;
+}
+
+function packageTypeLabel(type: BillingPackageWithCounts["type"]) {
+  return type === "SUBSCRIPTION" ? "اشتراک" : "بسته اعتبار";
+}
+
+function PackageEditor({ billingPackage }: { billingPackage: BillingPackageWithCounts }) {
+  return (
+    <form action={updateBillingPackageAction} className="grid max-w-2xl gap-3">
+      <input type="hidden" name="packageId" value={billingPackage.id} />
+      <input type="hidden" name="type" value={billingPackage.type} />
+      <input type="hidden" name="currency" value={billingPackage.currency} />
+      <PackageFormFields billingPackage={billingPackage} />
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
+        <div className="flex gap-1.5">
+          <button className={btnPrimary}>
+            <Save2 className="h-4 w-4" />
+            ذخیره بسته
+          </button>
+          <button formAction={duplicateBillingPackageAction} className={btnSecondary}>
+            <Copy className="h-4 w-4" />
+            ساخت کپی
+          </button>
+        </div>
+        <ConfirmAction
+          action={deleteBillingPackageAction}
+          fields={[{ name: "packageId", value: billingPackage.id }]}
+          title="بسته حذف شود؟"
+          description="از خریدهای جدید حذف می‌شود."
+          confirmLabel="حذف"
+          triggerLabel="حذف بسته"
+          triggerClassName={btnDanger}
+          triggerIcon="trash"
+        />
+      </div>
+    </form>
+  );
+}
+
+function PackageDisclosure({ billingPackage }: { billingPackage: BillingPackageWithCounts }) {
+  const usageCount = packageUsageCount(billingPackage);
+  const swatch = BILLING_PLAN_COLOR_PRESETS.find(
+    (preset) => preset.id === normalizeBillingPlanColorPreset(billingPackage.colorPreset),
+  )?.swatch;
+
+  return (
+    <Disclosure
+      flush
+      summary={
+        <span className="grid min-w-0 flex-1 gap-1 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+          <span className="flex min-w-0 items-center gap-2">
+            <StatusDot status={billingPackage.isActive ? "ACTIVE" : "PAUSED"} label="" />
+            <span aria-hidden="true" className="h-3.5 w-3.5 shrink-0 rounded-full" style={{ backgroundColor: swatch }} />
+            <span className="truncate font-semibold text-navy-950">{billingPackage.title}</span>
+          </span>
+          <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500 sm:justify-end">
+            <span className="rounded-full bg-navy-50 px-2 py-0.5 font-medium text-navy-700">{packageTypeLabel(billingPackage.type)}</span>
+            <span className="tabular-nums">{formatIrr(billingPackage.priceAmount, billingPackage.currency)}</span>
+            <span>{faNum(creditUnitsToVisibleCredits(billingPackage.credits))} خروجی</span>
+            {billingPackage.type === "SUBSCRIPTION" && billingPackage.projectLimit !== null ? (
+              <span>{faNum(billingPackage.projectLimit)} پروژه</span>
+            ) : null}
+            <span>{faNum(usageCount)} استفاده</span>
+          </span>
+        </span>
+      }
+    >
+      <PackageEditor billingPackage={billingPackage} />
+    </Disclosure>
+  );
+}
+
+function PackageColumn({
+  title,
+  packages,
+}: {
+  title: string;
+  packages: BillingPackageWithCounts[];
+}) {
+  return (
+    <section className="min-w-0">
+      <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+        <h3 className="text-xs font-semibold text-navy-950">{title}</h3>
+        <span className="text-[11px] tabular-nums text-slate-400">{faNum(packages.length)}</span>
+      </div>
+      {packages.length === 0 ? (
+        <div className="px-4 py-6">
+          <EmptyState title="بسته‌ای در این بخش نیست." />
+        </div>
+      ) : (
+        <div className="divide-y divide-slate-100">
+          {packages.map((billingPackage) => (
+            <PackageDisclosure key={billingPackage.id} billingPackage={billingPackage} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function PackagesTab({ packages }: { packages: BillingPackageWithCounts[] }) {
+  const sections = USER_VISIBLE_VERTICAL_IDS.map((vertical) => {
+    const verticalPackages = packages.filter((billingPackage) => billingPackage.vertical === vertical);
+    return {
+      vertical,
+      packages: verticalPackages,
+      subscriptions: verticalPackages.filter((billingPackage) => billingPackage.type === "SUBSCRIPTION"),
+      creditPacks: verticalPackages.filter((billingPackage) => billingPackage.type === "CREDIT_PACK"),
+      activeCount: verticalPackages.filter((billingPackage) => billingPackage.isActive).length,
+    };
+  });
+
   return (
     <div className="space-y-4">
       <Disclosure
@@ -253,12 +367,23 @@ function PackagesTab({ packages }: { packages: BillingPackageWithCounts[] }) {
       >
         <form action={createBillingPackageAction} className="grid max-w-2xl gap-3">
           <input type="hidden" name="currency" value="IRR" />
-          <Field label="نوع بسته">
-            <select name="type" defaultValue="SUBSCRIPTION" className={fieldClass}>
-              <option value="SUBSCRIPTION">اشتراک ماهانه</option>
-              <option value="CREDIT_PACK">بسته اعتبار جداگانه</option>
-            </select>
-          </Field>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Vertical">
+              <select name="vertical" defaultValue="jewelry" className={fieldClass}>
+                {USER_VISIBLE_VERTICAL_IDS.map((vertical) => (
+                  <option key={vertical} value={vertical}>
+                    {VERTICALS[vertical].label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="نوع بسته">
+              <select name="type" defaultValue="SUBSCRIPTION" className={fieldClass}>
+                <option value="SUBSCRIPTION">اشتراک ماهانه</option>
+                <option value="CREDIT_PACK">بسته اعتبار جداگانه</option>
+              </select>
+            </Field>
+          </div>
           <PackageFormFields nextSortOrder={(packages.length + 1) * 10} />
           <div className="border-t border-slate-100 pt-3">
             <button className={btnPrimary}>
@@ -274,73 +399,26 @@ function PackagesTab({ packages }: { packages: BillingPackageWithCounts[] }) {
           <EmptyState title="بسته‌ای ثبت نشده است." />
         </Surface>
       ) : (
-        <div className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
-          {packages.map((billingPackage) => {
-            const usageCount =
-              billingPackage.type === "SUBSCRIPTION"
-                ? billingPackage._count.subscriptions
-                : billingPackage._count.creditEvents;
-            return (
-              <Disclosure
-                key={billingPackage.id}
-                flush
-                summary={
-                  <>
-                    <StatusDot status={billingPackage.isActive ? "ACTIVE" : "PAUSED"} label="" />
-                    <span
-                      aria-hidden="true"
-                      className="h-3.5 w-3.5 shrink-0 rounded-full"
-                      style={{
-                        backgroundColor: BILLING_PLAN_COLOR_PRESETS.find(
-                          (preset) => preset.id === normalizeBillingPlanColorPreset(billingPackage.colorPreset),
-                        )?.swatch,
-                      }}
-                    />
-                    <span className="truncate font-medium text-navy-950">{billingPackage.title}</span>
-                    <span className="rounded-full bg-navy-50 px-2 py-0.5 text-[10px] font-medium text-navy-700">
-                      {billingPackage.type === "SUBSCRIPTION" ? "اشتراک" : "بسته اعتبار"}
-                    </span>
-                    <span className="hidden text-xs tabular-nums text-slate-500 sm:inline">
-                      {formatIrr(billingPackage.priceAmount, billingPackage.currency)}
-                    </span>
-                    <span className="hidden text-xs text-slate-400 md:inline">
-                      {billingPackage.projectLimit !== null ? `${faNum(billingPackage.projectLimit)} پروژه · ` : ""}
-                      {faNum(creditUnitsToVisibleCredits(billingPackage.credits))} خروجی · {faNum(usageCount)} استفاده
-                    </span>
-                  </>
-                }
-              >
-                <form action={updateBillingPackageAction} className="grid max-w-2xl gap-3">
-                  <input type="hidden" name="packageId" value={billingPackage.id} />
-                  <input type="hidden" name="type" value={billingPackage.type} />
-                  <input type="hidden" name="currency" value={billingPackage.currency} />
-                  <PackageFormFields billingPackage={billingPackage} />
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
-                    <div className="flex gap-1.5">
-                      <button className={btnPrimary}>
-                        <Save2 className="h-4 w-4" />
-                        ذخیره بسته
-                      </button>
-                      <button formAction={duplicateBillingPackageAction} className={btnSecondary}>
-                        <Copy className="h-4 w-4" />
-                        ساخت کپی
-                      </button>
-                    </div>
-                    <ConfirmAction
-                      action={deleteBillingPackageAction}
-                      fields={[{ name: "packageId", value: billingPackage.id }]}
-                      title="بسته حذف شود؟"
-                      description="از خریدهای جدید حذف می‌شود."
-                      confirmLabel="حذف"
-                      triggerLabel="حذف بسته"
-                      triggerClassName={btnDanger}
-                      triggerIcon="trash"
-                    />
-                  </div>
-                </form>
-              </Disclosure>
-            );
-          })}
+        <div className="grid gap-4">
+          {sections.map((section) => (
+            <Surface key={section.vertical}>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3.5">
+                <div className="min-w-0">
+                  <h2 className="text-sm font-semibold text-navy-950">{getVerticalLabel(section.vertical)}</h2>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    {faNum(section.packages.length)} بسته · {faNum(section.activeCount)} فعال
+                  </p>
+                </div>
+                <span className="rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-600" dir="ltr">
+                  {section.vertical}
+                </span>
+              </div>
+              <div className="grid min-w-0 lg:grid-cols-2 lg:divide-x lg:divide-x-reverse lg:divide-slate-100">
+                <PackageColumn title="اشتراک‌ها" packages={section.subscriptions} />
+                <PackageColumn title="بسته‌های اعتبار" packages={section.creditPacks} />
+              </div>
+            </Surface>
+          ))}
         </div>
       )}
     </div>
