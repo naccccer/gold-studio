@@ -22,7 +22,7 @@ import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { db } from "@/lib/db";
 import { requireAdminSession } from "@/lib/auth/session";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
-import { formatCreditUnits, getGenerationCreditUnitCost } from "@/lib/credit-units";
+import { formatInternalCreditUnits, getGenerationCreditUnitCost } from "@/lib/credit-units";
 import { getVerticalLabel, normalizeVerticalId } from "@/lib/verticals";
 
 export const dynamic = "force-dynamic";
@@ -129,7 +129,7 @@ export default async function AdminProjectDetailPage({ params }: AdminProjectDet
                 },
                 { label: "شناسه کاربر", value: getUserIdentifier(project.user), dir: "ltr" },
                 { label: "Vertical", value: getVerticalLabel(project.vertical) },
-                { label: "هزینه تولید", value: `${formatCreditUnits(operationalCostUnits)} اعتبار (${operationalCostUnits} units)`, dir: "ltr" },
+                { label: "هزینه تولید", value: formatInternalCreditUnits(operationalCostUnits), dir: "ltr" },
                 { label: "سبک", value: project.style.name },
                 { label: "قالب خروجی", value: project.outputPreset, dir: "ltr" },
                 { label: "آخرین آپدیت", value: formatAdminDate(project.updatedAt) },
@@ -159,7 +159,7 @@ export default async function AdminProjectDetailPage({ params }: AdminProjectDet
                       <StatusDot status={reservation.status} />
                     </span>
                     <span className="font-medium text-navy-950" dir="ltr">
-                      {formatCreditUnits(reservation.creditUnits)} credits / {reservation.creditUnits} units
+                      {formatInternalCreditUnits(reservation.creditUnits)}
                     </span>
                     <span className="text-slate-400">{formatAdminDate(reservation.createdAt)}</span>
                   </div>

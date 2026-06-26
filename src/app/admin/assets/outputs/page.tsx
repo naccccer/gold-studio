@@ -14,7 +14,7 @@ import {
   TabNav,
 } from "@/features/admin/components/console";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
-import { formatCreditUnits, getGenerationCreditUnitCost } from "@/lib/credit-units";
+import { formatInternalCreditUnits, getGenerationCreditUnitCost } from "@/lib/credit-units";
 import { db } from "@/lib/db";
 import { requireAdminSession } from "@/lib/auth/session";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
@@ -190,9 +190,10 @@ export default async function AdminOutputsPage({ searchParams }: AdminOutputsPag
                     { label: "Vertical", value: getVerticalLabel(selected.project.vertical) },
                     {
                       label: "هزینه تولید",
-                      value: `${formatCreditUnits(
+                      value: formatInternalCreditUnits(
                         selected.project.creditReservations[0]?.creditUnits ?? getGenerationCreditUnitCost(normalizeVerticalId(selected.project.vertical)),
-                      )} اعتبار`,
+                      ),
+                      dir: "ltr",
                     },
                     { label: "سبک", value: selected.project.style.name },
                     { label: "قالب خروجی", value: selected.project.outputPreset, dir: "ltr" },

@@ -20,7 +20,6 @@ import {
 import { createAdminUserAction } from "@/features/admin/actions";
 import { requireAdminOrSalesSession } from "@/lib/auth/session";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
-import { creditUnitsToVisibleCredits, visibleCreditsToCreditUnits } from "@/lib/credit-units";
 import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -39,7 +38,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
 
   const where: Prisma.UserWhereInput = {
     ...(role === "ADMIN" || role === "USER" || role === "SALES" ? { role: role as "ADMIN" | "USER" | "SALES" } : {}),
-    ...(credit === "low" ? { credits: { lte: visibleCreditsToCreditUnits(1) } } : {}),
+    ...(credit === "low" ? { verticalCreditBalances: { some: { credits: { lte: 1 } } } } : {}),
     ...(q
       ? {
           OR: [
@@ -60,6 +59,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
       take: 100,
       include: {
         _count: { select: { projects: true, assets: true, purchaseRequests: true } },
+        verticalCreditBalances: true,
         subscriptions: {
           where: { status: "ACTIVE" },
           orderBy: { currentPeriodEnd: "desc" },
@@ -71,7 +71,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
     db.user.count(),
     db.user.count({ where: { role: "ADMIN" } }),
     db.user.count({ where: { role: "SALES" } }),
-    db.user.count({ where: { credits: { lte: visibleCreditsToCreditUnits(1) } } }),
+    db.user.count({ where: { verticalCreditBalances: { some: { credits: { lte: 1 } } } } }),
   ]);
 
   const filterQuery = (next: { role?: string; credit?: string }) => {
@@ -114,6 +114,11 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
         >
           {users.map((user) => {
             const subscription = user.subscriptions[0];
+            const totalCredits = user.verticalCreditBalances.reduce(
+              (sum, balance) => sum + Math.max(0, balance.credits - balance.reservedCredits),
+              0,
+            );
+            const reservedCredits = user.verticalCreditBalances.reduce((sum, balance) => sum + balance.reservedCredits, 0);
             return (
               <tr key={user.id}>
                 <td className={cellClass}>
@@ -128,8 +133,8 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
                   <StatusDot status={user.role} />
                 </td>
                 <td className={`${cellClass} tabular-nums`}>
-                  {faNum(creditUnitsToVisibleCredits(user.credits))}
-                  {user.reservedCredits > 0 ? <p className="text-xs text-slate-400">رزرو {faNum(creditUnitsToVisibleCredits(user.reservedCredits))}</p> : null}
+                  {faNum(totalCredits)}
+                  {reservedCredits > 0 ? <p className="text-xs text-slate-400">رزرو {faNum(reservedCredits)}</p> : null}
                 </td>
                 <td className={cellClass}>
                   {subscription ? (

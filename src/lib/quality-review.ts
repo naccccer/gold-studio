@@ -1,7 +1,6 @@
 import type { Prisma, QualityReviewReason } from "@/generated/prisma";
 import { analyzeQualityReviewImagesWithLiara, visionModel } from "@/lib/ai/vision";
 import { getProviderSettings } from "@/lib/ai/provider-settings";
-import { getGenerationCreditUnitCost } from "@/lib/credit-units";
 import { db } from "@/lib/db";
 import { createUserNotification } from "@/lib/notifications";
 import { isAllowedStorageKey, readStorageObject } from "@/lib/storage";
@@ -40,16 +39,23 @@ function resultStorageKeyFromUrl(value?: string | null) {
   }
 }
 
-async function lockUserCredits(tx: Prisma.TransactionClient, userId: string) {
-  const [user] = await tx.$queryRaw<Array<{ id: string; credits: number }>>`
+async function lockUserCredits(tx: Prisma.TransactionClient, userId: string, vertical: string) {
+  await tx.userVerticalCreditBalance.upsert({
+    where: { userId_vertical: { userId, vertical } },
+    create: { userId, vertical, credits: 0, reservedCredits: 0 },
+    update: {},
+  });
+
+  const [balance] = await tx.$queryRaw<Array<{ id: string; credits: number }>>`
     SELECT id, credits
-    FROM \`User\`
-    WHERE id = ${userId}
+    FROM \`UserVerticalCreditBalance\`
+    WHERE userId = ${userId}
+      AND vertical = ${vertical}
     LIMIT 1
     FOR UPDATE
   `;
 
-  return user ?? null;
+  return balance ?? null;
 }
 
 export function normalizeQualityReviewReason(value: FormDataEntryValue | null): QualityReviewReason {
@@ -153,7 +159,8 @@ export async function approveQualityReviewWithRefund({
       orderBy: { capturedAt: "desc" },
     });
     const reason = `بازگشت اعتبار بابت بررسی کیفیت پروژه ${review.project.title || review.project.id}`;
-    const refundCreditUnits = capturedReservation?.creditUnits ?? getGenerationCreditUnitCost(normalizeVerticalId(review.project.vertical));
+    const vertical = normalizeVerticalId(review.project.vertical);
+    const refundCredits = capturedReservation?.customerCredits ?? 1;
     let creditEvent;
 
     if (capturedReservation?.source === "SUBSCRIPTION" && capturedReservation.subscriptionId) {
@@ -171,7 +178,7 @@ export async function approveQualityReviewWithRefund({
         await tx.userSubscription.update({
           where: { id: subscription.id },
           data: {
-            creditsUsedThisPeriod: { decrement: capturedReservation.creditUnits },
+            creditsUsedThisPeriod: { decrement: capturedReservation.customerCredits },
             ...(capturedReservation.reservesProject && subscription.projectsUsedThisPeriod > 0
               ? { projectsUsedThisPeriod: { decrement: 1 } }
               : {}),
@@ -181,9 +188,10 @@ export async function approveQualityReviewWithRefund({
           data: {
             userId: review.userId,
             actorAdminId: adminId,
-            delta: capturedReservation.creditUnits,
+            vertical,
+            delta: capturedReservation.customerCredits,
             balanceBefore: Math.max(0, subscription.creditsPerPeriod - subscription.creditsUsedThisPeriod),
-            balanceAfter: Math.max(0, subscription.creditsPerPeriod - subscription.creditsUsedThisPeriod + capturedReservation.creditUnits),
+            balanceAfter: Math.max(0, subscription.creditsPerPeriod - subscription.creditsUsedThisPeriod + capturedReservation.customerCredits),
             reason,
             source: "QUALITY_REFUND",
             packageId: subscription.packageId,
@@ -194,22 +202,23 @@ export async function approveQualityReviewWithRefund({
     }
 
     if (!creditEvent) {
-      const user = await lockUserCredits(tx, review.userId);
+      const user = await lockUserCredits(tx, review.userId, vertical);
       if (!user) {
         return null;
       }
 
-      await tx.user.update({
-        where: { id: review.userId },
-        data: { credits: { increment: refundCreditUnits } },
+      await tx.userVerticalCreditBalance.update({
+        where: { id: user.id },
+        data: { credits: { increment: refundCredits } },
       });
       creditEvent = await tx.creditEvent.create({
         data: {
           userId: review.userId,
           actorAdminId: adminId,
-          delta: refundCreditUnits,
+          vertical,
+          delta: refundCredits,
           balanceBefore: user.credits,
-          balanceAfter: user.credits + refundCreditUnits,
+          balanceAfter: user.credits + refundCredits,
           reason,
           source: "QUALITY_REFUND",
         },

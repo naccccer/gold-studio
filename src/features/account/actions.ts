@@ -10,6 +10,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { markAllUserNotificationsRead } from "@/lib/notifications";
 import { applyReferralOrSalesCodeForUser } from "@/lib/referrals";
 import { saveReceiptFile } from "@/lib/uploads";
+import { getCurrentVertical } from "@/lib/current-vertical";
 
 function text(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -17,6 +18,7 @@ function text(formData: FormData, key: string) {
 
 export async function createPurchaseRequestAction(formData: FormData) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const packageId = String(formData.get("packageId") ?? "").trim();
 
   if (!packageId) {
@@ -26,6 +28,7 @@ export async function createPurchaseRequestAction(formData: FormData) {
   const billingPackage = await db.billingPackage.findFirst({
     where: {
       id: packageId,
+      vertical,
       isActive: true,
       isPublic: true,
       archivedAt: null,
@@ -40,6 +43,7 @@ export async function createPurchaseRequestAction(formData: FormData) {
     where: {
       userId: session.userId,
       packageId: billingPackage.id,
+      vertical,
       status: "PENDING",
     },
     select: { id: true },
@@ -49,6 +53,7 @@ export async function createPurchaseRequestAction(formData: FormData) {
     await db.purchaseRequest.create({
       data: {
         userId: session.userId,
+        vertical,
         packageId: billingPackage.id,
         amount: billingPackage.priceAmount,
         currency: billingPackage.currency,
@@ -62,6 +67,7 @@ export async function createPurchaseRequestAction(formData: FormData) {
 
 export async function submitPurchaseReceiptAction(formData: FormData) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const requestId = String(formData.get("requestId") ?? "").trim();
   const receiptNote = String(formData.get("receiptNote") ?? "").trim();
   const receipt = formData.getAll("receipt").find((value): value is File => value instanceof File && value.size > 0);
@@ -84,6 +90,7 @@ export async function submitPurchaseReceiptAction(formData: FormData) {
     where: {
       id: requestId,
       userId: session.userId,
+      vertical,
       status: "PENDING",
     },
     select: { id: true },
@@ -110,6 +117,7 @@ export async function submitPurchaseReceiptAction(formData: FormData) {
 
 export async function deletePurchaseRequestAction(formData: FormData) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const requestId = String(formData.get("requestId") ?? "").trim();
 
   if (!requestId) {
@@ -120,6 +128,7 @@ export async function deletePurchaseRequestAction(formData: FormData) {
     where: {
       id: requestId,
       userId: session.userId,
+      vertical,
       status: { not: "APPROVED" },
     },
     select: { id: true },
@@ -187,6 +196,7 @@ export async function completeOnboardingNameAction(
   formData: FormData,
 ): Promise<OnboardingNameState> {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const name = text(formData, "name");
   const enteredReferralCode = text(formData, "referralCode");
 
@@ -203,6 +213,7 @@ export async function completeOnboardingNameAction(
       ? applyReferralOrSalesCodeForUser(tx, {
           userId: session.userId,
           rawCode: enteredReferralCode,
+          vertical,
         })
       : { status: "empty" as const },
   );

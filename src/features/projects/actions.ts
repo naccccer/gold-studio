@@ -307,7 +307,7 @@ export async function createProjectAction(
 
     try {
       if (freeVariantParentId) {
-        const freeVariantLimit = await getEffectiveFreeVariantLimit(session.userId);
+        const freeVariantLimit = await getEffectiveFreeVariantLimit(session.userId, vertical);
         if (freeVariantLimit <= 0) {
           return { error: "نسخه دیگر برای پلن فعلی شما فعال نیست." };
         }

@@ -19,7 +19,7 @@ export default async function DashboardLayout({
       where: { id: session.userId },
       select: { name: true, email: true, phone: true, startGuideSeenAt: true },
     }),
-    getUserCreditSummary(session.userId),
+    getUserCreditSummary(session.userId, vertical),
     getUserNotificationSummary(session.userId),
   ]);
 

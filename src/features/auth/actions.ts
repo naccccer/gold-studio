@@ -7,6 +7,7 @@ import { createOtpChallenge, getOtpResendDelaySeconds, verifyOtpChallenge, type 
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { clearSession, createSession, postLoginPathForRole } from "@/lib/auth/session";
 import { INITIAL_SIGNUP_CREDITS } from "@/lib/credits";
+import { getCurrentVertical } from "@/lib/current-vertical";
 import { db } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { referralCodeFromUserId } from "@/lib/referrals";
@@ -108,6 +109,7 @@ async function ensureCanSendOtp({
 
 async function createUserWithPhonePassword(phone: string, password: string) {
   const passwordHash = await hashPassword(password);
+  const vertical = await getCurrentVertical();
 
   return db.$transaction(async (tx) => {
     const created = await tx.user.create({
@@ -115,13 +117,20 @@ async function createUserWithPhonePassword(phone: string, password: string) {
         phone,
         passwordHash,
         role: "USER",
-        credits: INITIAL_SIGNUP_CREDITS,
+        credits: 0,
+        verticalCreditBalances: {
+          create: {
+            vertical,
+            credits: INITIAL_SIGNUP_CREDITS,
+          },
+        },
       },
     });
 
     await tx.creditEvent.create({
       data: {
         userId: created.id,
+        vertical,
         delta: INITIAL_SIGNUP_CREDITS,
         balanceBefore: 0,
         balanceAfter: INITIAL_SIGNUP_CREDITS,

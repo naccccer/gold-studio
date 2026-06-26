@@ -19,7 +19,7 @@ import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { db } from "@/lib/db";
 import { requireAdminSession } from "@/lib/auth/session";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
-import { formatCreditUnits, getGenerationCreditUnitCost } from "@/lib/credit-units";
+import { formatInternalCreditUnits, getGenerationCreditUnitCost } from "@/lib/credit-units";
 import { getVerticalLabel, normalizeVerticalId, USER_VISIBLE_VERTICAL_IDS, VERTICALS } from "@/lib/verticals";
 
 export const dynamic = "force-dynamic";
@@ -201,10 +201,7 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
                   {getVerticalLabel(project.vertical)}
                 </td>
                 <td className={cellClass}>
-                  <p>{formatCreditUnits(costUnits)} اعتبار</p>
-                  <p className="text-xs text-slate-400" dir="ltr">
-                    {costUnits} units
-                  </p>
+                  <p dir="ltr">{formatInternalCreditUnits(costUnits)}</p>
                 </td>
                 <td className={cellClass}>
                   <p>{project.style.name}</p>

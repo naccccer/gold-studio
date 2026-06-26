@@ -56,19 +56,21 @@ Before any final merge/deploy, take a backup and apply migrations intentionally 
   - current jewelry host -> `jewelry`
   - `food.ovala.ir` -> `food`
 - Accounts are shared across verticals.
-- The credit wallet is shared across verticals.
+- Credit balances and billing packages are scoped per vertical. User-facing credits mean outputs, not provider cost units.
 - Gallery, projects, styles, ready samples, and generation prompts are scoped by vertical.
 - Admin remains shared, with vertical filters where operational behavior changes.
 
 ## Pricing Direction
 
-Use internal credit units from the start:
+User-facing credits buy outputs inside one vertical:
 
-- `100 creditUnits = 1 visible credit`
+- `1 jewelry credit = 1 jewelry output`
+- `1 food credit = 1 food output`
+
+Internal cost units are tracked separately for operations and margin:
+
 - Food & Drink generation cost: `100 creditUnits`
 - Jewelry generation cost: `300 creditUnits`
-
-User-facing screens should display visible credits. Billing and reservation logic should store and calculate internal units.
 
 ## Phase 1 - Vertical Foundation
 
@@ -126,9 +128,9 @@ Do not:
 
 Exit criteria:
 
-- Existing balances display correctly as visible credits.
-- Jewelry generation costs 3 visible credits.
-- Food cost support exists even if Food UI is not fully launched yet.
+- Existing balances are migrated into vertical-specific customer-credit semantics before real-user launch.
+- Jewelry generation costs 1 user-facing credit and records 300 internal creditUnits.
+- Food generation costs 1 user-facing credit and records 100 internal creditUnits.
 - Admin billing operations remain understandable.
 
 ## Phase 3 - Ovala Food User Experience
@@ -288,3 +290,4 @@ For UI phases, manually review the `393x852` mobile layout target. Capture scree
 - 2026-06-24: Food style controls added for the six user-visible Food styles: menu angle/surface, clean background surface/tone, sample-photo matching/crop, Instagram text placement/mood, cafe-restaurant context/detail level, and packaging angle/label priority.
 - 2026-06-24: Food style set refined again: merged clean background into menu/catalog, hid the separate clean-background style, and added a serving-vessel style focused on the plate, bowl, cup, glass, wrapper, box, or takeaway container holding the item.
 - 2026-06-24: Post-gate Food/Jewelry polish documented: Jewelry/Food dev shortcuts are the supported local switching path, Food sample-reference behavior is tracked separately from Jewelry sample-reference behavior, style-reference icons use the saved/bookmark metaphor, and Phase 6 remains on hold.
+- 2026-06-26: Billing semantics corrected before real-user launch: balances and packages are vertical-specific, each user-facing credit buys one output in that vertical, and internal creditUnits remain a separate cost snapshot (`jewelry=300`, `food=100`) on generation reservations.

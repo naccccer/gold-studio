@@ -446,16 +446,23 @@ function isAvailableToUsers(formData: FormData) {
   return formData.has("isAvailableToUsers") || (formData.has("isActive") && formData.has("isUserVisible"));
 }
 
-async function lockUserCredits(tx: Prisma.TransactionClient, userId: string) {
-  const [user] = await tx.$queryRaw<Array<{ id: string; credits: number }>>`
+async function lockUserCredits(tx: Prisma.TransactionClient, userId: string, vertical: UserVisibleVerticalId = "jewelry") {
+  await tx.userVerticalCreditBalance.upsert({
+    where: { userId_vertical: { userId, vertical } },
+    create: { userId, vertical, credits: 0, reservedCredits: 0 },
+    update: {},
+  });
+
+  const [balance] = await tx.$queryRaw<Array<{ id: string; credits: number }>>`
     SELECT id, credits
-    FROM \`User\`
-    WHERE id = ${userId}
+    FROM \`UserVerticalCreditBalance\`
+    WHERE userId = ${userId}
+      AND vertical = ${vertical}
     LIMIT 1
     FOR UPDATE
   `;
 
-  return user ?? null;
+  return balance ?? null;
 }
 
 export async function updatePaymentSettingsAction(formData: FormData) {
@@ -498,6 +505,7 @@ export async function updatePaymentSettingsAction(formData: FormData) {
 
 export async function createBillingPackageAction(formData: FormData) {
   const session = await requireAdminSession();
+  const vertical = normalizeUserVisibleVerticalId(text(formData, "vertical"));
   const type = text(formData, "type") === "SUBSCRIPTION" ? "SUBSCRIPTION" : "CREDIT_PACK";
   const title = text(formData, "title");
   const description = text(formData, "description");
@@ -514,6 +522,7 @@ export async function createBillingPackageAction(formData: FormData) {
   const billingPackage = await db.billingPackage.create({
     data: {
       type,
+      vertical,
       title,
       description,
       priceAmount,
@@ -543,6 +552,13 @@ export async function createBillingPackageAction(formData: FormData) {
 export async function updateBillingPackageAction(formData: FormData) {
   const session = await requireAdminSession();
   const packageId = text(formData, "packageId");
+  const submittedVertical = text(formData, "vertical");
+  const currentPackage = packageId
+    ? await db.billingPackage.findUnique({ where: { id: packageId }, select: { vertical: true } })
+    : null;
+  const vertical = submittedVertical
+    ? normalizeUserVisibleVerticalId(submittedVertical)
+    : normalizeUserVisibleVerticalId(currentPackage?.vertical);
   const type = text(formData, "type") === "SUBSCRIPTION" ? "SUBSCRIPTION" : "CREDIT_PACK";
   const title = text(formData, "title");
   const description = text(formData, "description");
@@ -560,6 +576,7 @@ export async function updateBillingPackageAction(formData: FormData) {
     where: { id: packageId },
     data: {
       type,
+      vertical,
       title,
       description,
       priceAmount,
@@ -633,6 +650,7 @@ export async function duplicateBillingPackageAction(formData: FormData) {
   const copy = await db.billingPackage.create({
     data: {
       type: source.type,
+      vertical: normalizeUserVisibleVerticalId(source.vertical),
       title: `${source.title} کپی`,
       description: source.description,
       priceAmount: source.priceAmount,
@@ -661,6 +679,7 @@ export async function duplicateBillingPackageAction(formData: FormData) {
 export async function adjustUserCreditsAction(formData: FormData) {
   const session = await requireAdminOrSalesSession();
   const userId = text(formData, "userId");
+  const vertical = normalizeUserVisibleVerticalId(text(formData, "vertical"));
   const delta = visibleCreditsToCreditUnits(integer(formData, "delta"));
   const reason = text(formData, "reason");
 
@@ -669,16 +688,17 @@ export async function adjustUserCreditsAction(formData: FormData) {
   }
 
   const updated = await db.$transaction(async (tx) => {
-    const user = await lockUserCredits(tx, userId);
+    const user = await lockUserCredits(tx, userId, vertical);
     if (!user) return null;
 
     const nextCredits = user.credits + delta;
     if (nextCredits < 0) return null;
 
-    await tx.user.update({ where: { id: userId }, data: { credits: nextCredits } });
+    await tx.userVerticalCreditBalance.update({ where: { id: user.id }, data: { credits: nextCredits } });
     await tx.creditEvent.create({
       data: {
         userId,
+        vertical,
         actorAdminId: session.userId,
         delta,
         balanceBefore: user.credits,
@@ -697,7 +717,7 @@ export async function adjustUserCreditsAction(formData: FormData) {
       targetType: "User",
       targetId: userId,
       summary: `اعتبار کاربر ${delta > 0 ? "افزایش" : "کاهش"} یافت.`,
-      metadata: { deltaCredits: creditUnitsToVisibleCredits(delta), deltaCreditUnits: delta, reason },
+      metadata: { vertical, deltaCredits: creditUnitsToVisibleCredits(delta), deltaCreditUnits: delta, reason },
     });
   }
 
@@ -737,21 +757,23 @@ export async function createSalesReferralCodesAction(formData: FormData) {
 export async function updateUserCreditsAction(formData: FormData) {
   const session = await requireAdminSession();
   const userId = text(formData, "userId");
+  const vertical = normalizeUserVisibleVerticalId(text(formData, "vertical"));
   const credits = visibleCreditsToCreditUnits(integer(formData, "credits"));
   if (!userId || credits < 0) return;
 
   const reason = "تنظیم مستقیم اعتبار از فرم قدیمی ادمین";
   const updated = await db.$transaction(async (tx) => {
-    const user = await lockUserCredits(tx, userId);
+    const user = await lockUserCredits(tx, userId, vertical);
     if (!user) return null;
 
     const delta = credits - user.credits;
     if (delta === 0) return credits;
 
-    await tx.user.update({ where: { id: userId }, data: { credits } });
+    await tx.userVerticalCreditBalance.update({ where: { id: user.id }, data: { credits } });
     await tx.creditEvent.create({
       data: {
         userId,
+        vertical,
         actorAdminId: session.userId,
         delta,
         balanceBefore: user.credits,
@@ -770,7 +792,7 @@ export async function updateUserCreditsAction(formData: FormData) {
       targetType: "User",
       targetId: userId,
       summary: "اعتبار کاربر تنظیم شد.",
-      metadata: { targetCredits: creditUnitsToVisibleCredits(credits), targetCreditUnits: credits, reason },
+      metadata: { vertical, targetCredits: creditUnitsToVisibleCredits(credits), targetCreditUnits: credits, reason },
     });
   }
 
@@ -838,7 +860,13 @@ export async function createAdminUserAction(formData: FormData) {
         phone: phone.value,
         passwordHash: await hashPassword(password),
         role,
-        credits: INITIAL_SIGNUP_CREDITS,
+        credits: 0,
+        verticalCreditBalances: {
+          create: {
+            vertical: "jewelry",
+            credits: INITIAL_SIGNUP_CREDITS,
+          },
+        },
       },
     });
 
@@ -850,6 +878,7 @@ export async function createAdminUserAction(formData: FormData) {
     await tx.creditEvent.create({
       data: {
         userId: created.id,
+        vertical: "jewelry",
         actorAdminId: session.userId,
         delta: INITIAL_SIGNUP_CREDITS,
         balanceBefore: 0,
@@ -967,17 +996,19 @@ export async function approvePurchaseRequestAction(formData: FormData) {
       });
       if (existingCreditEvent) return request;
 
-      const user = await lockUserCredits(tx, request.userId);
+      const vertical = normalizeUserVisibleVerticalId(request.vertical);
+      const user = await lockUserCredits(tx, request.userId, vertical);
       if (!user) return request;
 
       const balanceAfter = user.credits + request.package.credits;
-      await tx.user.update({
-        where: { id: request.userId },
+      await tx.userVerticalCreditBalance.update({
+        where: { id: user.id },
         data: { credits: { increment: request.package.credits } },
       });
       await tx.creditEvent.create({
         data: {
           userId: request.userId,
+          vertical,
           actorAdminId: session.userId,
           delta: request.package.credits,
           balanceBefore: user.credits,
@@ -999,6 +1030,7 @@ export async function approvePurchaseRequestAction(formData: FormData) {
       await tx.userSubscription.create({
         data: {
           userId: request.userId,
+          vertical: normalizeUserVisibleVerticalId(request.vertical),
           packageId: request.packageId,
           status: "ACTIVE",
           currentPeriodStart: period.start,
@@ -1019,6 +1051,7 @@ export async function approvePurchaseRequestAction(formData: FormData) {
     await grantReferralRewardAfterFirstPurchase(tx, {
       userId: request.userId,
       purchaseRequestId: request.id,
+      vertical: normalizeUserVisibleVerticalId(request.vertical),
     });
 
     return request;
@@ -1074,6 +1107,7 @@ export async function assignSubscriptionAction(formData: FormData) {
   const subscription = await db.userSubscription.create({
     data: {
       userId,
+      vertical: normalizeUserVisibleVerticalId(billingPackage.vertical),
       packageId,
       status: "ACTIVE",
       currentPeriodStart: period.start,
@@ -1102,6 +1136,7 @@ export async function assignSubscriptionAction(formData: FormData) {
 export async function assignCustomSubscriptionAction(formData: FormData) {
   const session = await requireAdminOrSalesSession();
   const userId = text(formData, "userId");
+  const vertical = normalizeUserVisibleVerticalId(text(formData, "vertical"));
   const customTitle = text(formData, "customTitle") || "پلن اختصاصی";
   const projectLimit = integer(formData, "projectLimit");
   const creditsPerPeriod = visibleCreditsToCreditUnits(integer(formData, "creditsPerPeriod"));
@@ -1117,6 +1152,7 @@ export async function assignCustomSubscriptionAction(formData: FormData) {
   const subscription = await db.userSubscription.create({
     data: {
       userId,
+      vertical,
       packageId: null,
       customTitle,
       periodDays,
@@ -1141,6 +1177,7 @@ export async function assignCustomSubscriptionAction(formData: FormData) {
     summary: `پلن اختصاصی ${customTitle} به کاربر اختصاص یافت.`,
     metadata: {
       projectLimit,
+      vertical,
       creditsPerPeriod: creditUnitsToVisibleCredits(creditsPerPeriod),
       creditUnitsPerPeriod: creditsPerPeriod,
       periodDays,
@@ -1157,25 +1194,30 @@ export async function assignCreditPackAction(formData: FormData) {
   const notes = text(formData, "notes");
 
   const result = await db.$transaction(async (tx) => {
-    const user = await lockUserCredits(tx, userId);
     const billingPackage = await tx.billingPackage.findFirst({
       where: { id: packageId, type: "CREDIT_PACK", archivedAt: null },
-      select: { id: true, title: true, credits: true },
+      select: { id: true, vertical: true, title: true, credits: true },
     });
+    if (!userId || !billingPackage || billingPackage.credits <= 0) {
+      return null;
+    }
+    const vertical = normalizeUserVisibleVerticalId(billingPackage?.vertical);
+    const user = await lockUserCredits(tx, userId, vertical);
 
-    if (!user || !billingPackage || billingPackage.credits <= 0) {
+    if (!user) {
       return null;
     }
 
     const balanceAfter = user.credits + billingPackage.credits;
-    await tx.user.update({
-      where: { id: userId },
+    await tx.userVerticalCreditBalance.update({
+      where: { id: user.id },
       data: { credits: { increment: billingPackage.credits } },
     });
 
     const event = await tx.creditEvent.create({
       data: {
         userId,
+        vertical,
         actorAdminId: session.userId,
         delta: billingPackage.credits,
         balanceBefore: user.credits,
@@ -1186,7 +1228,7 @@ export async function assignCreditPackAction(formData: FormData) {
       },
     });
 
-    return { billingPackage, event };
+    return { billingPackage, event, vertical };
   });
 
   if (result) {
@@ -1196,7 +1238,7 @@ export async function assignCreditPackAction(formData: FormData) {
       targetType: "CreditEvent",
       targetId: result.event.id,
       summary: `بسته اعتباری ${result.billingPackage.title} به کاربر اختصاص یافت.`,
-      metadata: { packageId, credits: creditUnitsToVisibleCredits(result.billingPackage.credits), creditUnits: result.billingPackage.credits },
+      metadata: { packageId, vertical: result.vertical, credits: creditUnitsToVisibleCredits(result.billingPackage.credits), creditUnits: result.billingPackage.credits },
     });
   }
 

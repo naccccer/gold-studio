@@ -6,12 +6,11 @@ import { after } from "next/server";
 import { requireUserSession } from "@/lib/auth/session";
 import {
   attachGenerationCreditReservation,
-  getAvailableGenerationCreditUnits,
+  getAvailableGenerationCredits,
   releaseGenerationCreditReservation,
   reserveGenerationCredit,
 } from "@/lib/billing";
 import { NO_CREDITS_ERROR } from "@/lib/credits";
-import { getGenerationCreditUnitCost } from "@/lib/credit-units";
 import { db } from "@/lib/db";
 import { buildGenerationPrompt } from "@/lib/ai/generation-prompt";
 import { isSampleReferenceStyleId } from "@/lib/ai/style-policy";
@@ -173,9 +172,9 @@ export async function createBatchFromGalleryAction(formData: FormData) {
     );
   }
 
-  const requiredCreditUnits = assets.length * getGenerationCreditUnitCost(vertical);
-  const availableCreditUnits = await getAvailableGenerationCreditUnits(session.userId);
-  if (availableCreditUnits < requiredCreditUnits) {
+  const requiredCredits = assets.length;
+  const availableCredits = await getAvailableGenerationCredits(session.userId, vertical);
+  if (availableCredits < requiredCredits) {
     redirect(`/gallery/batches/new?assetIds=${encodeURIComponent(assetIds.join(","))}&error=${encodeURIComponent(NO_CREDITS_ERROR)}`);
   }
 

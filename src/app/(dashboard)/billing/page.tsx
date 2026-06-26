@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { BillingScreen } from "@/features/account/screens/billing-screen";
 import { requireUserSession } from "@/lib/auth/session";
-import { creditUnitsToVisibleCredits } from "@/lib/credit-units";
+import { getCurrentVertical } from "@/lib/current-vertical";
 import { db } from "@/lib/db";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
 
@@ -15,6 +15,7 @@ const billingTabs = ["packages", "credits", "payment", "receipts"] as const;
 
 export default async function BillingPage({ searchParams }: BillingPageProps) {
   const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
   const params = await searchParams;
   const requestedTab = params?.tab;
   const activeTab = billingTabs.includes(requestedTab as (typeof billingTabs)[number])
@@ -27,7 +28,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
       select: { id: true },
     }),
     db.billingPackage.findMany({
-      where: { isActive: true, isPublic: true, archivedAt: null },
+      where: { vertical, isActive: true, isPublic: true, archivedAt: null },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
       select: {
         id: true,
@@ -44,7 +45,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
       },
     }),
     db.purchaseRequest.findMany({
-      where: { userId: session.userId, status: { not: "CANCELED" } },
+      where: { userId: session.userId, vertical, status: { not: "CANCELED" } },
       orderBy: { createdAt: "desc" },
       take: 6,
       select: {
@@ -71,7 +72,6 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
     <BillingScreen
       packages={packages.map((billingPackage) => ({
         ...billingPackage,
-        credits: creditUnitsToVisibleCredits(billingPackage.credits),
       }))}
       purchaseRequests={purchaseRequests.map((request) => ({
         ...request,

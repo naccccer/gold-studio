@@ -5,8 +5,8 @@ import {
   SALES_CODE_BATCH_SIZE,
   SALES_CODE_CREDITS,
 } from "@/lib/credits";
-import { creditUnitsToVisibleCredits } from "@/lib/credit-units";
 import { db } from "@/lib/db";
+import type { VerticalId } from "@/lib/verticals";
 
 export function normalizeReferralCode(value: string) {
   return value.replace(/[\s-]+/g, "").trim().toUpperCase();
@@ -79,14 +79,41 @@ type ReferralCodeApplyResult =
   | { status: "sales_code_redeemed" }
   | { status: "invalid" };
 
+async function grantVerticalCredits(
+  tx: Prisma.TransactionClient,
+  {
+    userId,
+    vertical,
+    credits,
+  }: {
+    userId: string;
+    vertical: VerticalId;
+    credits: number;
+  },
+) {
+  const balance = await tx.userVerticalCreditBalance.upsert({
+    where: { userId_vertical: { userId, vertical } },
+    create: { userId, vertical, credits, reservedCredits: 0 },
+    update: { credits: { increment: credits } },
+    select: { credits: true },
+  });
+
+  return {
+    balanceBefore: balance.credits - credits,
+    balanceAfter: balance.credits,
+  };
+}
+
 export async function applyReferralOrSalesCodeForUser(
   tx: Prisma.TransactionClient,
   {
     userId,
     rawCode,
+    vertical = "jewelry",
   }: {
     userId: string;
     rawCode: string;
+    vertical?: VerticalId;
   },
 ): Promise<ReferralCodeApplyResult> {
   const code = normalizeReferralCode(rawCode);
@@ -115,23 +142,20 @@ export async function applyReferralOrSalesCodeForUser(
     });
     if (redeemed.count === 0) return { status: "sales_code_redeemed" };
 
-    const updatedUser = await tx.user.update({
-      where: { id: userId },
-      data: { credits: { increment: salesCode.creditAmount } },
-      select: { credits: true },
-    });
+    const balance = await grantVerticalCredits(tx, { userId, vertical, credits: salesCode.creditAmount });
     await tx.creditEvent.create({
       data: {
         userId,
+        vertical,
         delta: salesCode.creditAmount,
-        balanceBefore: updatedUser.credits - salesCode.creditAmount,
-        balanceAfter: updatedUser.credits,
+        balanceBefore: balance.balanceBefore,
+        balanceAfter: balance.balanceAfter,
         reason: `اعتبار تست کد فروش ${code}`,
         source: "SALES_CODE",
       },
     });
 
-    return { status: "sales_code", credited: creditUnitsToVisibleCredits(salesCode.creditAmount) };
+    return { status: "sales_code", credited: salesCode.creditAmount };
   }
 
   const existingReferral = await tx.referral.findUnique({
@@ -163,9 +187,11 @@ export async function grantReferralRewardAfterFirstPurchase(
   {
     userId,
     purchaseRequestId,
+    vertical = "jewelry",
   }: {
     userId: string;
     purchaseRequestId: string;
+    vertical?: VerticalId;
   },
 ) {
   const referral = await tx.referral.findUnique({
@@ -199,39 +225,33 @@ export async function grantReferralRewardAfterFirstPurchase(
   if (claimed.count === 0) return { granted: false as const };
 
   const rewardCredits = referral.rewardCredits || REFERRAL_PURCHASE_REWARD_CREDITS;
-  const updatedInviter = await tx.user.update({
-    where: { id: referral.inviterId },
-    data: { credits: { increment: rewardCredits } },
-    select: { credits: true },
-  });
+  const inviterBalance = await grantVerticalCredits(tx, { userId: referral.inviterId, vertical, credits: rewardCredits });
   await tx.creditEvent.create({
     data: {
       userId: referral.inviterId,
+      vertical,
       delta: rewardCredits,
-      balanceBefore: updatedInviter.credits - rewardCredits,
-      balanceAfter: updatedInviter.credits,
+      balanceBefore: inviterBalance.balanceBefore,
+      balanceAfter: inviterBalance.balanceAfter,
       reason: "پاداش معرفی بعد از اولین خرید تاییدشده",
       source: "REFERRAL",
       referralId: referral.id,
     },
   });
 
-  const updatedInvitee = await tx.user.update({
-    where: { id: referral.inviteeId },
-    data: { credits: { increment: rewardCredits } },
-    select: { credits: true },
-  });
+  const inviteeBalance = await grantVerticalCredits(tx, { userId: referral.inviteeId, vertical, credits: rewardCredits });
   await tx.creditEvent.create({
     data: {
       userId: referral.inviteeId,
+      vertical,
       delta: rewardCredits,
-      balanceBefore: updatedInvitee.credits - rewardCredits,
-      balanceAfter: updatedInvitee.credits,
+      balanceBefore: inviteeBalance.balanceBefore,
+      balanceAfter: inviteeBalance.balanceAfter,
       reason: "هدیه کد معرف بعد از اولین خرید تاییدشده",
       source: "REFERRAL",
       referralId: referral.id,
     },
   });
 
-  return { granted: true as const, rewardCredits: creditUnitsToVisibleCredits(rewardCredits), rewardCreditUnits: rewardCredits };
+  return { granted: true as const, rewardCredits, rewardCreditUnits: rewardCredits };
 }

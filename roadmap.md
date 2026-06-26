@@ -20,7 +20,7 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 - Local uploads/generated results use `.local-storage/uploads` when `STORAGE_DRIVER="local"` and are streamed through authorized `/api/storage/...` routes.
 - Image generation goes through `src/lib/ai`; Avalai is the default primary image provider and Liara remains fallback/support and manually selectable in `/admin/ai`.
 - Generation recovery runs through `npm run worker:generation`; production health recovery uses `npm run watchdog:health`; backups use `/admin/backups`, `npm run backup:run`, and `npm run backup:scheduler`.
-- Billing supports credit reservations, manual purchase review, referral/sales codes, admin-assigned custom plans, per-plan "نسخه دیگر" limits, and output-only accounting for alternate versions.
+- Billing supports vertical-specific credit balances/packages, credit reservations, manual purchase review, referral/sales codes, admin-assigned custom plans, per-plan "نسخه دیگر" limits, and output-only accounting for alternate versions.
 - Prompt policy protects product identity: jewelry safeguards remain active, product-only outputs remove source-photo people/hands, model styles allow human context only when explicit, and sample-reference styles borrow scene/composition while preserving the uploaded product.
 - Jewelry ready style references now include a broader curated set of product, editorial, model, and watch samples for users who do not have their own style photo yet.
 
@@ -31,7 +31,7 @@ Multi-vertical expansion is tracked in `docs/multi-vertical-roadmap.md` on `code
 - Phases 1-5 are implemented: vertical foundation, credit units, Ovala Food UX, vertical-aware prompt architecture, and admin/operations filtering.
 - The Validation Gate Before Phase 6 is complete for Jewelry + Food: user/admin vertical scoping, Food host/local routing, provider routing, prompt policy, and credit-unit costs were audited.
 - Phase 6 is on hold. Clothing/Furniture remain reserved IDs only; reserved local overrides fall back to Jewelry until Phase 6 intentionally starts.
-- Jewelry generation costs `300 creditUnits`; Food generation costs `100 creditUnits`.
+- User-facing generation costs `1 credit = 1 output` inside the current vertical. Internal cost tracking remains `jewelry = 300 creditUnits` and `food = 100 creditUnits`.
 - Food is active through `food.ovala.ir` and local `npm run dev:food`.
 - Jewelry remains the default host/local behavior and can be forced locally with `npm run dev:jewelry`.
 - Food now uses restaurant/cafe product types, six visible launch styles, a Food-specific sample-photo style (`food_style_sample_reference`), and Food-aware sample-reference prompt/routing paths.

@@ -7,7 +7,6 @@ import {
 } from "@/features/gallery/screens/gallery-batch-new-screen";
 import { requireUserSession } from "@/lib/auth/session";
 import { getAvailableGenerationCredits } from "@/lib/billing";
-import { creditUnitsToVisibleCredits, getGenerationCreditUnitCost } from "@/lib/credit-units";
 import { getCurrentVertical } from "@/lib/current-vertical";
 import { db } from "@/lib/db";
 import { getReadyStyleReferenceSamples } from "@/lib/ready-style-reference-samples";
@@ -62,7 +61,7 @@ export default async function NewGalleryBatchPage({
     }),
     getReadyStyleReferenceSamples(vertical),
     getUserVisibleStyles(vertical),
-    getAvailableGenerationCredits(session.userId),
+    getAvailableGenerationCredits(session.userId, vertical),
   ]);
 
   if (assets.length < 2 || styles.length === 0) {
@@ -99,7 +98,7 @@ export default async function NewGalleryBatchPage({
       vertical={vertical}
       content={content}
       availableCredits={availableCredits}
-      requiredCredits={assets.length * creditUnitsToVisibleCredits(getGenerationCreditUnitCost(vertical))}
+      requiredCredits={assets.length}
       error={params?.error}
       action={createBatchFromGalleryAction}
     />

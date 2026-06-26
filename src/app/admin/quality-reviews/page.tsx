@@ -19,7 +19,7 @@ import {
 } from "@/features/admin/components/console";
 import { approveQualityReviewAction, rejectQualityReviewAction } from "@/features/admin/actions";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
-import { formatCreditUnits, getGenerationCreditUnitCost } from "@/lib/credit-units";
+import { formatInternalCreditUnits, getGenerationCreditUnitCost } from "@/lib/credit-units";
 import { db } from "@/lib/db";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { qualityReviewReasonLabel } from "@/lib/quality-review";
@@ -166,7 +166,7 @@ export default async function AdminQualityReviewsPage({ searchParams }: AdminQua
                       items={[
                         { label: "دلیل کاربر", value: qualityReviewReasonLabel(review.reason) },
                         { label: "Vertical", value: getVerticalLabel(review.project.vertical) },
-                        { label: "هزینه/بازگشت", value: `${formatCreditUnits(costUnits)} اعتبار (${costUnits} units)`, dir: "ltr" },
+                        { label: "هزینه/بازگشت", value: formatInternalCreditUnits(costUnits), dir: "ltr" },
                         { label: "سبک", value: review.project.style.name },
                         { label: "ثبت درخواست", value: formatAdminDate(review.createdAt) },
                         { label: "پیشنهاد AI", value: recommendationLabel(review.aiRecommendation) },

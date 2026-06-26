@@ -2,7 +2,7 @@ import type { Prisma } from "@/generated/prisma";
 import { imageProvider } from "@/lib/ai/provider";
 import { db } from "@/lib/db";
 import { FREE_VARIANT_LIMIT, NO_CREDITS_ERROR, NO_PROJECT_QUOTA_ERROR } from "@/lib/credits";
-import { creditUnitsToVisibleCredits, getGenerationCreditUnitCost } from "@/lib/credit-units";
+import { getGenerationCreditUnitCost, getGenerationCustomerCreditCost } from "@/lib/credit-units";
 import type { VerticalId } from "@/lib/verticals";
 
 export async function logAdminAudit({
@@ -72,6 +72,7 @@ export async function reserveGenerationCredit({
   reserveProject = true,
   vertical = "jewelry",
   creditUnits,
+  customerCredits,
 }: {
   userId: string;
   projectId?: string | null;
@@ -79,10 +80,19 @@ export async function reserveGenerationCredit({
   reserveProject?: boolean;
   vertical?: VerticalId;
   creditUnits?: number;
+  customerCredits?: number;
 }) {
   return db.$transaction((tx) =>
-    reserveGenerationCreditInTransaction(tx, { userId, projectId, batchId, reserveProject, vertical, creditUnits }),
+    reserveGenerationCreditInTransaction(tx, { userId, projectId, batchId, reserveProject, vertical, creditUnits, customerCredits }),
   );
+}
+
+async function ensureVerticalCreditBalance(tx: Prisma.TransactionClient, userId: string, vertical: VerticalId) {
+  return tx.userVerticalCreditBalance.upsert({
+    where: { userId_vertical: { userId, vertical } },
+    create: { userId, vertical, credits: 0, reservedCredits: 0 },
+    update: {},
+  });
 }
 
 export async function reserveGenerationCreditInTransaction(
@@ -94,6 +104,7 @@ export async function reserveGenerationCreditInTransaction(
     reserveProject = true,
     vertical = "jewelry",
     creditUnits,
+    customerCredits,
   }: {
     userId: string;
     projectId?: string | null;
@@ -101,10 +112,12 @@ export async function reserveGenerationCreditInTransaction(
     reserveProject?: boolean;
     vertical?: VerticalId;
     creditUnits?: number;
+    customerCredits?: number;
   },
 ) {
   const now = new Date();
-  const requiredCreditUnits = creditUnits ?? getGenerationCreditUnitCost(vertical);
+  const requiredCustomerCredits = customerCredits ?? getGenerationCustomerCreditCost(vertical);
+  const internalCostUnits = creditUnits ?? getGenerationCreditUnitCost(vertical);
   const subscriptions = await tx.$queryRaw<
     Array<{
       id: string;
@@ -119,6 +132,7 @@ export async function reserveGenerationCreditInTransaction(
       SELECT id, creditsPerPeriod, creditsUsedThisPeriod, reservedCredits, projectLimit, projectsUsedThisPeriod, reservedProjects
       FROM \`UserSubscription\`
       WHERE userId = ${userId}
+        AND vertical = ${vertical}
         AND status = 'ACTIVE'
         AND currentPeriodStart <= ${now}
         AND currentPeriodEnd > ${now}
@@ -128,10 +142,10 @@ export async function reserveGenerationCreditInTransaction(
     `;
   const cappedSubscriptionActive = reserveProject && subscriptions.some((item) => item.projectLimit !== null);
   const subscriptionOutputAvailable = subscriptions.some(
-    (item) => item.creditsUsedThisPeriod + item.reservedCredits + requiredCreditUnits <= item.creditsPerPeriod,
+    (item) => item.creditsUsedThisPeriod + item.reservedCredits + requiredCustomerCredits <= item.creditsPerPeriod,
   );
   const subscription = subscriptions.find((item) => {
-    const hasOutputCapacity = item.creditsUsedThisPeriod + item.reservedCredits + requiredCreditUnits <= item.creditsPerPeriod;
+    const hasOutputCapacity = item.creditsUsedThisPeriod + item.reservedCredits + requiredCustomerCredits <= item.creditsPerPeriod;
     const hasProjectCapacity =
       !reserveProject ||
       item.projectLimit === null ||
@@ -148,7 +162,7 @@ export async function reserveGenerationCreditInTransaction(
         reservedProjects: subscription.reservedProjects,
       },
       data: {
-        reservedCredits: { increment: requiredCreditUnits },
+        reservedCredits: { increment: requiredCustomerCredits },
         ...(reserveProject && subscription.projectLimit !== null ? { reservedProjects: { increment: 1 } } : {}),
       },
     });
@@ -158,11 +172,13 @@ export async function reserveGenerationCreditInTransaction(
     const reservation = await tx.generationCreditReservation.create({
       data: {
         userId,
+        vertical,
         projectId: projectId || null,
         batchId: batchId || null,
         source: "SUBSCRIPTION",
         subscriptionId: subscription.id,
-        creditUnits: requiredCreditUnits,
+        customerCredits: requiredCustomerCredits,
+        creditUnits: internalCostUnits,
         reservesProject: reserveProject && subscription.projectLimit !== null,
       },
     });
@@ -174,32 +190,36 @@ export async function reserveGenerationCreditInTransaction(
     return { ok: false as const, error: subscriptionOutputAvailable ? NO_PROJECT_QUOTA_ERROR : NO_CREDITS_ERROR };
   }
 
-  const [user] = await tx.$queryRaw<Array<{ id: string; credits: number; reservedCredits: number }>>`
+  await ensureVerticalCreditBalance(tx, userId, vertical);
+  const [balance] = await tx.$queryRaw<Array<{ id: string; credits: number; reservedCredits: number }>>`
       SELECT id, credits, reservedCredits
-      FROM \`User\`
-      WHERE id = ${userId}
+      FROM \`UserVerticalCreditBalance\`
+      WHERE userId = ${userId}
+        AND vertical = ${vertical}
       LIMIT 1
       FOR UPDATE
     `;
 
-  if (!user || user.credits - user.reservedCredits < requiredCreditUnits) {
+  if (!balance || balance.credits - balance.reservedCredits < requiredCustomerCredits) {
     return { ok: false as const, error: NO_CREDITS_ERROR };
   }
 
-  const updatedUser = await tx.user.updateMany({
-    where: { id: userId, reservedCredits: user.reservedCredits },
-    data: { reservedCredits: { increment: requiredCreditUnits } },
+  const updatedBalance = await tx.userVerticalCreditBalance.updateMany({
+    where: { id: balance.id, reservedCredits: balance.reservedCredits },
+    data: { reservedCredits: { increment: requiredCustomerCredits } },
   });
-  if (updatedUser.count === 0) {
+  if (updatedBalance.count === 0) {
     return { ok: false as const, error: NO_CREDITS_ERROR };
   }
   const reservation = await tx.generationCreditReservation.create({
     data: {
       userId,
+      vertical,
       projectId: projectId || null,
       batchId: batchId || null,
       source: "CREDIT_BALANCE",
-      creditUnits: requiredCreditUnits,
+      customerCredits: requiredCustomerCredits,
+      creditUnits: internalCostUnits,
       reservesProject: false,
     },
   });
@@ -280,8 +300,8 @@ export async function captureGenerationCreditReservation({
       await tx.userSubscription.update({
         where: { id: subscription.id },
         data: {
-          reservedCredits: { decrement: reservation.creditUnits },
-          creditsUsedThisPeriod: { increment: reservation.creditUnits },
+          reservedCredits: { decrement: reservation.customerCredits },
+          creditsUsedThisPeriod: { increment: reservation.customerCredits },
           ...(reservation.reservesProject
             ? {
                 reservedProjects: { decrement: 1 },
@@ -293,9 +313,10 @@ export async function captureGenerationCreditReservation({
       await tx.creditEvent.create({
         data: {
           userId: reservation.userId,
-          delta: -reservation.creditUnits,
-          balanceBefore: Math.max(reservation.creditUnits, subscription.creditsPerPeriod - subscription.creditsUsedThisPeriod),
-          balanceAfter: Math.max(0, subscription.creditsPerPeriod - subscription.creditsUsedThisPeriod - reservation.creditUnits),
+          vertical: reservation.vertical,
+          delta: -reservation.customerCredits,
+          balanceBefore: Math.max(reservation.customerCredits, subscription.creditsPerPeriod - subscription.creditsUsedThisPeriod),
+          balanceAfter: Math.max(0, subscription.creditsPerPeriod - subscription.creditsUsedThisPeriod - reservation.customerCredits),
           reason: "مصرف اعتبار اشتراک پس از ساخت موفق خروجی",
           source: "SUBSCRIPTION",
           packageId: subscription.packageId,
@@ -303,31 +324,33 @@ export async function captureGenerationCreditReservation({
         },
       });
     } else {
-      const user = await tx.user.findUnique({
-        where: { id: reservation.userId },
+      await ensureVerticalCreditBalance(tx, reservation.userId, reservation.vertical as VerticalId);
+      const balance = await tx.userVerticalCreditBalance.findUnique({
+        where: { userId_vertical: { userId: reservation.userId, vertical: reservation.vertical } },
         select: { credits: true },
       });
-      if (!user) {
+      if (!balance) {
         await tx.generationCreditReservation.update({
           where: { id: reservation.id },
           data: { status: "RELEASED", releasedAt: new Date() },
         });
-        return { ok: false as const, error: "USER_NOT_FOUND" };
+        return { ok: false as const, error: "BALANCE_NOT_FOUND" };
       }
 
-      await tx.user.update({
-        where: { id: reservation.userId },
+      await tx.userVerticalCreditBalance.update({
+        where: { userId_vertical: { userId: reservation.userId, vertical: reservation.vertical } },
         data: {
-          reservedCredits: { decrement: reservation.creditUnits },
-          credits: { decrement: reservation.creditUnits },
+          reservedCredits: { decrement: reservation.customerCredits },
+          credits: { decrement: reservation.customerCredits },
         },
       });
       await tx.creditEvent.create({
         data: {
           userId: reservation.userId,
-          delta: -reservation.creditUnits,
-          balanceBefore: user.credits,
-          balanceAfter: user.credits - reservation.creditUnits,
+          vertical: reservation.vertical,
+          delta: -reservation.customerCredits,
+          balanceBefore: balance.credits,
+          balanceAfter: balance.credits - reservation.customerCredits,
           reason: "مصرف اعتبار کیف پول پس از ساخت موفق خروجی",
           source: "GENERATION",
         },
@@ -360,16 +383,16 @@ export async function releaseGenerationCreditReservation({
       await tx.userSubscription.update({
         where: { id: reservation.subscriptionId },
         data: {
-          reservedCredits: { decrement: reservation.creditUnits },
+          reservedCredits: { decrement: reservation.customerCredits },
           ...(reservation.reservesProject ? { reservedProjects: { decrement: 1 } } : {}),
         },
       });
     }
 
     if (reservation.source === "CREDIT_BALANCE") {
-      await tx.user.update({
-        where: { id: reservation.userId },
-        data: { reservedCredits: { decrement: reservation.creditUnits } },
+      await tx.userVerticalCreditBalance.update({
+        where: { userId_vertical: { userId: reservation.userId, vertical: reservation.vertical } },
+        data: { reservedCredits: { decrement: reservation.customerCredits } },
       });
     }
 
@@ -382,21 +405,21 @@ export async function releaseGenerationCreditReservation({
   });
 }
 
-export async function getAvailableGenerationCredits(userId: string) {
-  const units = await getAvailableGenerationCreditUnits(userId);
-  return creditUnitsToVisibleCredits(units);
+export async function getAvailableGenerationCredits(userId: string, vertical: VerticalId = "jewelry") {
+  const summary = await getUserCreditSummary(userId, vertical);
+  return summary.totalAvailableCredits;
 }
 
-export async function getAvailableGenerationCreditUnits(userId: string) {
-  const summary = await getUserCreditSummary(userId);
-  return summary.totalAvailableCreditUnits;
+export async function getAvailableGenerationCreditUnits(userId: string, vertical: VerticalId = "jewelry") {
+  return getAvailableGenerationCredits(userId, vertical);
 }
 
-export async function getEffectiveFreeVariantLimit(userId: string) {
+export async function getEffectiveFreeVariantLimit(userId: string, vertical: VerticalId = "jewelry") {
   const now = new Date();
   const subscription = await db.userSubscription.findFirst({
     where: {
       userId,
+      vertical,
       status: "ACTIVE",
       currentPeriodStart: { lte: now },
       currentPeriodEnd: { gt: now },
@@ -408,13 +431,17 @@ export async function getEffectiveFreeVariantLimit(userId: string) {
   return subscription?.freeVariantLimit ?? FREE_VARIANT_LIMIT;
 }
 
-export async function getUserCreditSummary(userId: string) {
+export async function getUserCreditSummary(userId: string, vertical: VerticalId = "jewelry") {
   const now = new Date();
-  const [user, subscriptions] = await Promise.all([
-    db.user.findUnique({ where: { id: userId }, select: { credits: true, reservedCredits: true } }),
+  const [balance, subscriptions] = await Promise.all([
+    db.userVerticalCreditBalance.findUnique({
+      where: { userId_vertical: { userId, vertical } },
+      select: { credits: true, reservedCredits: true },
+    }),
     db.userSubscription.findMany({
       where: {
         userId,
+        vertical,
         status: "ACTIVE",
         currentPeriodStart: { lte: now },
         currentPeriodEnd: { gt: now },
@@ -441,8 +468,8 @@ export async function getUserCreditSummary(userId: string) {
       sum + Math.max(0, subscription.creditsPerPeriod - subscription.creditsUsedThisPeriod - subscription.reservedCredits),
     0,
   );
-  const walletCreditUnits = Math.max(0, (user?.credits ?? 0) - (user?.reservedCredits ?? 0));
-  const reservedWalletCreditUnits = user?.reservedCredits ?? 0;
+  const walletCreditUnits = Math.max(0, (balance?.credits ?? 0) - (balance?.reservedCredits ?? 0));
+  const reservedWalletCreditUnits = balance?.reservedCredits ?? 0;
   const totalAvailableCreditUnits = subscriptionCreditUnits + walletCreditUnits;
   const subscriptionProjects = subscriptions.reduce((sum, subscription) => {
     if (subscription.projectLimit === null) return sum;
@@ -450,15 +477,16 @@ export async function getUserCreditSummary(userId: string) {
   }, 0);
 
   return {
+    vertical,
     walletCreditUnits,
     reservedWalletCreditUnits,
     subscriptionCreditUnits,
     totalAvailableCreditUnits,
-    walletCredits: creditUnitsToVisibleCredits(walletCreditUnits),
-    reservedWalletCredits: creditUnitsToVisibleCredits(reservedWalletCreditUnits),
-    subscriptionCredits: creditUnitsToVisibleCredits(subscriptionCreditUnits),
+    walletCredits: walletCreditUnits,
+    reservedWalletCredits: reservedWalletCreditUnits,
+    subscriptionCredits: subscriptionCreditUnits,
     subscriptionProjects,
-    totalAvailableCredits: creditUnitsToVisibleCredits(totalAvailableCreditUnits),
+    totalAvailableCredits: totalAvailableCreditUnits,
     activeSubscription: subscriptions[0]
       ? {
           title: subscriptions[0].customTitle || subscriptions[0].package?.title || "پلن اختصاصی",
@@ -466,9 +494,9 @@ export async function getUserCreditSummary(userId: string) {
           creditUnitsPerPeriod: subscriptions[0].creditsPerPeriod,
           creditUnitsUsedThisPeriod: subscriptions[0].creditsUsedThisPeriod,
           reservedCreditUnits: subscriptions[0].reservedCredits,
-          creditsPerPeriod: creditUnitsToVisibleCredits(subscriptions[0].creditsPerPeriod),
-          creditsUsedThisPeriod: creditUnitsToVisibleCredits(subscriptions[0].creditsUsedThisPeriod),
-          reservedCredits: creditUnitsToVisibleCredits(subscriptions[0].reservedCredits),
+          creditsPerPeriod: subscriptions[0].creditsPerPeriod,
+          creditsUsedThisPeriod: subscriptions[0].creditsUsedThisPeriod,
+          reservedCredits: subscriptions[0].reservedCredits,
           projectLimit: subscriptions[0].projectLimit,
           projectsUsedThisPeriod: subscriptions[0].projectsUsedThisPeriod,
           reservedProjects: subscriptions[0].reservedProjects,

@@ -54,7 +54,7 @@ export default async function AdminBillingPage({ searchParams }: AdminBillingPag
   const [packages, paymentSettings, pendingPurchases, pendingCount] = await Promise.all([
     db.billingPackage.findMany({
       where: { archivedAt: null },
-      orderBy: [{ type: "desc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
+      orderBy: [{ vertical: "asc" }, { type: "desc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
       include: { _count: { select: { purchaseRequests: true, subscriptions: true, creditEvents: true } } },
     }),
     db.paymentSettings.findUnique({ where: { id: "default" } }),

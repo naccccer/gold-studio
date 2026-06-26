@@ -146,6 +146,7 @@ model User {
   sessionVersion        Int                @default(0)
   credits               Int                @default(300)
   reservedCredits       Int                @default(0)
+  verticalCreditBalances UserVerticalCreditBalance[]
   projects              Project[]
   assets                ProductAsset[]
   styleReferenceAssets  StyleReferenceAsset[]
@@ -429,6 +430,7 @@ model GenerationBatchItem {
 
 model BillingPackage {
   id               String             @id @default(cuid())
+  vertical         String             @default("jewelry")
   type             BillingPackageType
   title            String
   description      String             @db.Text
@@ -450,13 +452,29 @@ model BillingPackage {
   updatedAt        DateTime           @updatedAt
 
   @@index([type, isActive, isPublic, sortOrder])
+  @@index([vertical, type, isActive, isPublic, sortOrder])
   @@index([archivedAt])
+}
+
+model UserVerticalCreditBalance {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vertical        String   @default("jewelry")
+  credits         Int      @default(0)
+  reservedCredits Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, vertical])
+  @@index([vertical])
 }
 
 model UserSubscription {
   id                    String             @id @default(cuid())
   userId                String
   user                  User               @relation("UserSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
+  vertical              String             @default("jewelry")
   packageId             String?
   package               BillingPackage?    @relation(fields: [packageId], references: [id], onDelete: SetNull)
   customTitle           String?
@@ -482,6 +500,7 @@ model UserSubscription {
   updatedAt             DateTime           @updatedAt
 
   @@index([userId, status])
+  @@index([userId, vertical, status])
   @@index([packageId])
   @@index([assignedByAdminId])
   @@index([currentPeriodEnd])
@@ -491,6 +510,7 @@ model PurchaseRequest {
   id                 String                @id @default(cuid())
   userId             String
   user               User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vertical           String                @default("jewelry")
   packageId          String
   package            BillingPackage        @relation(fields: [packageId], references: [id], onDelete: Restrict)
   status             PurchaseRequestStatus @default(PENDING)
@@ -508,6 +528,7 @@ model PurchaseRequest {
   updatedAt          DateTime              @updatedAt
 
   @@index([userId, status])
+  @@index([userId, vertical, status])
   @@index([packageId])
   @@index([status, createdAt])
 }
@@ -534,6 +555,7 @@ model CreditEvent {
   id             String            @id @default(cuid())
   userId         String
   user           User              @relation("UserCreditEvents", fields: [userId], references: [id], onDelete: Cascade)
+  vertical       String            @default("jewelry")
   actorAdminId   String?
   actorAdmin     User?             @relation("AdminCreditEvents", fields: [actorAdminId], references: [id], onDelete: SetNull)
   delta          Int
@@ -553,6 +575,7 @@ model CreditEvent {
   createdAt      DateTime          @default(now())
 
   @@index([userId, createdAt])
+  @@index([userId, vertical, createdAt])
   @@index([actorAdminId])
   @@index([packageId])
   @@index([subscriptionId])
@@ -564,6 +587,7 @@ model GenerationCreditReservation {
   id             String                            @id @default(cuid())
   userId         String
   user           User                              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vertical       String                            @default("jewelry")
   projectId      String?
   project        Project?                          @relation(fields: [projectId], references: [id], onDelete: SetNull)
   batchId        String?
@@ -571,6 +595,7 @@ model GenerationCreditReservation {
   subscriptionId String?
   subscription   UserSubscription?                 @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
   source         GenerationCreditReservationSource
+  customerCredits Int                              @default(1)
   creditUnits    Int                               @default(300)
   reservesProject Boolean                          @default(false)
   status         GenerationCreditReservationStatus @default(RESERVED)
@@ -580,6 +605,7 @@ model GenerationCreditReservation {
   updatedAt      DateTime                          @updatedAt
 
   @@index([userId, status, createdAt])
+  @@index([userId, vertical, status, createdAt])
   @@index([projectId, status])
   @@index([batchId, status])
   @@index([subscriptionId, status])

@@ -98,7 +98,7 @@ export default async function ProjectDetailPage({
               status: "COMPLETED",
             },
           }),
-      getEffectiveFreeVariantLimit(session.userId),
+      getEffectiveFreeVariantLimit(session.userId, vertical),
     ]);
     const variantIndex = sourceProjects.findIndex((item) => item.id === project.id);
     variantNumber = variantIndex >= 0 ? variantIndex + 1 : null;

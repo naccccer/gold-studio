@@ -24,7 +24,7 @@
 - Jewelry/Food در gallery، projects، styles، ready samples، style-reference assets، home carousel، outputs، و quality reviews leak نداشته باشند.
 - Food content با taxonomy فعلی مرور شود: product typeهای رستوران/کافه، شش style قابل نمایش، Food sample-photo style، و Food-only ready samples.
 - Jewelry sample-reference با `style_sample_reference` و Food sample-reference با `food_style_sample_reference` تست شود.
-- هزینه‌ها ثابت بمانند: `jewelry = 300 creditUnits` و `food = 100 creditUnits`.
+- اعتبار کاربر خروجی‌محور باشد: در هر vertical، `1 credit = 1 output`. هزینه داخلی جدا بماند: `jewelry = 300 creditUnits` و `food = 100 creditUnits`.
 
 ## Launch Commands
 
@@ -59,7 +59,7 @@ npm run smoke -- https://ovala.ir
 - Food project flow: product typeهای غذا/نوشیدنی، شش style Food، Food sample-reference، ذخیره در نمونه‌ها، و جداسازی کامل از Jewelry.
 - Projects: `QUEUED`, `PROCESSING`, `COMPLETED`, `FAILED`, retry، نسخه دیگر، و quality review.
 - Account: notifications، support، referral، خروجی‌ها، آرشیو، و لینک admin برای ادمین.
-- Billing: خرید بسته/اعتبار، آپلود رسید، تایید/رد از ادمین، اعمال credit، و custom plan.
+- Billing: خرید بسته/اعتبار vertical فعلی، آپلود رسید، تایید/رد از ادمین، اعمال credit، و custom plan.
 - Admin: health، AI/provider، assets، samples، styles، projects، outputs، quality reviews، users، billing، support، referrals، backups، audit.
 - Mobile target `393x852`: nav پایین، متن فارسی، RTL controls، button wrapping، forms، menus، و project result.
 
