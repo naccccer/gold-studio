@@ -19,8 +19,17 @@ import { requireAdminOrSalesSession } from "@/lib/auth/session";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { db } from "@/lib/db";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
+import { getVerticalLabel } from "@/lib/verticals";
 
 export const dynamic = "force-dynamic";
+
+function VerticalBadge({ vertical }: { vertical: string }) {
+  return (
+    <span className="inline-flex shrink-0 items-center rounded-full bg-navy-50 px-2 py-0.5 text-[11px] font-semibold text-navy-700">
+      {getVerticalLabel(vertical)}
+    </span>
+  );
+}
 
 export default async function AdminPage() {
   const session = await requireAdminOrSalesSession();
@@ -112,7 +121,7 @@ export default async function AdminPage() {
             همه پرداخت‌ها
           </Link>
         </div>
-        <ConsoleTable head={["بسته", "کاربر", "مبلغ", "رسید", ""]} empty={<EmptyState title="رسید منتظر تایید نداریم." />}>
+        <ConsoleTable head={["بسته", "ورتیکال", "کاربر", "مبلغ", "رسید", ""]} empty={<EmptyState title="رسید منتظر تایید نداریم." />}>
           {pendingPurchases.map((request) => {
             const receiptUrl = storageUrlFromKeyOrUrl(request.receiptStorageKey, request.receiptImageUrl);
             return (
@@ -120,6 +129,12 @@ export default async function AdminPage() {
                 <td className={cellClass}>
                   <p className="font-medium">{request.package.title}</p>
                   <p className="text-xs text-slate-400">{formatAdminDate(request.createdAt)}</p>
+                </td>
+                <td className={cellClass}>
+                  <VerticalBadge vertical={request.vertical} />
+                  {request.package.vertical !== request.vertical ? (
+                    <p className="mt-1 text-[11px] font-medium text-rose-600">عدم تطابق بسته</p>
+                  ) : null}
                 </td>
                 <td className={cellClass}>
                   <Link href={`/admin/users/${request.userId}`} className="font-medium hover:text-navy-700 hover:underline">

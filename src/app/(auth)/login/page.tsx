@@ -15,7 +15,7 @@ export default async function LoginPage() {
 
   return (
     <AuthEntryStage
-      contextLabel={content.authContextLabel}
+      vertical={vertical}
       hint={content.authHint}
       loginAction={loginAction}
       sendSignupAction={sendSignupOtpAction}

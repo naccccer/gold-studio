@@ -21,6 +21,7 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 - Image generation goes through `src/lib/ai`; Avalai is the default primary image provider and Liara remains fallback/support and manually selectable in `/admin/ai`.
 - Generation recovery runs through `npm run worker:generation`; production health recovery uses `npm run watchdog:health`; backups use `/admin/backups`, `npm run backup:run`, and `npm run backup:scheduler`.
 - Billing supports vertical-specific credit balances/packages, credit reservations, manual purchase review, referral/sales codes, admin-assigned custom plans, per-plan "نسخه دیگر" limits, and output-only accounting for alternate versions.
+- Admin billing/user operations show and require the target vertical for manual credit changes, custom plans, package assignment, subscriptions, receipts, credit events, and user credit summaries so Jewelry and Food balances are not mixed operationally.
 - Prompt policy protects product identity: jewelry safeguards remain active, product-only outputs remove source-photo people/hands, model styles allow human context only when explicit, and sample-reference styles borrow scene/composition while preserving the uploaded product.
 - Jewelry ready style references now include a broader curated set of product, editorial, model, and watch samples for users who do not have their own style photo yet.
 
@@ -42,6 +43,7 @@ Multi-vertical expansion is tracked in `docs/multi-vertical-roadmap.md` on `code
 - Food UI uses a limited orange `--accent-base` in place of the jewelry gold accent; derived accent shades, focus rings, Food-specific orange action gradients, selected states, and the borderless center navigation action inherit from the shared accent system while the shared Ovala layout, surfaces, typography, and component system stay unchanged.
 - Local vertical preview can be switched with a localhost-only `?vertical=food` / `?vertical=jewelry` cookie override, so Food accent and vertical-scoped UI can be checked without changing `.env` or restarting the dev server.
 - Style-reference entry points use a saved/bookmark-style icon treatment; save-to-samples menu actions use the matching archive-add icon.
+- Admin billing/user surfaces now separate Jewelry/Food in package assignment, custom subscriptions, manual credits, receipts, user lists, subscriptions, and credit-event history.
 
 ## Next Priorities
 

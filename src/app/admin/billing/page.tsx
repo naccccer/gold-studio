@@ -38,7 +38,7 @@ import {
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { db } from "@/lib/db";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
-import { getVerticalLabel, USER_VISIBLE_VERTICAL_IDS, VERTICALS } from "@/lib/verticals";
+import { getVerticalLabel, USER_VISIBLE_VERTICAL_IDS } from "@/lib/verticals";
 
 export const dynamic = "force-dynamic";
 
@@ -102,11 +102,19 @@ export default async function AdminBillingPage({ searchParams }: AdminBillingPag
 
 type PendingPurchase = Prisma.PurchaseRequestGetPayload<{ include: { user: true; package: true } }>;
 
+function VerticalBadge({ vertical }: { vertical: string }) {
+  return (
+    <span className="inline-flex shrink-0 items-center rounded-full bg-navy-50 px-2 py-0.5 text-[11px] font-semibold text-navy-700">
+      {getVerticalLabel(vertical)}
+    </span>
+  );
+}
+
 function ReceiptsTab({ pendingPurchases }: { pendingPurchases: PendingPurchase[] }) {
   return (
     <Surface>
       <ConsoleTable
-        head={["بسته", "کاربر", "مبلغ", "رسید", ""]}
+        head={["بسته", "ورتیکال", "کاربر", "مبلغ", "رسید", ""]}
         empty={<EmptyState title="رسید در انتظار بررسی نداریم." />}
       >
         {pendingPurchases.map((request) => {
@@ -116,6 +124,12 @@ function ReceiptsTab({ pendingPurchases }: { pendingPurchases: PendingPurchase[]
               <td className={cellClass}>
                 <p className="font-medium">{request.package.title}</p>
                 <p className="text-xs text-slate-400">{formatAdminDate(request.createdAt)}</p>
+              </td>
+              <td className={cellClass}>
+                <VerticalBadge vertical={request.vertical} />
+                {request.package.vertical !== request.vertical ? (
+                  <p className="mt-1 text-[11px] font-medium text-rose-600">عدم تطابق بسته</p>
+                ) : null}
               </td>
               <td className={cellClass}>
                 <Link href={`/admin/users/${request.userId}`} className="font-medium hover:text-navy-700 hover:underline">
@@ -377,14 +391,14 @@ function PackagesTab({ packages }: { packages: BillingPackageWithCounts[] }) {
         <form action={createBillingPackageAction} className="grid max-w-2xl gap-3">
           <input type="hidden" name="currency" value="IRR" />
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Vertical">
-              <select name="vertical" defaultValue="jewelry" className={fieldClass}>
-                {USER_VISIBLE_VERTICAL_IDS.map((vertical) => (
-                  <option key={vertical} value={vertical}>
-                    {VERTICALS[vertical].label}
-                  </option>
-                ))}
-              </select>
+        <Field label="ورتیکال">
+          <select name="vertical" defaultValue="jewelry" className={fieldClass}>
+            {USER_VISIBLE_VERTICAL_IDS.map((vertical) => (
+              <option key={vertical} value={vertical}>
+                {getVerticalLabel(vertical)}
+              </option>
+            ))}
+          </select>
             </Field>
             <Field label="نوع بسته">
               <select name="type" defaultValue="SUBSCRIPTION" className={fieldClass}>

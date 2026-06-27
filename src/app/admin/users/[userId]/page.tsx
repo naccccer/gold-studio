@@ -45,6 +45,7 @@ import { getUserCreditSummary } from "@/lib/billing";
 import { creditUnitsToVisibleCredits } from "@/lib/credit-units";
 import { db } from "@/lib/db";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
+import { getVerticalLabel, USER_VISIBLE_VERTICAL_IDS, type UserVisibleVerticalId } from "@/lib/verticals";
 
 export const dynamic = "force-dynamic";
 
@@ -70,7 +71,7 @@ export default async function AdminUserDetailPage({ params, searchParams }: Admi
   const visibleTabs = isAdmin ? tabs : tabs.filter((tab) => tab.key !== "security");
   const activeTab: TabKey = visibleTabs.some((tab) => tab.key === query?.tab) ? (query?.tab as TabKey) : "overview";
 
-  const [user, creditSummary, subscriptionPackages, creditPackages] = await Promise.all([
+  const [user, creditSummaries, subscriptionPackages, creditPackages] = await Promise.all([
     db.user.findUnique({
       where: { id: userId },
       include: {
@@ -82,14 +83,17 @@ export default async function AdminUserDetailPage({ params, searchParams }: Admi
         _count: { select: { projects: true, assets: true, purchaseRequests: true } },
       },
     }),
-    getUserCreditSummary(userId),
-    db.billingPackage.findMany({ where: { type: "SUBSCRIPTION", archivedAt: null }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }),
-    db.billingPackage.findMany({ where: { type: "CREDIT_PACK", archivedAt: null }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }),
+    Promise.all(USER_VISIBLE_VERTICAL_IDS.map((vertical) => getUserCreditSummary(userId, vertical))),
+    db.billingPackage.findMany({ where: { type: "SUBSCRIPTION", archivedAt: null }, orderBy: [{ vertical: "asc" }, { sortOrder: "asc" }, { createdAt: "asc" }] }),
+    db.billingPackage.findMany({ where: { type: "CREDIT_PACK", archivedAt: null }, orderBy: [{ vertical: "asc" }, { sortOrder: "asc" }, { createdAt: "asc" }] }),
   ]);
 
   if (!user) notFound();
 
   const tabHref = (tab: TabKey) => `/admin/users/${user.id}${tab === "overview" ? "" : `?tab=${tab}`}`;
+  const totalAvailableCredits = creditSummaries.reduce((sum, item) => sum + item.totalAvailableCredits, 0);
+  const walletCredits = creditSummaries.reduce((sum, item) => sum + item.walletCredits, 0);
+  const subscriptionCredits = creditSummaries.reduce((sum, item) => sum + item.subscriptionCredits, 0);
 
   return (
     <>
@@ -108,9 +112,13 @@ export default async function AdminUserDetailPage({ params, searchParams }: Admi
 
       <StatBar
         items={[
-          { label: "اعتبار قابل استفاده", value: creditSummary.totalAvailableCredits },
-          { label: "کیف پول", value: creditSummary.walletCredits },
-          { label: "اعتبار اشتراک", value: creditSummary.subscriptionCredits },
+          { label: "اعتبار کل", value: totalAvailableCredits },
+          ...creditSummaries.map((summary) => ({
+            label: getVerticalLabel(summary.vertical),
+            value: summary.totalAvailableCredits,
+          })),
+          { label: "کیف پول کل", value: walletCredits },
+          { label: "اشتراک کل", value: subscriptionCredits },
           { label: "پروژه", value: user._count.projects },
           { label: "دارایی", value: user._count.assets },
           { label: "خرید", value: user._count.purchaseRequests },
@@ -152,7 +160,7 @@ export default async function AdminUserDetailPage({ params, searchParams }: Admi
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-medium text-navy-950">{project.title || "پروژه بدون عنوان"}</span>
                       <span className="block text-xs text-slate-400">
-                        {project.style.name} · {formatAdminDate(project.createdAt)}
+                        {getVerticalLabel(project.vertical)} · {project.style.name} · {formatAdminDate(project.createdAt)}
                       </span>
                     </span>
                     <StatusDot status={project.status} />
@@ -192,6 +200,57 @@ type UserWithRelations = Prisma.UserGetPayload<{
 
 type BillingPackage = Awaited<ReturnType<typeof db.billingPackage.findMany>>[number];
 
+function VerticalBadge({ vertical }: { vertical: string }) {
+  return (
+    <span className="inline-flex shrink-0 items-center rounded-full bg-navy-50 px-2 py-0.5 text-[11px] font-semibold text-navy-700">
+      {getVerticalLabel(vertical)}
+    </span>
+  );
+}
+
+function VerticalSelect({ name = "vertical", defaultValue = "jewelry" }: { name?: string; defaultValue?: UserVisibleVerticalId }) {
+  return (
+    <Field label="ورتیکال" hint="اعتبار و اشتراک بین طلا و فود مشترک نیست.">
+      <select name={name} defaultValue={defaultValue} className={fieldClass}>
+        {USER_VISIBLE_VERTICAL_IDS.map((vertical) => (
+          <option key={vertical} value={vertical}>
+            {getVerticalLabel(vertical)}
+          </option>
+        ))}
+      </select>
+    </Field>
+  );
+}
+
+function PackageSelect({
+  name,
+  packages,
+  renderLabel,
+}: {
+  name: string;
+  packages: BillingPackage[];
+  renderLabel: (billingPackage: BillingPackage) => string;
+}) {
+  return (
+    <select name={name} className={fieldClass} disabled={packages.length === 0}>
+      {USER_VISIBLE_VERTICAL_IDS.map((vertical) => {
+        const verticalPackages = packages.filter((billingPackage) => billingPackage.vertical === vertical);
+        if (verticalPackages.length === 0) return null;
+
+        return (
+          <optgroup key={vertical} label={getVerticalLabel(vertical)}>
+            {verticalPackages.map((billingPackage) => (
+              <option key={billingPackage.id} value={billingPackage.id}>
+                {renderLabel(billingPackage)}
+              </option>
+            ))}
+          </optgroup>
+        );
+      })}
+    </select>
+  );
+}
+
 function BillingTab({
   user,
   subscriptionPackages,
@@ -214,6 +273,7 @@ function BillingTab({
         >
           <form action={adjustUserCreditsAction} className="grid gap-3">
             <input type="hidden" name="userId" value={user.id} />
+            <VerticalSelect />
             <Field label="تغییر (مثبت یا منفی)">
               <input name="delta" type="number" required placeholder="+10 یا -2" dir="ltr" className={`${fieldClass} text-left`} />
             </Field>
@@ -236,6 +296,7 @@ function BillingTab({
         >
           <form action={assignCustomSubscriptionAction} className="grid gap-3">
             <input type="hidden" name="userId" value={user.id} />
+            <VerticalSelect />
             <Field label="عنوان پلن">
               <input name="customTitle" required defaultValue="پلن اختصاصی" className={fieldClass} />
             </Field>
@@ -274,14 +335,14 @@ function BillingTab({
         >
           <form action={assignCreditPackAction} className="grid gap-3">
             <input type="hidden" name="userId" value={user.id} />
-            <Field label="بسته اعتبار">
-              <select name="packageId" className={fieldClass}>
-                {creditPackages.map((billingPackage) => (
-                  <option key={billingPackage.id} value={billingPackage.id}>
-                    {billingPackage.title} · {faNum(creditUnitsToVisibleCredits(billingPackage.credits))} اعتبار
-                  </option>
-                ))}
-              </select>
+            <Field label="بسته اعتبار" hint="هر بسته فقط به همان ورتیکال خودش اضافه می‌شود.">
+              <PackageSelect
+                name="packageId"
+                packages={creditPackages}
+                renderLabel={(billingPackage) =>
+                  `${billingPackage.title} · ${faNum(creditUnitsToVisibleCredits(billingPackage.credits))} اعتبار`
+                }
+              />
             </Field>
             <Field label="یادداشت">
               <input name="notes" className={fieldClass} />
@@ -304,14 +365,14 @@ function BillingTab({
         >
           <form action={assignSubscriptionAction} className="grid gap-3">
             <input type="hidden" name="userId" value={user.id} />
-            <Field label="اشتراک">
-              <select name="packageId" className={fieldClass}>
-                {subscriptionPackages.map((billingPackage) => (
-                  <option key={billingPackage.id} value={billingPackage.id}>
-                    {billingPackage.title}
-                  </option>
-                ))}
-              </select>
+            <Field label="اشتراک" hint="اشتراک انتخابی فقط روی ورتیکال خودش فعال می‌شود.">
+              <PackageSelect
+                name="packageId"
+                packages={subscriptionPackages}
+                renderLabel={(billingPackage) =>
+                  `${billingPackage.title} · ${faNum(creditUnitsToVisibleCredits(billingPackage.credits))} خروجی`
+                }
+              />
             </Field>
             <Field label="یادداشت">
               <input name="notes" className={fieldClass} />
@@ -333,8 +394,11 @@ function BillingTab({
           {user.subscriptions.map((subscription) => (
             <tr key={subscription.id}>
               <td className={cellClass}>
-                <p className="font-medium">{subscription.customTitle || subscription.package?.title || "پلن اختصاصی"}</p>
-                <p className="text-xs text-slate-400">پایان دوره {formatAdminDate(subscription.currentPeriodEnd)}</p>
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <p className="font-medium">{subscription.customTitle || subscription.package?.title || "پلن اختصاصی"}</p>
+                  <VerticalBadge vertical={subscription.vertical} />
+                </div>
+                <p className="mt-1 text-xs text-slate-400">پایان دوره {formatAdminDate(subscription.currentPeriodEnd)}</p>
               </td>
               <td className={`${cellClass} tabular-nums`}>
                 <div className="grid gap-1 text-xs text-slate-500">
@@ -386,8 +450,11 @@ function BillingTab({
             return (
               <tr key={request.id}>
                 <td className={cellClass}>
-                  <p className="font-medium">{request.package.title}</p>
-                  <p className="text-xs text-slate-400">{formatAdminDate(request.createdAt)}</p>
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <p className="font-medium">{request.package.title}</p>
+                    <VerticalBadge vertical={request.vertical} />
+                  </div>
+                  <p className="mt-1 text-xs text-slate-400">{formatAdminDate(request.createdAt)}</p>
                 </td>
                 <td className={`${cellClass} tabular-nums`}>{formatIrr(request.amount, request.currency)}</td>
                 <td className={cellClass}>
@@ -434,6 +501,7 @@ function BillingTab({
                     {event.delta > 0 ? `+${faNum(creditUnitsToVisibleCredits(event.delta))}` : faNum(creditUnitsToVisibleCredits(event.delta))}
                   </span>
                   <span className="truncate text-xs text-slate-500">{event.reason}</span>
+                  <VerticalBadge vertical={event.vertical} />
                 </span>
                 <span className="flex shrink-0 items-center gap-3 text-xs text-slate-400">
                   <span className="tabular-nums" dir="ltr">
@@ -464,7 +532,7 @@ function ActivityTab({ user }: { user: UserWithRelations }) {
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-medium text-navy-950">{project.title || "پروژه بدون عنوان"}</span>
                   <span className="block text-xs text-slate-400">
-                    {project.style.name} · {formatAdminDate(project.createdAt)}
+                    {getVerticalLabel(project.vertical)} · {project.style.name} · {formatAdminDate(project.createdAt)}
                   </span>
                 </span>
                 <StatusDot status={project.status} />
@@ -484,8 +552,8 @@ function ActivityTab({ user }: { user: UserWithRelations }) {
                 <span className="block truncate text-sm font-medium text-navy-950">
                   {asset.title || asset.originalName || "تصویر بدون نام"}
                 </span>
-                <span className="block truncate text-xs text-slate-400" dir="ltr">
-                  {asset.storageKey}
+                <span className="block truncate text-xs text-slate-400">
+                  {getVerticalLabel(asset.vertical)} · {asset.storageKey}
                 </span>
               </Link>
             ))}

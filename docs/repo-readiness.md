@@ -61,6 +61,7 @@ npm run smoke -- https://test.ovala.ir
 - Liara باید در `/admin/ai` قابل انتخاب و به‌عنوان fallback/support path قابل استفاده بماند.
 - Prompt checks باید Jewelry safeguards و Food identity/appetite rules را پوشش دهند.
 - هزینه‌ها باید `jewelry = 300 creditUnits` و `food = 100 creditUnits` بمانند.
+- Admin billing/users باید در credit balance، manual credit، custom plan، package assignment، subscription assignment، receipts و credit events برچسب یا انتخاب صریح Jewelry/Food داشته باشد.
 - Food sample-reference باید با `food_style_sample_reference` و Jewelry sample-reference با `style_sample_reference` بررسی شود.
 - Clothing/Furniture فقط reserved هستند تا Phase 6 عمدا شروع شود.
 

@@ -82,14 +82,29 @@ New-Item -ItemType Directory -Force .local-storage | Out-Null
 Copy-Item -Recurse "$env:USERPROFILE\Desktop\uploads" .local-storage\uploads
 ```
 
-Generate Prisma Client, apply any newer migrations, and start:
+Generate Prisma Client, check whether newer migrations exist, then start one dev server:
 
 ```powershell
 npm run db:generate
+npx prisma migrate status
+```
+
+Only if `migrate status` says migrations are pending, apply them deliberately:
+
+```powershell
 npx prisma migrate deploy
+```
+
+`migrate deploy` is a database-changing command. On a new/restored PC it may apply old data migrations that seed or transform billing packages. It should not be part of every local vertical switch.
+
+Start the vertical you want:
+
+```powershell
 npm run dev
 npm run dev:food
 ```
+
+Run only one dev command at a time. Stop the current server with `Ctrl+C` before starting the other one.
 
 ## Local Vertical Switching
 
@@ -122,6 +137,6 @@ If the email already exists, this promotes it to `ADMIN` and resets the password
 ## Important Notes
 
 - `npm run db:generate` does not reset your database. It only regenerates Prisma Client when Prisma inputs changed. If Windows is holding the Prisma DLL open, stop the running dev server or worker and run `npm run db:generate -- --force`.
-- `npx prisma migrate deploy` changes database structure by applying committed migrations.
+- `npx prisma migrate deploy` changes database structure by applying committed migrations. Some historical migrations also seed or transform billing packages; use `npx prisma migrate status` first and deploy only when pending migrations are expected.
 - `npx prisma migrate reset` can wipe local data; do not use it unless that is intentional.
 - Keep `.env` private and rotate any leaked API/storage keys before production use.

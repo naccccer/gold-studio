@@ -21,6 +21,7 @@ import { createAdminUserAction } from "@/features/admin/actions";
 import { requireAdminOrSalesSession } from "@/lib/auth/session";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { db } from "@/lib/db";
+import { getVerticalLabel, USER_VISIBLE_VERTICAL_IDS } from "@/lib/verticals";
 
 export const dynamic = "force-dynamic";
 
@@ -62,8 +63,8 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
         verticalCreditBalances: true,
         subscriptions: {
           where: { status: "ACTIVE" },
-          orderBy: { currentPeriodEnd: "desc" },
-          take: 1,
+          orderBy: [{ vertical: "asc" }, { currentPeriodEnd: "desc" }],
+          take: 4,
           include: { package: true },
         },
       },
@@ -113,12 +114,19 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
           empty={<EmptyState title="کاربری با این فیلتر پیدا نشد." />}
         >
           {users.map((user) => {
-            const subscription = user.subscriptions[0];
             const totalCredits = user.verticalCreditBalances.reduce(
               (sum, balance) => sum + Math.max(0, balance.credits - balance.reservedCredits),
               0,
             );
             const reservedCredits = user.verticalCreditBalances.reduce((sum, balance) => sum + balance.reservedCredits, 0);
+            const balancesByVertical = USER_VISIBLE_VERTICAL_IDS.map((vertical) => {
+              const balance = user.verticalCreditBalances.find((item) => item.vertical === vertical);
+              return {
+                vertical,
+                available: Math.max(0, (balance?.credits ?? 0) - (balance?.reservedCredits ?? 0)),
+                reserved: balance?.reservedCredits ?? 0,
+              };
+            });
             return (
               <tr key={user.id}>
                 <td className={cellClass}>
@@ -133,15 +141,29 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
                   <StatusDot status={user.role} />
                 </td>
                 <td className={`${cellClass} tabular-nums`}>
-                  {faNum(totalCredits)}
-                  {reservedCredits > 0 ? <p className="text-xs text-slate-400">رزرو {faNum(reservedCredits)}</p> : null}
+                  <p className="font-semibold">{faNum(totalCredits)} کل</p>
+                  <div className="mt-1 grid gap-0.5 text-xs text-slate-500">
+                    {balancesByVertical.map((balance) => (
+                      <span key={balance.vertical}>
+                        {getVerticalLabel(balance.vertical)}: {faNum(balance.available)}
+                        {balance.reserved > 0 ? `، رزرو ${faNum(balance.reserved)}` : ""}
+                      </span>
+                    ))}
+                  </div>
+                  {reservedCredits > 0 ? <p className="mt-1 text-xs text-slate-400">رزرو کل {faNum(reservedCredits)}</p> : null}
                 </td>
                 <td className={cellClass}>
-                  {subscription ? (
-                    <>
-                      <p className="font-medium">{subscription.customTitle || subscription.package?.title || "پلن اختصاصی"}</p>
-                      <p className="text-xs text-slate-400">تا {formatAdminDate(subscription.currentPeriodEnd)}</p>
-                    </>
+                  {user.subscriptions.length > 0 ? (
+                    <div className="grid gap-1">
+                      {user.subscriptions.map((subscription) => (
+                        <div key={subscription.id}>
+                          <p className="font-medium">
+                            {getVerticalLabel(subscription.vertical)} · {subscription.customTitle || subscription.package?.title || "پلن اختصاصی"}
+                          </p>
+                          <p className="text-xs text-slate-400">تا {formatAdminDate(subscription.currentPeriodEnd)}</p>
+                        </div>
+                      ))}
+                    </div>
                   ) : (
                     <span className="text-xs text-slate-400">ندارد</span>
                   )}

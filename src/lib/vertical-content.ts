@@ -4,8 +4,7 @@ import { DEFAULT_VERTICAL_ID, type VerticalId } from "@/lib/verticals";
 
 export const verticalContent = {
   jewelry: {
-    authContextLabel: "استودیوی هوشمند طلا",
-    authHint: "برای ساخت تصویر حرفه‌ای محصول وارد شوید",
+    authHint: "کارت را به چپ یا راست بکشید",
     productName: "محصول",
     productTypeFieldLabel: "نوع محصول",
     productTypeHelp: "در صورت مغایرت تغییر دهید",
@@ -38,8 +37,7 @@ export const verticalContent = {
     placeholders: jewelryPlaceholderImages,
   },
   food: {
-    authContextLabel: "Ovala Food",
-    authHint: "برای ساخت عکس حرفه‌ای غذا و نوشیدنی وارد شوید",
+    authHint: "کارت را به چپ یا راست بکشید",
     productName: "غذا یا نوشیدنی",
     productTypeFieldLabel: "نوع آیتم غذایی",
     productTypeHelp: "برای حفظ ظاهر غذا، نوع نزدیک‌تر را انتخاب کنید",

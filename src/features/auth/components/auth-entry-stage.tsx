@@ -6,6 +6,7 @@ import { ArrowRight } from "vuesax-icons-react";
 import { BrandLogo } from "@/components/ui/brand-logo";
 import { LoginFormContent, ResetFormContent, SignupFormContent } from "@/features/auth/components/auth-form";
 import type { AuthFormState, OtpFormState } from "@/features/auth/actions";
+import type { VerticalId } from "@/lib/verticals";
 
 type AuthPanel = "login" | "signup" | "reset";
 
@@ -18,7 +19,7 @@ type AuthEntryStageProps = {
   sendResetAction?: OtpAction;
   verifyResetAction?: OtpAction;
   initialPanel?: AuthPanel | null;
-  contextLabel?: string;
+  vertical?: VerticalId;
   hint?: string;
 };
 
@@ -85,9 +86,10 @@ export function AuthEntryStage({
   sendResetAction,
   verifyResetAction,
   initialPanel = null,
-  contextLabel = "استودیوی هوشمند طلا",
-  hint = "کارت را به یک سمت بکشید",
+  vertical = "jewelry",
+  hint = "کارت را به چپ یا راست بکشید",
 }: AuthEntryStageProps) {
+  const isFood = vertical === "food";
   const [panel, setPanel] = useState<AuthPanel | null>(initialPanel);
   const [commit, setCommit] = useState<AuthPanel | null>(initialPanel);
   const [closing, setClosing] = useState(false);
@@ -330,9 +332,26 @@ export function AuthEntryStage({
   );
 
   return (
-    <main className="flex min-h-svh justify-center overflow-hidden bg-[#070605] text-right text-studio-text md:bg-[radial-gradient(circle_at_top,#1a1611_0%,#0b0a08_55%,#050404_100%)] md:py-6">
-      <section className="relative isolate flex min-h-svh w-full max-w-[430px] flex-col overflow-hidden md:min-h-[820px] md:rounded-[1.5rem] md:border md:border-white/10 md:shadow-[var(--shadow-studio-frame)]">
-        <div ref={stageRef} className="ov-stage relative flex flex-1 flex-col" data-commit={commit ?? undefined}>
+    <main
+      data-auth-vertical={vertical}
+      className={[
+        "flex min-h-svh justify-center overflow-hidden text-right text-studio-text md:py-6",
+        isFood
+          ? "bg-[#fff7ef] md:bg-[radial-gradient(circle_at_top,#ffe3c9_0%,#fff5ec_48%,#fbe4d2_100%)]"
+          : "bg-[#070605] md:bg-[radial-gradient(circle_at_top,#1a1611_0%,#0b0a08_55%,#050404_100%)]",
+      ].join(" ")}
+    >
+      <section
+        className={[
+          "ov-auth-frame relative isolate flex min-h-svh w-full max-w-[430px] flex-col overflow-hidden md:min-h-[820px] md:rounded-[1.5rem] md:border",
+          isFood ? "md:border-[#9e5b30]/20 md:shadow-[0_32px_90px_-62px_rgba(111,63,32,0.42)]" : "md:border-white/10 md:shadow-[var(--shadow-studio-frame)]",
+        ].join(" ")}
+      >
+        <div
+          ref={stageRef}
+          className={["ov-stage relative flex flex-1 flex-col", isFood ? "ov-stage-food" : ""].filter(Boolean).join(" ")}
+          data-commit={commit ?? undefined}
+        >
           <div aria-hidden="true" className="pointer-events-none absolute inset-0">
             <div className="ov-cyclorama absolute inset-0" />
             <div className="ov-floor" />
@@ -343,11 +362,8 @@ export function AuthEntryStage({
             <div className="ov-sweepband" />
           </div>
 
-          <header className="relative z-10 flex flex-col items-center justify-center gap-3 pt-8">
-            <BrandLogo variant="primary-on-dark" priority />
-            <p className="rounded-full border border-white/10 bg-white/[0.055] px-3 py-1 text-[11px] font-semibold leading-5 text-studio-text-muted">
-              {contextLabel}
-            </p>
+          <header className="relative z-10 flex flex-col items-center justify-center pt-8">
+            <BrandLogo variant={isFood ? "primary" : "primary-on-dark"} priority />
           </header>
 
           <div className="ov-scene relative z-10 flex flex-1 items-center justify-center">
@@ -385,7 +401,7 @@ export function AuthEntryStage({
                   <div className="ov-card">
                     <div className="ov-card-face flex items-center justify-center">
                       <Image
-                        src="/brand/ovala-mark-light.svg"
+                        src={isFood ? "/brand/ovala-mark.svg" : "/brand/ovala-mark-light.svg"}
                         alt=""
                         width={56}
                         height={62}

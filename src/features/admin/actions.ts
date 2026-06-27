@@ -544,6 +544,7 @@ export async function createBillingPackageAction(formData: FormData) {
     targetType: "BillingPackage",
     targetId: billingPackage.id,
     summary: `بسته ${title} ساخته شد.`,
+    metadata: { vertical, type, credits: creditUnitsToVisibleCredits(credits), creditUnits: credits },
   });
 
   revalidateAdmin();
@@ -590,6 +591,7 @@ export async function updateBillingPackageAction(formData: FormData) {
     targetType: "BillingPackage",
     targetId: packageId,
     summary: `بسته ${title} ویرایش شد.`,
+    metadata: { type, credits: creditUnitsToVisibleCredits(credits), creditUnits: credits },
   });
 
   revalidateAdmin();
@@ -664,6 +666,7 @@ export async function duplicateBillingPackageAction(formData: FormData) {
     targetType: "BillingPackage",
     targetId: copy.id,
     summary: `کپی بسته ${source.title} ساخته شد.`,
+    metadata: { sourcePackageId: source.id, vertical: copy.vertical, type: copy.type },
   });
   revalidateAdmin();
 }
@@ -969,17 +972,22 @@ export async function approvePurchaseRequestAction(formData: FormData) {
 
   const adminNote = text(formData, "adminNote") || null;
   const result = await db.$transaction(async (tx) => {
+    const request = await tx.purchaseRequest.findFirst({
+      where: { id: requestId, status: "PENDING" },
+      include: { package: true },
+    });
+    if (!request) return null;
+
+    const vertical = normalizeUserVisibleVerticalId(request.vertical);
+    if (normalizeUserVisibleVerticalId(request.package.vertical) !== vertical) {
+      return null;
+    }
+
     const claimed = await tx.purchaseRequest.updateMany({
       where: { id: requestId, status: "PENDING" },
       data: { status: "APPROVED", adminNote },
     });
     if (claimed.count === 0) return null;
-
-    const request = await tx.purchaseRequest.findUnique({
-      where: { id: requestId },
-      include: { package: true },
-    });
-    if (!request) return null;
 
     if (request.package.type === "CREDIT_PACK") {
       const existingCreditEvent = await tx.creditEvent.findUnique({
@@ -988,7 +996,6 @@ export async function approvePurchaseRequestAction(formData: FormData) {
       });
       if (existingCreditEvent) return request;
 
-      const vertical = normalizeUserVisibleVerticalId(request.vertical);
       const user = await lockUserCredits(tx, request.userId, vertical);
       if (!user) return request;
 
@@ -1022,7 +1029,7 @@ export async function approvePurchaseRequestAction(formData: FormData) {
       await tx.userSubscription.create({
         data: {
           userId: request.userId,
-          vertical: normalizeUserVisibleVerticalId(request.vertical),
+          vertical,
           packageId: request.packageId,
           status: "ACTIVE",
           currentPeriodStart: period.start,
@@ -1043,7 +1050,7 @@ export async function approvePurchaseRequestAction(formData: FormData) {
     await grantReferralRewardAfterFirstPurchase(tx, {
       userId: request.userId,
       purchaseRequestId: request.id,
-      vertical: normalizeUserVisibleVerticalId(request.vertical),
+      vertical,
     });
 
     return request;
@@ -1056,6 +1063,7 @@ export async function approvePurchaseRequestAction(formData: FormData) {
       targetType: "PurchaseRequest",
       targetId: requestId,
       summary: `درخواست خرید ${result.package.title} تایید شد.`,
+      metadata: { vertical: normalizeUserVisibleVerticalId(result.vertical), packageId: result.packageId },
     });
   }
   revalidateAdmin();
@@ -1080,6 +1088,7 @@ export async function rejectPurchaseRequestAction(formData: FormData) {
     targetType: "PurchaseRequest",
     targetId: requestId,
     summary: "درخواست خرید رد شد.",
+    metadata: { adminNote: text(formData, "adminNote") || null },
   });
   revalidateAdmin();
 }
@@ -1121,6 +1130,13 @@ export async function assignSubscriptionAction(formData: FormData) {
     targetType: "UserSubscription",
     targetId: subscription.id,
     summary: `اشتراک ${billingPackage.title} به کاربر اختصاص یافت.`,
+    metadata: {
+      userId,
+      packageId,
+      vertical: normalizeUserVisibleVerticalId(billingPackage.vertical),
+      creditsPerPeriod: creditUnitsToVisibleCredits(billingPackage.credits),
+      creditUnitsPerPeriod: billingPackage.credits,
+    },
   });
   revalidateAdmin();
 }
