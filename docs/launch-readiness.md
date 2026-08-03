@@ -14,6 +14,7 @@
 - Home carousel، ready style samples، style previews، و متن‌های اصلی ادمین مرور شوند.
 - Backup قبل لانچ از `/admin/backups` یا `npm run backup:run` گرفته و دانلود/بازبینی شود.
 - نقش `SALES` با یک حساب تستی بررسی شود: users/billing/referrals باز باشد و health/AI/backups/audit بسته باشد.
+- App روی `127.0.0.1:3000` گوش دهد؛ firewall فقط SSH و HTTP/HTTPS را از اینترنت باز بگذارد و اتصال SSH جدید بعد از فعال‌سازی تست شود.
 
 ## Multi-Vertical Gate
 

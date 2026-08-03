@@ -92,6 +92,24 @@ pm2 start npm --name gold-studio-worker -- run worker:generation
 pm2 save
 ```
 
+اگر خود app هنوز در PM2 ساخته نشده، آن را فقط روی loopback بالا بیاور تا پورت `3000` مستقیماً از اینترنت در دسترس نباشد:
+
+```bash
+pm2 start npm --name gold-studio -- start -- -H 127.0.0.1
+pm2 save
+```
+
+روی VPS تازه، قبل از فعال‌کردن firewall حتماً SSH و Nginx را allow کن و بعد از فعال‌سازی یک اتصال SSH جدید را تست کن:
+
+```bash
+ufw allow OpenSSH
+ufw allow "Nginx Full"
+ufw enable
+ss -ltnp | grep -E ':(22|80|443|3000|3306)[[:space:]]'
+```
+
+پورت‌های `3000` و `3306` باید فقط روی `127.0.0.1` گوش دهند. اگر SSH قطع شد، از Console پنل VPS دستور `ufw disable` را اجرا کن.
+
 اگر watchdog هنوز ساخته نشده:
 
 ```bash
