@@ -110,13 +110,13 @@ ss -ltnp | grep -E ':(22|80|443|3000|3306)[[:space:]]'
 
 پورت‌های `3000` و `3306` باید فقط روی `127.0.0.1` گوش دهند. اگر SSH قطع شد، از Console پنل VPS دستور `ufw disable` را اجرا کن.
 
-روی VPSهایی که CPU آن‌ها `x86-64-v2` یا SSE4.2 ندارد، Sharp 0.35 از fallback رسمی `@img/sharp-wasm32` استفاده می‌کند. این dependency را حذف نکن و بعد از `npm install` روی همان سرور load شدن Sharp را تست کن:
+Sharp 0.35 روی Linux x64 به SSE4.2 و fallback آن به WebAssembly SIMD نیاز دارد. اگر VPS هیچ‌کدام را ارائه نکند، قبل از ارتقای Sharp باید نوع CPU/VPS را عوض کنی؛ در غیر این صورت build متوقف می‌شود. بعد از `npm install` روی همان سرور load و پردازش واقعی Sharp را تست کن:
 
 ```bash
-node -e "require('sharp'); console.log('sharp ok')"
+node -e "const sharp=require('sharp'); sharp({create:{width:2,height:2,channels:4,background:'#fff'}}).resize(1,1).png().toBuffer().then(() => console.log('sharp ok'))"
 ```
 
-fallback WebAssembly از binary بومی کندتر است؛ اگر پردازش تصویر سنگین شد، VPS با CPU جدیدتر انتخاب کن.
+تا زمان ارتقای CPU، pin سازگار Sharp را خودکار بالا نبر و هشدار امنیتی باقی‌ماندهٔ آن را به‌عنوان بدهی launch پیگیری کن.
 
 اگر watchdog هنوز ساخته نشده:
 
