@@ -110,7 +110,7 @@ ss -ltnp | grep -E ':(22|80|443|3000|3306)[[:space:]]'
 
 پورت‌های `3000` و `3306` باید فقط روی `127.0.0.1` گوش دهند. اگر SSH قطع شد، از Console پنل VPS دستور `ufw disable` را اجرا کن.
 
-Sharp 0.35 روی Linux x64 به SSE4.2 و fallback آن به WebAssembly SIMD نیاز دارد. اگر VPS هیچ‌کدام را ارائه نکند، قبل از ارتقای Sharp باید نوع CPU/VPS را عوض کنی؛ در غیر این صورت build متوقف می‌شود. بعد از `npm install` روی همان سرور load و پردازش واقعی Sharp را تست کن:
+Sharp جدید روی Linux x64 به SSE4.2 و fallback آن به WebAssembly SIMD نیاز دارد. اگر VPS هیچ‌کدام را ارائه نکند، قبل از ارتقای Sharp باید نوع CPU/VPS را عوض کنی؛ در غیر این صورت build متوقف می‌شود. روی VPS فعلی فقط pin سازگار `0.32.6` اجرا می‌شود. بعد از `npm install` روی همان سرور load و پردازش واقعی Sharp را تست کن:
 
 ```bash
 node -e "const sharp=require('sharp'); sharp({create:{width:2,height:2,channels:4,background:'#fff'}}).resize(1,1).png().toBuffer().then(() => console.log('sharp ok'))"
