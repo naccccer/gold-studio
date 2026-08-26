@@ -223,6 +223,40 @@ export function ConsoleTable({
   );
 }
 
+export function AdminPagination({
+  page,
+  totalPages,
+  totalItems,
+  hrefForPage,
+}: {
+  page: number;
+  totalPages: number;
+  totalItems: number;
+  hrefForPage: (page: number) => string;
+}) {
+  if (totalPages <= 1) return null;
+
+  return (
+    <nav className="flex flex-wrap items-center justify-between gap-3 px-1" aria-label="صفحه‌بندی">
+      <p className="text-xs text-slate-500">
+        صفحه {faNum(page)} از {faNum(totalPages)} · {faNum(totalItems)} مورد
+      </p>
+      <div className="flex items-center gap-2">
+        {page > 1 ? (
+          <Link href={hrefForPage(page - 1)} className={`${btnSecondary} active:scale-[0.97]`}>
+            صفحه قبل
+          </Link>
+        ) : null}
+        {page < totalPages ? (
+          <Link href={hrefForPage(page + 1)} className={`${btnSecondary} active:scale-[0.97]`}>
+            صفحه بعد
+          </Link>
+        ) : null}
+      </div>
+    </nav>
+  );
+}
+
 /* ---------- وضعیت ---------- */
 
 type StatusVariant = "neutral" | "pending" | "success" | "danger" | "accent";

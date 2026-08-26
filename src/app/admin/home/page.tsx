@@ -15,6 +15,7 @@ import {
   fieldClass,
   Surface,
 } from "@/features/admin/components/console";
+import { AdminImagePreview } from "@/features/admin/components/admin-image-preview";
 import {
   createHomeCarouselSlideAction,
   deleteHomeCarouselSlideAction,
@@ -23,7 +24,7 @@ import {
 import { db } from "@/lib/db";
 import { fallbackFoodHomeCarouselImages, fallbackHomeCarouselImages } from "@/lib/home-carousel";
 import { requireAdminSession } from "@/lib/auth/session";
-import { storageUrlFromKeyOrUrl } from "@/lib/storage";
+import { storageThumbnailUrlFromKeyOrUrl, storageUrlFromKeyOrUrl } from "@/lib/storage";
 import {
   getVerticalLabel,
   normalizeUserVisibleVerticalId,
@@ -100,6 +101,8 @@ export default async function AdminHomePage({ searchParams }: AdminHomePageProps
                 const active = selected?.id === slide.id;
                 const beforeSrc = storageUrlFromKeyOrUrl(slide.beforeStorageKey, slide.beforeImageUrl) || slide.beforeImageUrl;
                 const afterSrc = storageUrlFromKeyOrUrl(slide.afterStorageKey, slide.afterImageUrl) || slide.afterImageUrl;
+                const beforeThumbnailSrc = storageThumbnailUrlFromKeyOrUrl(slide.beforeStorageKey, slide.beforeImageUrl, "tiny") || beforeSrc;
+                const afterThumbnailSrc = storageThumbnailUrlFromKeyOrUrl(slide.afterStorageKey, slide.afterImageUrl, "tiny") || afterSrc;
 
                 return (
                   <Link
@@ -110,11 +113,11 @@ export default async function AdminHomePage({ searchParams }: AdminHomePageProps
                   >
                     <span className="grid h-20 grid-cols-2 gap-0.5 overflow-hidden rounded-lg bg-slate-100">
                       <span className="relative min-h-0">
-                        <Image src={beforeSrc} alt="" fill unoptimized className="object-cover" sizes="72px" />
+                        <Image src={beforeThumbnailSrc} alt="" fill unoptimized className="object-cover" sizes="72px" />
                         <span className="absolute right-1 top-1 rounded-full bg-black/55 px-1.5 py-0.5 text-[9px] font-semibold text-white backdrop-blur">قبل</span>
                       </span>
                       <span className="relative min-h-0">
-                        <Image src={afterSrc} alt="" fill unoptimized className="object-cover" sizes="72px" />
+                        <Image src={afterThumbnailSrc} alt="" fill unoptimized className="object-cover" sizes="72px" />
                         <span className="absolute right-1 top-1 rounded-full bg-white/85 px-1.5 py-0.5 text-[9px] font-semibold text-navy-950 backdrop-blur">بعد</span>
                       </span>
                     </span>
@@ -154,14 +157,28 @@ function BeforeAfterPreview({
   beforeAlt?: string;
   afterAlt?: string;
 }) {
+  const beforeThumbnailSrc = storageThumbnailUrlFromKeyOrUrl(null, beforeSrc, "preview") || beforeSrc;
+  const afterThumbnailSrc = storageThumbnailUrlFromKeyOrUrl(null, afterSrc, "preview") || afterSrc;
   return (
     <div className="grid max-w-sm grid-cols-2 gap-3">
       <div className="relative aspect-[4/5] overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-sm">
-        <Image src={beforeSrc} alt={beforeAlt} fill unoptimized className="object-cover" sizes="160px" />
+        <AdminImagePreview
+          thumbnailSrc={beforeThumbnailSrc}
+          originalSrc={beforeSrc}
+          alt={beforeAlt || "تصویر قبل"}
+          sizes="160px"
+          className="absolute inset-0 h-full w-full"
+        />
         <span className="absolute right-2 top-2 rounded-full bg-black/55 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur">قبل</span>
       </div>
       <div className="relative aspect-[4/5] overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-sm">
-        <Image src={afterSrc} alt={afterAlt} fill unoptimized className="object-cover" sizes="160px" />
+        <AdminImagePreview
+          thumbnailSrc={afterThumbnailSrc}
+          originalSrc={afterSrc}
+          alt={afterAlt || "تصویر بعد"}
+          sizes="160px"
+          className="absolute inset-0 h-full w-full"
+        />
         <span className="absolute right-2 top-2 rounded-full bg-white/85 px-2 py-1 text-[10px] font-semibold text-navy-950 shadow-sm backdrop-blur">بعد</span>
       </div>
     </div>

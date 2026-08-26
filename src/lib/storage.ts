@@ -186,6 +186,36 @@ export function storagePublicUrl(key: string) {
   return getStorageAdapter().getPublicUrl(key);
 }
 
+export type ImageThumbnailPreset = "tiny" | "card" | "preview";
+
+export function storageThumbnailUrl(key: string, preset: ImageThumbnailPreset) {
+  const normalizedKey = normalizeKey(key)
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+  return `/api/storage/thumbnail/${preset}/${normalizedKey}`;
+}
+
+export function storageKeyFromUrl(value?: string | null) {
+  if (!value?.startsWith("/api/storage/")) return null;
+  const key = value.slice("/api/storage/".length);
+  if (!key || key.startsWith("thumbnail/")) return null;
+  try {
+    return decodeURIComponent(key);
+  } catch {
+    return null;
+  }
+}
+
+export function storageThumbnailUrlFromKeyOrUrl(
+  storageKey: string | null | undefined,
+  currentUrl: string | null | undefined,
+  preset: ImageThumbnailPreset,
+) {
+  const key = storageKey || storageKeyFromUrl(currentUrl);
+  return key ? storageThumbnailUrl(key, preset) : currentUrl ?? null;
+}
+
 export function storageUrlFromKeyOrUrl(storageKey?: string | null, currentUrl?: string | null) {
   if (storageKey) {
     return storagePublicUrl(storageKey);
@@ -209,7 +239,15 @@ export function isPublicStorageKey(key: string) {
 }
 
 export async function saveStorageObject(input: SaveObjectInput) {
-  return getStorageAdapter().saveObject(input);
+  const publicUrl = await getStorageAdapter().saveObject(input);
+  if (input.contentType.startsWith("image/")) {
+    setImmediate(() => {
+      void import("@/lib/image-thumbnails")
+        .then(({ warmImageThumbnails }) => warmImageThumbnails(input.key, input.buffer))
+        .catch((error) => console.error("[image-thumbnail-warmup-failed]", { storageKey: input.key, error }));
+    });
+  }
+  return publicUrl;
 }
 
 export async function readStorageObject(key: string, fallbackMimeType: string) {
@@ -217,5 +255,8 @@ export async function readStorageObject(key: string, fallbackMimeType: string) {
 }
 
 export async function deleteStorageObject(key: string) {
-  return getStorageAdapter().deleteObject(key);
+  await getStorageAdapter().deleteObject(key);
+  await import("@/lib/image-thumbnails")
+    .then(({ clearImageThumbnailCache }) => clearImageThumbnailCache(key))
+    .catch((error) => console.error("[image-thumbnail-cache-delete-failed]", { storageKey: key, error }));
 }

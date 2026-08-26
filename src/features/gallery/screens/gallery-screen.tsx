@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/item-context-menu";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
+import { PaginationNav, type PaginationState } from "@/components/ui/pagination-nav";
 import {
   archiveAssetAction,
   renameAssetAction,
@@ -49,6 +50,7 @@ import type { VerticalContent } from "@/lib/vertical-content";
 export type GalleryAssetItem = {
   id: string;
   fileUrl: string;
+  thumbnailUrl: string;
   title: string | null;
   originalName: string | null;
   visionShortTitle: string | null;
@@ -62,6 +64,7 @@ type GalleryScreenProps = {
   content: VerticalContent;
   deleteNotice?: "deleted" | "partial" | "archived" | "restored";
   undoAssetIds?: string;
+  pagination: PaginationState;
 };
 
 const MAX_BATCH_UPLOAD_FILES = 10;
@@ -91,7 +94,7 @@ function assetDisplayTitle(asset: Pick<GalleryAssetItem, "title" | "visionShortT
   };
 }
 
-export function GalleryScreen({ assets, styles, content, deleteNotice, undoAssetIds }: GalleryScreenProps) {
+export function GalleryScreen({ assets, styles, content, deleteNotice, undoAssetIds, pagination }: GalleryScreenProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -363,7 +366,7 @@ export function GalleryScreen({ assets, styles, content, deleteNotice, undoAsset
                   >
                     <JewelryImageFrame aspect="gallery" selected={selected} className="rounded-[var(--radius-lg)]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={asset.fileUrl} alt={title} className="h-full w-full object-cover" />
+                      <img src={asset.thumbnailUrl} alt={title} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/68 via-black/24 via-38% to-transparent px-2.5 pb-1.5 pt-5">
                         <div
                           className="absolute inset-x-0 bottom-0 z-0 h-14 bg-black/12 backdrop-blur-[2px] [mask-image:linear-gradient(to_top,black_0%,rgba(0,0,0,0.72)_34%,transparent_100%)]"
@@ -459,6 +462,7 @@ export function GalleryScreen({ assets, styles, content, deleteNotice, undoAsset
           </section>
         )}
 
+          <PaginationNav pagination={pagination} />
         </div>
       </PageShell>
 

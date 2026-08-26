@@ -1,10 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import type { Prisma } from "@/generated/prisma";
 import { Archive } from "vuesax-icons-react";
 import {
   btnDanger,
   btnSecondary,
+  AdminPagination,
   ConsoleHeader,
   EmptyState,
   faNum,
@@ -16,19 +18,22 @@ import {
   Surface,
   TabNav,
 } from "@/features/admin/components/console";
+import { AdminImagePreview } from "@/features/admin/components/admin-image-preview";
 import { archiveAdminAssetAction } from "@/features/admin/actions";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { db } from "@/lib/db";
 import { requireAdminSession } from "@/lib/auth/session";
-import { storageUrlFromKeyOrUrl } from "@/lib/storage";
+import { storageThumbnailUrl, storageThumbnailUrlFromKeyOrUrl, storageUrlFromKeyOrUrl } from "@/lib/storage";
 import { getVerticalLabel, normalizeVerticalId, USER_VISIBLE_VERTICAL_IDS, VERTICALS } from "@/lib/verticals";
 
 export const dynamic = "force-dynamic";
 
 type AdminAssetsPageProps = {
-  searchParams?: Promise<{ q?: string; status?: string; vision?: string; asset?: string; vertical?: string }>;
+  searchParams?: Promise<{ q?: string; status?: string; vision?: string; asset?: string; vertical?: string; page?: string }>;
 };
+
+const PAGE_SIZE = 36;
 
 export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageProps) {
   await requireAdminSession();
@@ -38,6 +43,8 @@ export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageP
   const status = params?.status ?? "READY";
   const vision = params?.vision ?? "";
   const vertical = params?.vertical && params.vertical !== "ALL" ? normalizeVerticalId(params.vertical) : "ALL";
+  const requestedPage = Number.parseInt(params?.page ?? "1", 10);
+  const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const verticalWhere: Prisma.ProductAssetWhereInput = vertical === "ALL" ? {} : { vertical };
 
   const where: Prisma.ProductAssetWhereInput = {
@@ -62,20 +69,32 @@ export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageP
       : {}),
   };
 
-  const [assets, readyCount, archivedCount, errorCount] = await Promise.all([
+  const [assets, totalItems, readyCount, archivedCount, errorCount] = await Promise.all([
     db.productAsset.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      take: 120,
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
       include: {
         user: true,
         _count: { select: { projects: true, supportingProjects: true, batchItems: true } },
       },
     }),
+    db.productAsset.count({ where }),
     db.productAsset.count({ where: { ...verticalWhere, status: "READY" } }),
     db.productAsset.count({ where: { ...verticalWhere, status: "ARCHIVED" } }),
     db.productAsset.count({ where: { ...verticalWhere, visionError: { not: null } } }),
   ]);
+  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+  if (page > totalPages) {
+    const query = new URLSearchParams();
+    if (q) query.set("q", q);
+    if (vertical !== "ALL") query.set("vertical", vertical);
+    query.set("status", status);
+    if (vision) query.set("vision", vision);
+    if (totalPages > 1) query.set("page", String(totalPages));
+    redirect(`/admin/assets?${query.toString()}`);
+  }
 
   const selected = assets.find((asset) => asset.id === params?.asset) ?? assets[0] ?? null;
 
@@ -92,6 +111,7 @@ export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageP
   const filterHref = (next: { status?: string; vision?: string }) => `/admin/assets?${baseQuery(next).toString()}`;
   const assetHref = (assetId: string) => {
     const query = baseQuery({});
+    if (page > 1) query.set("page", String(page));
     query.set("asset", assetId);
     return `/admin/assets?${query.toString()}`;
   };
@@ -156,7 +176,7 @@ export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageP
                     ].join(" ")}
                   >
                     <Image
-                      src={storageUrlFromKeyOrUrl(asset.storageKey, asset.fileUrl) || uploadPreview.src}
+                      src={storageThumbnailUrl(asset.storageKey, "card")}
                       alt=""
                       fill
                       unoptimized
@@ -175,6 +195,16 @@ export default async function AdminAssetsPage({ searchParams }: AdminAssetsPageP
           {selected ? <AssetDetailPanel key={selected.id} asset={selected} /> : null}
         </div>
       )}
+      <AdminPagination
+        page={page}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        hrefForPage={(nextPage) => {
+          const query = baseQuery({});
+          if (nextPage > 1) query.set("page", String(nextPage));
+          return `/admin/assets?${query.toString()}`;
+        }}
+      />
     </>
   );
 }
@@ -191,16 +221,13 @@ function AssetDetailPanel({ asset }: { asset: AssetWithRelations }) {
 
   return (
     <Surface className="lg:sticky lg:top-16">
-      <div className="relative aspect-square bg-slate-100">
-        <Image
-          src={storageUrlFromKeyOrUrl(asset.storageKey, asset.fileUrl) || uploadPreview.src}
-          alt={asset.title || asset.originalName || "تصویر بدون نام"}
-          fill
-          unoptimized
-          className="object-cover"
-          sizes="300px"
-        />
-      </div>
+      <AdminImagePreview
+        thumbnailSrc={storageThumbnailUrlFromKeyOrUrl(asset.storageKey, asset.fileUrl, "preview") || uploadPreview.src}
+        originalSrc={storageUrlFromKeyOrUrl(asset.storageKey, asset.fileUrl) || uploadPreview.src}
+        alt={asset.title || asset.originalName || "تصویر بدون نام"}
+        sizes="300px"
+        className="aspect-square w-full bg-slate-100"
+      />
       <div className="space-y-4 p-4">
         <div>
           <h2 className="truncate text-sm font-semibold text-navy-950">

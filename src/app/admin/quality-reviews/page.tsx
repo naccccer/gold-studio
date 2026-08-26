@@ -1,11 +1,12 @@
-import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import type { Prisma } from "@/generated/prisma";
 import { CloseCircle, TickCircle } from "vuesax-icons-react";
 import {
   btnDanger,
   btnPrimary,
   btnSecondary,
+  AdminPagination,
   ConsoleHeader,
   EmptyState,
   faNum,
@@ -17,6 +18,7 @@ import {
   StatusDot,
   Surface,
 } from "@/features/admin/components/console";
+import { AdminImagePreview } from "@/features/admin/components/admin-image-preview";
 import { approveQualityReviewAction, rejectQualityReviewAction } from "@/features/admin/actions";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { formatInternalCreditUnits, getGenerationCreditUnitCost } from "@/lib/credit-units";
@@ -24,14 +26,16 @@ import { db } from "@/lib/db";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { qualityReviewReasonLabel } from "@/lib/quality-review";
 import { requireAdminSession } from "@/lib/auth/session";
-import { storageUrlFromKeyOrUrl } from "@/lib/storage";
+import { storageThumbnailUrlFromKeyOrUrl, storageUrlFromKeyOrUrl } from "@/lib/storage";
 import { getVerticalLabel, normalizeVerticalId, USER_VISIBLE_VERTICAL_IDS, VERTICALS } from "@/lib/verticals";
 
 export const dynamic = "force-dynamic";
 
 type AdminQualityReviewsPageProps = {
-  searchParams?: Promise<{ status?: string; vertical?: string }>;
+  searchParams?: Promise<{ status?: string; vertical?: string; page?: string }>;
 };
+
+const PAGE_SIZE = 30;
 
 function normalizeStatus(value?: string) {
   if (value === "APPROVED" || value === "REJECTED" || value === "ALL") {
@@ -54,6 +58,8 @@ export default async function AdminQualityReviewsPage({ searchParams }: AdminQua
   const params = await searchParams;
   const status = normalizeStatus(params?.status);
   const vertical = params?.vertical && params.vertical !== "ALL" ? normalizeVerticalId(params.vertical) : "ALL";
+  const requestedPage = Number.parseInt(params?.page ?? "1", 10);
+  const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const verticalWhere: Prisma.QualityReviewWhereInput = vertical === "ALL" ? {} : { project: { vertical } };
   const where: Prisma.QualityReviewWhereInput = {
     ...verticalWhere,
@@ -66,11 +72,12 @@ export default async function AdminQualityReviewsPage({ searchParams }: AdminQua
     const value = query.toString();
     return `/admin/quality-reviews${value ? `?${value}` : ""}`;
   };
-  const [reviews, pendingCount, approvedCount, rejectedCount] = await Promise.all([
+  const [reviews, totalItems, pendingCount, approvedCount, rejectedCount] = await Promise.all([
     db.qualityReview.findMany({
       where,
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-      take: 60,
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
       include: {
         user: { select: { id: true, name: true, email: true, phone: true } },
         project: {
@@ -83,10 +90,20 @@ export default async function AdminQualityReviewsPage({ searchParams }: AdminQua
         reviewedByAdmin: { select: { name: true, email: true, phone: true } },
       },
     }),
+    db.qualityReview.count({ where }),
     db.qualityReview.count({ where: { ...verticalWhere, status: "PENDING" } }),
     db.qualityReview.count({ where: { ...verticalWhere, status: "APPROVED" } }),
     db.qualityReview.count({ where: { ...verticalWhere, status: "REJECTED" } }),
   ]);
+  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+  if (page > totalPages) {
+    const query = new URLSearchParams();
+    if (status !== "PENDING") query.set("status", status);
+    if (vertical !== "ALL") query.set("vertical", vertical);
+    if (totalPages > 1) query.set("page", String(totalPages));
+    const value = query.toString();
+    redirect(`/admin/quality-reviews${value ? `?${value}` : ""}`);
+  }
 
   return (
     <>
@@ -133,6 +150,10 @@ export default async function AdminQualityReviewsPage({ searchParams }: AdminQua
           {reviews.map((review) => {
             const sourceUrl = storageUrlFromKeyOrUrl(review.project.sourceAsset?.storageKey, review.project.sourceAsset?.fileUrl) || uploadPreview.src;
             const resultUrl = storageUrlFromKeyOrUrl(review.project.resultStorageKey, review.project.resultImageUrl) || uploadPreview.src;
+            const sourceThumbnailUrl =
+              storageThumbnailUrlFromKeyOrUrl(review.project.sourceAsset?.storageKey, review.project.sourceAsset?.fileUrl, "preview") || sourceUrl;
+            const resultThumbnailUrl =
+              storageThumbnailUrlFromKeyOrUrl(review.project.resultStorageKey, review.project.resultImageUrl, "preview") || resultUrl;
             const aiScore = typeof review.aiScore === "number" ? `${Math.round(review.aiScore * 100).toLocaleString("fa-IR")}٪` : "نامشخص";
             const costUnits =
               review.project.creditReservations[0]?.creditUnits ?? getGenerationCreditUnitCost(normalizeVerticalId(review.project.vertical));
@@ -141,8 +162,8 @@ export default async function AdminQualityReviewsPage({ searchParams }: AdminQua
               <Surface key={review.id}>
                 <div className="grid gap-5 p-5 xl:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.1fr)]">
                   <div className="grid grid-cols-2 gap-3">
-                    <ImageBlock title="عکس خام" src={sourceUrl} />
-                    <ImageBlock title="خروجی" src={resultUrl} />
+                    <ImageBlock title="عکس خام" thumbnailSrc={sourceThumbnailUrl} originalSrc={sourceUrl} />
+                    <ImageBlock title="خروجی" thumbnailSrc={resultThumbnailUrl} originalSrc={resultUrl} detailHref={`/admin/projects/${review.projectId}`} />
                   </div>
 
                   <div className="min-w-0 space-y-4">
@@ -225,16 +246,34 @@ export default async function AdminQualityReviewsPage({ searchParams }: AdminQua
           })}
         </div>
       )}
+      <AdminPagination
+        page={page}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        hrefForPage={(nextPage) => {
+          const query = new URLSearchParams();
+          if (status !== "PENDING") query.set("status", status);
+          if (vertical !== "ALL") query.set("vertical", vertical);
+          if (nextPage > 1) query.set("page", String(nextPage));
+          const value = query.toString();
+          return `/admin/quality-reviews${value ? `?${value}` : ""}`;
+        }}
+      />
     </>
   );
 }
 
-function ImageBlock({ title, src }: { title: string; src: string }) {
+function ImageBlock({ title, thumbnailSrc, originalSrc, detailHref }: { title: string; thumbnailSrc: string; originalSrc: string; detailHref?: string }) {
   return (
     <figure className="m-0">
-      <div className="relative aspect-square overflow-hidden rounded-xl bg-slate-100">
-        <Image src={src} alt={title} fill unoptimized className="object-cover" sizes="320px" />
-      </div>
+      <AdminImagePreview
+        thumbnailSrc={thumbnailSrc}
+        originalSrc={originalSrc}
+        alt={title}
+        sizes="320px"
+        className="aspect-square w-full rounded-xl bg-slate-100"
+        detailHref={detailHref}
+      />
       <figcaption className="mt-1.5 text-[11px] font-medium text-slate-500">{title}</figcaption>
     </figure>
   );

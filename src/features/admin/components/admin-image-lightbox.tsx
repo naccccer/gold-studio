@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { ArrowLeft2, ArrowRight2, CloseCircle, ExportSquare } from "vuesax-icons-react";
 
 type PreviewItem = {
-  element: HTMLImageElement;
+  element: HTMLElement;
   src: string;
   label: string;
   detailHref: string | null;
@@ -16,58 +16,22 @@ type PreviewState = {
   index: number;
 };
 
-const previewImageSelector = "img:not([data-admin-image-preview-disabled])";
-
-function imageLabel(image: HTMLImageElement) {
-  const figureCaption = image.closest("figure")?.querySelector("figcaption")?.textContent?.trim();
-  const linkedLabel = image.closest("a")?.getAttribute("aria-label")?.trim();
-
-  return image.alt.trim() || figureCaption || linkedLabel || image.title.trim() || "تصویر";
-}
-
-function originalImageUrl(image: HTMLImageElement) {
-  const displayedUrl = image.currentSrc || image.src;
-
-  try {
-    const parsedUrl = new URL(displayedUrl, window.location.href);
-    const optimizedSource = parsedUrl.pathname === "/_next/image" ? parsedUrl.searchParams.get("url") : null;
-    return optimizedSource ? new URL(optimizedSource, window.location.href).href : parsedUrl.href;
-  } catch {
-    return displayedUrl;
-  }
-}
+const previewTriggerSelector = "[data-admin-image-preview]";
 
 function collectPreviewItems(root: HTMLElement) {
-  return Array.from(root.querySelectorAll<HTMLImageElement>(previewImageSelector))
-    .filter((image) => Boolean(image.currentSrc || image.src) && image.getClientRects().length > 0)
-    .map((image) => ({
-      element: image,
-      src: originalImageUrl(image),
-      label: imageLabel(image),
-      detailHref: image.closest<HTMLAnchorElement>("a[href]")?.href ?? null,
+  return Array.from(root.querySelectorAll<HTMLElement>(previewTriggerSelector))
+    .filter((trigger) => Boolean(trigger.dataset.adminImagePreviewSrc) && trigger.getClientRects().length > 0)
+    .map((trigger) => ({
+      element: trigger,
+      src: trigger.dataset.adminImagePreviewSrc as string,
+      label: trigger.dataset.adminImagePreviewLabel?.trim() || trigger.getAttribute("aria-label")?.trim() || "تصویر",
+      detailHref: trigger.dataset.adminImagePreviewDetailHref || null,
     }));
 }
 
-function imageFromEventTarget(target: EventTarget | null, root: HTMLElement) {
-  if (!(target instanceof HTMLElement)) return null;
-  if (target.matches(previewImageSelector)) return target as HTMLImageElement;
-
-  let current: HTMLElement | null = target;
-  while (current && current !== root) {
-    const directImage = Array.from(current.children).find(
-      (child): child is HTMLImageElement => child instanceof HTMLImageElement && child.matches(previewImageSelector),
-    );
-    if (directImage) return directImage;
-    if (current.matches("a, button, label")) break;
-    current = current.parentElement;
-  }
-
-  return null;
-}
-
-function openPreview(root: HTMLElement, image: HTMLImageElement, setPreview: (preview: PreviewState) => void) {
+function openPreview(root: HTMLElement, trigger: HTMLElement, setPreview: (preview: PreviewState) => void) {
   const items = collectPreviewItems(root);
-  const index = items.findIndex((item) => item.element === image);
+  const index = items.findIndex((item) => item.element === trigger);
   if (index < 0) return;
   setPreview({ items, index });
 }
@@ -82,44 +46,21 @@ export function AdminImageLightbox() {
     const root = document.querySelector<HTMLElement>("[data-admin-image-preview-root]");
     if (!root) return;
 
-    const enhanceImages = () => {
-      root.querySelectorAll<HTMLImageElement>(previewImageSelector).forEach((image) => {
-        if (image.closest("a, button, label")) return;
-        image.tabIndex = 0;
-        image.setAttribute("role", "button");
-        image.setAttribute("aria-label", `نمایش کامل ${imageLabel(image)}`);
-      });
-    };
-
     const handleClick = (event: MouseEvent) => {
       if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
-      const image = imageFromEventTarget(event.target, root);
-      if (!image) return;
+      if (!(event.target instanceof Element)) return;
+      const trigger = event.target.closest<HTMLElement>(previewTriggerSelector);
+      if (!trigger || !root.contains(trigger)) return;
 
       event.preventDefault();
-      triggerRef.current = image.closest<HTMLElement>("a, button") ?? image;
-      openPreview(root, image, setPreview);
+      triggerRef.current = trigger;
+      openPreview(root, trigger, setPreview);
     };
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Enter" && event.key !== " ") return;
-      if (!(event.target instanceof HTMLImageElement) || !event.target.matches(previewImageSelector)) return;
-
-      event.preventDefault();
-      triggerRef.current = event.target;
-      openPreview(root, event.target, setPreview);
-    };
-
-    enhanceImages();
-    const observer = new MutationObserver(enhanceImages);
-    observer.observe(root, { childList: true, subtree: true });
     root.addEventListener("click", handleClick);
-    root.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      observer.disconnect();
       root.removeEventListener("click", handleClick);
-      root.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
 

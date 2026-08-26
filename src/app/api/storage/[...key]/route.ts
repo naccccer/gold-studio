@@ -1,65 +1,12 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth/session";
-import { db } from "@/lib/db";
+import { canReadStorageKey } from "@/lib/storage-access";
 import { isAllowedStorageKey, isPublicStorageKey, readStorageObject } from "@/lib/storage";
-import { resolveVerticalFromRequest, type VerticalId } from "@/lib/verticals";
+import { resolveVerticalFromRequest } from "@/lib/verticals";
 
 const DISPLAY_IMAGE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-function storageKeyLookupValues(storageKey: string) {
-  return Array.from(new Set([storageKey, storageKey.replace(/\//g, "\\")]));
-}
-
 function storageFileName(storageKey: string) {
   return storageKey.split("/").pop()?.replace(/[^\w.-]/g, "_") || "download";
-}
-
-async function canReadStorageKey(storageKey: string, vertical: VerticalId) {
-  if (isPublicStorageKey(storageKey)) {
-    return true;
-  }
-
-  const session = await getSession();
-  if (!session) {
-    return false;
-  }
-
-  const currentUser = await db.user.findUnique({
-    where: { id: session.userId },
-    select: { role: true },
-  });
-  if (!currentUser) {
-    return false;
-  }
-
-  const storageUrl = `/api/storage/${storageKey}`;
-  const storageKeys = storageKeyLookupValues(storageKey);
-
-  if (currentUser.role === "ADMIN" || currentUser.role === "SALES") {
-    const knownObject = await Promise.all([
-      db.productAsset.findFirst({ where: { storageKey: { in: storageKeys } }, select: { id: true } }),
-      db.styleReferenceAsset.findFirst({ where: { storageKey: { in: storageKeys } }, select: { id: true } }),
-      db.project.findFirst({ where: { sourceImageUrl: storageUrl }, select: { id: true } }),
-      db.project.findFirst({ where: { resultStorageKey: { in: storageKeys } }, select: { id: true } }),
-      db.project.findFirst({ where: { resultImageUrl: storageUrl }, select: { id: true } }),
-      db.purchaseRequest.findFirst({ where: { receiptStorageKey: { in: storageKeys } }, select: { id: true } }),
-      db.purchaseRequest.findFirst({ where: { receiptImageUrl: storageUrl }, select: { id: true } }),
-    ]);
-
-    return knownObject.some(Boolean);
-  }
-
-  const ownedObject = await Promise.all([
-    db.productAsset.findFirst({ where: { storageKey: { in: storageKeys }, userId: session.userId, vertical }, select: { id: true } }),
-    db.styleReferenceAsset.findFirst({ where: { storageKey: { in: storageKeys }, userId: session.userId, vertical }, select: { id: true } }),
-    db.project.findFirst({ where: { sourceImageUrl: storageUrl, userId: session.userId, vertical }, select: { id: true } }),
-    db.project.findFirst({ where: { resultStorageKey: { in: storageKeys }, userId: session.userId, vertical }, select: { id: true } }),
-    db.project.findFirst({ where: { resultImageUrl: storageUrl, userId: session.userId, vertical }, select: { id: true } }),
-    db.purchaseRequest.findFirst({ where: { receiptStorageKey: { in: storageKeys }, userId: session.userId }, select: { id: true } }),
-    db.purchaseRequest.findFirst({ where: { receiptImageUrl: storageUrl, userId: session.userId }, select: { id: true } }),
-  ]);
-
-  return ownedObject.some(Boolean);
 }
 
 export async function GET(

@@ -1,9 +1,11 @@
 import { ArchiveBook, Refresh } from "vuesax-icons-react";
+import { redirect } from "next/navigation";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { ConfirmAction } from "@/components/ui/confirm-action";
 import { EmptyState } from "@/components/ui/empty-state";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
+import { PaginationNav } from "@/components/ui/pagination-nav";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 import { accountCardClass } from "@/features/account/components/account-subpage";
 import { deleteArchivedProjectAction, restoreProjectAction } from "@/features/projects/actions";
@@ -11,24 +13,40 @@ import { requireUserSession } from "@/lib/auth/session";
 import { getCurrentVertical } from "@/lib/current-vertical";
 import { db } from "@/lib/db";
 import { archiveItems } from "@/lib/placeholders/jewelry-images";
-import { storagePublicUrl } from "@/lib/storage";
+import { storagePublicUrl, storageThumbnailUrlFromKeyOrUrl } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
-export default async function AccountArchivePage() {
+const PAGE_SIZE = 24;
+
+export default async function AccountArchivePage({ searchParams }: { searchParams?: Promise<{ page?: string }> }) {
   const session = await requireUserSession();
   const vertical = await getCurrentVertical();
-  const projects = (await db.project.findMany({
-    where: { userId: session.userId, vertical, archivedAt: { not: null } },
-    orderBy: { archivedAt: "desc" },
-    include: {
-      style: { select: { name: true } },
-      sourceAsset: { select: { storageKey: true } },
-    },
-  })).map((project) => ({
+  const params = await searchParams;
+  const requestedPage = Number.parseInt(params?.page ?? "1", 10);
+  const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+  const where = { userId: session.userId, vertical, archivedAt: { not: null } };
+  const [projectRows, totalItems] = await Promise.all([
+    db.project.findMany({
+      where,
+      orderBy: { archivedAt: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      include: {
+        style: { select: { name: true } },
+        sourceAsset: { select: { storageKey: true } },
+      },
+    }),
+    db.project.count({ where }),
+  ]);
+  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+  if (page > totalPages) redirect(totalPages > 1 ? `/account/archive?page=${totalPages}` : "/account/archive");
+  const projects = projectRows.map((project) => ({
     ...project,
     sourceImageUrl: project.sourceAsset?.storageKey ? storagePublicUrl(project.sourceAsset.storageKey) : project.sourceImageUrl,
     resultImageUrl: project.resultStorageKey ? storagePublicUrl(project.resultStorageKey) : project.resultImageUrl,
+    sourceThumbnailUrl: storageThumbnailUrlFromKeyOrUrl(project.sourceAsset?.storageKey, project.sourceImageUrl, "card"),
+    resultThumbnailUrl: storageThumbnailUrlFromKeyOrUrl(project.resultStorageKey, project.resultImageUrl, "card"),
   }));
 
   return (
@@ -57,7 +75,12 @@ export default async function AccountArchivePage() {
         <section className="grid grid-cols-2 gap-3">
           {projects.map((project, index) => {
             const fallback = archiveItems[index % archiveItems.length];
-            const imageSrc = project.resultImageUrl?.trim() || project.sourceImageUrl?.trim() || fallback.src;
+            const imageSrc =
+              project.resultThumbnailUrl?.trim() ||
+              project.sourceThumbnailUrl?.trim() ||
+              project.resultImageUrl?.trim() ||
+              project.sourceImageUrl?.trim() ||
+              fallback.src;
             const title = project.title?.trim() || "پروژه محصول";
 
             return (
@@ -116,6 +139,15 @@ export default async function AccountArchivePage() {
           })}
         </section>
       )}
+      <PaginationNav
+        pagination={{
+          page,
+          totalPages,
+          totalItems,
+          previousHref: page > 1 ? `/account/archive?page=${page - 1}` : null,
+          nextHref: page < totalPages ? `/account/archive?page=${page + 1}` : null,
+        }}
+      />
     </PageShell>
   );
 }

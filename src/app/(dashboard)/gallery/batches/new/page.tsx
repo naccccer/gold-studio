@@ -10,7 +10,7 @@ import { getAvailableGenerationCredits } from "@/lib/billing";
 import { getCurrentVertical } from "@/lib/current-vertical";
 import { db } from "@/lib/db";
 import { getReadyStyleReferenceSamples } from "@/lib/ready-style-reference-samples";
-import { storagePublicUrl } from "@/lib/storage";
+import { storageThumbnailUrl, storageThumbnailUrlFromKeyOrUrl } from "@/lib/storage";
 import { READY_SAMPLE_ORIGINAL_NAME_PREFIX } from "@/lib/style-reference-ready-samples";
 import { getUserVisibleStyles } from "@/lib/styles";
 import { getVerticalContent } from "@/lib/vertical-content";
@@ -70,7 +70,7 @@ export default async function NewGalleryBatchPage({
 
   const displayAssets: BatchSourceAsset[] = assets.map((asset) => ({
     id: asset.id,
-    fileUrl: storagePublicUrl(asset.storageKey),
+    fileUrl: storageThumbnailUrl(asset.storageKey, "card"),
     title: asset.title,
     originalName: asset.originalName,
     productType: asset.productType,
@@ -79,7 +79,7 @@ export default async function NewGalleryBatchPage({
     .filter((asset) => !asset.originalName?.startsWith(READY_SAMPLE_ORIGINAL_NAME_PREFIX))
     .map((asset) => ({
     id: asset.id,
-    fileUrl: storagePublicUrl(asset.storageKey),
+    fileUrl: storageThumbnailUrl(asset.storageKey, "card"),
     title: asset.title,
     originalName: asset.originalName,
   }));
@@ -89,7 +89,7 @@ export default async function NewGalleryBatchPage({
       assets={displayAssets}
       readyStyleReferences={readySamples.map((sample) => ({
         id: sample.id,
-        fileUrl: sample.fileUrl,
+        fileUrl: storageThumbnailUrlFromKeyOrUrl(null, sample.fileUrl, "card") || sample.fileUrl,
         title: sample.title,
         alt: sample.alt,
       }))}

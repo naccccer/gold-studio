@@ -140,11 +140,11 @@ export async function getSession(): Promise<SessionPayload | null> {
 
   const user = await db.user.findUnique({
     where: { id: session.userId },
-    select: { sessionVersion: true },
+    select: { sessionVersion: true, role: true },
   });
   if (!user || user.sessionVersion !== session.sessionVersion) return null;
 
-  return { userId: session.userId, role: session.role };
+  return { userId: session.userId, role: user.role };
 }
 
 export async function requireUserSession() {
@@ -153,16 +153,7 @@ export async function requireUserSession() {
     redirect("/login");
   }
 
-  const user = await db.user.findUnique({
-    where: { id: session.userId },
-    select: { id: true, role: true },
-  });
-
-  if (!user) {
-    redirect("/logout?redirect=/login");
-  }
-
-  return { userId: user.id, role: user.role };
+  return session;
 }
 
 export async function requireAdminSession() {

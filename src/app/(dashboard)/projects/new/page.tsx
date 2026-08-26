@@ -4,7 +4,7 @@ import { requireUserSession } from "@/lib/auth/session";
 import { getCurrentVertical } from "@/lib/current-vertical";
 import { db } from "@/lib/db";
 import { getReadyStyleReferenceSamples } from "@/lib/ready-style-reference-samples";
-import { storagePublicUrl } from "@/lib/storage";
+import { storageThumbnailUrl, storageThumbnailUrlFromKeyOrUrl } from "@/lib/storage";
 import { READY_SAMPLE_ORIGINAL_NAME_PREFIX } from "@/lib/style-reference-ready-samples";
 import { getUserVisibleStyles } from "@/lib/styles";
 import { getVerticalContent } from "@/lib/vertical-content";
@@ -77,14 +77,14 @@ export default async function NewProjectPage({
   return (
     <NewProjectScreen
       action={createProjectAction}
-      galleryAssets={galleryAssets.map((asset) => ({ ...asset, fileUrl: storagePublicUrl(asset.storageKey) }))}
+      galleryAssets={galleryAssets.map((asset) => ({ ...asset, fileUrl: storageThumbnailUrl(asset.storageKey, "card") }))}
       readyStyleReferences={readySamples.map((sample) => ({
         id: sample.id,
-        fileUrl: sample.fileUrl,
+        fileUrl: storageThumbnailUrlFromKeyOrUrl(null, sample.fileUrl, "card") || sample.fileUrl,
         title: sample.title,
         alt: sample.alt,
       }))}
-      styleReferences={visibleStyleReferences.map((asset) => ({ ...asset, fileUrl: storagePublicUrl(asset.storageKey) }))}
+      styleReferences={visibleStyleReferences.map((asset) => ({ ...asset, fileUrl: storageThumbnailUrl(asset.storageKey, "card") }))}
       styles={styles}
       vertical={vertical}
       content={content}

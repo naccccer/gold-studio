@@ -1,10 +1,11 @@
-import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { DocumentUpload, Trash } from "vuesax-icons-react";
 import {
   btnDanger,
   btnPrimary,
   btnSecondary,
+  AdminPagination,
   ConsoleHeader,
   EmptyState,
   faNum,
@@ -14,19 +15,23 @@ import {
   Surface,
   TabNav,
 } from "@/features/admin/components/console";
+import { AdminImagePreview } from "@/features/admin/components/admin-image-preview";
 import {
   deleteReadyStyleReferenceSampleAction,
   uploadReadyStyleReferenceSampleAction,
 } from "@/features/admin/actions";
 import { requireAdminSession } from "@/lib/auth/session";
 import { getReadyStyleReferenceSamples } from "@/lib/ready-style-reference-samples";
+import { storageThumbnailUrlFromKeyOrUrl } from "@/lib/storage";
 import { getVerticalLabel, normalizeUserVisibleVerticalId, USER_VISIBLE_VERTICAL_IDS, VERTICALS } from "@/lib/verticals";
 
 export const dynamic = "force-dynamic";
 
 type AdminReadySamplesPageProps = {
-  searchParams?: Promise<{ error?: string; vertical?: string }>;
+  searchParams?: Promise<{ error?: string; vertical?: string; page?: string }>;
 };
+
+const PAGE_SIZE = 36;
 
 function formatBytes(bytes: number) {
   if (bytes >= 1024 * 1024) {
@@ -41,21 +46,26 @@ export default async function AdminReadySamplesPage({ searchParams }: AdminReady
 
   const params = await searchParams;
   const vertical = normalizeUserVisibleVerticalId(params?.vertical);
-  const samples = await getReadyStyleReferenceSamples(vertical);
+  const requestedPage = Number.parseInt(params?.page ?? "1", 10);
+  const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+  const allSamples = await getReadyStyleReferenceSamples(vertical);
+  const totalPages = Math.max(1, Math.ceil(allSamples.length / PAGE_SIZE));
+  if (page > totalPages) redirect(`/admin/assets/samples?vertical=${vertical}${totalPages > 1 ? `&page=${totalPages}` : ""}`);
+  const samples = allSamples.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const samplesHref = (nextVertical = vertical) => `/admin/assets/samples?vertical=${nextVertical}`;
 
   return (
     <>
       <ConsoleHeader
         title="نمونه‌های آماده"
-        meta={<span>{faNum(samples.length)} نمونه عمومی برای {getVerticalLabel(vertical)}</span>}
+        meta={<span>{faNum(allSamples.length)} نمونه عمومی برای {getVerticalLabel(vertical)}</span>}
       />
 
       <TabNav
         tabs={[
           { href: `/admin/assets?vertical=${vertical}`, label: "تصاویر منبع کاربران", active: false },
           { href: `/admin/assets/references?vertical=${vertical}`, label: "عکس‌های نمونه کاربران", active: false },
-          { href: samplesHref(), label: "نمونه‌های آماده", active: true, count: samples.length },
+          { href: samplesHref(), label: "نمونه‌های آماده", active: true, count: allSamples.length },
           { href: `/admin/assets/outputs?vertical=${vertical}`, label: "خروجی‌ها", active: false },
         ]}
       />
@@ -101,9 +111,13 @@ export default async function AdminReadySamplesPage({ searchParams }: AdminReady
           {samples.map((sample) => (
             <li key={sample.id}>
               <Surface>
-                <div className="relative aspect-square bg-slate-100">
-                  <Image src={sample.fileUrl} alt={sample.alt} fill unoptimized className="object-cover" sizes="180px" />
-                </div>
+                <AdminImagePreview
+                  thumbnailSrc={storageThumbnailUrlFromKeyOrUrl(null, sample.fileUrl, "card") || sample.fileUrl}
+                  originalSrc={sample.fileUrl}
+                  alt={sample.alt}
+                  sizes="180px"
+                  className="aspect-square w-full bg-slate-100"
+                />
                 <div className="space-y-3 p-3">
                   <div className="min-w-0">
                     <h2 className="truncate text-sm font-semibold text-navy-950">{sample.title}</h2>
@@ -130,6 +144,12 @@ export default async function AdminReadySamplesPage({ searchParams }: AdminReady
           ))}
         </ul>
       )}
+      <AdminPagination
+        page={Math.min(page, totalPages)}
+        totalPages={totalPages}
+        totalItems={allSamples.length}
+        hrefForPage={(nextPage) => `${samplesHref()}${nextPage > 1 ? `&page=${nextPage}` : ""}`}
+      />
     </>
   );
 }

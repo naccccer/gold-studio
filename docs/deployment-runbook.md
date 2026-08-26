@@ -75,6 +75,7 @@ npm run check:prompts
 npm run check:model-routing
 npm run check:readiness
 npm run check:mojibake
+npm run check:image-delivery
 npm run lint
 npm run db:deploy
 npm run build
@@ -91,6 +92,14 @@ pm2 save
 pm2 start npm --name gold-studio-worker -- run worker:generation
 pm2 save
 ```
+
+بعد از اولین deploy که thumbnail cache را اضافه می‌کند، روی storage محلی کش مشتق‌شده را با فشار کنترل‌شده بساز. این فرمان فایل‌های اصلی را تغییر نمی‌دهد و با concurrency یک برای سرور دو‌هسته‌ای تنظیم شده است:
+
+```bash
+npm run thumbnails:prewarm
+```
+
+خروجی در `.local-storage/image-cache` قابل بازسازی است و عمداً جزو backup فایل‌های اصلی نیست. در Network مرورگر، پاسخ thumbnail باید `image/webp` و headerهای `X-Thumbnail-Cache` و `Server-Timing` داشته باشد.
 
 اگر خود app هنوز در PM2 ساخته نشده، آن را فقط روی loopback بالا بیاور تا پورت `3000` مستقیماً از اینترنت در دسترس نباشد:
 

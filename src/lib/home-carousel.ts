@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { foodPlaceholderImages } from "@/lib/placeholders/food-images";
 import { homeHero, styleSamples } from "@/lib/placeholders/jewelry-images";
-import { storageUrlFromKeyOrUrl } from "@/lib/storage";
+import { storageThumbnailUrlFromKeyOrUrl } from "@/lib/storage";
 import { DEFAULT_VERTICAL_ID, type VerticalId } from "@/lib/verticals";
 
 export type HomeCarouselImage = {
@@ -47,9 +47,9 @@ export async function getActiveHomeCarouselImages(vertical: VerticalId = DEFAULT
   }
 
   return slides.map((slide) => ({
-    src: storageUrlFromKeyOrUrl(slide.afterStorageKey, slide.afterImageUrl) || slide.afterImageUrl,
+    src: storageThumbnailUrlFromKeyOrUrl(slide.afterStorageKey, slide.afterImageUrl, "preview") || slide.afterImageUrl,
     alt: slide.afterAlt || slide.title || "نمونه خروجی اوالا",
-    beforeSrc: storageUrlFromKeyOrUrl(slide.beforeStorageKey, slide.beforeImageUrl) || slide.beforeImageUrl,
+    beforeSrc: storageThumbnailUrlFromKeyOrUrl(slide.beforeStorageKey, slide.beforeImageUrl, "preview") || slide.beforeImageUrl,
     beforeAlt: slide.beforeAlt || (slide.title ? `${slide.title} قبل` : "تصویر قبل از ادیت"),
   }));
 }

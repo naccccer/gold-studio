@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Archive, Refresh } from "vuesax-icons-react";
@@ -16,12 +15,13 @@ import {
   StatusDot,
   Surface,
 } from "@/features/admin/components/console";
+import { AdminImagePreview } from "@/features/admin/components/admin-image-preview";
 import { archiveAdminProjectAction, retryAdminProjectAction } from "@/features/admin/actions";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { db } from "@/lib/db";
 import { requireAdminSession } from "@/lib/auth/session";
-import { storageUrlFromKeyOrUrl } from "@/lib/storage";
+import { storageThumbnailUrlFromKeyOrUrl, storageUrlFromKeyOrUrl } from "@/lib/storage";
 import { formatInternalCreditUnits, getGenerationCreditUnitCost } from "@/lib/credit-units";
 import { projectGenerationTiming } from "@/lib/generation/timing";
 import { getVerticalLabel, normalizeVerticalId } from "@/lib/verticals";
@@ -105,14 +105,34 @@ export default async function AdminProjectDetailPage({ params }: AdminProjectDet
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <Surface>
           <div className="grid grid-cols-2 gap-4 p-5 sm:grid-cols-3">
-            <ImageBlock title="منبع" src={sourceUrl} />
-            <ImageBlock title="خروجی" src={resultUrl || sourceUrl} muted={!resultUrl} />
-            {referenceUrl ? <ImageBlock title="عکس نمونه" src={referenceUrl} /> : null}
+            <ImageBlock
+              title="منبع"
+              originalSrc={sourceUrl}
+              thumbnailSrc={storageThumbnailUrlFromKeyOrUrl(project.sourceAsset?.storageKey, project.sourceImageUrl, "preview") || sourceUrl}
+            />
+            <ImageBlock
+              title="خروجی"
+              originalSrc={resultUrl || sourceUrl}
+              thumbnailSrc={
+                storageThumbnailUrlFromKeyOrUrl(project.resultStorageKey, project.resultImageUrl, "preview") ||
+                storageThumbnailUrlFromKeyOrUrl(project.sourceAsset?.storageKey, project.sourceImageUrl, "preview") ||
+                sourceUrl
+              }
+              muted={!resultUrl}
+            />
+            {referenceUrl && project.referenceAsset ? (
+              <ImageBlock
+                title="عکس نمونه"
+                originalSrc={referenceUrl}
+                thumbnailSrc={storageThumbnailUrlFromKeyOrUrl(project.referenceAsset.storageKey, project.referenceAsset.fileUrl, "preview") || referenceUrl}
+              />
+            ) : null}
             {project.supportingAssets.map((item) => (
               <ImageBlock
                 key={item.id}
                 title={`عکس کمکی ${faNum(item.position)}`}
-                src={storageUrlFromKeyOrUrl(item.asset.storageKey, item.asset.fileUrl) || uploadPreview.src}
+                originalSrc={storageUrlFromKeyOrUrl(item.asset.storageKey, item.asset.fileUrl) || uploadPreview.src}
+                thumbnailSrc={storageThumbnailUrlFromKeyOrUrl(item.asset.storageKey, item.asset.fileUrl, "preview") || uploadPreview.src}
               />
             ))}
           </div>
@@ -212,12 +232,16 @@ export default async function AdminProjectDetailPage({ params }: AdminProjectDet
   );
 }
 
-function ImageBlock({ title, src, muted = false }: { title: string; src: string; muted?: boolean }) {
+function ImageBlock({ title, thumbnailSrc, originalSrc, muted = false }: { title: string; thumbnailSrc: string; originalSrc: string; muted?: boolean }) {
   return (
     <figure className="m-0">
-      <div className={`relative aspect-square overflow-hidden rounded-xl bg-slate-100 ${muted ? "opacity-50" : ""}`}>
-        <Image src={src} alt={title} fill unoptimized className="object-cover" sizes="320px" />
-      </div>
+      <AdminImagePreview
+        thumbnailSrc={thumbnailSrc}
+        originalSrc={originalSrc}
+        alt={title}
+        sizes="320px"
+        className={`aspect-square w-full rounded-xl bg-slate-100 ${muted ? "opacity-50" : ""}`}
+      />
       <figcaption className="mt-1.5 text-[11px] font-medium text-slate-500">{title}</figcaption>
     </figure>
   );

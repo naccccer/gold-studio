@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/item-context-menu";
 import { JewelryImageFrame } from "@/components/ui/jewelry-image-frame";
 import { PageShell } from "@/components/ui/page-shell";
+import { PaginationNav, type PaginationState } from "@/components/ui/pagination-nav";
 import {
   archiveStyleReferenceAction,
   createStyleReferenceFromSampleAction,
@@ -39,13 +40,14 @@ type StyleReferenceGalleryScreenProps = {
   assets: StyleReferenceGalleryItem[];
   emptySamples?: StyleReferenceEmptySample[];
   error?: string | null;
+  pagination: PaginationState;
 };
 
 function assetTitle(asset: StyleReferenceGalleryItem) {
   return asset.title || asset.originalName || "عکس نمونه";
 }
 
-export function StyleReferenceGalleryScreen({ assets, emptySamples = [], error }: StyleReferenceGalleryScreenProps) {
+export function StyleReferenceGalleryScreen({ assets, emptySamples = [], error, pagination }: StyleReferenceGalleryScreenProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedSampleIds, setSelectedSampleIds] = useState<string[]>([]);
   const [hiddenSampleIds, setHiddenSampleIds] = useState<string[]>([]);
@@ -352,6 +354,7 @@ export function StyleReferenceGalleryScreen({ assets, emptySamples = [], error }
             })}
           </section>
         )}
+        <PaginationNav pagination={pagination} />
       </PageShell>
 
       <section

@@ -1,8 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import type { Prisma } from "@/generated/prisma";
 import {
   btnSecondary,
+  AdminPagination,
   ConsoleHeader,
   EmptyState,
   faNum,
@@ -13,18 +15,21 @@ import {
   Surface,
   TabNav,
 } from "@/features/admin/components/console";
+import { AdminImagePreview } from "@/features/admin/components/admin-image-preview";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { formatInternalCreditUnits, getGenerationCreditUnitCost } from "@/lib/credit-units";
 import { db } from "@/lib/db";
 import { requireAdminSession } from "@/lib/auth/session";
-import { storageUrlFromKeyOrUrl } from "@/lib/storage";
+import { storageThumbnailUrlFromKeyOrUrl, storageUrlFromKeyOrUrl } from "@/lib/storage";
 import { getVerticalLabel, normalizeVerticalId, USER_VISIBLE_VERTICAL_IDS, VERTICALS } from "@/lib/verticals";
 
 export const dynamic = "force-dynamic";
 
 type AdminOutputsPageProps = {
-  searchParams?: Promise<{ q?: string; project?: string; vertical?: string }>;
+  searchParams?: Promise<{ q?: string; project?: string; vertical?: string; page?: string }>;
 };
+
+const PAGE_SIZE = 36;
 
 export default async function AdminOutputsPage({ searchParams }: AdminOutputsPageProps) {
   await requireAdminSession();
@@ -32,6 +37,8 @@ export default async function AdminOutputsPage({ searchParams }: AdminOutputsPag
   const params = await searchParams;
   const q = params?.q?.trim();
   const vertical = params?.vertical && params.vertical !== "ALL" ? normalizeVerticalId(params.vertical) : "ALL";
+  const requestedPage = Number.parseInt(params?.page ?? "1", 10);
+  const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
 
   const where: Prisma.ProjectWhereInput = {
     status: "COMPLETED",
@@ -59,7 +66,8 @@ export default async function AdminOutputsPage({ searchParams }: AdminOutputsPag
     db.project.findMany({
       where,
       orderBy: { updatedAt: "desc" },
-      take: 120,
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
       include: {
         user: true,
         style: { select: { name: true } },
@@ -68,20 +76,26 @@ export default async function AdminOutputsPage({ searchParams }: AdminOutputsPag
       },
     }),
     db.project.count({
-      where: {
-        status: "COMPLETED",
-        archivedAt: null,
-        ...(vertical === "ALL" ? {} : { vertical }),
-        OR: [{ resultStorageKey: { not: null } }, { resultImageUrl: { not: null } }],
-      },
+      where,
     }),
   ]);
+  const totalPages = Math.max(1, Math.ceil(totalOutputs / PAGE_SIZE));
+  if (page > totalPages) {
+    const query = new URLSearchParams();
+    if (q) query.set("q", q);
+    if (vertical !== "ALL") query.set("vertical", vertical);
+    if (totalPages > 1) query.set("page", String(totalPages));
+    const value = query.toString();
+    redirect(`/admin/assets/outputs${value ? `?${value}` : ""}`);
+  }
 
   const withUrls = projects
     .map((project) => ({
       project,
       resultUrl: storageUrlFromKeyOrUrl(project.resultStorageKey, project.resultImageUrl),
       sourceUrl: storageUrlFromKeyOrUrl(project.sourceAsset?.storageKey, project.sourceImageUrl),
+      resultThumbnailUrl: storageThumbnailUrlFromKeyOrUrl(project.resultStorageKey, project.resultImageUrl, "card"),
+      sourceThumbnailUrl: storageThumbnailUrlFromKeyOrUrl(project.sourceAsset?.storageKey, project.sourceImageUrl, "tiny"),
     }))
     .filter((item): item is typeof item & { resultUrl: string } => Boolean(item.resultUrl));
 
@@ -91,6 +105,7 @@ export default async function AdminOutputsPage({ searchParams }: AdminOutputsPag
     const query = new URLSearchParams();
     if (q) query.set("q", q);
     if (vertical !== "ALL") query.set("vertical", vertical);
+    if (page > 1) query.set("page", String(page));
     query.set("project", projectId);
     return `/admin/assets/outputs?${query.toString()}`;
   };
@@ -131,7 +146,7 @@ export default async function AdminOutputsPage({ searchParams }: AdminOutputsPag
       ) : (
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
           <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(108px,1fr))] gap-2 p-0">
-            {withUrls.map(({ project, resultUrl }) => {
+            {withUrls.map(({ project, resultUrl, resultThumbnailUrl }) => {
               const isSelected = selected?.project.id === project.id;
               return (
                 <li key={project.id} className="relative">
@@ -144,7 +159,7 @@ export default async function AdminOutputsPage({ searchParams }: AdminOutputsPag
                       isSelected ? "ring-2 ring-navy-700 ring-offset-2 ring-offset-navy-25" : "hover:opacity-85",
                     ].join(" ")}
                   >
-                    <Image src={resultUrl} alt="" fill unoptimized className="object-cover" sizes="140px" />
+                    <Image src={resultThumbnailUrl || resultUrl} alt="" fill unoptimized className="object-cover" sizes="140px" />
                   </Link>
                 </li>
               );
@@ -154,17 +169,17 @@ export default async function AdminOutputsPage({ searchParams }: AdminOutputsPag
           {selected ? (
             <Surface key={selected.project.id} className="lg:sticky lg:top-16">
               <div className="relative aspect-square bg-slate-100">
-                <Image
-                  src={selected.resultUrl}
+                <AdminImagePreview
+                  thumbnailSrc={selected.resultThumbnailUrl || selected.resultUrl}
+                  originalSrc={selected.resultUrl}
                   alt={selected.project.title || "پروژه بدون عنوان"}
-                  fill
-                  unoptimized
-                  className="object-cover"
                   sizes="300px"
+                  className="absolute inset-0 h-full w-full"
+                  detailHref={`/admin/projects/${selected.project.id}`}
                 />
                 {selected.sourceUrl ? (
                   <span className="absolute bottom-2 right-2 block h-16 w-16 overflow-hidden rounded-lg ring-2 ring-white">
-                    <Image src={selected.sourceUrl} alt="تصویر منبع" fill unoptimized className="object-cover" sizes="64px" />
+                    <Image src={selected.sourceThumbnailUrl || selected.sourceUrl} alt="تصویر منبع" fill unoptimized className="object-cover" sizes="64px" />
                   </span>
                 ) : null}
               </div>
@@ -211,6 +226,19 @@ export default async function AdminOutputsPage({ searchParams }: AdminOutputsPag
           ) : null}
         </div>
       )}
+      <AdminPagination
+        page={page}
+        totalPages={totalPages}
+        totalItems={totalOutputs}
+        hrefForPage={(nextPage) => {
+          const query = new URLSearchParams();
+          if (q) query.set("q", q);
+          if (vertical !== "ALL") query.set("vertical", vertical);
+          if (nextPage > 1) query.set("page", String(nextPage));
+          const value = query.toString();
+          return `/admin/assets/outputs${value ? `?${value}` : ""}`;
+        }}
+      />
     </>
   );
 }

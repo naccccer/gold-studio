@@ -1,7 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import type { Prisma } from "@/generated/prisma";
 import {
+  AdminPagination,
   btnSecondary,
   cellClass,
   ConsoleHeader,
@@ -14,19 +15,22 @@ import {
   StatusDot,
   Surface,
 } from "@/features/admin/components/console";
+import { AdminImagePreview } from "@/features/admin/components/admin-image-preview";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { uploadPreview } from "@/lib/placeholders/jewelry-images";
 import { db } from "@/lib/db";
 import { requireAdminSession } from "@/lib/auth/session";
-import { storageUrlFromKeyOrUrl } from "@/lib/storage";
+import { storageThumbnailUrlFromKeyOrUrl, storageUrlFromKeyOrUrl } from "@/lib/storage";
 import { formatInternalCreditUnits, getGenerationCreditUnitCost } from "@/lib/credit-units";
 import { getVerticalLabel, normalizeVerticalId, USER_VISIBLE_VERTICAL_IDS, VERTICALS } from "@/lib/verticals";
 
 export const dynamic = "force-dynamic";
 
 type AdminProjectsPageProps = {
-  searchParams?: Promise<{ status?: string; q?: string; styleId?: string; archived?: string; vertical?: string }>;
+  searchParams?: Promise<{ status?: string; q?: string; styleId?: string; archived?: string; vertical?: string; page?: string }>;
 };
+
+const PAGE_SIZE = 25;
 
 const statusFilters = [
   { value: "ALL", label: "همه" },
@@ -36,13 +40,14 @@ const statusFilters = [
   { value: "COMPLETED", label: "تکمیل‌شده" },
 ];
 
-function buildQuery(params: { status?: string; q?: string; styleId?: string; archived?: string; vertical?: string }) {
+function buildQuery(params: { status?: string; q?: string; styleId?: string; archived?: string; vertical?: string; page?: number }) {
   const query = new URLSearchParams();
   if (params.status && params.status !== "ALL") query.set("status", params.status);
   if (params.q) query.set("q", params.q);
   if (params.styleId) query.set("styleId", params.styleId);
   if (params.vertical && params.vertical !== "ALL") query.set("vertical", params.vertical);
   if (params.archived === "all") query.set("archived", "all");
+  if (params.page && params.page > 1) query.set("page", String(params.page));
   const value = query.toString();
   return value ? `?${value}` : "";
 }
@@ -56,6 +61,8 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
   const styleId = params?.styleId;
   const includeArchived = params?.archived === "all";
   const vertical = params?.vertical && params.vertical !== "ALL" ? normalizeVerticalId(params.vertical) : "ALL";
+  const requestedPage = Number.parseInt(params?.page ?? "1", 10);
+  const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const verticalWhere: Prisma.ProjectWhereInput = vertical === "ALL" ? {} : { vertical };
 
   const where: Prisma.ProjectWhereInput = {
@@ -77,19 +84,32 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
       : {}),
   };
 
-  const [projects, styles, queued, processing, failed, completed] = await Promise.all([
+  const [projects, totalProjects, styles, queued, processing, failed, completed] = await Promise.all([
     db.project.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      take: 120,
-      include: {
-        user: true,
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      select: {
+        id: true,
+        userId: true,
+        vertical: true,
+        title: true,
+        sourceImageUrl: true,
+        resultImageUrl: true,
+        resultStorageKey: true,
+        status: true,
+        errorMessage: true,
+        outputPreset: true,
+        createdAt: true,
+        user: { select: { name: true, email: true, phone: true } },
         style: { select: { id: true, name: true } },
         sourceAsset: { select: { storageKey: true } },
         providerEvents: { orderBy: { createdAt: "desc" }, take: 1 },
         creditReservations: { orderBy: { createdAt: "desc" }, take: 1, select: { creditUnits: true, status: true } },
       },
     }),
+    db.project.count({ where }),
     db.creativeStyle.findMany({
       where: vertical === "ALL" ? undefined : { vertical },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
@@ -100,6 +120,13 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
     db.project.count({ where: { ...verticalWhere, status: "FAILED", archivedAt: null } }),
     db.project.count({ where: { ...verticalWhere, status: "COMPLETED", archivedAt: null } }),
   ]);
+
+  const totalPages = Math.max(1, Math.ceil(totalProjects / PAGE_SIZE));
+  if (page > totalPages) {
+    redirect(
+      `/admin/projects${buildQuery({ status, q, styleId, archived: params?.archived, vertical, page: totalPages })}`,
+    );
+  }
 
   const countByStatus: Record<string, number | undefined> = {
     QUEUED: queued,
@@ -161,9 +188,13 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
           empty={<EmptyState title="پروژه‌ای با این فیلتر پیدا نشد." />}
         >
           {projects.map((project) => {
-            const preview =
+            const originalPreview =
               storageUrlFromKeyOrUrl(project.resultStorageKey, project.resultImageUrl) ||
               storageUrlFromKeyOrUrl(project.sourceAsset?.storageKey, project.sourceImageUrl) ||
+              uploadPreview.src;
+            const thumbnailPreview =
+              storageThumbnailUrlFromKeyOrUrl(project.resultStorageKey, project.resultImageUrl, "tiny") ||
+              storageThumbnailUrlFromKeyOrUrl(project.sourceAsset?.storageKey, project.sourceImageUrl, "tiny") ||
               uploadPreview.src;
             const lastEvent = project.providerEvents[0];
             const costUnits = project.creditReservations[0]?.creditUnits ?? getGenerationCreditUnitCost(normalizeVerticalId(project.vertical));
@@ -172,9 +203,14 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
               <tr key={project.id}>
                 <td className={cellClass}>
                   <div className="flex min-w-0 items-center gap-3">
-                    <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-slate-100">
-                      <Image src={preview} alt="" fill unoptimized className="object-cover" sizes="40px" />
-                    </span>
+                    <AdminImagePreview
+                      thumbnailSrc={thumbnailPreview}
+                      originalSrc={originalPreview}
+                      alt={project.title || "پروژه بدون عنوان"}
+                      sizes="40px"
+                      className="h-10 w-10 shrink-0 rounded-lg bg-slate-100 active:scale-[0.97]"
+                      detailHref={`/admin/projects/${project.id}`}
+                    />
                     <span className="min-w-0">
                       <Link href={`/admin/projects/${project.id}`} className="block truncate font-medium hover:text-navy-700 hover:underline">
                         {project.title || "پروژه بدون عنوان"}
@@ -230,6 +266,14 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
           })}
         </ConsoleTable>
       </Surface>
+      <AdminPagination
+        page={page}
+        totalPages={totalPages}
+        totalItems={totalProjects}
+        hrefForPage={(nextPage) =>
+          `/admin/projects${buildQuery({ status, q, styleId, archived: params?.archived, vertical, page: nextPage })}`
+        }
+      />
     </>
   );
 }

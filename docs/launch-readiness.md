@@ -39,6 +39,7 @@ npm run check:prompts
 npm run check:model-routing
 npm run check:readiness
 npm run check:mojibake
+npm run check:image-delivery
 npm run lint
 npm run db:deploy
 npm run build
@@ -63,6 +64,7 @@ npm run smoke -- https://ovala.ir
 - Account: notifications، support، referral، خروجی‌ها، آرشیو، و لینک admin برای ادمین.
 - Billing: خرید بسته/اعتبار vertical فعلی، آپلود رسید، تایید/رد از ادمین، اعمال credit و custom plan با انتخاب/نمایش صریح Jewelry یا Food.
 - Admin: health، AI/provider، assets، samples، styles، projects، outputs، quality reviews، users، billing، support، referrals، backups، audit.
+- Image delivery: فهرست‌های projects/gallery/admin فقط thumbnail بخواهند، فایل 2K قبل از preview/download درخواست نشود، و `X-Thumbnail-Cache` در بازدید دوم `HIT` باشد.
 - Mobile target `393x852`: nav پایین، متن فارسی، RTL controls، button wrapping، forms، menus، و project result.
 
 ## Daily Operations

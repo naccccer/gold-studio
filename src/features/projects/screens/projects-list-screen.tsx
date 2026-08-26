@@ -16,6 +16,7 @@ import {
   ItemContextMenu,
 } from "@/components/ui/item-context-menu";
 import { PageShell } from "@/components/ui/page-shell";
+import { PaginationNav, type PaginationState } from "@/components/ui/pagination-nav";
 import { SafeJewelryImage } from "@/components/ui/safe-jewelry-image";
 import { archiveProjectAction, renameProjectAction, saveProjectResultAsStyleReferenceAction } from "@/features/projects/actions";
 import type { VerticalContent } from "@/lib/vertical-content";
@@ -28,15 +29,18 @@ export type ProjectListItem = {
   style: { name: string };
   resultImageUrl: string | null;
   sourceImageUrl: string | null;
+  resultThumbnailUrl: string | null;
+  sourceThumbnailUrl: string | null;
   createdAt: Date | string;
 };
 
 type ProjectsListScreenProps = {
   projects: ProjectListItem[];
   content: VerticalContent;
+  pagination: PaginationState;
 };
 
-export function ProjectsListScreen({ projects, content }: ProjectsListScreenProps) {
+export function ProjectsListScreen({ projects, content, pagination }: ProjectsListScreenProps) {
   const galleryFallbacks = [...content.placeholders.archiveItems, ...content.placeholders.extras];
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
@@ -114,7 +118,12 @@ export function ProjectsListScreen({ projects, content }: ProjectsListScreenProp
           <section className="grid grid-cols-2 gap-3">
             {projects.map((project, index) => {
               const fallbackImage = galleryFallbacks[index % galleryFallbacks.length];
-              const imageSrc = project.resultImageUrl?.trim() || project.sourceImageUrl?.trim() || fallbackImage.src;
+              const imageSrc =
+                project.resultThumbnailUrl?.trim() ||
+                project.sourceThumbnailUrl?.trim() ||
+                project.resultImageUrl?.trim() ||
+                project.sourceImageUrl?.trim() ||
+                fallbackImage.src;
               const projectTitle = project.title?.trim() || content.projectFallbackTitle;
               const selected = selectedIds.includes(project.id);
               const failed = project.status === "FAILED";
@@ -313,6 +322,8 @@ export function ProjectsListScreen({ projects, content }: ProjectsListScreenProp
             })}
           </section>
         )}
+
+        <PaginationNav pagination={pagination} />
 
         {selectedIds.length > 0 ? (
           <ActionDock sticky className="!grid-cols-[2.25rem_minmax(0,1fr)] items-center" data-selection-controls>
