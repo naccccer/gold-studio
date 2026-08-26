@@ -29,4 +29,5 @@ export type GeneratedImageResult = {
   imageBuffer: Buffer;
   mimeType: string;
   model: string;
+  requestId?: string | null;
 };

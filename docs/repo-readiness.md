@@ -35,6 +35,9 @@ npm run check:prompts
 npm run check:model-routing
 npm run check:readiness
 npm run check:mojibake
+npm run check:image-delivery
+npm run check:storage-access
+npm run check:observability
 npm run lint
 npm run build
 ```
@@ -70,6 +73,8 @@ npm run smoke -- https://test.ovala.ir
 - `.env.example` فقط نام envهای لازم را داشته باشد، نه مقدار واقعی.
 - `STORAGE_DRIVER="local"` یعنی فایل‌ها زیر `.local-storage/uploads` هستند و از `/api/storage/...` خوانده می‌شوند.
 - `public/uploads` مسیر عملیاتی user upload نیست.
+- thumbnailهای خصوصی با URL امضاشده خوانده می‌شوند؛ در صورت نبود/انقضای امضا endpoint باید به مجوز session/ownership برگردد.
+- warmup تصاویر جدید، تطبیق هزینه Avalai، و پاک‌سازی کش توسط generation worker و فقط با اولویت پایین انجام می‌شود.
 - قبل از `cleanup:archives` باید backup داشته باشی؛ این script DB row و فایل storage را حذف می‌کند.
 
 ## Docs

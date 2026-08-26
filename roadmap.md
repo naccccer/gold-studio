@@ -20,9 +20,10 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 - Local uploads/generated results use `.local-storage/uploads` when `STORAGE_DRIVER="local"` and are streamed through authorized `/api/storage/...` routes.
 - Image generation goes through `src/lib/ai`; Avalai is the default primary image provider and Liara remains fallback/support and manually selectable in `/admin/ai`.
 - Generation recovery runs through `npm run worker:generation`; production health recovery uses `npm run watchdog:health`; backups use `/admin/backups`, `npm run backup:run`, and `npm run backup:scheduler`.
-- Generation telemetry records queue, processing start/finish, and each provider-attempt duration; completed output details show the total build time in seconds and admin project details expose the queue/processing split.
+- Generation telemetry records queue, input preparation, every provider attempt, output persistence, and total time; output lists/details show seconds, while admin AI/project views expose P50/P95, failure rate, and exact Avalai cost after asynchronous transaction reconciliation.
 - User-facing generation requires a verified native 2K result: Gemini 3.1 Flash uses AvalAI's native Gemini endpoint, returned dimensions are validated before storage, and automatic routing excludes 1K-only fallbacks.
-- Image-heavy lists use authorized cached WebP thumbnails (`tiny`, `card`, `preview`) plus bounded pagination; original 2K files are requested only for explicit full preview, sharing, or download.
+- Image-heavy lists use signed cached WebP thumbnails (`tiny`, `card`, `preview`) plus bounded pagination; durable low-priority worker jobs warm new images, cache retention is bounded, and original 2K files are requested only for explicit full preview, sharing, or download.
+- Real-user Web Vitals are sampled into `/admin/health` so INP, LCP, CLS, FCP, and TTFB improvements are judged from actual devices instead of desktop-only assumptions.
 - Billing supports vertical-specific credit balances/packages, credit reservations, manual purchase review, referral/sales codes, admin-assigned custom plans, per-plan "نسخه دیگر" limits, and output-only accounting for alternate versions.
 - Admin billing/user operations show and require the target vertical for manual credit changes, custom plans, package assignment, subscriptions, receipts, credit events, and user credit summaries so Jewelry and Food balances are not mixed operationally.
 - Prompt policy protects product identity: jewelry safeguards remain active, product-only outputs remove source-photo people/hands, model styles allow human context only when explicit, and sample-reference styles borrow scene/composition while preserving the uploaded product.
@@ -52,7 +53,7 @@ Multi-vertical expansion is tracked in `docs/multi-vertical-roadmap.md` on `code
 
 - Keep Phase 6 held until Jewelry + Food polish and launch QA are accepted.
 - Finish Food/Jewelry QA across auth, home, gallery, new project, project detail, projects, notifications, quality reviews, account, billing, support, settings, and admin.
-- Verify real Avalai primary generation, Liara fallback behavior, provider cost, storage display URLs, failed-state recovery, backups, worker, watchdog, and PM2 process health on the deployment target.
+- Accumulate enough real 2K generations and Web Vitals samples to compare model P50/P95, exact cost, failure rate, INP, and LCP on the deployment target.
 - Check the `393x852` mobile layout target for Farsi wrapping, RTL controls, bottom navigation, action placement, calm motion, and accidental scrolling.
 - Keep launch/readiness/deployment docs current when deploy, env, storage, billing, SMS, provider, worker, watchdog, or admin operations change.
 - Add the approved FarazSMS pattern code and line number before testing phone verification with real users.

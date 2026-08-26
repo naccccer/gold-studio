@@ -5,6 +5,7 @@ import { clampNon4KImageSetting } from "@/lib/ai/model-routing";
 import { buildGenerationPromptSuffix } from "@/lib/ai/vertical-prompt-rules";
 import { getOutputPresetSpec } from "@/lib/output-presets";
 import { DEFAULT_VERTICAL_ID, type VerticalId } from "@/lib/verticals";
+import type { GeneratedImageResult } from "@/lib/ai/provider";
 
 const DEFAULT_LIARA_BASE_URL = "https://ai.liara.ir/api/69fe30c50bb427e049d327f6/v1";
 const DEFAULT_LIARA_IMAGE_MODEL = "google/gemini-3-pro-image-preview";
@@ -56,11 +57,7 @@ type PreparedFormImage = {
   mimeType: string;
 };
 
-export type LiaraImageResult = {
-  imageBuffer: Buffer;
-  mimeType: string;
-  model: string;
-};
+export type LiaraImageResult = GeneratedImageResult;
 
 class LiaraGenerationError extends Error {
   constructor(message: string, cause?: unknown) {

@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { requireUserSession } from "@/lib/auth/session";
 import { storagePublicUrl, storageThumbnailUrlFromKeyOrUrl } from "@/lib/storage";
 import { getVerticalContent } from "@/lib/vertical-content";
+import { projectGenerationTiming } from "@/lib/generation/timing";
 
 const PAGE_SIZE = 24;
 
@@ -42,6 +43,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams?: Pr
     resultImageUrl: project.resultStorageKey ? storagePublicUrl(project.resultStorageKey) : project.resultImageUrl,
     sourceThumbnailUrl: storageThumbnailUrlFromKeyOrUrl(project.sourceAsset?.storageKey, project.sourceImageUrl, "card"),
     resultThumbnailUrl: storageThumbnailUrlFromKeyOrUrl(project.resultStorageKey, project.resultImageUrl, "card"),
+    generationDurationSeconds: projectGenerationTiming(project).totalSeconds,
   })) as ProjectListItem[];
 
   return (

@@ -21,6 +21,7 @@ import { AVALAI_IMAGE_MODELS, getImageProviderAttemptOrder, getProviderSettings,
 import { db } from "@/lib/db";
 import { requireAdminSession } from "@/lib/auth/session";
 import { ProviderSwitch } from "../provider/provider-switch";
+import { summarizeProviderModels } from "@/lib/ai/provider-analytics";
 
 export const dynamic = "force-dynamic";
 
@@ -33,8 +34,9 @@ export default async function AdminAiPage() {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const comparisonSince = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  const [events, failedToday, successToday, groupedFailures, providerSettings] = await Promise.all([
+  const [events, failedToday, successToday, groupedFailures, providerSettings, comparisonEvents] = await Promise.all([
     db.providerEvent.findMany({
       orderBy: { createdAt: "desc" },
       take: 60,
@@ -50,6 +52,21 @@ export default async function AdminAiPage() {
       take: 12,
     }),
     getProviderSettings(),
+    db.providerEvent.findMany({
+      where: { createdAt: { gte: comparisonSince }, operation: { startsWith: "image." } },
+      orderBy: { createdAt: "desc" },
+      take: 10_000,
+      select: {
+        provider: true,
+        model: true,
+        status: true,
+        durationMs: true,
+        costUnit: true,
+        costPaidIrt: true,
+        costGrantIrt: true,
+        costResolvedAt: true,
+      },
+    }),
   ]);
 
   const selectedProvider = providerSettings.imageProvider;
@@ -60,6 +77,7 @@ export default async function AdminAiPage() {
       ? ["AVALAI_API_KEY", "AVALAI_BASE_URL", "AVALAI_IMAGE_MODEL", "AVALAI_VISION_MODEL", "AVALAI_IMAGE_SIZE"]
       : ["LIARA_API_KEY", "LIARA_BASE_URL", "LIARA_IMAGE_MODEL", "LIARA_VISION_MODEL", "LIARA_IMAGE_SIZE"];
   const missingEnvCount = envNames.filter((name) => !envIsSet(name)).length;
+  const modelPerformance = summarizeProviderModels(comparisonEvents);
 
   return (
     <>
@@ -93,6 +111,45 @@ export default async function AdminAiPage() {
           },
         ]}
       />
+
+      <Surface>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-3.5">
+          <h2 className="text-sm font-semibold text-navy-950">مقایسه واقعی مدل‌ها</h2>
+          <span className="text-xs text-slate-400">۳۰ روز اخیر · خروجی‌های 2K همین سایت</span>
+        </div>
+        <ConsoleTable
+          head={["مدل", "موفق/تلاش", "نرخ موفقیت", "P50", "P95", "میانگین هزینه"]}
+          empty={<EmptyState title="برای مقایسه مدل‌ها هنوز داده کافی وجود ندارد." />}
+        >
+          {modelPerformance.map((item) => (
+            <tr key={`${item.provider}-${item.model}`}>
+              <td className={cellClass} dir="ltr">
+                <span className="font-medium text-navy-950">{item.model}</span>
+                <p className="text-xs text-slate-400">{item.provider}</p>
+              </td>
+              <td className={cellClass}>{faNum(item.successes)} / {faNum(item.attempts)}</td>
+              <td className={cellClass}>
+                <span className={item.successPercent >= 95 ? "font-medium text-emerald-700" : item.successPercent >= 80 ? "text-amber-700" : "font-medium text-rose-700"}>
+                  ٪{faNum(item.successPercent)}
+                </span>
+              </td>
+              <td className={cellClass}>{item.p50DurationMs === null ? "—" : `${faNum(Math.round(item.p50DurationMs / 1000))} ثانیه`}</td>
+              <td className={cellClass}>{item.p95DurationMs === null ? "—" : `${faNum(Math.round(item.p95DurationMs / 1000))} ثانیه`}</td>
+              <td className={cellClass}>
+                {item.averageCostIrt !== null && item.averageCostUnit !== null ? (
+                  <span className="text-xs text-slate-500">پرداخت ترکیبی</span>
+                ) : item.averageCostIrt !== null ? (
+                  <span>{faNum(item.averageCostIrt)} تومان</span>
+                ) : item.averageCostUnit !== null ? (
+                  <span dir="ltr">{item.averageCostUnit.toFixed(6)} UNIT</span>
+                ) : (
+                  <span className="text-xs text-slate-400">در انتظار تطبیق</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </ConsoleTable>
+      </Surface>
 
       <Surface>
         <div className="border-b border-slate-100 px-5 py-3.5">

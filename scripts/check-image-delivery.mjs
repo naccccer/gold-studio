@@ -4,7 +4,7 @@ import path from "node:path";
 const repoRoot = path.resolve(import.meta.dirname, "..");
 const checks = [
   ["src/lib/image-thumbnails.ts", ["tiny: { width: 96", "card: { width: 640", "preview: { width: 1024", "activeGenerations >= 1"]],
-  ["src/app/api/storage/thumbnail/[preset]/[...key]/route.ts", ["private, max-age=86400", "if-none-match", "Server-Timing", "X-Thumbnail-Cache"]],
+  ["src/app/api/storage/thumbnail/[preset]/[...key]/route.ts", ["private, max-age=86400", "if-none-match", "Server-Timing", "X-Thumbnail-Cache", "X-Thumbnail-Auth", "verifyThumbnailSignature"]],
   ["src/app/admin/projects/page.tsx", ["const PAGE_SIZE = 25", "storageThumbnailUrlFromKeyOrUrl", "AdminPagination"]],
   ["src/features/admin/components/admin-image-lightbox.tsx", ["[data-admin-image-preview]"]],
   ["src/app/(dashboard)/projects/page.tsx", ["const PAGE_SIZE = 24", '"card"']],

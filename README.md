@@ -62,6 +62,9 @@ npm run admin:bootstrap -- --email "admin@example.com" --password "strong-passwo
 - `npm run build`: ensure Prisma Client is current, then build the app.
 - `npm run smoke -- http://localhost:3000`: check a running app without logging in or touching AI/payment flows.
 - `npm run worker:generation`: run the queued generation worker.
+- `npm run check:image-delivery`: verify thumbnail presets, pagination, caching headers, and explicit preview policy.
+- `npm run check:storage-access`: exercise owner, other-user, admin, SALES, guest, and missing-file authorization policy.
+- `npm run check:observability`: verify generation timing, model analytics, signed thumbnail URLs, and worker observability wiring.
 - `npm run watchdog:health`: run the PM2 health watchdog loop.
 - `npm run backup:run`: create a full DB + storage backup archive.
 - `npm run backup:scheduler`: run the nightly backup scheduler loop.

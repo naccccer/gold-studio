@@ -131,7 +131,12 @@ while (!stopping) {
     activeTick = false;
     const processed = result?.processedProjects ?? 0;
     const recovered = (result?.recoveredProjects ?? 0) + (result?.recoveredBatches ?? 0);
-    if (processed > 0 || recovered > 0) {
+    const maintenance =
+      (result?.thumbnail?.processed ?? 0) +
+      (result?.thumbnail?.failed ?? 0) +
+      (result?.providerCosts?.resolved ?? 0) +
+      (result?.thumbnailCache?.deleted ?? 0);
+    if (processed > 0 || recovered > 0 || maintenance > 0) {
       console.log(`[${nowLabel()}] generation tick`, JSON.stringify(result));
     }
     if (stopping) break;

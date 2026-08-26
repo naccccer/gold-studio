@@ -22,6 +22,7 @@ import { db } from "@/lib/db";
 import { requireAdminSession } from "@/lib/auth/session";
 import { storageThumbnailUrlFromKeyOrUrl, storageUrlFromKeyOrUrl } from "@/lib/storage";
 import { formatInternalCreditUnits, getGenerationCreditUnitCost } from "@/lib/credit-units";
+import { projectGenerationTiming } from "@/lib/generation/timing";
 import { getVerticalLabel, normalizeVerticalId, USER_VISIBLE_VERTICAL_IDS, VERTICALS } from "@/lib/verticals";
 
 export const dynamic = "force-dynamic";
@@ -101,6 +102,9 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
         status: true,
         errorMessage: true,
         outputPreset: true,
+        generationQueuedAt: true,
+        generationStartedAt: true,
+        generationFinishedAt: true,
         createdAt: true,
         user: { select: { name: true, email: true, phone: true } },
         style: { select: { id: true, name: true } },
@@ -198,6 +202,7 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
               uploadPreview.src;
             const lastEvent = project.providerEvents[0];
             const costUnits = project.creditReservations[0]?.creditUnits ?? getGenerationCreditUnitCost(normalizeVerticalId(project.vertical));
+            const generationTiming = projectGenerationTiming(project);
 
             return (
               <tr key={project.id}>
@@ -260,7 +265,10 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
                     <span className="text-xs text-slate-400">بدون رویداد</span>
                   )}
                 </td>
-                <td className={`${cellClass} text-xs text-slate-500`}>{formatAdminDate(project.createdAt)}</td>
+                <td className={`${cellClass} text-xs text-slate-500`}>
+                  <p>{generationTiming.totalSeconds === null ? "در حال محاسبه" : `${faNum(generationTiming.totalSeconds)} ثانیه`}</p>
+                  <p className="text-[11px] text-slate-400">{formatAdminDate(project.createdAt)}</p>
+                </td>
               </tr>
             );
           })}

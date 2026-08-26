@@ -14,6 +14,7 @@ import { getCurrentVertical } from "@/lib/current-vertical";
 import { db } from "@/lib/db";
 import { archiveItems } from "@/lib/placeholders/jewelry-images";
 import { storagePublicUrl, storageThumbnailUrlFromKeyOrUrl } from "@/lib/storage";
+import { projectGenerationTiming } from "@/lib/generation/timing";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,7 @@ export default async function AccountArchivePage({ searchParams }: { searchParam
     resultImageUrl: project.resultStorageKey ? storagePublicUrl(project.resultStorageKey) : project.resultImageUrl,
     sourceThumbnailUrl: storageThumbnailUrlFromKeyOrUrl(project.sourceAsset?.storageKey, project.sourceImageUrl, "card"),
     resultThumbnailUrl: storageThumbnailUrlFromKeyOrUrl(project.resultStorageKey, project.resultImageUrl, "card"),
+    generationDurationSeconds: projectGenerationTiming(project).totalSeconds,
   }));
 
   return (
@@ -102,6 +104,9 @@ export default async function AccountArchivePage({ searchParams }: { searchParam
                     />
                     <div className="relative z-10 min-w-0 space-y-1.5">
                       <p className="truncate text-xs font-semibold leading-5 text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)]">{title}</p>
+                      {project.generationDurationSeconds !== null ? (
+                        <p className="text-[10px] leading-4 text-white/72">{project.generationDurationSeconds.toLocaleString("fa-IR")} ثانیه</p>
+                      ) : null}
                     </div>
                   </div>
                 </JewelryImageFrame>

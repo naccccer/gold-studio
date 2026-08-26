@@ -31,6 +31,7 @@ export type ProjectListItem = {
   sourceImageUrl: string | null;
   resultThumbnailUrl: string | null;
   sourceThumbnailUrl: string | null;
+  generationDurationSeconds: number | null;
   createdAt: Date | string;
 };
 
@@ -226,10 +227,15 @@ export function ProjectsListScreen({ projects, content, pagination }: ProjectsLi
                             <button
                               type="button"
                               onClick={() => setEditingProjectId(project.id)}
-                              className="pointer-events-auto flex min-h-8 min-w-0 items-center truncate text-right text-xs font-semibold text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.85)]"
+                              className="pointer-events-auto flex min-h-8 min-w-0 flex-col items-start justify-center text-right text-xs font-semibold text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.85)]"
                               aria-label="ویرایش نام پروژه"
                             >
-                              {projectTitle}
+                              <span className="w-full truncate">{projectTitle}</span>
+                              {project.generationDurationSeconds !== null ? (
+                                <span className="text-[10px] font-normal text-white/72">
+                                  {project.generationDurationSeconds.toLocaleString("fa-IR")} ثانیه
+                                </span>
+                              ) : null}
                             </button>
                             <div className="pointer-events-auto flex justify-start">
                               <ItemContextMenu label={`منوی ${projectTitle}`} align="right" size="sm">

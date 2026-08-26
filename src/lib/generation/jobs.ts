@@ -182,6 +182,7 @@ async function generateImageWithModelFallback({
         model: generatedImage.model,
         retryCount: index,
         durationMs: Date.now() - attemptStartedAt,
+        requestId: generatedImage.requestId,
         statusDetail: `provider=${providerLabel}; outputPreset=${outputPreset}; supportingImages=${supportingImages?.length ?? 0}; reference=${
           referenceUsed ? "yes" : "no"
         }; ${routingDetail}; fallbackAttempt=${index + 1}/${attempts.length}`,
@@ -249,6 +250,7 @@ async function generateTextImageWithModelFallback({
         model: generatedImage.model,
         retryCount: index,
         durationMs: Date.now() - attemptStartedAt,
+        requestId: generatedImage.requestId,
         statusDetail: `provider=${providerLabel}; fallbackAttempt=${index + 1}/${attempts.length}`,
       });
       return generatedImage;
@@ -278,7 +280,14 @@ async function claimQueuedProject(projectId: string) {
   const generationStartedAt = new Date();
   const claimed = await db.project.updateMany({
     where: { id: projectId, status: "QUEUED" },
-    data: { status: "PROCESSING", errorMessage: null, generationStartedAt, generationFinishedAt: null },
+    data: {
+      status: "PROCESSING",
+      errorMessage: null,
+      generationStartedAt,
+      generationFinishedAt: null,
+      generationPrepareDurationMs: null,
+      generationPersistDurationMs: null,
+    },
   });
 
   return claimed.count > 0;
@@ -318,6 +327,8 @@ export async function recoverStaleGenerationJobs({
         errorMessage: null,
         generationStartedAt: null,
         generationFinishedAt: null,
+        generationPrepareDurationMs: null,
+        generationPersistDurationMs: null,
       },
     }),
     db.generationBatch.updateMany({
@@ -449,6 +460,10 @@ export async function processImageProject(projectId: string) {
     return false;
   }
 
+  const preparationStartedAt = Date.now();
+  let generationPrepareDurationMs: number | null = null;
+  let generationPersistDurationMs: number | null = null;
+
   try {
     const project = await db.project.findUnique({
       where: { id: projectId },
@@ -500,6 +515,7 @@ export async function processImageProject(projectId: string) {
       prompt: project.prompt,
       referenceAssetId: project.referenceAssetId,
     });
+    generationPrepareDurationMs = Date.now() - preparationStartedAt;
     const generatedImage = await generateImageWithModelFallback({
       projectId,
       styleId: project.styleId,
@@ -513,7 +529,9 @@ export async function processImageProject(projectId: string) {
       referenceUsed: Boolean(project.referenceAsset),
       vertical: normalizeVerticalId(project.vertical),
     });
+    const persistStartedAt = Date.now();
     const result = await saveGeneratedImage(generatedImage.imageBuffer, generatedImage.mimeType);
+    generationPersistDurationMs = Date.now() - persistStartedAt;
 
     const generationFinishedAt = new Date();
     await db.project.update({
@@ -524,6 +542,8 @@ export async function processImageProject(projectId: string) {
         resultStorageKey: result.storageKey,
         errorMessage: null,
         generationFinishedAt,
+        generationPrepareDurationMs,
+        generationPersistDurationMs,
       },
     });
     if (project.variantParentId) {
@@ -537,6 +557,7 @@ export async function processImageProject(projectId: string) {
     return true;
   } catch (error) {
     const generationFinishedAt = new Date();
+    generationPrepareDurationMs ??= Date.now() - preparationStartedAt;
     await releaseGenerationCreditReservation({ projectId });
     await db.project.update({
       where: { id: projectId },
@@ -544,6 +565,8 @@ export async function processImageProject(projectId: string) {
         status: "FAILED",
         errorMessage: userErrorMessage(error, "تولید تصویر کامل نشد. جزئیات بیشتر در بخش ادمین و رویدادهای provider ثبت شد."),
         generationFinishedAt,
+        generationPrepareDurationMs,
+        generationPersistDurationMs,
       },
     });
     const failedProject = await db.project.findUnique({
@@ -577,7 +600,12 @@ export async function processTextProject({
     return false;
   }
 
+  const preparationStartedAt = Date.now();
+  let generationPrepareDurationMs: number | null = null;
+  let generationPersistDurationMs: number | null = null;
+
   try {
+    generationPrepareDurationMs = Date.now() - preparationStartedAt;
     const generatedImage = await generateTextImageWithModelFallback({
       projectId,
       prompt: textPrompt,
@@ -585,7 +613,9 @@ export async function processTextProject({
       outputPreset: "post",
       vertical,
     });
+    const persistStartedAt = Date.now();
     const result = await saveGeneratedImage(generatedImage.imageBuffer, generatedImage.mimeType);
+    generationPersistDurationMs = Date.now() - persistStartedAt;
 
     const generationFinishedAt = new Date();
     await db.project.update({
@@ -596,6 +626,8 @@ export async function processTextProject({
         resultStorageKey: result.storageKey,
         errorMessage: null,
         generationFinishedAt,
+        generationPrepareDurationMs,
+        generationPersistDurationMs,
       },
     });
     await captureGenerationCreditReservation({ projectId });
@@ -603,6 +635,7 @@ export async function processTextProject({
     return true;
   } catch (error) {
     const generationFinishedAt = new Date();
+    generationPrepareDurationMs ??= Date.now() - preparationStartedAt;
     await releaseGenerationCreditReservation({ projectId });
     await db.project.update({
       where: { id: projectId },
@@ -610,6 +643,8 @@ export async function processTextProject({
         status: "FAILED",
         errorMessage: userErrorMessage(error, "تست متن به تصویر کامل نشد. جزئیات بیشتر در بخش ادمین و رویدادهای provider ثبت شد."),
         generationFinishedAt,
+        generationPrepareDurationMs,
+        generationPersistDurationMs,
       },
     });
     return true;

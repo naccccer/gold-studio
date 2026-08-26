@@ -98,6 +98,11 @@ type ImagesResponse = {
   }>;
 };
 
+type AvalaiApiResponse<T> = {
+  body: T;
+  requestId: string | null;
+};
+
 type ChatContentPart =
   | {
       type: "text";
@@ -123,6 +128,11 @@ class AvalaiGenerationError extends Error {
 function readEnv(primaryName: string) {
   const value = process.env[primaryName]?.trim();
   return value || undefined;
+}
+
+function avalaiRequestId(response: Response) {
+  const value = response.headers.get("x-request-id") || response.headers.get("x-request-ids") || "";
+  return value.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)?.[0] ?? null;
 }
 
 function getAvalaiConfig() {
@@ -454,7 +464,7 @@ async function postAvalaiJson<T>({
     throw new AvalaiGenerationError(`Avalai request failed with status ${response.status}${detail ? `: ${detail}` : ""}.`);
   }
 
-  return (await response.json()) as T;
+  return { body: (await response.json()) as T, requestId: avalaiRequestId(response) } satisfies AvalaiApiResponse<T>;
 }
 
 function avalaiNativeBaseURL(baseURL: string) {
@@ -498,7 +508,7 @@ async function postAvalaiGeminiNative<T>({
     );
   }
 
-  return (await response.json()) as T;
+  return { body: (await response.json()) as T, requestId: avalaiRequestId(response) } satisfies AvalaiApiResponse<T>;
 }
 
 async function postAvalaiForm<T>({
@@ -534,7 +544,7 @@ async function postAvalaiForm<T>({
     throw new AvalaiGenerationError(`Avalai request failed with status ${response.status}${detail ? `: ${detail}` : ""}.`);
   }
 
-  return (await response.json()) as T;
+  return { body: (await response.json()) as T, requestId: avalaiRequestId(response) } satisfies AvalaiApiResponse<T>;
 }
 
 function buildImageContent({
@@ -586,44 +596,49 @@ async function generateWithAvalai({
 
   try {
     return await withTransientRetry(async () => {
-      const generated = isGemini31FlashImageModel(imageModel)
-        ? await extractGeneratedImageFromGeminiResponse(
-            await postAvalaiGeminiNative<GeminiGenerateContentResponse>({
-              baseURL,
-              apiKey,
-              model: imageModel,
-              body: {
-                contents: [{ role: "user", parts: toGeminiParts(content) }],
-                generationConfig: {
-                  responseModalities: ["TEXT", "IMAGE"],
-                  imageConfig: {
-                    aspectRatio: imageAspectRatio,
-                    imageSize,
-                  },
+      let generated: { imageBuffer: Buffer; mimeType: string };
+      let requestId: string | null;
+
+      if (isGemini31FlashImageModel(imageModel)) {
+        const response = await postAvalaiGeminiNative<GeminiGenerateContentResponse>({
+          baseURL,
+          apiKey,
+          model: imageModel,
+          body: {
+            contents: [{ role: "user", parts: toGeminiParts(content) }],
+            generationConfig: {
+              responseModalities: ["TEXT", "IMAGE"],
+              imageConfig: {
+                aspectRatio: imageAspectRatio,
+                imageSize,
+              },
+            },
+          },
+        });
+        generated = await extractGeneratedImageFromGeminiResponse(response.body);
+        requestId = response.requestId;
+      } else {
+        const response = await postAvalaiJson<ChatCompletionImageResponse>({
+          baseURL,
+          apiKey,
+          path: "/chat/completions",
+          body: {
+            model: imageModel,
+            messages: [{ role: "user", content }],
+            modalities: ["image", "text"],
+            extra_body: {
+              generationConfig: {
+                imageConfig: {
+                  aspectRatio: imageAspectRatio,
+                  imageSize,
                 },
               },
-            }),
-          )
-        : await extractGeneratedImage(
-            await postAvalaiJson<ChatCompletionImageResponse>({
-              baseURL,
-              apiKey,
-              path: "/chat/completions",
-              body: {
-                model: imageModel,
-                messages: [{ role: "user", content }],
-                modalities: ["image", "text"],
-                extra_body: {
-                  generationConfig: {
-                    imageConfig: {
-                      aspectRatio: imageAspectRatio,
-                      imageSize,
-                    },
-                  },
-                },
-              },
-            }),
-          );
+            },
+          },
+        });
+        generated = await extractGeneratedImage(response.body);
+        requestId = response.requestId;
+      }
       await assertTwoKImageDimensions({
         imageBuffer: generated.imageBuffer,
         imageSize,
@@ -631,7 +646,7 @@ async function generateWithAvalai({
         model: imageModel,
         makeError: (message) => new AvalaiGenerationError(message),
       });
-      return { ...generated, model: imageModel };
+      return { ...generated, model: imageModel, requestId };
     });
   } catch (error) {
     if (isRetryableProviderError(error)) {
@@ -666,23 +681,22 @@ async function generateTextWithOpenAIImageModel({
 
   try {
     return await withTransientRetry(async () => {
-      const generated = await extractGeneratedImageFromImagesResponse(
-        await postAvalaiJson<ImagesResponse>({
-          baseURL,
-          apiKey,
-          path: "/images/generations",
-          body: appendResponseFormat(
-            {
-              model: imageModel,
-              prompt: `${prompt}\n\n${stylePrompt}\n\n${generationPromptSuffix(vertical, false)}`,
-              size: getOpenAIImageSize(outputPreset),
-              quality: openAIImageQuality,
-              n: 1,
-            },
-            responseFormat,
-          ),
-        }),
-      );
+      const response = await postAvalaiJson<ImagesResponse>({
+        baseURL,
+        apiKey,
+        path: "/images/generations",
+        body: appendResponseFormat(
+          {
+            model: imageModel,
+            prompt: `${prompt}\n\n${stylePrompt}\n\n${generationPromptSuffix(vertical, false)}`,
+            size: getOpenAIImageSize(outputPreset),
+            quality: openAIImageQuality,
+            n: 1,
+          },
+          responseFormat,
+        ),
+      });
+      const generated = await extractGeneratedImageFromImagesResponse(response.body);
       await assertTwoKImageDimensions({
         imageBuffer: generated.imageBuffer,
         imageSize: "2K",
@@ -690,7 +704,7 @@ async function generateTextWithOpenAIImageModel({
         model: imageModel,
         makeError: (message) => new AvalaiGenerationError(message),
       });
-      return { ...generated, model: imageModel };
+      return { ...generated, model: imageModel, requestId: response.requestId };
     });
   } catch (error) {
     if (isRetryableProviderError(error)) {
@@ -748,14 +762,13 @@ async function generateStyledWithOpenAIImageModel({
         );
       }
 
-      const generated = await extractGeneratedImageFromImagesResponse(
-        await postAvalaiForm<ImagesResponse>({
-          baseURL,
-          apiKey,
-          path: "/images/edits",
-          body: form,
-        }),
-      );
+      const response = await postAvalaiForm<ImagesResponse>({
+        baseURL,
+        apiKey,
+        path: "/images/edits",
+        body: form,
+      });
+      const generated = await extractGeneratedImageFromImagesResponse(response.body);
       await assertTwoKImageDimensions({
         imageBuffer: generated.imageBuffer,
         imageSize: "2K",
@@ -763,7 +776,7 @@ async function generateStyledWithOpenAIImageModel({
         model: imageModel,
         makeError: (message) => new AvalaiGenerationError(message),
       });
-      return { ...generated, model: imageModel };
+      return { ...generated, model: imageModel, requestId: response.requestId };
     });
   } catch (error) {
     if (isRetryableProviderError(error)) {

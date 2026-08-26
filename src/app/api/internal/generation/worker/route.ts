@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { processQueuedGenerationJobs } from "@/lib/generation/jobs";
+import { reconcilePendingProviderCosts } from "@/lib/generation/provider-costs";
 import { DEFAULT_STALE_PROCESSING_MINUTES } from "@/lib/health";
+import { maybeMaintainThumbnailCache, processNextThumbnailJob } from "@/lib/thumbnail-jobs";
 
 export const dynamic = "force-dynamic";
 
@@ -56,11 +58,20 @@ export async function POST(request: Request) {
     limit,
     staleProcessingMs: staleMinutes * 60 * 1000,
   });
+  const thumbnail =
+    result.processedProjects === 0
+      ? await processNextThumbnailJob()
+      : { processed: 0, failed: 0, recovered: 0 };
+  const providerCosts = await reconcilePendingProviderCosts();
+  const thumbnailCache = await maybeMaintainThumbnailCache();
 
   return NextResponse.json({
     ok: true,
     limit,
     staleMinutes,
     ...result,
+    thumbnail,
+    providerCosts,
+    thumbnailCache,
   });
 }

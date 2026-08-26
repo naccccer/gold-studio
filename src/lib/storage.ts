@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client, type S3ClientConfig } from "@aws-sdk/client-s3";
+import { createThumbnailSignature, thumbnailSignatureExpiry, thumbnailSignatureSecret } from "@/lib/thumbnail-signature";
 
 const LOCAL_STORAGE_KIND = "local";
 const S3_STORAGE_KIND = "s3";
@@ -193,7 +194,13 @@ export function storageThumbnailUrl(key: string, preset: ImageThumbnailPreset) {
     .split("/")
     .map((segment) => encodeURIComponent(segment))
     .join("/");
-  return `/api/storage/thumbnail/${preset}/${normalizedKey}`;
+  const baseUrl = `/api/storage/thumbnail/${preset}/${normalizedKey}`;
+  const secret = thumbnailSignatureSecret();
+  if (!secret || isPublicStorageKey(key)) return baseUrl;
+
+  const expiresAt = thumbnailSignatureExpiry();
+  const signature = createThumbnailSignature({ storageKey: normalizeKey(key), preset, expiresAt, secret });
+  return `${baseUrl}?expires=${expiresAt}&signature=${encodeURIComponent(signature)}`;
 }
 
 export function storageKeyFromUrl(value?: string | null) {
@@ -242,9 +249,9 @@ export async function saveStorageObject(input: SaveObjectInput) {
   const publicUrl = await getStorageAdapter().saveObject(input);
   if (input.contentType.startsWith("image/")) {
     setImmediate(() => {
-      void import("@/lib/image-thumbnails")
-        .then(({ warmImageThumbnails }) => warmImageThumbnails(input.key, input.buffer))
-        .catch((error) => console.error("[image-thumbnail-warmup-failed]", { storageKey: input.key, error }));
+      void import("@/lib/thumbnail-jobs")
+        .then(({ enqueueThumbnailJob }) => enqueueThumbnailJob(input.key))
+        .catch((error) => console.error("[image-thumbnail-enqueue-failed]", { storageKey: input.key, error }));
     });
   }
   return publicUrl;
@@ -256,7 +263,12 @@ export async function readStorageObject(key: string, fallbackMimeType: string) {
 
 export async function deleteStorageObject(key: string) {
   await getStorageAdapter().deleteObject(key);
-  await import("@/lib/image-thumbnails")
-    .then(({ clearImageThumbnailCache }) => clearImageThumbnailCache(key))
-    .catch((error) => console.error("[image-thumbnail-cache-delete-failed]", { storageKey: key, error }));
+  await Promise.all([
+    import("@/lib/image-thumbnails")
+      .then(({ clearImageThumbnailCache }) => clearImageThumbnailCache(key))
+      .catch((error) => console.error("[image-thumbnail-cache-delete-failed]", { storageKey: key, error })),
+    import("@/lib/thumbnail-jobs")
+      .then(({ removeThumbnailJob }) => removeThumbnailJob(key))
+      .catch((error) => console.error("[image-thumbnail-job-delete-failed]", { storageKey: key, error })),
+  ]);
 }

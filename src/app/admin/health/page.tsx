@@ -16,6 +16,8 @@ import { getImageProviderAttemptOrder, getProviderSettings } from "@/lib/ai/prov
 import { db } from "@/lib/db";
 import { getDetailedHealthReport } from "@/lib/health";
 import { requireAdminSession } from "@/lib/auth/session";
+import { imageThumbnailCacheStats } from "@/lib/image-thumbnails";
+import { summarizeSlowWebVitalPaths, summarizeWebVitals, webVitalDisplayValue } from "@/lib/web-vitals";
 
 export const dynamic = "force-dynamic";
 
@@ -28,8 +30,9 @@ export default async function AdminHealthPage() {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const webVitalsSince = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-  const [health, providerSettings, successToday, failedToday, recentFailures, rateBuckets] = await Promise.all([
+  const [health, providerSettings, successToday, failedToday, recentFailures, rateBuckets, webVitalSamples, thumbnailCache, thumbnailJobs] = await Promise.all([
     getDetailedHealthReport(),
     getProviderSettings(),
     db.providerEvent.count({ where: { status: "SUCCESS", createdAt: { gte: today } } }),
@@ -41,6 +44,14 @@ export default async function AdminHealthPage() {
       include: { project: { select: { id: true, title: true } } },
     }),
     db.rateLimitBucket.findMany({ orderBy: { updatedAt: "desc" }, take: 12 }),
+    db.webVitalSample.findMany({
+      where: { createdAt: { gte: webVitalsSince } },
+      orderBy: { createdAt: "desc" },
+      take: 10_000,
+      select: { name: true, value: true, rating: true, path: true },
+    }),
+    imageThumbnailCacheStats(),
+    db.thumbnailJob.groupBy({ by: ["status"], _count: { _all: true } }),
   ]);
 
   const attemptOrder = getImageProviderAttemptOrder(providerSettings);
@@ -51,6 +62,9 @@ export default async function AdminHealthPage() {
   const missingEnvCount = envNames.filter((name) => !envIsSet(name)).length;
   const dbOk = health.database.ok;
   const generation = health.generation;
+  const webVitals = summarizeWebVitals(webVitalSamples);
+  const slowInpPaths = summarizeSlowWebVitalPaths(webVitalSamples);
+  const queuedThumbnailJobs = thumbnailJobs.find((item) => item.status === "QUEUED")?._count._all ?? 0;
 
   return (
     <>
@@ -75,8 +89,54 @@ export default async function AdminHealthPage() {
           { label: "پروژه‌های در صف", value: generation?.queuedProjects ?? "n/a", tone: generation?.queuedProjects ? "attention" : "neutral" },
           { label: "پروژه‌های در حال پردازش", value: generation?.processingProjects ?? "n/a", tone: generation?.staleProcessingProjects ? "danger" : "neutral" },
           { label: "Storage", value: health.storage.driver },
+          { label: "کش تصاویر", value: `${faNum(Math.round(thumbnailCache.bytes / 1024 / 1024))} MB` },
+          { label: "thumbnail در صف", value: queuedThumbnailJobs, tone: queuedThumbnailJobs ? "attention" : "neutral" },
         ]}
       />
+
+      <Surface>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-3.5">
+          <h2 className="text-sm font-semibold text-navy-950">سرعت واقعی کاربران</h2>
+          <span className="text-xs text-slate-400">P75 هفت روز اخیر · نمونه‌برداری یکنواخت از مرورگرهای واقعی</span>
+        </div>
+        <ConsoleTable
+          head={["شاخص", "P75", "نمونه", "وضعیت خوب"]}
+          empty={<EmptyState title="هنوز داده واقعی Web Vitals ثبت نشده است." />}
+        >
+          {webVitals.map((metric) => (
+            <tr key={metric.name}>
+              <td className={`${cellClass} font-semibold text-navy-950`} dir="ltr">{metric.name}</td>
+              <td className={cellClass} dir="ltr">{webVitalDisplayValue(metric.name, metric.p75)}</td>
+              <td className={cellClass}>{faNum(metric.count)}</td>
+              <td className={cellClass}>
+                <span className={metric.goodPercent >= 75 ? "font-medium text-emerald-700" : metric.goodPercent >= 50 ? "text-amber-700" : "font-medium text-rose-700"}>
+                  ٪{faNum(metric.goodPercent)}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </ConsoleTable>
+      </Surface>
+
+      <Disclosure summary={`کندترین مسیرها بر اساس INP (${faNum(slowInpPaths.length)})`}>
+        {slowInpPaths.length === 0 ? (
+          <EmptyState title="برای رتبه‌بندی مسیرها حداقل سه نمونه INP لازم است." />
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {slowInpPaths.map((item) => (
+              <div key={item.path} className="flex items-center justify-between gap-4 py-2 text-xs first:pt-0 last:pb-0">
+                <span className="min-w-0 truncate text-slate-500" dir="ltr">{item.path}</span>
+                <span className="flex shrink-0 items-center gap-4">
+                  <span className={item.p75 < 200 ? "font-medium text-emerald-700" : item.p75 < 500 ? "text-amber-700" : "font-medium text-rose-700"}>
+                    {webVitalDisplayValue("INP", item.p75)}
+                  </span>
+                  <span className="text-slate-400">{faNum(item.count)} نمونه</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Disclosure>
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <Disclosure summary={missingEnvCount ? `پیکربندی محیط (${faNum(missingEnvCount)} مورد ناقص)` : "پیکربندی محیط"} defaultOpen={missingEnvCount > 0}>

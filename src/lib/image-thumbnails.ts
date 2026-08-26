@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rename, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 import { readStorageObject } from "@/lib/storage";
@@ -133,14 +133,94 @@ export async function clearImageThumbnailCache(storageKey: string) {
 
 export async function warmImageThumbnails(storageKey: string, originalBuffer?: Buffer) {
   if (!originalBuffer) {
-    await Promise.all(
-      (Object.keys(IMAGE_THUMBNAIL_PRESETS) as ImageThumbnailPreset[]).map((preset) => getImageThumbnail(storageKey, preset)),
-    );
-    return;
+    const original = await readStorageObject(storageKey, "application/octet-stream");
+    if (!original.mimeType.startsWith("image/")) throw new Error("Stored object is not a supported image.");
+    originalBuffer = original.buffer;
   }
 
   for (const preset of Object.keys(IMAGE_THUMBNAIL_PRESETS) as ImageThumbnailPreset[]) {
     if (await readCachedThumbnail(storageKey, preset)) continue;
     await withGenerationSlot(() => transformAndCache(storageKey, preset, originalBuffer));
   }
+}
+
+type CachedThumbnailFile = {
+  path: string;
+  size: number;
+  lastAccessedAtMs: number;
+};
+
+async function cachedThumbnailFiles() {
+  const files: CachedThumbnailFile[] = [];
+
+  for (const preset of Object.keys(IMAGE_THUMBNAIL_PRESETS) as ImageThumbnailPreset[]) {
+    const directory = path.join(thumbnailCacheRoot, preset);
+    const entries = await readdir(directory, { withFileTypes: true }).catch((error) => {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+      throw error;
+    });
+
+    for (const entry of entries) {
+      if (!entry.isFile() || !entry.name.endsWith(".webp")) continue;
+      const filePath = path.join(directory, entry.name);
+      const fileStat = await stat(filePath);
+      files.push({
+        path: filePath,
+        size: fileStat.size,
+        lastAccessedAtMs: Math.max(fileStat.atimeMs, fileStat.mtimeMs),
+      });
+    }
+  }
+
+  return files;
+}
+
+export async function imageThumbnailCacheStats() {
+  const files = await cachedThumbnailFiles();
+  return {
+    files: files.length,
+    bytes: files.reduce((total, file) => total + file.size, 0),
+  };
+}
+
+export async function pruneImageThumbnailCache({
+  maxBytes,
+  maxAgeMs,
+}: {
+  maxBytes: number;
+  maxAgeMs: number;
+}) {
+  const files = await cachedThumbnailFiles();
+  const now = Date.now();
+  const expired = files.filter((file) => now - file.lastAccessedAtMs > maxAgeMs);
+  const deleted = new Set<string>();
+  let bytesFreed = 0;
+
+  for (const file of expired) {
+    await unlink(file.path).catch((error) => {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    });
+    deleted.add(file.path);
+    bytesFreed += file.size;
+  }
+
+  let remainingBytes = files.reduce((total, file) => total + file.size, 0) - bytesFreed;
+  const targetBytes = Math.floor(maxBytes * 0.9);
+  if (remainingBytes > maxBytes) {
+    const oldestFirst = files
+      .filter((file) => !deleted.has(file.path))
+      .sort((a, b) => a.lastAccessedAtMs - b.lastAccessedAtMs);
+
+    for (const file of oldestFirst) {
+      if (remainingBytes <= targetBytes) break;
+      await unlink(file.path).catch((error) => {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      });
+      deleted.add(file.path);
+      bytesFreed += file.size;
+      remainingBytes -= file.size;
+    }
+  }
+
+  return { scanned: files.length, deleted: deleted.size, bytesFreed, remainingBytes };
 }

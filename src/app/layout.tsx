@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { WebVitalsReporter } from "@/components/web-vitals-reporter";
 import "./globals.css";
 
 const vazirmatn = localFont({
@@ -65,7 +66,10 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: verticalBootstrapScript }} />
       </head>
-      <body className="min-h-screen bg-background text-foreground antialiased">{children}</body>
+      <body className="min-h-screen bg-background text-foreground antialiased">
+        {children}
+        <WebVitalsReporter />
+      </body>
     </html>
   );
 }

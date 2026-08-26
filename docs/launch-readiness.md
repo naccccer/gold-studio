@@ -40,6 +40,8 @@ npm run check:model-routing
 npm run check:readiness
 npm run check:mojibake
 npm run check:image-delivery
+npm run check:storage-access
+npm run check:observability
 npm run lint
 npm run db:deploy
 npm run build
@@ -61,15 +63,17 @@ npm run smoke -- https://ovala.ir
 - New project: catalog، with-model، sample-reference، supporting images، preset خروجی، و هزینه credit.
 - Food project flow: product typeهای غذا/نوشیدنی، شش style Food، Food sample-reference، ذخیره در نمونه‌ها، و جداسازی کامل از Jewelry.
 - Projects: `QUEUED`, `PROCESSING`, `COMPLETED`, `FAILED`, retry، نسخه دیگر، quality review، و نمایش زمان ساخت خروجی به ثانیه.
+- Telemetry: در ادمین تفکیک صف/آماده‌سازی/provider/ذخیره دیده شود؛ request ID و هزینه دقیق Avalai حداکثر تا حدود ۳۰ ثانیه بعد توسط worker reconcile شود.
 - Account: notifications، support، referral، خروجی‌ها، آرشیو، و لینک admin برای ادمین.
 - Billing: خرید بسته/اعتبار vertical فعلی، آپلود رسید، تایید/رد از ادمین، اعمال credit و custom plan با انتخاب/نمایش صریح Jewelry یا Food.
 - Admin: health، AI/provider، assets، samples، styles، projects، outputs، quality reviews، users، billing، support، referrals، backups، audit.
 - Image delivery: فهرست‌های projects/gallery/admin فقط thumbnail بخواهند، فایل 2K قبل از preview/download درخواست نشود، و `X-Thumbnail-Cache` در بازدید دوم `HIT` باشد.
+- Web Vitals: بعد از ترافیک واقعی، P75 مربوط به INP/LCP/CLS در `/admin/health` دیده شود؛ هدف INP زیر ۲۰۰ms و CLS زیر ۰٫۱ است.
 - Mobile target `393x852`: nav پایین، متن فارسی، RTL controls، button wrapping، forms، menus، و project result.
 
 ## Daily Operations
 
-- `/admin/health`: queue، failed 24h، stale processing، storage driver، و envهای ضروری.
+- `/admin/health`: queue، failed 24h، stale processing، storage driver، thumbnail queue/cache، Web Vitals و envهای ضروری.
 - `/admin/projects`: stuck/failed projects و provider errors.
 - `/admin/quality-reviews`: درخواست‌های refund/quality pending.
 - `/admin/billing`: رسیدهای pending و پلن‌های کاربر.
@@ -82,7 +86,7 @@ npm run smoke -- https://ovala.ir
 
 - Site down: `pm2 status`, app logs, watchdog logs, `/api/health`, و `journalctl` را قبل از restart بگیر.
 - Database down: MySQL status، connection count، `DATABASE_URL`، و آخرین migration را بررسی کن.
-- Worker stuck: worker logs، `GENERATION_WORKER_SECRET`, queue count، و `/admin/health`.
+- Worker stuck: worker logs، `GENERATION_WORKER_SECRET`، generation/thumbnail queue، pending provider costs، و `/admin/health`.
 - Provider down: provider events و مدت هر تلاش، تفکیک زمان صف/پردازش پروژه، `check:avalai`, `check:liara`, provider balance/access، fallback model، و ابعاد واقعی خروجی (خروجی کاربر باید 2K باشد).
 - SMS down: FarazSMS pattern approval، line number، API key، و پیام خطای auth flow.
 - Billing issue: purchase request، receipt storage، credit event، و audit event را بررسی کن.

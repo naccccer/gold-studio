@@ -21,6 +21,10 @@ GENERATION_WORKER_URL="http://127.0.0.1:3000/api/internal/generation/worker"
 GENERATION_WORKER_INTERVAL_MS="15000"
 GENERATION_WORKER_LIMIT="1"
 GENERATION_STALE_PROCESSING_MINUTES="90"
+THUMBNAIL_URL_SECRET=""
+THUMBNAIL_CACHE_MAX_BYTES="5368709120"
+THUMBNAIL_CACHE_MAX_AGE_DAYS="30"
+NEXT_PUBLIC_WEB_VITALS_SAMPLE_RATE="0.2"
 
 HEALTH_WATCHDOG_URL="http://127.0.0.1:3000/api/health"
 HEALTH_WATCHDOG_PM2_APP="gold-studio"
@@ -76,6 +80,8 @@ npm run check:model-routing
 npm run check:readiness
 npm run check:mojibake
 npm run check:image-delivery
+npm run check:storage-access
+npm run check:observability
 npm run lint
 npm run db:deploy
 npm run build
@@ -99,7 +105,9 @@ pm2 save
 npm run thumbnails:prewarm
 ```
 
-خروجی در `.local-storage/image-cache` قابل بازسازی است و عمداً جزو backup فایل‌های اصلی نیست. در Network مرورگر، پاسخ thumbnail باید `image/webp` و headerهای `X-Thumbnail-Cache` و `Server-Timing` داشته باشد.
+خروجی در `.local-storage/image-cache` قابل بازسازی است و عمداً جزو backup فایل‌های اصلی نیست. تصاویر جدید بعد از ذخیره وارد صف durable می‌شوند و worker فقط وقتی generation فعالی پردازش نکرده باشد یک job thumbnail را اجرا می‌کند. همان worker هزینه دقیق Avalai را با `x-request-id` تطبیق می‌دهد و هر ساعت سقف/سن کش را بررسی می‌کند. در Network مرورگر، پاسخ thumbnail باید `image/webp` و headerهای `X-Thumbnail-Cache` و `Server-Timing` داشته باشد.
+
+`THUMBNAIL_URL_SECRET` اختیاری است و در صورت خالی‌بودن از `AUTH_SECRET` استفاده می‌شود. تغییر آن URLهای thumbnail صادرشده را باطل می‌کند. مقادیر پیش‌فرض کش ۵GB و ۳۰ روز هستند.
 
 اگر خود app هنوز در PM2 ساخته نشده، آن را فقط روی loopback بالا بیاور تا پورت `3000` مستقیماً از اینترنت در دسترس نباشد:
 
@@ -163,6 +171,7 @@ pm2 logs gold-studio-backups --lines 80 --nostream
 - آپلود رسید خرید
 - تایید خرید از ادمین
 - بررسی `/admin/health`، `/admin/projects`، `/admin/quality-reviews`، `/admin/notifications`، `/admin/billing`، و `/admin/backups`
+- بررسی `/admin/ai` برای P50/P95، نرخ خطا و هزینه واقعی مدل‌ها؛ و `/admin/health` برای Web Vitals و صف/حجم thumbnail.
 - ورود با نقش `SALES`: فقط users/billing/referrals باز باشد و backup/system بسته باشد.
 
 برای چک کامل‌تر قبل از گرفتن کاربر واقعی، `docs/launch-readiness.md` را اجرا کن.
@@ -215,7 +224,7 @@ pm2 restart gold-studio-worker --update-env
 pm2 save
 ```
 
-اگر worker سالم بود ولی خروجی تولید نشد، پروژه را از پنل ادمین retry کن و لاگ provider را ببین.
+اگر worker سالم بود ولی خروجی تولید نشد، پروژه را از پنل ادمین retry کن و لاگ provider را ببین. اگر فقط thumbnail یا هزینه واقعی pending مانده، خروجی JSON tick و شمارنده‌های `/admin/health` و `/admin/ai` را بررسی کن؛ generation نسبت به این کارهای نگهداری اولویت دارد.
 
 ## 6. rollback با احتیاط
 

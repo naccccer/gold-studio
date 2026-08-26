@@ -62,6 +62,27 @@ export default async function AdminProjectDetailPage({ params }: AdminProjectDet
   const operationalCostUnits = latestReservation?.creditUnits ?? defaultCostUnits;
   const generationTiming = projectGenerationTiming(project);
   const formatSeconds = (seconds: number | null) => seconds === null ? "ثبت نشده" : `${faNum(seconds)} ثانیه`;
+  const formatDurationMs = (durationMs: number | null) => durationMs === null ? "ثبت نشده" : `${faNum(Math.round(durationMs / 1000))} ثانیه`;
+  const currentRunEvents = project.generationStartedAt
+    ? project.providerEvents.filter((event) => event.createdAt >= project.generationStartedAt!)
+    : project.providerEvents;
+  const providerDurationMs = currentRunEvents.reduce((total, event) => total + (event.durationMs ?? 0), 0);
+  const resolvedProviderCosts = project.providerEvents.filter((event) => event.costResolvedAt);
+  const providerCostIrt = resolvedProviderCosts.reduce(
+    (total, event) => total + Number(event.costPaidIrt ?? 0) + Number(event.costGrantIrt ?? 0),
+    0,
+  );
+  const providerCostUnit = resolvedProviderCosts.reduce((total, event) => {
+    const irt = Number(event.costPaidIrt ?? 0) + Number(event.costGrantIrt ?? 0);
+    return irt === 0 ? total + Number(event.costUnit ?? 0) : total;
+  }, 0);
+  const providerCostPending = project.providerEvents.some((event) => event.requestId && !event.costResolvedAt);
+  const formatProviderCost = (value: number) => `${faNum(Math.round(value))} تومان`;
+  const formatResolvedProviderCost = (event: (typeof project.providerEvents)[number]) => {
+    const irt = Number(event.costPaidIrt ?? 0) + Number(event.costGrantIrt ?? 0);
+    const unit = Number(event.costUnit ?? 0);
+    return irt > 0 || unit === 0 ? formatProviderCost(irt) : `${unit.toFixed(6)} UNIT`;
+  };
 
   return (
     <>
@@ -152,12 +173,25 @@ export default async function AdminProjectDetailPage({ params }: AdminProjectDet
                 },
                 { label: "شناسه کاربر", value: getUserIdentifier(project.user), dir: "ltr" },
                 { label: "Vertical", value: getVerticalLabel(project.vertical) },
-                { label: "هزینه تولید", value: formatInternalCreditUnits(operationalCostUnits), dir: "ltr" },
+                { label: "هزینه اعتباری کاربر", value: formatInternalCreditUnits(operationalCostUnits), dir: "ltr" },
+                {
+                  label: "کل هزینه واقعی پروژه",
+                  value: resolvedProviderCosts.length
+                    ? [providerCostIrt > 0 ? formatProviderCost(providerCostIrt) : null, providerCostUnit > 0 ? `${providerCostUnit.toFixed(6)} UNIT` : null]
+                        .filter(Boolean)
+                        .join(" + ") || formatProviderCost(0)
+                    : providerCostPending
+                      ? "در انتظار تطبیق"
+                      : "ثبت نشده",
+                },
                 { label: "سبک", value: project.style.name },
                 { label: "قالب خروجی", value: project.outputPreset, dir: "ltr" },
                 { label: "زمان کل ساخت", value: formatSeconds(generationTiming.totalSeconds) },
                 { label: "انتظار در صف", value: formatSeconds(generationTiming.queueSeconds) },
                 { label: "پردازش", value: formatSeconds(generationTiming.processingSeconds) },
+                { label: "آماده‌سازی ورودی", value: formatDurationMs(project.generationPrepareDurationMs) },
+                { label: "پاسخ مدل‌ها", value: providerDurationMs ? formatDurationMs(providerDurationMs) : "ثبت نشده" },
+                { label: "ذخیره خروجی", value: formatDurationMs(project.generationPersistDurationMs) },
                 { label: "آخرین آپدیت", value: formatAdminDate(project.updatedAt) },
                 { label: "Batch", value: project.batchItems.length ? faNum(project.batchItems.length) : "ندارد" },
               ]}
@@ -201,7 +235,7 @@ export default async function AdminProjectDetailPage({ params }: AdminProjectDet
           <h2 className="text-sm font-semibold text-navy-950">رویدادهای Provider</h2>
         </div>
         <ConsoleTable
-          head={["وضعیت", "Provider", "عملیات", "مدت", "جزئیات", "زمان"]}
+          head={["وضعیت", "Provider", "عملیات", "مدت", "هزینه واقعی", "جزئیات", "زمان"]}
           empty={<EmptyState title="رویداد provider ثبت نشده است." />}
         >
           {project.providerEvents.map((event) => (
@@ -212,6 +246,7 @@ export default async function AdminProjectDetailPage({ params }: AdminProjectDet
               <td className={cellClass} dir="ltr">
                 {event.provider}
                 <p className="text-xs text-slate-400">{event.model || "model unknown"}</p>
+                {event.requestId ? <p className="max-w-40 truncate text-[10px] text-slate-400" title={event.requestId}>{event.requestId}</p> : null}
               </td>
               <td className={cellClass} dir="ltr">
                 {event.operation}
@@ -219,6 +254,15 @@ export default async function AdminProjectDetailPage({ params }: AdminProjectDet
               </td>
               <td className={`${cellClass} text-xs text-slate-500`} dir="ltr">
                 {event.durationMs === null ? "—" : `${faNum(Math.round(event.durationMs / 1000))} ثانیه`}
+              </td>
+              <td className={cellClass}>
+                {event.costResolvedAt ? (
+                  formatResolvedProviderCost(event)
+                ) : event.requestId ? (
+                  <span className="text-xs text-slate-400">در انتظار تطبیق</span>
+                ) : (
+                  "—"
+                )}
               </td>
               <td className={cellClass}>
                 <p className="max-w-md truncate text-xs text-slate-500">{event.errorMessage || event.statusDetail || "بدون جزئیات"}</p>

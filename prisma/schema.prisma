@@ -90,6 +90,13 @@ enum ProviderEventStatus {
   FAILED
 }
 
+enum ThumbnailJobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 enum SupportTicketStatus {
   OPEN
   ANSWERED
@@ -136,80 +143,82 @@ enum QualityReviewReason {
 }
 
 model User {
-  id                    String             @id @default(cuid())
-  name                  String?
-  email                 String?            @unique
-  phone                 String?            @unique
-  referralCode          String?            @unique
-  passwordHash          String
-  role                  UserRole           @default(USER)
-  sessionVersion        Int                @default(0)
-  credits               Int                @default(300)
-  reservedCredits       Int                @default(0)
-  verticalCreditBalances UserVerticalCreditBalance[]
-  projects              Project[]
-  assets                ProductAsset[]
-  styleReferenceAssets  StyleReferenceAsset[]
-  collections           AssetCollection[]
-  batches               GenerationBatch[]
-  subscriptions         UserSubscription[] @relation("UserSubscriptions")
-  assignedSubscriptions UserSubscription[] @relation("AssignedSubscriptions")
-  purchaseRequests      PurchaseRequest[]
-  creditEvents          CreditEvent[]      @relation("UserCreditEvents")
-  creditReservations    GenerationCreditReservation[]
-  authoredCreditEvents  CreditEvent[]      @relation("AdminCreditEvents")
-  notifications         UserNotification[] @relation("UserNotifications")
-  createdNotifications  UserNotification[] @relation("AdminCreatedNotifications")
-  qualityReviews        QualityReview[]    @relation("UserQualityReviews")
-  reviewedQualityReviews QualityReview[]   @relation("AdminQualityReviews")
-  invitedReferrals      Referral[]         @relation("InviterReferrals")
-  acceptedReferral      Referral?          @relation("InviteeReferral")
-  outputSettings        UserOutputSettings?
-  supportTickets        SupportTicket[]    @relation("UserSupportTickets")
-  supportMessages       SupportTicketMessage[] @relation("UserSupportMessages")
-  adminSupportMessages  SupportTicketMessage[] @relation("AdminSupportMessages")
-  auditEvents           AdminAuditEvent[]  @relation("AdminAuditActor")
-  createdSalesReferralCodes SalesReferralCode[] @relation("SalesReferralCodeAdmin")
-  ownedSalesReferralCodes SalesReferralCode[] @relation("SalesReferralCodeSalesUser")
-  redeemedSalesReferralCodes SalesReferralCode[] @relation("SalesReferralCodeRedeemer")
-  startGuideSeenAt     DateTime?
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
+  id                         String                        @id @default(cuid())
+  name                       String?
+  email                      String?                       @unique
+  phone                      String?                       @unique
+  referralCode               String?                       @unique
+  passwordHash               String
+  role                       UserRole                      @default(USER)
+  sessionVersion             Int                           @default(0)
+  credits                    Int                           @default(300)
+  reservedCredits            Int                           @default(0)
+  verticalCreditBalances     UserVerticalCreditBalance[]
+  projects                   Project[]
+  assets                     ProductAsset[]
+  styleReferenceAssets       StyleReferenceAsset[]
+  collections                AssetCollection[]
+  batches                    GenerationBatch[]
+  subscriptions              UserSubscription[]            @relation("UserSubscriptions")
+  assignedSubscriptions      UserSubscription[]            @relation("AssignedSubscriptions")
+  purchaseRequests           PurchaseRequest[]
+  creditEvents               CreditEvent[]                 @relation("UserCreditEvents")
+  creditReservations         GenerationCreditReservation[]
+  authoredCreditEvents       CreditEvent[]                 @relation("AdminCreditEvents")
+  notifications              UserNotification[]            @relation("UserNotifications")
+  createdNotifications       UserNotification[]            @relation("AdminCreatedNotifications")
+  qualityReviews             QualityReview[]               @relation("UserQualityReviews")
+  reviewedQualityReviews     QualityReview[]               @relation("AdminQualityReviews")
+  invitedReferrals           Referral[]                    @relation("InviterReferrals")
+  acceptedReferral           Referral?                     @relation("InviteeReferral")
+  outputSettings             UserOutputSettings?
+  supportTickets             SupportTicket[]               @relation("UserSupportTickets")
+  supportMessages            SupportTicketMessage[]        @relation("UserSupportMessages")
+  adminSupportMessages       SupportTicketMessage[]        @relation("AdminSupportMessages")
+  auditEvents                AdminAuditEvent[]             @relation("AdminAuditActor")
+  createdSalesReferralCodes  SalesReferralCode[]           @relation("SalesReferralCodeAdmin")
+  ownedSalesReferralCodes    SalesReferralCode[]           @relation("SalesReferralCodeSalesUser")
+  redeemedSalesReferralCodes SalesReferralCode[]           @relation("SalesReferralCodeRedeemer")
+  startGuideSeenAt           DateTime?
+  createdAt                  DateTime                      @default(now())
+  updatedAt                  DateTime                      @updatedAt
 }
 
 model Project {
-  id               String                @id @default(cuid())
-  userId           String
-  user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vertical         String                @default("jewelry")
-  sourceAssetId    String?
-  sourceAsset      ProductAsset?         @relation(fields: [sourceAssetId], references: [id], onDelete: SetNull)
-  referenceAssetId String?
-  referenceAsset   StyleReferenceAsset?  @relation(fields: [referenceAssetId], references: [id], onDelete: SetNull)
-  title            String?
-  sourceImageUrl   String
-  resultImageUrl   String?
-  resultStorageKey String?
-  status           ProjectStatus         @default(QUEUED)
-  outputPreset     String                @default("post")
-  styleId          String
-  style            CreativeStyle         @relation(fields: [styleId], references: [id], onDelete: Restrict)
-  prompt           String                @db.Text
-  errorMessage     String?
-  archivedAt       DateTime?
-  freeVariantUsedAt DateTime?
-  freeVariantProjectId String?
-  variantParentId String?
-  supportingAssets ProjectSupportingAsset[]
-  batchItems       GenerationBatchItem[]
-  providerEvents   ProviderEvent[]
-  creditReservations GenerationCreditReservation[]
-  qualityReviews   QualityReview[]
-  generationQueuedAt   DateTime              @default(now())
-  generationStartedAt  DateTime?
-  generationFinishedAt DateTime?
-  createdAt        DateTime              @default(now())
-  updatedAt        DateTime              @updatedAt
+  id                          String                        @id @default(cuid())
+  userId                      String
+  user                        User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vertical                    String                        @default("jewelry")
+  sourceAssetId               String?
+  sourceAsset                 ProductAsset?                 @relation(fields: [sourceAssetId], references: [id], onDelete: SetNull)
+  referenceAssetId            String?
+  referenceAsset              StyleReferenceAsset?          @relation(fields: [referenceAssetId], references: [id], onDelete: SetNull)
+  title                       String?
+  sourceImageUrl              String
+  resultImageUrl              String?
+  resultStorageKey            String?
+  status                      ProjectStatus                 @default(QUEUED)
+  outputPreset                String                        @default("post")
+  styleId                     String
+  style                       CreativeStyle                 @relation(fields: [styleId], references: [id], onDelete: Restrict)
+  prompt                      String                        @db.Text
+  errorMessage                String?
+  archivedAt                  DateTime?
+  freeVariantUsedAt           DateTime?
+  freeVariantProjectId        String?
+  variantParentId             String?
+  supportingAssets            ProjectSupportingAsset[]
+  batchItems                  GenerationBatchItem[]
+  providerEvents              ProviderEvent[]
+  creditReservations          GenerationCreditReservation[]
+  qualityReviews              QualityReview[]
+  generationQueuedAt          DateTime                      @default(now())
+  generationStartedAt         DateTime?
+  generationFinishedAt        DateTime?
+  generationPrepareDurationMs Int?
+  generationPersistDurationMs Int?
+  createdAt                   DateTime                      @default(now())
+  updatedAt                   DateTime                      @updatedAt
 
   @@index([userId, createdAt])
   @@index([userId, vertical, createdAt])
@@ -308,34 +317,34 @@ model AssetCollection {
 }
 
 model ProductAsset {
-  id           String                @id @default(cuid())
-  userId       String
-  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vertical     String                @default("jewelry")
-  collectionId String?
-  collection   AssetCollection?      @relation(fields: [collectionId], references: [id], onDelete: SetNull)
-  fileUrl      String
-  storageKey   String
-  mimeType     String
-  originalName String?
-  title        String?
-  notes        String?
-  productType  String?
-  visionShortTitle String?
-  visionDescription String?               @db.Text
-  visionAngle  String?
-  visionQualityIssues String?             @db.Text
-  visionConfidence Float?
-  visionModel  String?
-  visionAnalyzedAt DateTime?
-  visionError  String?                    @db.Text
-  status       ProductAssetStatus    @default(READY)
-  archivedAt   DateTime?
-  projects     Project[]
-  supportingProjects ProjectSupportingAsset[]
-  batchItems   GenerationBatchItem[]
-  createdAt    DateTime              @default(now())
-  updatedAt    DateTime              @updatedAt
+  id                  String                   @id @default(cuid())
+  userId              String
+  user                User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vertical            String                   @default("jewelry")
+  collectionId        String?
+  collection          AssetCollection?         @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  fileUrl             String
+  storageKey          String
+  mimeType            String
+  originalName        String?
+  title               String?
+  notes               String?
+  productType         String?
+  visionShortTitle    String?
+  visionDescription   String?                  @db.Text
+  visionAngle         String?
+  visionQualityIssues String?                  @db.Text
+  visionConfidence    Float?
+  visionModel         String?
+  visionAnalyzedAt    DateTime?
+  visionError         String?                  @db.Text
+  status              ProductAssetStatus       @default(READY)
+  archivedAt          DateTime?
+  projects            Project[]
+  supportingProjects  ProjectSupportingAsset[]
+  batchItems          GenerationBatchItem[]
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
 
   @@index([userId, createdAt])
   @@index([userId, vertical, createdAt])
@@ -360,31 +369,31 @@ model ProjectSupportingAsset {
 }
 
 model StyleReferenceAsset {
-  id           String                    @id @default(cuid())
-  userId       String
-  user         User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vertical     String                    @default("jewelry")
-  fileUrl      String
-  storageKey   String
-  mimeType     String
-  originalName String?
-  title        String?
-  notes        String?
-  visionSceneDescription String?         @db.Text
-  visionCameraAngle String?
-  visionLighting String?                 @db.Text
-  visionBackground String?               @db.Text
-  visionSubjectDescription String?       @db.Text
-  visionConfidence Float?
-  visionModel  String?
-  visionAnalyzedAt DateTime?
-  visionError  String?                   @db.Text
-  status       StyleReferenceAssetStatus @default(READY)
-  archivedAt   DateTime?
-  projects     Project[]
-  batches      GenerationBatch[]
-  createdAt    DateTime                  @default(now())
-  updatedAt    DateTime                  @updatedAt
+  id                       String                    @id @default(cuid())
+  userId                   String
+  user                     User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vertical                 String                    @default("jewelry")
+  fileUrl                  String
+  storageKey               String
+  mimeType                 String
+  originalName             String?
+  title                    String?
+  notes                    String?
+  visionSceneDescription   String?                   @db.Text
+  visionCameraAngle        String?
+  visionLighting           String?                   @db.Text
+  visionBackground         String?                   @db.Text
+  visionSubjectDescription String?                   @db.Text
+  visionConfidence         Float?
+  visionModel              String?
+  visionAnalyzedAt         DateTime?
+  visionError              String?                   @db.Text
+  status                   StyleReferenceAssetStatus @default(READY)
+  archivedAt               DateTime?
+  projects                 Project[]
+  batches                  GenerationBatch[]
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
 
   @@index([userId, createdAt])
   @@index([userId, vertical, createdAt])
@@ -393,21 +402,21 @@ model StyleReferenceAsset {
 }
 
 model GenerationBatch {
-  id           String                @id @default(cuid())
-  userId       String
-  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vertical     String                @default("jewelry")
-  title        String?
-  styleId      String
-  style        CreativeStyle         @relation(fields: [styleId], references: [id], onDelete: Restrict)
-  referenceAssetId String?
-  referenceAsset   StyleReferenceAsset?  @relation(fields: [referenceAssetId], references: [id], onDelete: SetNull)
-  outputPreset String
-  status       GenerationBatchStatus @default(QUEUED)
-  items        GenerationBatchItem[]
+  id                 String                        @id @default(cuid())
+  userId             String
+  user               User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vertical           String                        @default("jewelry")
+  title              String?
+  styleId            String
+  style              CreativeStyle                 @relation(fields: [styleId], references: [id], onDelete: Restrict)
+  referenceAssetId   String?
+  referenceAsset     StyleReferenceAsset?          @relation(fields: [referenceAssetId], references: [id], onDelete: SetNull)
+  outputPreset       String
+  status             GenerationBatchStatus         @default(QUEUED)
+  items              GenerationBatchItem[]
   creditReservations GenerationCreditReservation[]
-  createdAt    DateTime              @default(now())
-  updatedAt    DateTime              @updatedAt
+  createdAt          DateTime                      @default(now())
+  updatedAt          DateTime                      @updatedAt
 
   @@index([userId, createdAt])
   @@index([userId, vertical, createdAt])
@@ -474,33 +483,33 @@ model UserVerticalCreditBalance {
 }
 
 model UserSubscription {
-  id                    String             @id @default(cuid())
-  userId                String
-  user                  User               @relation("UserSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
-  vertical              String             @default("jewelry")
-  packageId             String?
-  package               BillingPackage?    @relation(fields: [packageId], references: [id], onDelete: SetNull)
-  customTitle           String?
-  periodDays            Int?
-  status                SubscriptionStatus @default(ACTIVE)
-  currentPeriodStart    DateTime
-  currentPeriodEnd      DateTime
-  creditsPerPeriod      Int
-  creditsUsedThisPeriod Int                @default(0)
-  reservedCredits       Int                @default(0)
-  projectLimit          Int?
-  projectsUsedThisPeriod Int               @default(0)
-  reservedProjects      Int                @default(0)
-  freeVariantLimit      Int                @default(2)
-  assignedByAdminId     String?
-  assignedByAdmin       User?              @relation("AssignedSubscriptions", fields: [assignedByAdminId], references: [id], onDelete: SetNull)
-  purchaseRequestId     String?            @unique
-  purchaseRequest       PurchaseRequest?   @relation(fields: [purchaseRequestId], references: [id], onDelete: SetNull)
-  notes                 String?            @db.Text
-  creditEvents          CreditEvent[]
-  creditReservations    GenerationCreditReservation[]
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
+  id                     String                        @id @default(cuid())
+  userId                 String
+  user                   User                          @relation("UserSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
+  vertical               String                        @default("jewelry")
+  packageId              String?
+  package                BillingPackage?               @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  customTitle            String?
+  periodDays             Int?
+  status                 SubscriptionStatus            @default(ACTIVE)
+  currentPeriodStart     DateTime
+  currentPeriodEnd       DateTime
+  creditsPerPeriod       Int
+  creditsUsedThisPeriod  Int                           @default(0)
+  reservedCredits        Int                           @default(0)
+  projectLimit           Int?
+  projectsUsedThisPeriod Int                           @default(0)
+  reservedProjects       Int                           @default(0)
+  freeVariantLimit       Int                           @default(2)
+  assignedByAdminId      String?
+  assignedByAdmin        User?                         @relation("AssignedSubscriptions", fields: [assignedByAdminId], references: [id], onDelete: SetNull)
+  purchaseRequestId      String?                       @unique
+  purchaseRequest        PurchaseRequest?              @relation(fields: [purchaseRequestId], references: [id], onDelete: SetNull)
+  notes                  String?                       @db.Text
+  creditEvents           CreditEvent[]
+  creditReservations     GenerationCreditReservation[]
+  createdAt              DateTime                      @default(now())
+  updatedAt              DateTime                      @updatedAt
 
   @@index([userId, status])
   @@index([userId, vertical, status])
@@ -555,27 +564,27 @@ model ProviderSettings {
 }
 
 model CreditEvent {
-  id             String            @id @default(cuid())
-  userId         String
-  user           User              @relation("UserCreditEvents", fields: [userId], references: [id], onDelete: Cascade)
-  vertical       String            @default("jewelry")
-  actorAdminId   String?
-  actorAdmin     User?             @relation("AdminCreditEvents", fields: [actorAdminId], references: [id], onDelete: SetNull)
-  delta          Int
-  balanceBefore  Int
-  balanceAfter   Int
-  reason         String            @db.Text
-  source         CreditEventSource
-  packageId      String?
-  package        BillingPackage?   @relation(fields: [packageId], references: [id], onDelete: SetNull)
-  subscriptionId String?
-  subscription   UserSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
-  purchaseRequestId String?        @unique
-  purchaseRequest PurchaseRequest? @relation(fields: [purchaseRequestId], references: [id], onDelete: SetNull)
-  referralId     String?
-  referral       Referral?         @relation(fields: [referralId], references: [id], onDelete: SetNull)
+  id                  String            @id @default(cuid())
+  userId              String
+  user                User              @relation("UserCreditEvents", fields: [userId], references: [id], onDelete: Cascade)
+  vertical            String            @default("jewelry")
+  actorAdminId        String?
+  actorAdmin          User?             @relation("AdminCreditEvents", fields: [actorAdminId], references: [id], onDelete: SetNull)
+  delta               Int
+  balanceBefore       Int
+  balanceAfter        Int
+  reason              String            @db.Text
+  source              CreditEventSource
+  packageId           String?
+  package             BillingPackage?   @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  subscriptionId      String?
+  subscription        UserSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  purchaseRequestId   String?           @unique
+  purchaseRequest     PurchaseRequest?  @relation(fields: [purchaseRequestId], references: [id], onDelete: SetNull)
+  referralId          String?
+  referral            Referral?         @relation(fields: [referralId], references: [id], onDelete: SetNull)
   qualityRefundReview QualityReview?
-  createdAt      DateTime          @default(now())
+  createdAt           DateTime          @default(now())
 
   @@index([userId, createdAt])
   @@index([userId, vertical, createdAt])
@@ -587,25 +596,25 @@ model CreditEvent {
 }
 
 model GenerationCreditReservation {
-  id             String                            @id @default(cuid())
-  userId         String
-  user           User                              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vertical       String                            @default("jewelry")
-  projectId      String?
-  project        Project?                          @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  batchId        String?
-  batch          GenerationBatch?                  @relation(fields: [batchId], references: [id], onDelete: SetNull)
-  subscriptionId String?
-  subscription   UserSubscription?                 @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
-  source         GenerationCreditReservationSource
-  customerCredits Int                              @default(1)
-  creditUnits    Int                               @default(300)
-  reservesProject Boolean                          @default(false)
-  status         GenerationCreditReservationStatus @default(RESERVED)
-  capturedAt     DateTime?
-  releasedAt     DateTime?
-  createdAt      DateTime                          @default(now())
-  updatedAt      DateTime                          @updatedAt
+  id              String                            @id @default(cuid())
+  userId          String
+  user            User                              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vertical        String                            @default("jewelry")
+  projectId       String?
+  project         Project?                          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  batchId         String?
+  batch           GenerationBatch?                  @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  subscriptionId  String?
+  subscription    UserSubscription?                 @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  source          GenerationCreditReservationSource
+  customerCredits Int                               @default(1)
+  creditUnits     Int                               @default(300)
+  reservesProject Boolean                           @default(false)
+  status          GenerationCreditReservationStatus @default(RESERVED)
+  capturedAt      DateTime?
+  releasedAt      DateTime?
+  createdAt       DateTime                          @default(now())
+  updatedAt       DateTime                          @updatedAt
 
   @@index([userId, status, createdAt])
   @@index([userId, vertical, status, createdAt])
@@ -615,18 +624,18 @@ model GenerationCreditReservation {
 }
 
 model Referral {
-  id            String        @id @default(cuid())
-  inviterId     String
-  inviter       User          @relation("InviterReferrals", fields: [inviterId], references: [id], onDelete: Cascade)
-  inviteeId     String        @unique
-  invitee       User          @relation("InviteeReferral", fields: [inviteeId], references: [id], onDelete: Cascade)
-  codeUsed      String
-  rewardCredits Int           @default(500)
-  rewardGrantedAt DateTime?
-  rewardPurchaseRequestId String? @unique
-  rewardPurchaseRequest PurchaseRequest? @relation("ReferralRewardPurchase", fields: [rewardPurchaseRequestId], references: [id], onDelete: SetNull)
-  creditEvents  CreditEvent[]
-  createdAt     DateTime      @default(now())
+  id                      String           @id @default(cuid())
+  inviterId               String
+  inviter                 User             @relation("InviterReferrals", fields: [inviterId], references: [id], onDelete: Cascade)
+  inviteeId               String           @unique
+  invitee                 User             @relation("InviteeReferral", fields: [inviteeId], references: [id], onDelete: Cascade)
+  codeUsed                String
+  rewardCredits           Int              @default(500)
+  rewardGrantedAt         DateTime?
+  rewardPurchaseRequestId String?          @unique
+  rewardPurchaseRequest   PurchaseRequest? @relation("ReferralRewardPurchase", fields: [rewardPurchaseRequestId], references: [id], onDelete: SetNull)
+  creditEvents            CreditEvent[]
+  createdAt               DateTime         @default(now())
 
   @@index([inviterId, createdAt])
   @@index([codeUsed])
@@ -634,20 +643,20 @@ model Referral {
 }
 
 model SalesReferralCode {
-  id               String   @id @default(cuid())
-  code             String   @unique
-  creditAmount     Int      @default(500)
+  id               String    @id @default(cuid())
+  code             String    @unique
+  creditAmount     Int       @default(500)
   batchKey         String
   salespersonName  String?
-  note             String?  @db.Text
+  note             String?   @db.Text
   createdByAdminId String
-  createdByAdmin   User     @relation("SalesReferralCodeAdmin", fields: [createdByAdminId], references: [id], onDelete: Restrict)
+  createdByAdmin   User      @relation("SalesReferralCodeAdmin", fields: [createdByAdminId], references: [id], onDelete: Restrict)
   salesUserId      String?
-  salesUser        User?    @relation("SalesReferralCodeSalesUser", fields: [salesUserId], references: [id], onDelete: SetNull)
+  salesUser        User?     @relation("SalesReferralCodeSalesUser", fields: [salesUserId], references: [id], onDelete: SetNull)
   redeemedByUserId String?
-  redeemedByUser   User?    @relation("SalesReferralCodeRedeemer", fields: [redeemedByUserId], references: [id], onDelete: SetNull)
+  redeemedByUser   User?     @relation("SalesReferralCodeRedeemer", fields: [redeemedByUserId], references: [id], onDelete: SetNull)
   redeemedAt       DateTime?
-  createdAt        DateTime @default(now())
+  createdAt        DateTime  @default(now())
 
   @@index([batchKey, createdAt])
   @@index([redeemedAt, createdAt])
@@ -657,25 +666,25 @@ model SalesReferralCode {
 }
 
 model UserOutputSettings {
-  id                   String   @id @default(cuid())
-  userId               String   @unique
-  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  defaultOutputPreset  String   @default("post")
-  preferredQuality     String   @default("2K")
-  fileNamingMode       String   @default("project-date")
-  autoSaveToProjects   Boolean  @default(true)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  defaultOutputPreset String   @default("post")
+  preferredQuality    String   @default("2K")
+  fileNamingMode      String   @default("project-date")
+  autoSaveToProjects  Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
 
 model SupportSettings {
-  id             String   @id @default("default")
-  phone          String?
-  whatsappUrl    String?
-  telegramUrl    String?
-  instructions   String?  @db.Text
-  isActive        Boolean  @default(true)
-  updatedAt       DateTime @updatedAt
+  id           String   @id @default("default")
+  phone        String?
+  whatsappUrl  String?
+  telegramUrl  String?
+  instructions String?  @db.Text
+  isActive     Boolean  @default(true)
+  updatedAt    DateTime @updatedAt
 }
 
 model HomeCarouselSlide {
@@ -699,30 +708,30 @@ model HomeCarouselSlide {
 }
 
 model SupportTicket {
-  id        String                @id @default(cuid())
+  id        String                 @id @default(cuid())
   userId    String
-  user      User                  @relation("UserSupportTickets", fields: [userId], references: [id], onDelete: Cascade)
+  user      User                   @relation("UserSupportTickets", fields: [userId], references: [id], onDelete: Cascade)
   subject   String
-  status    SupportTicketStatus   @default(OPEN)
+  status    SupportTicketStatus    @default(OPEN)
   messages  SupportTicketMessage[]
-  createdAt DateTime              @default(now())
-  updatedAt DateTime              @updatedAt
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
 
   @@index([userId, createdAt])
   @@index([status, createdAt])
 }
 
 model SupportTicketMessage {
-  id          String               @id @default(cuid())
-  ticketId    String
-  ticket      SupportTicket        @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  authorType  SupportMessageAuthor
-  userId      String?
-  user        User?                @relation("UserSupportMessages", fields: [userId], references: [id], onDelete: SetNull)
-  adminId     String?
-  admin       User?                @relation("AdminSupportMessages", fields: [adminId], references: [id], onDelete: SetNull)
-  body        String               @db.Text
-  createdAt   DateTime             @default(now())
+  id         String               @id @default(cuid())
+  ticketId   String
+  ticket     SupportTicket        @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorType SupportMessageAuthor
+  userId     String?
+  user       User?                @relation("UserSupportMessages", fields: [userId], references: [id], onDelete: SetNull)
+  adminId    String?
+  admin      User?                @relation("AdminSupportMessages", fields: [adminId], references: [id], onDelete: SetNull)
+  body       String               @db.Text
+  createdAt  DateTime             @default(now())
 
   @@index([ticketId, createdAt])
   @@index([userId])
@@ -758,21 +767,63 @@ model AdminAuditEvent {
 }
 
 model ProviderEvent {
-  id           String              @id @default(cuid())
-  projectId    String?
-  project      Project?            @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  provider     String              @default("liara")
-  operation    String
-  status       ProviderEventStatus
-  model        String?
-  statusDetail String?             @db.Text
-  errorMessage String?             @db.Text
-  retryCount   Int                 @default(0)
-  durationMs   Int?
-  createdAt    DateTime            @default(now())
+  id                    String              @id @default(cuid())
+  projectId             String?
+  project               Project?            @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  provider              String              @default("liara")
+  operation             String
+  status                ProviderEventStatus
+  model                 String?
+  statusDetail          String?             @db.Text
+  errorMessage          String?             @db.Text
+  retryCount            Int                 @default(0)
+  durationMs            Int?
+  requestId             String?             @db.VarChar(64)
+  costUnit              Decimal?            @db.Decimal(18, 8)
+  costPaidIrt           Decimal?            @db.Decimal(18, 2)
+  costGrantIrt          Decimal?            @db.Decimal(18, 2)
+  costResolvedAt        DateTime?
+  costLookupAttempts    Int                 @default(0)
+  costLookupAttemptedAt DateTime?
+  createdAt             DateTime            @default(now())
 
   @@index([projectId, createdAt])
   @@index([provider, status, createdAt])
+  @@index([provider, costResolvedAt, createdAt])
+  @@index([requestId])
+}
+
+model ThumbnailJob {
+  id           String             @id @default(cuid())
+  storageKey   String             @unique @db.VarChar(512)
+  status       ThumbnailJobStatus @default(QUEUED)
+  attemptCount Int                @default(0)
+  errorMessage String?            @db.Text
+  availableAt  DateTime           @default(now())
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([status, availableAt])
+  @@index([finishedAt])
+}
+
+model WebVitalSample {
+  id             String   @id @default(cuid())
+  metricId       String   @db.VarChar(128)
+  name           String   @db.VarChar(16)
+  value          Float
+  delta          Float?
+  rating         String   @db.VarChar(16)
+  navigationType String?  @db.VarChar(32)
+  path           String   @db.VarChar(255)
+  deviceType     String?  @db.VarChar(16)
+  createdAt      DateTime @default(now())
+
+  @@unique([metricId, name])
+  @@index([name, createdAt])
+  @@index([path, createdAt])
 }
 
 model UserNotification {

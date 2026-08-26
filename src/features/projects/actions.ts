@@ -892,6 +892,8 @@ export async function retryProjectAction(formData: FormData) {
           generationQueuedAt: new Date(),
           generationStartedAt: null,
           generationFinishedAt: null,
+          generationPrepareDurationMs: null,
+          generationPersistDurationMs: null,
         },
       });
 
