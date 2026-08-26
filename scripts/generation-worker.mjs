@@ -54,6 +54,15 @@ function nowLabel() {
   return new Date().toISOString();
 }
 
+function isConnectionRefused(error) {
+  let current = error;
+  for (let depth = 0; depth < 4 && current && typeof current === "object"; depth += 1) {
+    if (current.code === "ECONNREFUSED") return true;
+    current = current.cause;
+  }
+  return false;
+}
+
 async function tick({ url, secret, limit, staleMinutes }) {
   const response = await fetch(url, {
     method: "POST",
@@ -143,9 +152,10 @@ while (!stopping) {
     await wait(intervalMs);
   } catch (error) {
     activeTick = false;
-    console.error(`[${nowLabel()}] generation worker error`, error);
+    const retryInMs = isConnectionRefused(error) ? Math.min(intervalMs, 5_000) : errorIntervalMs;
+    console.error(`[${nowLabel()}] generation worker error; retryInMs=${retryInMs}`, error);
     if (stopping) break;
-    await wait(errorIntervalMs);
+    await wait(retryInMs);
   }
 }
 

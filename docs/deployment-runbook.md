@@ -224,7 +224,7 @@ pm2 restart gold-studio-worker --update-env
 pm2 save
 ```
 
-اگر worker سالم بود ولی خروجی تولید نشد، پروژه را از پنل ادمین retry کن و لاگ provider را ببین. اگر فقط thumbnail یا هزینه واقعی pending مانده، خروجی JSON tick و شمارنده‌های `/admin/health` و `/admin/ai` را بررسی کن؛ generation نسبت به این کارهای نگهداری اولویت دارد.
+اگر worker سالم بود ولی خروجی تولید نشد، پروژه را از پنل ادمین retry کن و لاگ provider را ببین. اگر فقط thumbnail یا هزینه واقعی pending مانده، خروجی JSON tick و شمارنده‌های `/admin/health` و `/admin/ai` را بررسی کن؛ generation نسبت به این کارهای نگهداری اولویت دارد. هنگام restart هم‌زمان، خطای موقت `ECONNREFUSED` با فاصله حداکثر ۵ ثانیه retry می‌شود؛ خطاهای واقعی همچنان از backoff اصلی worker استفاده می‌کنند.
 
 ## 6. rollback با احتیاط
 
