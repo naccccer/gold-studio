@@ -45,8 +45,8 @@ const MODEL_ORDER: Record<ImageProviderId, Record<ModelRoutingDecision["routing"
     easy: ["gemini-3.1-flash-image", "gemini-3.1-flash-image-preview", "gemini-3-pro-image", "gemini-3-pro-image-preview", "gpt-image-2"],
   },
   liara: {
-    hard: ["google/gemini-3-pro-image-preview", "google/gemini-2.5-flash-image", "openai/gpt-image-2"],
-    easy: ["google/gemini-2.5-flash-image", "google/gemini-3-pro-image-preview", "openai/gpt-image-2"],
+    hard: ["google/gemini-3-pro-image-preview"],
+    easy: ["google/gemini-3-pro-image-preview"],
   },
 };
 

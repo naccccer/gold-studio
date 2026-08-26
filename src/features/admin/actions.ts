@@ -1631,7 +1631,15 @@ export async function retryAdminProjectAction(formData: FormData) {
 
   const updated = await db.project.updateMany({
     where: { id: projectId, status: { in: ["FAILED", "PROCESSING", "QUEUED"] }, archivedAt: null, sourceAssetId: { not: null } },
-    data: { status: "QUEUED", errorMessage: null, resultImageUrl: null, resultStorageKey: null },
+    data: {
+      status: "QUEUED",
+      errorMessage: null,
+      resultImageUrl: null,
+      resultStorageKey: null,
+      generationQueuedAt: new Date(),
+      generationStartedAt: null,
+      generationFinishedAt: null,
+    },
   });
 
   if (updated.count > 0) {

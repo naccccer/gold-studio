@@ -13,6 +13,7 @@ import {
   MessageQuestion,
   Refresh,
   Scan,
+  Timer1,
   TickCircle,
   Trash,
 } from "vuesax-icons-react";
@@ -242,6 +243,7 @@ export type ProjectDetail = {
   variantNumber?: number | null;
   freeVariantRemaining?: number | null;
   qualityReviewStatus?: string | null;
+  generationDurationSeconds?: number | null;
 };
 
 const failedCreditReassurance =
@@ -463,12 +465,14 @@ function ResultHeader({
   variantLabel,
   styleName,
   styleSettings,
+  generationDurationSeconds,
 }: {
   projectId: string;
   title: string;
   variantLabel?: string | null;
   styleName: string;
   styleSettings: string[];
+  generationDurationSeconds?: number | null;
 }) {
   const [editingTitle, setEditingTitle] = useState(false);
   const [styleDetailsOpen, setStyleDetailsOpen] = useState(false);
@@ -533,6 +537,12 @@ function ResultHeader({
               ) : null}
             </div>
           )}
+          {generationDurationSeconds !== null && generationDurationSeconds !== undefined ? (
+            <p className="mt-0.5 flex items-center gap-1 text-[10px] leading-5 text-surface/62">
+              <Timer1 aria-hidden={true} className="h-3.5 w-3.5" />
+              <span>زمان ساخت: {generationDurationSeconds.toLocaleString("fa-IR")} ثانیه</span>
+            </p>
+          ) : null}
         </div>
 
         <div className="relative max-w-[38%] shrink-0">
@@ -791,6 +801,7 @@ export function ProjectDetailScreen({ project, content }: ProjectDetailScreenPro
             variantLabel={variantLabel}
             styleName={project.style.name}
             styleSettings={styleSettings}
+            generationDurationSeconds={project.generationDurationSeconds}
           />
 
           <div

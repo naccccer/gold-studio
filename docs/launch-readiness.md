@@ -59,7 +59,7 @@ npm run smoke -- https://ovala.ir
 - Gallery: آپلود، crop، تغییر نوع محصول، نمایش فایل ذخیره‌شده، batch generation، و ذخیره در نمونه‌ها.
 - New project: catalog، with-model، sample-reference، supporting images، preset خروجی، و هزینه credit.
 - Food project flow: product typeهای غذا/نوشیدنی، شش style Food، Food sample-reference، ذخیره در نمونه‌ها، و جداسازی کامل از Jewelry.
-- Projects: `QUEUED`, `PROCESSING`, `COMPLETED`, `FAILED`, retry، نسخه دیگر، و quality review.
+- Projects: `QUEUED`, `PROCESSING`, `COMPLETED`, `FAILED`, retry، نسخه دیگر، quality review، و نمایش زمان ساخت خروجی به ثانیه.
 - Account: notifications، support، referral، خروجی‌ها، آرشیو، و لینک admin برای ادمین.
 - Billing: خرید بسته/اعتبار vertical فعلی، آپلود رسید، تایید/رد از ادمین، اعمال credit و custom plan با انتخاب/نمایش صریح Jewelry یا Food.
 - Admin: health، AI/provider، assets، samples، styles، projects، outputs، quality reviews، users، billing، support، referrals، backups، audit.
@@ -81,6 +81,6 @@ npm run smoke -- https://ovala.ir
 - Site down: `pm2 status`, app logs, watchdog logs, `/api/health`, و `journalctl` را قبل از restart بگیر.
 - Database down: MySQL status، connection count، `DATABASE_URL`، و آخرین migration را بررسی کن.
 - Worker stuck: worker logs، `GENERATION_WORKER_SECRET`, queue count، و `/admin/health`.
-- Provider down: provider events، `check:avalai`, `check:liara`, provider balance/access، و fallback model.
+- Provider down: provider events و مدت هر تلاش، تفکیک زمان صف/پردازش پروژه، `check:avalai`, `check:liara`, provider balance/access، fallback model، و ابعاد واقعی خروجی (خروجی کاربر باید 2K باشد).
 - SMS down: FarazSMS pattern approval، line number، API key، و پیام خطای auth flow.
 - Billing issue: purchase request، receipt storage، credit event، و audit event را بررسی کن.

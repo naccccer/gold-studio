@@ -884,7 +884,15 @@ export async function retryProjectAction(formData: FormData) {
 
       const updated = await tx.project.updateMany({
         where: { id: project.id, userId: session.userId, vertical, status: project.status, archivedAt: null },
-        data: { status: "QUEUED", errorMessage: null, resultImageUrl: null, resultStorageKey: null },
+        data: {
+          status: "QUEUED",
+          errorMessage: null,
+          resultImageUrl: null,
+          resultStorageKey: null,
+          generationQueuedAt: new Date(),
+          generationStartedAt: null,
+          generationFinishedAt: null,
+        },
       });
 
       if (updated.count === 0) {

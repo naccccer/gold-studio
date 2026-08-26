@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { requireUserSession } from "@/lib/auth/session";
 import { getEffectiveFreeVariantLimit } from "@/lib/billing";
 import { getCurrentVertical } from "@/lib/current-vertical";
+import { projectGenerationTiming } from "@/lib/generation/timing";
 import { isRawImageFilenameTitle, retryProjectVisionTitle } from "@/lib/product-vision";
 import { readStorageObject, storagePublicUrl } from "@/lib/storage";
 import { getVerticalContent } from "@/lib/vertical-content";
@@ -73,6 +74,7 @@ export default async function ProjectDetailPage({
   }
 
   const titleRefreshPending = Boolean(project.sourceAssetId && isRawImageFilenameTitle(title));
+  const generationDurationSeconds = projectGenerationTiming(project).totalSeconds;
 
   if (titleRefreshPending) {
     after(() => retryProjectVisionTitle(project.id, session.userId));
@@ -122,6 +124,7 @@ export default async function ProjectDetailPage({
           variantNumber,
           freeVariantRemaining,
           qualityReviewStatus: project.qualityReviews[0]?.status ?? null,
+          generationDurationSeconds,
         } as ProjectDetail
       }
     />

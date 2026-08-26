@@ -158,6 +158,7 @@ async function generateImageWithModelFallback({
   const attempts = getRoutedImageProviderAttemptOrder(providerSettings, routingContext);
 
   for (const [index, attempt] of attempts.entries()) {
+    const attemptStartedAt = Date.now();
     try {
       await touchProcessingProject(projectId);
       const providerLabel = imageProviderLabel(attempt.provider);
@@ -180,6 +181,7 @@ async function generateImageWithModelFallback({
         status: "SUCCESS",
         model: generatedImage.model,
         retryCount: index,
+        durationMs: Date.now() - attemptStartedAt,
         statusDetail: `provider=${providerLabel}; outputPreset=${outputPreset}; supportingImages=${supportingImages?.length ?? 0}; reference=${
           referenceUsed ? "yes" : "no"
         }; ${routingDetail}; fallbackAttempt=${index + 1}/${attempts.length}`,
@@ -195,6 +197,7 @@ async function generateImageWithModelFallback({
         status: "FAILED",
         model: attempt.model,
         retryCount: index,
+        durationMs: Date.now() - attemptStartedAt,
         statusDetail: `provider=${providerLabel}; supportingImages=${supportingImages?.length ?? 0}; ${routingDetail}; fallbackAttempt=${
           index + 1
         }/${attempts.length}; next=${
@@ -226,6 +229,7 @@ async function generateTextImageWithModelFallback({
   const attempts = getImageProviderAttemptOrder(providerSettings);
 
   for (const [index, attempt] of attempts.entries()) {
+    const attemptStartedAt = Date.now();
     try {
       await touchProcessingProject(projectId);
       const providerLabel = imageProviderLabel(attempt.provider);
@@ -244,6 +248,7 @@ async function generateTextImageWithModelFallback({
         status: "SUCCESS",
         model: generatedImage.model,
         retryCount: index,
+        durationMs: Date.now() - attemptStartedAt,
         statusDetail: `provider=${providerLabel}; fallbackAttempt=${index + 1}/${attempts.length}`,
       });
       return generatedImage;
@@ -257,6 +262,7 @@ async function generateTextImageWithModelFallback({
         status: "FAILED",
         model: attempt.model,
         retryCount: index,
+        durationMs: Date.now() - attemptStartedAt,
         statusDetail: `provider=${providerLabel}; fallbackAttempt=${index + 1}/${attempts.length}; next=${
           index < attempts.length - 1 ? attemptLabel(attempts[index + 1]) : "none"
         }`,
@@ -269,9 +275,10 @@ async function generateTextImageWithModelFallback({
 }
 
 async function claimQueuedProject(projectId: string) {
+  const generationStartedAt = new Date();
   const claimed = await db.project.updateMany({
     where: { id: projectId, status: "QUEUED" },
-    data: { status: "PROCESSING", errorMessage: null },
+    data: { status: "PROCESSING", errorMessage: null, generationStartedAt, generationFinishedAt: null },
   });
 
   return claimed.count > 0;
@@ -309,6 +316,8 @@ export async function recoverStaleGenerationJobs({
       data: {
         status: "QUEUED",
         errorMessage: null,
+        generationStartedAt: null,
+        generationFinishedAt: null,
       },
     }),
     db.generationBatch.updateMany({
@@ -506,9 +515,16 @@ export async function processImageProject(projectId: string) {
     });
     const result = await saveGeneratedImage(generatedImage.imageBuffer, generatedImage.mimeType);
 
+    const generationFinishedAt = new Date();
     await db.project.update({
       where: { id: projectId },
-      data: { status: "COMPLETED", resultImageUrl: result.publicUrl, resultStorageKey: result.storageKey, errorMessage: null },
+      data: {
+        status: "COMPLETED",
+        resultImageUrl: result.publicUrl,
+        resultStorageKey: result.storageKey,
+        errorMessage: null,
+        generationFinishedAt,
+      },
     });
     if (project.variantParentId) {
       await db.project.updateMany({
@@ -520,12 +536,14 @@ export async function processImageProject(projectId: string) {
     await refreshGenerationBatchesForProject(projectId);
     return true;
   } catch (error) {
+    const generationFinishedAt = new Date();
     await releaseGenerationCreditReservation({ projectId });
     await db.project.update({
       where: { id: projectId },
       data: {
         status: "FAILED",
         errorMessage: userErrorMessage(error, "تولید تصویر کامل نشد. جزئیات بیشتر در بخش ادمین و رویدادهای provider ثبت شد."),
+        generationFinishedAt,
       },
     });
     const failedProject = await db.project.findUnique({
@@ -569,20 +587,29 @@ export async function processTextProject({
     });
     const result = await saveGeneratedImage(generatedImage.imageBuffer, generatedImage.mimeType);
 
+    const generationFinishedAt = new Date();
     await db.project.update({
       where: { id: projectId },
-      data: { status: "COMPLETED", resultImageUrl: result.publicUrl, resultStorageKey: result.storageKey, errorMessage: null },
+      data: {
+        status: "COMPLETED",
+        resultImageUrl: result.publicUrl,
+        resultStorageKey: result.storageKey,
+        errorMessage: null,
+        generationFinishedAt,
+      },
     });
     await captureGenerationCreditReservation({ projectId });
     await refreshGenerationBatchesForProject(projectId);
     return true;
   } catch (error) {
+    const generationFinishedAt = new Date();
     await releaseGenerationCreditReservation({ projectId });
     await db.project.update({
       where: { id: projectId },
       data: {
         status: "FAILED",
         errorMessage: userErrorMessage(error, "تست متن به تصویر کامل نشد. جزئیات بیشتر در بخش ادمین و رویدادهای provider ثبت شد."),
+        generationFinishedAt,
       },
     });
     return true;

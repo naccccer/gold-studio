@@ -1,4 +1,5 @@
 import { getOutputPresetSpec } from "@/lib/output-presets";
+import { assertTwoKImageDimensions } from "@/lib/ai/image-resolution";
 import { clampNon4KImageSetting } from "@/lib/ai/model-routing";
 import { buildGenerationPromptSuffix } from "@/lib/ai/vertical-prompt-rules";
 import type { GeneratedImageResult } from "@/lib/ai/provider";
@@ -7,8 +8,9 @@ import { DEFAULT_VERTICAL_ID, type VerticalId } from "@/lib/verticals";
 const DEFAULT_AVALAI_BASE_URL = "https://api.avalai.ir/v1";
 const DEFAULT_AVALAI_IMAGE_MODEL = "gemini-3.1-flash-image";
 const DEFAULT_AVALAI_IMAGE_SIZE = "2K";
-const DEFAULT_OPENAI_IMAGE_SIZE = "1024x1024";
+const DEFAULT_OPENAI_IMAGE_SIZE = "2048x2048";
 const DEFAULT_REQUEST_TIMEOUT_MS = 300000;
+const DEFAULT_GEMINI_REQUEST_TIMEOUT_MS = 60000;
 const TRANSIENT_RETRY_DELAYS_MS = [1500, 4000, 9000];
 const RETRYABLE_HTTP_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 const RETRYABLE_NETWORK_PATTERNS = [
@@ -67,6 +69,26 @@ type ChatChoice = {
 
 type ChatCompletionImageResponse = {
   choices?: ChatChoice[];
+};
+
+type GeminiPart = {
+  text?: string;
+  inlineData?: {
+    data?: string;
+    mimeType?: string;
+  };
+  inline_data?: {
+    data?: string;
+    mime_type?: string;
+  };
+};
+
+type GeminiGenerateContentResponse = {
+  candidates?: Array<{
+    content?: {
+      parts?: GeminiPart[];
+    };
+  }>;
 };
 
 type ImagesResponse = {
@@ -129,6 +151,11 @@ function getRequestTimeoutMs() {
   return Number.isFinite(configured) && configured >= 10000 ? configured : DEFAULT_REQUEST_TIMEOUT_MS;
 }
 
+function getGeminiRequestTimeoutMs() {
+  const configured = Number.parseInt(process.env.AVALAI_GEMINI_IMAGE_TIMEOUT_MS ?? "", 10);
+  return Number.isFinite(configured) && configured >= 10000 ? configured : DEFAULT_GEMINI_REQUEST_TIMEOUT_MS;
+}
+
 function getAspectRatio(outputPreset: string | null | undefined, configuredAspectRatio: string | undefined) {
   if (outputPreset) {
     return getOutputPresetSpec(outputPreset).providerSize;
@@ -141,9 +168,13 @@ function isOpenAIImageModel(model: string) {
   return model.startsWith("gpt-image-");
 }
 
+function isGemini31FlashImageModel(model: string) {
+  return model === "gemini-3.1-flash-image" || model === "gemini-3.1-flash-image-preview";
+}
+
 function getOpenAIImageSize(outputPreset: string | null | undefined) {
-  if (outputPreset === "story") return "1024x1536";
-  if (outputPreset === "banner") return "1536x1024";
+  if (outputPreset === "story") return "1536x2752";
+  if (outputPreset === "banner") return "2752x1536";
   return DEFAULT_OPENAI_IMAGE_SIZE;
 }
 
@@ -173,6 +204,30 @@ function dataUrlToImage(url: string) {
   };
 }
 
+function dataUrlToGeminiInlineData(url: string) {
+  const match = url.match(/^data:([^;,]+);base64,(.+)$/);
+  if (!match) {
+    throw new AvalaiGenerationError("Gemini native image input must be a base64 data URL.");
+  }
+
+  return {
+    inlineData: {
+      mimeType: match[1],
+      data: match[2],
+    },
+  };
+}
+
+function toGeminiParts(content: string | ChatContentPart[]): GeminiPart[] {
+  if (typeof content === "string") {
+    return [{ text: content }];
+  }
+
+  return content.map((part) =>
+    part.type === "text" ? { text: part.text } : dataUrlToGeminiInlineData(part.image_url.url),
+  );
+}
+
 function retryDelay(attemptIndex: number) {
   const baseDelay = TRANSIENT_RETRY_DELAYS_MS[attemptIndex] ?? TRANSIENT_RETRY_DELAYS_MS[TRANSIENT_RETRY_DELAYS_MS.length - 1];
   return baseDelay + Math.floor(Math.random() * 350);
@@ -184,8 +239,11 @@ function wait(ms: number) {
   });
 }
 
-async function withRequestTimeout<T>(label: string, operation: (signal: AbortSignal) => Promise<T>) {
-  const timeoutMs = getRequestTimeoutMs();
+async function withRequestTimeout<T>(
+  label: string,
+  operation: (signal: AbortSignal) => Promise<T>,
+  timeoutMs = getRequestTimeoutMs(),
+) {
   const controller = new AbortController();
   let timeout: ReturnType<typeof setTimeout> | null = null;
   const operationPromise = operation(controller.signal);
@@ -330,6 +388,22 @@ async function extractGeneratedImage(response: ChatCompletionImageResponse) {
   throw new AvalaiGenerationError("Avalai did not return an image.");
 }
 
+async function extractGeneratedImageFromGeminiResponse(response: GeminiGenerateContentResponse) {
+  const parts = response.candidates?.[0]?.content?.parts ?? [];
+  const imagePart = parts.find((part) => part.inlineData?.data || part.inline_data?.data);
+  const data = imagePart?.inlineData?.data || imagePart?.inline_data?.data;
+  const mimeType = imagePart?.inlineData?.mimeType || imagePart?.inline_data?.mime_type || "image/png";
+
+  if (!data) {
+    throw new AvalaiGenerationError("Avalai Gemini native API did not return an image.");
+  }
+
+  return {
+    imageBuffer: Buffer.from(data, "base64"),
+    mimeType,
+  };
+}
+
 async function extractGeneratedImageFromImagesResponse(response: ImagesResponse) {
   const output = response.data?.[0];
   if (output?.b64_json) {
@@ -378,6 +452,50 @@ async function postAvalaiJson<T>({
     }
 
     throw new AvalaiGenerationError(`Avalai request failed with status ${response.status}${detail ? `: ${detail}` : ""}.`);
+  }
+
+  return (await response.json()) as T;
+}
+
+function avalaiNativeBaseURL(baseURL: string) {
+  return baseURL.replace(/\/$/, "").replace(/\/v1$/, "");
+}
+
+async function postAvalaiGeminiNative<T>({
+  baseURL,
+  apiKey,
+  model,
+  body,
+}: {
+  baseURL: string;
+  apiKey: string;
+  model: string;
+  body: unknown;
+}) {
+  const response = await withRequestTimeout("Avalai Gemini native request", (signal) =>
+    fetch(`${avalaiNativeBaseURL(baseURL)}/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+      method: "POST",
+      headers: {
+        "x-goog-api-key": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      signal,
+    }),
+    getGeminiRequestTimeoutMs(),
+  );
+
+  if (!response.ok) {
+    let detail = "";
+    try {
+      detail = await response.text();
+    } catch {
+      detail = "";
+    }
+
+    throw new AvalaiGenerationError(
+      `Avalai Gemini native request failed with status ${response.status}${detail ? `: ${detail}` : ""}.`,
+    );
   }
 
   return (await response.json()) as T;
@@ -468,26 +586,51 @@ async function generateWithAvalai({
 
   try {
     return await withTransientRetry(async () => {
-      const generated = await extractGeneratedImage(
-        await postAvalaiJson<ChatCompletionImageResponse>({
-          baseURL,
-          apiKey,
-          path: "/chat/completions",
-          body: {
-            model: imageModel,
-            messages: [{ role: "user", content }],
-            modalities: ["image", "text"],
-            extra_body: {
-              generationConfig: {
-                imageConfig: {
-                  aspectRatio: imageAspectRatio,
-                  imageSize,
+      const generated = isGemini31FlashImageModel(imageModel)
+        ? await extractGeneratedImageFromGeminiResponse(
+            await postAvalaiGeminiNative<GeminiGenerateContentResponse>({
+              baseURL,
+              apiKey,
+              model: imageModel,
+              body: {
+                contents: [{ role: "user", parts: toGeminiParts(content) }],
+                generationConfig: {
+                  responseModalities: ["TEXT", "IMAGE"],
+                  imageConfig: {
+                    aspectRatio: imageAspectRatio,
+                    imageSize,
+                  },
                 },
               },
-            },
-          },
-        }),
-      );
+            }),
+          )
+        : await extractGeneratedImage(
+            await postAvalaiJson<ChatCompletionImageResponse>({
+              baseURL,
+              apiKey,
+              path: "/chat/completions",
+              body: {
+                model: imageModel,
+                messages: [{ role: "user", content }],
+                modalities: ["image", "text"],
+                extra_body: {
+                  generationConfig: {
+                    imageConfig: {
+                      aspectRatio: imageAspectRatio,
+                      imageSize,
+                    },
+                  },
+                },
+              },
+            }),
+          );
+      await assertTwoKImageDimensions({
+        imageBuffer: generated.imageBuffer,
+        imageSize,
+        aspectRatio: imageAspectRatio,
+        model: imageModel,
+        makeError: (message) => new AvalaiGenerationError(message),
+      });
       return { ...generated, model: imageModel };
     });
   } catch (error) {
@@ -540,6 +683,13 @@ async function generateTextWithOpenAIImageModel({
           ),
         }),
       );
+      await assertTwoKImageDimensions({
+        imageBuffer: generated.imageBuffer,
+        imageSize: "2K",
+        aspectRatio: getAspectRatio(outputPreset, "1:1"),
+        model: imageModel,
+        makeError: (message) => new AvalaiGenerationError(message),
+      });
       return { ...generated, model: imageModel };
     });
   } catch (error) {
@@ -606,6 +756,13 @@ async function generateStyledWithOpenAIImageModel({
           body: form,
         }),
       );
+      await assertTwoKImageDimensions({
+        imageBuffer: generated.imageBuffer,
+        imageSize: "2K",
+        aspectRatio: getAspectRatio(outputPreset, "1:1"),
+        model: imageModel,
+        makeError: (message) => new AvalaiGenerationError(message),
+      });
       return { ...generated, model: imageModel };
     });
   } catch (error) {

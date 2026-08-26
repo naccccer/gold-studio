@@ -1,5 +1,6 @@
 import type { ImagesResponse } from "openai/resources/images";
 import sharp from "sharp";
+import { assertTwoKImageDimensions } from "@/lib/ai/image-resolution";
 import { clampNon4KImageSetting } from "@/lib/ai/model-routing";
 import { buildGenerationPromptSuffix } from "@/lib/ai/vertical-prompt-rules";
 import { getOutputPresetSpec } from "@/lib/output-presets";
@@ -498,6 +499,15 @@ export async function generateStyledImageWithLiara({
           body: form,
         }),
       );
+      if (!isOpenAIImageModel(imageModel)) {
+        await assertTwoKImageDimensions({
+          imageBuffer: generated.imageBuffer,
+          imageSize: getImageQuality(quality, imageModel),
+          aspectRatio: imageSize,
+          model: imageModel,
+          makeError: (message) => new LiaraGenerationError(message),
+        });
+      }
       return { ...generated, model: imageModel };
     });
   } catch (error) {
@@ -546,6 +556,15 @@ export async function generateTextImageWithLiara({
           },
         }),
       );
+      if (!isOpenAIImageModel(imageModel)) {
+        await assertTwoKImageDimensions({
+          imageBuffer: generated.imageBuffer,
+          imageSize: getImageQuality(quality, imageModel),
+          aspectRatio: imageSize,
+          model: imageModel,
+          makeError: (message) => new LiaraGenerationError(message),
+        });
+      }
       return { ...generated, model: imageModel };
     });
   } catch (error) {

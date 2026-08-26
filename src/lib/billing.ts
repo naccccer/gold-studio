@@ -41,6 +41,7 @@ export async function logProviderEvent({
   statusDetail,
   errorMessage,
   retryCount = 0,
+  durationMs,
 }: {
   projectId?: string | null;
   provider?: string | null;
@@ -50,6 +51,7 @@ export async function logProviderEvent({
   statusDetail?: string | null;
   errorMessage?: string | null;
   retryCount?: number;
+  durationMs?: number | null;
 }) {
   await db.providerEvent.create({
     data: {
@@ -61,6 +63,7 @@ export async function logProviderEvent({
       statusDetail: statusDetail || null,
       errorMessage: errorMessage || null,
       retryCount,
+      durationMs: Number.isFinite(durationMs) ? Math.max(0, Math.round(durationMs ?? 0)) : null,
     },
   });
 }

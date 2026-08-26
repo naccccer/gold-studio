@@ -83,19 +83,21 @@ assert.deepEqual(providerImageModelsForRouting("avalai", "easy").slice(0, 3), [
   "gemini-3.1-flash-image-preview",
   "gemini-3-pro-image",
 ]);
-assert.deepEqual(providerImageModelsForRouting("liara", "hard").slice(0, 2), [
-  "google/gemini-3-pro-image-preview",
-  "google/gemini-2.5-flash-image",
-]);
-assert.deepEqual(providerImageModelsForRouting("liara", "easy").slice(0, 2), [
-  "google/gemini-2.5-flash-image",
-  "google/gemini-3-pro-image-preview",
-]);
+assert.deepEqual(providerImageModelsForRouting("liara", "hard"), ["google/gemini-3-pro-image-preview"]);
+assert.deepEqual(providerImageModelsForRouting("liara", "easy"), ["google/gemini-3-pro-image-preview"]);
+
+for (const provider of ["avalai", "liara"]) {
+  for (const routing of ["hard", "easy"]) {
+    const models = providerImageModelsForRouting(provider, routing);
+    assert.equal(models.some((model) => model.includes("gemini-2.5-flash-image")), false, "1K Gemini 2.5 fallback must not be automatic");
+    if (provider === "liara") {
+      assert.equal(models.some((model) => model.includes("gpt-image-2")), false, "Unverified Liara GPT fallback must not be automatic");
+    }
+  }
+}
 
 assert.equal(providerImageModelsForRouting("avalai", "hard").at(-1), "gpt-image-2");
 assert.equal(providerImageModelsForRouting("avalai", "easy").at(-1), "gpt-image-2");
-assert.equal(providerImageModelsForRouting("liara", "hard").at(-1), "openai/gpt-image-2");
-assert.equal(providerImageModelsForRouting("liara", "easy").at(-1), "openai/gpt-image-2");
 
 assert.equal(clampNon4KImageSetting("4K", "2K"), "2K");
 assert.equal(clampNon4KImageSetting(" 4K ", "2K"), "2K");

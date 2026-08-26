@@ -205,6 +205,9 @@ model Project {
   providerEvents   ProviderEvent[]
   creditReservations GenerationCreditReservation[]
   qualityReviews   QualityReview[]
+  generationQueuedAt   DateTime              @default(now())
+  generationStartedAt  DateTime?
+  generationFinishedAt DateTime?
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
 
@@ -765,6 +768,7 @@ model ProviderEvent {
   statusDetail String?             @db.Text
   errorMessage String?             @db.Text
   retryCount   Int                 @default(0)
+  durationMs   Int?
   createdAt    DateTime            @default(now())
 
   @@index([projectId, createdAt])

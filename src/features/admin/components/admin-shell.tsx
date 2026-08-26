@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AdminImageLightbox } from "@/features/admin/components/admin-image-lightbox";
 import {
   ArrowRight2,
   ArchiveBook,
@@ -104,6 +105,7 @@ export function AdminShell({ children, role }: { children: React.ReactNode; role
 
   return (
     <div data-admin-console className="min-h-screen bg-navy-25 text-right text-navy-950">
+      <AdminImageLightbox />
       <div className="mx-auto flex min-h-screen w-full max-w-[1500px]">
         <aside className="hidden w-56 shrink-0 flex-col bg-navy-950 px-3 py-5 lg:flex lg:sticky lg:top-0 lg:h-screen">
           <Link href="/admin" className="px-2.5">
@@ -191,7 +193,9 @@ export function AdminShell({ children, role }: { children: React.ReactNode; role
               })}
             </nav>
           </header>
-          <main className="min-w-0 flex-1 space-y-5 px-4 py-6 pb-16 lg:px-8">{children}</main>
+          <main data-admin-image-preview-root className="min-w-0 flex-1 space-y-5 px-4 py-6 pb-16 lg:px-8">
+            {children}
+          </main>
         </div>
       </div>
     </div>

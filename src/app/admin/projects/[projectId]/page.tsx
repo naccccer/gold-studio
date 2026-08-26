@@ -23,6 +23,7 @@ import { db } from "@/lib/db";
 import { requireAdminSession } from "@/lib/auth/session";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
 import { formatInternalCreditUnits, getGenerationCreditUnitCost } from "@/lib/credit-units";
+import { projectGenerationTiming } from "@/lib/generation/timing";
 import { getVerticalLabel, normalizeVerticalId } from "@/lib/verticals";
 
 export const dynamic = "force-dynamic";
@@ -59,6 +60,8 @@ export default async function AdminProjectDetailPage({ params }: AdminProjectDet
   const defaultCostUnits = getGenerationCreditUnitCost(normalizeVerticalId(project.vertical));
   const latestReservation = project.creditReservations[0];
   const operationalCostUnits = latestReservation?.creditUnits ?? defaultCostUnits;
+  const generationTiming = projectGenerationTiming(project);
+  const formatSeconds = (seconds: number | null) => seconds === null ? "ثبت نشده" : `${faNum(seconds)} ثانیه`;
 
   return (
     <>
@@ -132,6 +135,9 @@ export default async function AdminProjectDetailPage({ params }: AdminProjectDet
                 { label: "هزینه تولید", value: formatInternalCreditUnits(operationalCostUnits), dir: "ltr" },
                 { label: "سبک", value: project.style.name },
                 { label: "قالب خروجی", value: project.outputPreset, dir: "ltr" },
+                { label: "زمان کل ساخت", value: formatSeconds(generationTiming.totalSeconds) },
+                { label: "انتظار در صف", value: formatSeconds(generationTiming.queueSeconds) },
+                { label: "پردازش", value: formatSeconds(generationTiming.processingSeconds) },
                 { label: "آخرین آپدیت", value: formatAdminDate(project.updatedAt) },
                 { label: "Batch", value: project.batchItems.length ? faNum(project.batchItems.length) : "ندارد" },
               ]}
@@ -175,7 +181,7 @@ export default async function AdminProjectDetailPage({ params }: AdminProjectDet
           <h2 className="text-sm font-semibold text-navy-950">رویدادهای Provider</h2>
         </div>
         <ConsoleTable
-          head={["وضعیت", "Provider", "عملیات", "جزئیات", "زمان"]}
+          head={["وضعیت", "Provider", "عملیات", "مدت", "جزئیات", "زمان"]}
           empty={<EmptyState title="رویداد provider ثبت نشده است." />}
         >
           {project.providerEvents.map((event) => (
@@ -190,6 +196,9 @@ export default async function AdminProjectDetailPage({ params }: AdminProjectDet
               <td className={cellClass} dir="ltr">
                 {event.operation}
                 <p className="text-xs text-slate-400">retry {event.retryCount}</p>
+              </td>
+              <td className={`${cellClass} text-xs text-slate-500`} dir="ltr">
+                {event.durationMs === null ? "—" : `${faNum(Math.round(event.durationMs / 1000))} ثانیه`}
               </td>
               <td className={cellClass}>
                 <p className="max-w-md truncate text-xs text-slate-500">{event.errorMessage || event.statusDetail || "بدون جزئیات"}</p>
