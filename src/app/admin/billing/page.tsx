@@ -17,6 +17,8 @@ import {
   fieldClass,
   formatAdminDate,
   formatIrr,
+  SegmentedLinks,
+  StatBar,
   StatusDot,
   Surface,
   TabNav,
@@ -24,6 +26,7 @@ import {
 } from "@/features/admin/components/console";
 import { PriceAmountInput } from "@/features/admin/components/price-amount-input";
 import { BILLING_PLAN_COLOR_PRESETS, normalizeBillingPlanColorPreset } from "@/lib/billing-plan-colors";
+import { summarizeProviderCostsByDay, summarizeProviderModels } from "@/lib/ai/provider-analytics";
 import { requireAdminOrSalesSession } from "@/lib/auth/session";
 import { creditUnitsToVisibleCredits } from "@/lib/credit-units";
 import {
@@ -43,16 +46,39 @@ import { getVerticalLabel, USER_VISIBLE_VERTICAL_IDS } from "@/lib/verticals";
 export const dynamic = "force-dynamic";
 
 type AdminBillingPageProps = {
-  searchParams?: Promise<{ tab?: string }>;
+  searchParams?: Promise<{ tab?: string; range?: string }>;
 };
+
+const providerCostEventSelect = {
+  provider: true,
+  model: true,
+  status: true,
+  durationMs: true,
+  costUnit: true,
+  costPaidIrt: true,
+  costGrantIrt: true,
+  costResolvedAt: true,
+  requestId: true,
+  createdAt: true,
+} satisfies Prisma.ProviderEventSelect;
+
+type ProviderCostEvent = Prisma.ProviderEventGetPayload<{ select: typeof providerCostEventSelect }>;
+type AdminBillingTab = "costs" | "packages" | "settings";
+
+function isAdminBillingTab(value: string | undefined): value is AdminBillingTab {
+  return value === "costs" || value === "packages" || value === "settings";
+}
 
 export default async function AdminBillingPage({ searchParams }: AdminBillingPageProps) {
   const session = await requireAdminOrSalesSession();
   const isAdmin = session.role === "ADMIN";
   const params = await searchParams;
-  const activeTab = isAdmin && (params?.tab === "packages" || params?.tab === "settings") ? params.tab : "receipts";
+  const activeTab = isAdmin && isAdminBillingTab(params?.tab) ? params.tab : "receipts";
+  const rangeDays = params?.range === "7" ? 7 : params?.range === "90" ? 90 : 30;
+  const costsSince = new Date();
+  costsSince.setDate(costsSince.getDate() - rangeDays);
 
-  const [packages, paymentSettings, pendingPurchases, pendingCount] = await Promise.all([
+  const [packages, paymentSettings, pendingPurchases, pendingCount, providerCostEvents] = await Promise.all([
     db.billingPackage.findMany({
       where: { archivedAt: null },
       orderBy: [{ vertical: "asc" }, { type: "desc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
@@ -66,12 +92,20 @@ export default async function AdminBillingPage({ searchParams }: AdminBillingPag
       include: { user: true, package: true },
     }),
     db.purchaseRequest.count({ where: { status: "PENDING" } }),
+    activeTab === "costs"
+      ? db.providerEvent.findMany({
+          where: { createdAt: { gte: costsSince }, operation: { startsWith: "image." } },
+          orderBy: { createdAt: "desc" },
+          take: 10_000,
+          select: providerCostEventSelect,
+        })
+      : Promise.resolve([] as ProviderCostEvent[]),
   ]);
 
   return (
     <>
       <ConsoleHeader
-        title="پرداخت و اعتبار"
+        title="مالی و پرداخت"
         meta={
           pendingCount > 0 ? (
             <span className="font-medium text-amber-700">{faNum(pendingCount)} رسید در انتظار بررسی</span>
@@ -86,6 +120,7 @@ export default async function AdminBillingPage({ searchParams }: AdminBillingPag
           { href: "/admin/billing", label: "بررسی رسیدها", active: activeTab === "receipts", count: pendingCount },
           ...(isAdmin
             ? [
+                { href: "/admin/billing?tab=costs", label: "هزینه هوش مصنوعی", active: activeTab === "costs" },
                 { href: "/admin/billing?tab=packages", label: "کاتالوگ بسته‌ها", active: activeTab === "packages", count: packages.length },
                 { href: "/admin/billing?tab=settings", label: "تنظیمات پرداخت", active: activeTab === "settings" },
               ]
@@ -94,6 +129,7 @@ export default async function AdminBillingPage({ searchParams }: AdminBillingPag
       />
 
       {activeTab === "receipts" ? <ReceiptsTab pendingPurchases={pendingPurchases} /> : null}
+      {activeTab === "costs" ? <AiCostsTab events={providerCostEvents} rangeDays={rangeDays} /> : null}
       {activeTab === "packages" ? <PackagesTab packages={packages} /> : null}
       {activeTab === "settings" ? <SettingsTab paymentSettings={paymentSettings} /> : null}
     </>
@@ -107,6 +143,129 @@ function VerticalBadge({ vertical }: { vertical: string }) {
     <span className="inline-flex shrink-0 items-center rounded-full bg-navy-50 px-2 py-0.5 text-[11px] font-semibold text-navy-700">
       {getVerticalLabel(vertical)}
     </span>
+  );
+}
+
+function formatToman(value: number) {
+  return `${faNum(Math.round(value))} تومان`;
+}
+
+function formatUnit(value: number) {
+  return `${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 })} UNIT`;
+}
+
+function ProviderCostValue({ irt, unit }: { irt: number; unit: number }) {
+  if (irt <= 0 && unit <= 0) return <span className="text-slate-400">۰ تومان</span>;
+  return (
+    <span className="grid gap-0.5 tabular-nums">
+      {irt > 0 ? <span>{formatToman(irt)}</span> : null}
+      {unit > 0 ? <span className="text-xs text-slate-500" dir="ltr">{formatUnit(unit)}</span> : null}
+    </span>
+  );
+}
+
+function formatReportDay(dateKey: string) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Intl.DateTimeFormat("fa-IR", { month: "short", day: "numeric", year: "numeric", timeZone: "Asia/Tehran" }).format(
+    new Date(Date.UTC(year, month - 1, day, 12)),
+  );
+}
+
+function AiCostsTab({ events, rangeDays }: { events: ProviderCostEvent[]; rangeDays: number }) {
+  const models = summarizeProviderModels(events);
+  const days = summarizeProviderCostsByDay(events);
+  const resolvedCount = days.reduce((total, item) => total + item.resolved, 0);
+  const pendingCount = days.reduce((total, item) => total + item.pending, 0);
+  const totalCostIrt = days.reduce((total, item) => total + item.totalCostIrt, 0);
+  const totalCostUnit = days.reduce((total, item) => total + item.totalCostUnit, 0);
+
+  return (
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-navy-950">هزینه واقعی تولید تصویر</h2>
+          <p className="mt-1 text-xs leading-6 text-slate-500">مبالغ از تراکنش‌های تطبیق‌شده AvalAI خوانده می‌شوند؛ پرداخت تومانی و UNIT جدا می‌مانند.</p>
+        </div>
+        <SegmentedLinks
+          items={[7, 30, 90].map((days) => ({
+            href: `/admin/billing?tab=costs&range=${days}`,
+            label: `${faNum(days)} روز`,
+            active: rangeDays === days,
+          }))}
+        />
+      </div>
+
+      <StatBar
+        items={[
+          { label: `هزینه تومانی ${faNum(rangeDays)} روز`, value: formatToman(totalCostIrt) },
+          { label: "پرداخت UNIT", value: totalCostUnit > 0 ? formatUnit(totalCostUnit) : "ندارد" },
+          { label: "تراکنش تطبیق‌شده", value: resolvedCount, tone: "success" },
+          { label: "در انتظار تطبیق", value: pendingCount, tone: pendingCount ? "attention" : "neutral" },
+        ]}
+      />
+
+      <Surface>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-5 py-3.5">
+          <h3 className="text-sm font-semibold text-navy-950">هزینه و عملکرد بر اساس مدل</h3>
+          <span className="text-xs text-slate-500">خروجی‌های 2K همین سایت</span>
+        </div>
+        <ConsoleTable
+          label="هزینه و عملکرد مدل‌های تولید تصویر"
+          minWidth={920}
+          head={["مدل", "موفق / تلاش", "نرخ موفقیت", "P50", "P95", "میانگین هزینه", "جمع هزینه"]}
+          empty={<EmptyState title="در این بازه هنوز تراکنش تولید تصویری ثبت نشده است." />}
+        >
+          {models.map((item) => (
+            <tr key={`${item.provider}-${item.model}`}>
+              <td className={cellClass} dir="ltr">
+                <span className="font-semibold text-navy-950">{item.model}</span>
+                <p className="mt-0.5 text-xs text-slate-500">{item.provider}</p>
+              </td>
+              <td className={`${cellClass} tabular-nums`}>{faNum(item.successes)} / {faNum(item.attempts)}</td>
+              <td className={cellClass}>
+                <span className={item.successPercent >= 95 ? "font-semibold text-emerald-700" : item.successPercent >= 80 ? "text-amber-700" : "font-semibold text-rose-700"}>
+                  ٪{faNum(item.successPercent)}
+                </span>
+              </td>
+              <td className={`${cellClass} tabular-nums`}>{item.p50DurationMs === null ? "—" : `${faNum(Math.round(item.p50DurationMs / 1000))} ثانیه`}</td>
+              <td className={`${cellClass} tabular-nums`}>{item.p95DurationMs === null ? "—" : `${faNum(Math.round(item.p95DurationMs / 1000))} ثانیه`}</td>
+              <td className={cellClass}>
+                <ProviderCostValue irt={item.averageCostIrt ?? 0} unit={item.averageCostUnit ?? 0} />
+              </td>
+              <td className={cellClass}>
+                <ProviderCostValue irt={item.totalCostIrt} unit={item.totalCostUnit} />
+              </td>
+            </tr>
+          ))}
+        </ConsoleTable>
+      </Surface>
+
+      <Surface>
+        <div className="border-b border-slate-200 px-5 py-3.5">
+          <h3 className="text-sm font-semibold text-navy-950">ریز روزانه هزینه</h3>
+        </div>
+        <ConsoleTable
+          label="ریز روزانه هزینه تولید تصویر"
+          minWidth={720}
+          head={["روز", "درخواست", "تطبیق‌شده", "در انتظار", "هزینه ثبت‌شده"]}
+          empty={<EmptyState title="در این بازه هزینه‌ای ثبت نشده است." />}
+        >
+          {days.map((item) => (
+            <tr key={item.dateKey}>
+              <td className={`${cellClass} font-medium`}>{formatReportDay(item.dateKey)}</td>
+              <td className={`${cellClass} tabular-nums`}>{faNum(item.attempts)}</td>
+              <td className={`${cellClass} tabular-nums`}>{faNum(item.resolved)}</td>
+              <td className={cellClass}>
+                <span className={item.pending ? "font-medium text-amber-700" : "text-slate-500"}>{faNum(item.pending)}</span>
+              </td>
+              <td className={cellClass}>
+                <ProviderCostValue irt={item.totalCostIrt} unit={item.totalCostUnit} />
+              </td>
+            </tr>
+          ))}
+        </ConsoleTable>
+      </Surface>
+    </>
   );
 }
 

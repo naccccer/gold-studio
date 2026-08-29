@@ -195,26 +195,37 @@ export function ConsoleTable({
   children,
   empty,
   minWidth = 720,
+  label = "جدول داده‌های ادمین",
 }: {
   head: ReactNode[];
   children: ReactNode;
   empty?: ReactNode;
   minWidth?: number;
+  label?: string;
 }) {
   const hasRows = Array.isArray(children) ? children.length > 0 : Boolean(children);
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-separate border-spacing-0 text-right" style={{ minWidth }}>
-        <thead>
+    <div
+      className="overflow-x-auto outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy-300"
+      role="region"
+      aria-label={label}
+      tabIndex={0}
+    >
+      <table className="w-full border-collapse bg-white text-right" style={{ minWidth }}>
+        <thead className="bg-slate-50/90 [&>tr>th+th]:border-r [&>tr>th+th]:border-slate-200">
           <tr>
             {head.map((item, index) => (
-              <th key={index} className="border-b border-slate-100 px-4 py-2.5 text-right text-[11px] font-medium text-slate-400">
+              <th
+                key={index}
+                scope="col"
+                className="whitespace-nowrap border-b border-slate-200 px-4 py-3 text-right text-xs font-semibold text-slate-600"
+              >
                 {item}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="[&>tr+tr>td]:border-t [&>tr+tr>td]:border-slate-100 [&>tr:hover]:bg-navy-25/70">
+        <tbody className="[&>tr]:transition-colors [&>tr>td+td]:border-r [&>tr>td+td]:border-slate-100 [&>tr>td]:border-b [&>tr>td]:border-slate-200/80 [&>tr:last-child>td]:border-b-0 [&>tr:hover]:bg-navy-25/70">
           {hasRows ? children : null}
         </tbody>
       </table>

@@ -44,6 +44,7 @@ for (const script of [
   "check:image-delivery",
   "check:storage-access",
   "check:observability",
+  "check:new-project-selection",
   "lint",
   "build",
   "smoke",

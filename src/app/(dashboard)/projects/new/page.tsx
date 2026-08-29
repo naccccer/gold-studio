@@ -18,21 +18,34 @@ export default async function NewProjectPage({
   const vertical = await getCurrentVertical();
   const content = getVerticalContent(vertical);
   const params = await searchParams;
-  const [galleryAssets, styleReferences, selectedStyleReference, readySamples, styles, outputSettings] = await Promise.all([
+  const galleryAssetSelect = {
+    id: true,
+    fileUrl: true,
+    storageKey: true,
+    title: true,
+    originalName: true,
+    visionShortTitle: true,
+    productType: true,
+  } as const;
+  const [galleryAssets, selectedGalleryAsset, styleReferences, selectedStyleReference, readySamples, styles, outputSettings] = await Promise.all([
     db.productAsset.findMany({
       where: { userId: session.userId, vertical, status: "READY", archivedAt: null },
       orderBy: { createdAt: "desc" },
       take: 12,
-      select: {
-        id: true,
-        fileUrl: true,
-        storageKey: true,
-        title: true,
-        originalName: true,
-        visionShortTitle: true,
-        productType: true,
-      },
+      select: galleryAssetSelect,
     }),
+    params?.assetId
+      ? db.productAsset.findFirst({
+          where: {
+            id: params.assetId,
+            userId: session.userId,
+            vertical,
+            status: "READY",
+            archivedAt: null,
+          },
+          select: galleryAssetSelect,
+        })
+      : Promise.resolve(null),
     db.styleReferenceAsset.findMany({
       where: { userId: session.userId, vertical, status: "READY", archivedAt: null },
       orderBy: { createdAt: "desc" },
@@ -70,6 +83,10 @@ export default async function NewProjectPage({
     selectedStyleReference && !styleReferences.some((asset) => asset.id === selectedStyleReference.id)
       ? [selectedStyleReference, ...styleReferences]
       : styleReferences;
+  const resolvedGalleryAssets =
+    selectedGalleryAsset && !galleryAssets.some((asset) => asset.id === selectedGalleryAsset.id)
+      ? [selectedGalleryAsset, ...galleryAssets]
+      : galleryAssets;
   const visibleStyleReferences = resolvedStyleReferences.filter(
     (asset) => !asset.originalName?.startsWith(READY_SAMPLE_ORIGINAL_NAME_PREFIX) || asset.id === params?.referenceAssetId,
   );
@@ -77,7 +94,7 @@ export default async function NewProjectPage({
   return (
     <NewProjectScreen
       action={createProjectAction}
-      galleryAssets={galleryAssets.map((asset) => ({ ...asset, fileUrl: storageThumbnailUrl(asset.storageKey, "card") }))}
+      galleryAssets={resolvedGalleryAssets.map((asset) => ({ ...asset, fileUrl: storageThumbnailUrl(asset.storageKey, "card") }))}
       readyStyleReferences={readySamples.map((sample) => ({
         id: sample.id,
         fileUrl: storageThumbnailUrlFromKeyOrUrl(null, sample.fileUrl, "card") || sample.fileUrl,

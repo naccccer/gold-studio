@@ -42,6 +42,7 @@ npm run check:mojibake
 npm run check:image-delivery
 npm run check:storage-access
 npm run check:observability
+npm run check:new-project-selection
 npm run lint
 npm run db:deploy
 npm run build
@@ -60,13 +61,13 @@ npm run smoke -- https://ovala.ir
 - Auth: ثبت‌نام با پیامک، ورود، خروج، و فراموشی رمز.
 - Home: carousel، متن‌ها، CTAها، و رفتار Jewelry/Food.
 - Gallery: آپلود، crop، تغییر نوع محصول، نمایش فایل ذخیره‌شده، batch generation، و ذخیره در نمونه‌ها.
-- New project: catalog، with-model، sample-reference، supporting images، preset خروجی، و هزینه credit.
+- New project: انتخاب عکس از صفحه‌های قدیمی گالری، catalog، with-model، sample-reference، supporting images، preset خروجی، و هزینه credit.
 - Food project flow: product typeهای غذا/نوشیدنی، شش style Food، Food sample-reference، ذخیره در نمونه‌ها، و جداسازی کامل از Jewelry.
 - Projects: `QUEUED`, `PROCESSING`, `COMPLETED`, `FAILED`, retry، نسخه دیگر، quality review، و نمایش زمان ساخت خروجی به ثانیه.
 - Telemetry: در ادمین تفکیک صف/آماده‌سازی/provider/ذخیره دیده شود؛ request ID و هزینه دقیق Avalai حداکثر تا حدود ۳۰ ثانیه بعد توسط worker reconcile شود.
 - Account: notifications، support، referral، خروجی‌ها، آرشیو، و لینک admin برای ادمین.
 - Billing: خرید بسته/اعتبار vertical فعلی، آپلود رسید، تایید/رد از ادمین، اعمال credit و custom plan با انتخاب/نمایش صریح Jewelry یا Food.
-- Admin: health، AI/provider، assets، samples، styles، projects، outputs، quality reviews، users، billing، support، referrals، backups، audit.
+- Admin: health، AI/provider، assets، samples، styles، projects، outputs، quality reviews، users، billing، گزارش هزینه AI، support، referrals، backups، audit؛ جدول‌های عملیاتی باید header، ستون‌بندی و اسکرول افقی قابل‌تشخیص داشته باشند.
 - Image delivery: فهرست‌های projects/gallery/admin فقط thumbnail بخواهند، فایل 2K قبل از preview/download درخواست نشود، و `X-Thumbnail-Cache` در بازدید دوم `HIT` باشد.
 - Web Vitals: بعد از ترافیک واقعی، P75 مربوط به INP/LCP/CLS در `/admin/health` دیده شود؛ هدف INP زیر ۲۰۰ms و CLS زیر ۰٫۱ است.
 - Mobile target `393x852`: nav پایین، متن فارسی، RTL controls، button wrapping، forms، menus، و project result.

@@ -82,6 +82,7 @@ npm run check:mojibake
 npm run check:image-delivery
 npm run check:storage-access
 npm run check:observability
+npm run check:new-project-selection
 npm run lint
 npm run db:deploy
 npm run build

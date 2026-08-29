@@ -28,6 +28,7 @@
     "check:image-delivery": "node scripts/check-image-delivery.mjs",
     "check:storage-access": "node scripts/check-storage-access.mjs",
     "check:observability": "node scripts/check-observability.mjs",
+    "check:new-project-selection": "node scripts/check-new-project-selection.mjs",
     "check:mojibake": "node scripts/check-mojibake.mjs",
     "check:model-routing": "node scripts/check-model-routing.mjs",
     "check:prompts": "node scripts/check-prompt-policy.mjs",

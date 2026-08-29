@@ -79,12 +79,45 @@ assert.equal(summary[0].p50DurationMs, 30_000);
 assert.equal(summary[0].p95DurationMs, 50_000);
 assert.equal(summary[0].averageCostIrt, 1500);
 assert.equal(summary[0].averageCostUnit, null);
+assert.equal(summary[0].totalCostIrt, 3000);
+assert.equal(summary[0].totalCostUnit, 0);
 
 const unitOnlySummary = analytics.summarizeProviderModels([
   { provider: "avalai", model: "pro", status: "SUCCESS", durationMs: 40_000, costUnit: "0.04", costPaidIrt: "0", costGrantIrt: "0", costResolvedAt: new Date() },
 ]);
 assert.equal(unitOnlySummary[0].averageCostIrt, null);
 assert.equal(unitOnlySummary[0].averageCostUnit, 0.04);
+
+const dailyCosts = analytics.summarizeProviderCostsByDay([
+  {
+    provider: "avalai",
+    model: "flash",
+    status: "SUCCESS",
+    durationMs: 30_000,
+    costUnit: "0.01",
+    costPaidIrt: "1000",
+    costGrantIrt: "0",
+    costResolvedAt: new Date("2026-08-29T10:00:00Z"),
+    requestId: "resolved",
+    createdAt: new Date("2026-08-29T10:00:00Z"),
+  },
+  {
+    provider: "avalai",
+    model: "flash",
+    status: "SUCCESS",
+    durationMs: 40_000,
+    costUnit: null,
+    costPaidIrt: null,
+    costGrantIrt: null,
+    costResolvedAt: null,
+    requestId: "pending",
+    createdAt: new Date("2026-08-29T11:00:00Z"),
+  },
+]);
+assert.equal(dailyCosts[0].attempts, 2);
+assert.equal(dailyCosts[0].resolved, 1);
+assert.equal(dailyCosts[0].pending, 1);
+assert.equal(dailyCosts[0].totalCostIrt, 1000);
 
 const workerRoute = await readFile(new URL("../src/app/api/internal/generation/worker/route.ts", import.meta.url), "utf8");
 assert.match(workerRoute, /processNextThumbnailJob/);
@@ -97,5 +130,11 @@ assert.match(webVitalRoute, /webVitalSample\.upsert/);
 const webVitalReporter = await readFile(new URL("../src/components/web-vitals-reporter.tsx", import.meta.url), "utf8");
 assert.match(webVitalReporter, /!sampled\.current/);
 assert.doesNotMatch(webVitalReporter, /metric\.rating !== ["']poor["']/);
+const billingPage = await readFile(new URL("../src/app/admin/billing/page.tsx", import.meta.url), "utf8");
+assert.match(billingPage, /هزینه هوش مصنوعی/);
+assert.match(billingPage, /summarizeProviderCostsByDay/);
+const adminConsole = await readFile(new URL("../src/features/admin/components/console.tsx", import.meta.url), "utf8");
+assert.match(adminConsole, /scope="col"/);
+assert.match(adminConsole, /border-collapse/);
 
 console.log("OBSERVABILITY_CHECK_OK");
