@@ -26,7 +26,7 @@ Text-to-image and provider/debug controls are admin/internal only. The default u
 - Image-heavy lists use signed cached WebP thumbnails (`tiny`, `card`, `preview`) plus bounded pagination; durable low-priority worker jobs warm new images, cache retention is bounded, and original 2K files are requested only for explicit full preview, sharing, or download.
 - New-project deep links resolve the selected gallery asset independently, so selections from older paginated gallery pages remain available without loading the entire gallery.
 - Real-user Web Vitals are sampled into `/admin/health` so INP, LCP, CLS, FCP, and TTFB improvements are judged from actual devices instead of desktop-only assumptions.
-- Billing supports vertical-specific credit balances/packages, credit reservations, manual purchase review, referral/sales codes, admin-assigned custom plans, per-plan "نسخه دیگر" limits, and output-only accounting for alternate versions.
+- Billing supports vertical-specific credit balances/packages, credit reservations, manual purchase review, referral/sales codes, admin-managed discount codes, admin-assigned custom plans, per-plan "نسخه دیگر" limits, and output-only accounting for alternate versions.
 - Admin billing/user operations show and require the target vertical for manual credit changes, custom plans, package assignment, subscriptions, receipts, credit events, and user credit summaries so Jewelry and Food balances are not mixed operationally.
 - Prompt policy protects product identity: jewelry safeguards remain active, product-only outputs remove source-photo people/hands, model styles allow human context only when explicit, and sample-reference styles borrow scene/composition while preserving the uploaded product.
 - Jewelry ready style references now include a broader curated set of product, editorial, model, and watch samples for users who do not have their own style photo yet.
@@ -50,6 +50,7 @@ Multi-vertical expansion is tracked in `docs/multi-vertical-roadmap.md` on `code
 - Local vertical preview can be switched with a localhost-only `?vertical=food` / `?vertical=jewelry` cookie override, so Food accent and vertical-scoped UI can be checked without changing `.env` or restarting the dev server.
 - Style-reference entry points use a saved/bookmark-style icon treatment; save-to-samples menu actions use the matching archive-add icon.
 - Admin billing/user surfaces now separate Jewelry/Food in package assignment, custom subscriptions, manual credits, receipts, user lists, subscriptions, and credit-event history.
+- Card-to-card purchases now snapshot percentage or fixed-amount discount codes on each purchase request, reserve limited codes for 24 hours before receipt submission, and expose code management under admin billing.
 
 ## Next Priorities
 

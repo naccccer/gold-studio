@@ -9,7 +9,7 @@
 - FarazSMS pattern code و line number تایید شده باشند و signup/password reset با شماره واقعی تست شوند.
 - Avalai مسیر primary باشد و حداقل یک generation واقعی برای catalog، with-model، و sample-reference تست شود.
 - Liara در `/admin/ai` قابل انتخاب بماند و fallback/support path آن بررسی شود.
-- تنظیمات پرداخت در `/admin/billing` کامل باشد: packageها، اعتبار مستقل، پلن سفارشی کاربر، توضیح پرداخت، و اطلاعات کارت به کارت.
+- تنظیمات پرداخت در `/admin/billing` کامل باشد: packageها، اعتبار مستقل، پلن سفارشی کاربر، کدهای تخفیف، توضیح پرداخت، و اطلاعات کارت به کارت.
 - مسیرهای پشتیبانی و FAQ آماده باشند و یک تیکت تستی از سمت کاربر پاسخ داده شود.
 - Home carousel، ready style samples، style previews، و متن‌های اصلی ادمین مرور شوند.
 - Backup قبل لانچ از `/admin/backups` یا `npm run backup:run` گرفته و دانلود/بازبینی شود.
@@ -66,7 +66,7 @@ npm run smoke -- https://ovala.ir
 - Projects: `QUEUED`, `PROCESSING`, `COMPLETED`, `FAILED`, retry، نسخه دیگر، quality review، و نمایش زمان ساخت خروجی به ثانیه.
 - Telemetry: در ادمین تفکیک صف/آماده‌سازی/provider/ذخیره دیده شود؛ request ID و هزینه دقیق Avalai حداکثر تا حدود ۳۰ ثانیه بعد توسط worker reconcile شود.
 - Account: notifications، support، referral، خروجی‌ها، آرشیو، و لینک admin برای ادمین.
-- Billing: خرید بسته/اعتبار vertical فعلی، آپلود رسید، تایید/رد از ادمین، اعمال credit و custom plan با انتخاب/نمایش صریح Jewelry یا Food.
+- Billing: خرید بسته/اعتبار vertical فعلی، اعمال کد تخفیف پیش از نمایش کارت، رزرو ۲۴ ساعته کدهای محدود، آپلود رسید، تایید/رد از ادمین، اعمال credit و custom plan با انتخاب/نمایش صریح Jewelry یا Food.
 - Admin: health، AI/provider، assets، samples، styles، projects، outputs، quality reviews، users، billing، گزارش هزینه AI، support، referrals، backups، audit؛ جدول‌های عملیاتی باید header، ستون‌بندی و اسکرول افقی قابل‌تشخیص داشته باشند.
 - Image delivery: فهرست‌های projects/gallery/admin فقط thumbnail بخواهند، فایل 2K قبل از preview/download درخواست نشود، و `X-Thumbnail-Cache` در بازدید دوم `HIT` باشد.
 - Web Vitals: بعد از ترافیک واقعی، P75 مربوط به INP/LCP/CLS در `/admin/health` دیده شود؛ هدف INP زیر ۲۰۰ms و CLS زیر ۰٫۱ است.
@@ -77,7 +77,7 @@ npm run smoke -- https://ovala.ir
 - `/admin/health`: queue، failed 24h، stale processing، storage driver، thumbnail queue/cache، Web Vitals و envهای ضروری.
 - `/admin/projects`: stuck/failed projects و provider errors.
 - `/admin/quality-reviews`: درخواست‌های refund/quality pending.
-- `/admin/billing`: رسیدهای pending و پلن‌های کاربر.
+- `/admin/billing`: رسیدهای pending، مبلغ اصلی/تخفیف/مبلغ نهایی، کدهای تخفیف و پلن‌های کاربر.
 - `/admin/backups`: آخرین backup و retention.
 - `/admin/support`: تیکت‌های باز.
 - PM2 logs برای app، worker، watchdog، و backups.

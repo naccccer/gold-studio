@@ -11,6 +11,14 @@ import { markAllUserNotificationsRead } from "@/lib/notifications";
 import { applyReferralOrSalesCodeForUser } from "@/lib/referrals";
 import { saveReceiptFile } from "@/lib/uploads";
 import { getCurrentVertical } from "@/lib/current-vertical";
+import { normalizeUserVisibleVerticalId } from "@/lib/verticals";
+import {
+  applyDiscountToPurchaseRequest,
+  discountErrorMessage,
+  type DiscountActionState,
+  removeDiscountFromPurchaseRequest,
+  isDiscountReservationValidForReceipt,
+} from "@/lib/discounts";
 
 function text(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -49,20 +57,90 @@ export async function createPurchaseRequestAction(formData: FormData) {
     select: { id: true },
   });
 
-  if (!existingPending) {
-    await db.purchaseRequest.create({
+  const request = existingPending ??
+    (await db.purchaseRequest.create({
       data: {
         userId: session.userId,
         vertical,
         packageId: billingPackage.id,
+        originalAmount: billingPackage.priceAmount,
         amount: billingPackage.priceAmount,
         currency: billingPackage.currency,
       },
-    });
-  }
+      select: { id: true },
+    }));
 
   revalidatePath("/account");
   revalidatePath("/billing");
+  redirect(`/billing?tab=payment&request=${encodeURIComponent(request.id)}`);
+}
+
+export async function applyDiscountCodeAction(
+  _previousState: DiscountActionState,
+  formData: FormData,
+): Promise<DiscountActionState> {
+  const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
+  const requestId = text(formData, "requestId");
+  const code = text(formData, "code");
+
+  if (!requestId || !code) {
+    return { status: "error", message: discountErrorMessage("INVALID_CODE") };
+  }
+
+  const limited = await checkRateLimit({
+    scope: "discount:apply",
+    identifier: session.userId,
+    limit: 12,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!limited.ok) {
+    return { status: "error", message: "تعداد تلاش‌ها زیاد است؛ چند دقیقه دیگر دوباره امتحان کنید." };
+  }
+
+  const result = await applyDiscountToPurchaseRequest({
+    userId: session.userId,
+    vertical: normalizeUserVisibleVerticalId(vertical),
+    requestId,
+    rawCode: code,
+  });
+  if (!result.ok) {
+    return { status: "error", message: discountErrorMessage(result.error) };
+  }
+
+  revalidatePath("/billing");
+  return {
+    status: "success",
+    message: "کد تخفیف اعمال شد و مبلغ نهایی به‌روزرسانی شد.",
+    breakdown: {
+      originalAmount: result.originalAmount,
+      discountAmount: result.discountAmount,
+      finalAmount: result.finalAmount,
+      currency: result.currency,
+      code: result.code,
+      reservedUntil: result.reservedUntil.toISOString(),
+    },
+  };
+}
+
+export async function removeDiscountCodeAction(
+  _previousState: DiscountActionState,
+  formData: FormData,
+): Promise<DiscountActionState> {
+  const session = await requireUserSession();
+  const vertical = await getCurrentVertical();
+  const requestId = text(formData, "requestId");
+  if (!requestId) return { status: "error", message: discountErrorMessage("REQUEST_NOT_FOUND") };
+
+  const result = await removeDiscountFromPurchaseRequest({
+    userId: session.userId,
+    vertical: normalizeUserVisibleVerticalId(vertical),
+    requestId,
+  });
+  if (!result.ok) return { status: "error", message: discountErrorMessage(result.error) };
+
+  revalidatePath("/billing");
+  return { status: "success", message: "کد تخفیف حذف شد و مبلغ خرید به حالت اولیه برگشت." };
 }
 
 export async function submitPurchaseReceiptAction(formData: FormData) {
@@ -93,11 +171,15 @@ export async function submitPurchaseReceiptAction(formData: FormData) {
       vertical,
       status: "PENDING",
     },
-    select: { id: true },
+    select: { id: true, discountCodeId: true, discountReservedUntil: true, receiptSubmittedAt: true },
   });
 
   if (!request) {
     return;
+  }
+
+  if (!isDiscountReservationValidForReceipt(request)) {
+    redirect(`/billing?tab=payment&request=${encodeURIComponent(request.id)}&discountError=reservation_expired`);
   }
 
   const uploaded = await saveReceiptFile(receipt);

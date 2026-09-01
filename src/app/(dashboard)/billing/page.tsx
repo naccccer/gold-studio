@@ -8,7 +8,7 @@ import { storageUrlFromKeyOrUrl } from "@/lib/storage";
 export const dynamic = "force-dynamic";
 
 type BillingPageProps = {
-  searchParams?: Promise<{ tab?: string }>;
+  searchParams?: Promise<{ tab?: string; request?: string; discountError?: string }>;
 };
 
 const billingTabs = ["packages", "credits", "payment", "receipts"] as const;
@@ -18,11 +18,12 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   const vertical = await getCurrentVertical();
   const params = await searchParams;
   const requestedTab = params?.tab;
+  const selectedRequestId = params?.request?.trim() || null;
   const activeTab = billingTabs.includes(requestedTab as (typeof billingTabs)[number])
     ? (requestedTab as (typeof billingTabs)[number])
     : "packages";
 
-  const [user, packages, purchaseRequests, paymentSettings] = await Promise.all([
+  const [user, packages, purchaseRequests, paymentSettings, selectedPurchaseRequest] = await Promise.all([
     db.user.findUnique({
       where: { id: session.userId },
       select: { id: true },
@@ -53,15 +54,46 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
         packageId: true,
         status: true,
         amount: true,
+        originalAmount: true,
         currency: true,
+        discountCodeId: true,
+        discountCodeSnapshot: true,
+        discountTypeSnapshot: true,
+        discountValueSnapshot: true,
+        discountAmount: true,
+        discountReservedUntil: true,
         receiptImageUrl: true,
         receiptStorageKey: true,
         receiptSubmittedAt: true,
         updatedAt: true,
-        package: { select: { title: true } },
+        package: { select: { title: true, type: true, colorPreset: true } },
       },
     }),
     db.paymentSettings.findUnique({ where: { id: "default" } }),
+    selectedRequestId
+      ? db.purchaseRequest.findFirst({
+          where: { id: selectedRequestId, userId: session.userId, vertical, status: "PENDING" },
+          select: {
+            id: true,
+            packageId: true,
+            status: true,
+            amount: true,
+            originalAmount: true,
+            currency: true,
+            discountCodeId: true,
+            discountCodeSnapshot: true,
+            discountTypeSnapshot: true,
+            discountValueSnapshot: true,
+            discountAmount: true,
+            discountReservedUntil: true,
+            receiptImageUrl: true,
+            receiptStorageKey: true,
+            receiptSubmittedAt: true,
+            updatedAt: true,
+            package: { select: { title: true, type: true, colorPreset: true } },
+          },
+        })
+      : Promise.resolve(null),
   ]);
 
   if (!user) {
@@ -77,8 +109,20 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
         ...request,
         receiptImageUrl: storageUrlFromKeyOrUrl(request.receiptStorageKey, request.receiptImageUrl),
       }))}
+      selectedPurchaseRequest={
+        selectedPurchaseRequest
+          ? {
+              ...selectedPurchaseRequest,
+              receiptImageUrl: storageUrlFromKeyOrUrl(
+                selectedPurchaseRequest.receiptStorageKey,
+                selectedPurchaseRequest.receiptImageUrl,
+              ),
+            }
+          : null
+      }
       paymentSettings={paymentSettings}
       activeTab={activeTab}
+      discountError={params?.discountError ?? null}
     />
   );
 }

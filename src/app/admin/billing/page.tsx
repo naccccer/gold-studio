@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Add, ArrowDown2, Copy, ReceiptText, Save2 } from "vuesax-icons-react";
+import { Add, ArrowDown2, Copy, DiscountShape, ReceiptText, Save2 } from "vuesax-icons-react";
 import type { Prisma } from "@/generated/prisma";
 import { ConfirmAction } from "@/components/ui/confirm-action";
 import {
@@ -31,22 +31,27 @@ import { requireAdminOrSalesSession } from "@/lib/auth/session";
 import { creditUnitsToVisibleCredits } from "@/lib/credit-units";
 import {
   approvePurchaseRequestAction,
+  archiveDiscountCodeAction,
   createBillingPackageAction,
+  createDiscountCodeAction,
   deleteBillingPackageAction,
   duplicateBillingPackageAction,
   rejectPurchaseRequestAction,
+  toggleDiscountCodeAction,
   updateBillingPackageAction,
+  updateDiscountCodeAction,
   updatePaymentSettingsAction,
 } from "@/features/admin/actions";
 import { getUserDisplayName, getUserIdentifier } from "@/lib/auth/user-identity";
 import { db } from "@/lib/db";
 import { storageUrlFromKeyOrUrl } from "@/lib/storage";
 import { getVerticalLabel, USER_VISIBLE_VERTICAL_IDS } from "@/lib/verticals";
+import { formatDateTimeLocalInTehran } from "@/lib/discounts";
 
 export const dynamic = "force-dynamic";
 
 type AdminBillingPageProps = {
-  searchParams?: Promise<{ tab?: string; range?: string }>;
+  searchParams?: Promise<{ tab?: string; range?: string; error?: string; saved?: string }>;
 };
 
 const providerCostEventSelect = {
@@ -63,10 +68,10 @@ const providerCostEventSelect = {
 } satisfies Prisma.ProviderEventSelect;
 
 type ProviderCostEvent = Prisma.ProviderEventGetPayload<{ select: typeof providerCostEventSelect }>;
-type AdminBillingTab = "costs" | "packages" | "settings";
+type AdminBillingTab = "costs" | "packages" | "discounts" | "settings";
 
 function isAdminBillingTab(value: string | undefined): value is AdminBillingTab {
-  return value === "costs" || value === "packages" || value === "settings";
+  return value === "costs" || value === "packages" || value === "discounts" || value === "settings";
 }
 
 export default async function AdminBillingPage({ searchParams }: AdminBillingPageProps) {
@@ -78,7 +83,7 @@ export default async function AdminBillingPage({ searchParams }: AdminBillingPag
   const costsSince = new Date();
   costsSince.setDate(costsSince.getDate() - rangeDays);
 
-  const [packages, paymentSettings, pendingPurchases, pendingCount, providerCostEvents] = await Promise.all([
+  const [packages, paymentSettings, pendingPurchases, pendingCount, providerCostEvents, discountCodes] = await Promise.all([
     db.billingPackage.findMany({
       where: { archivedAt: null },
       orderBy: [{ vertical: "asc" }, { type: "desc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
@@ -100,6 +105,18 @@ export default async function AdminBillingPage({ searchParams }: AdminBillingPag
           select: providerCostEventSelect,
         })
       : Promise.resolve([] as ProviderCostEvent[]),
+    isAdmin
+      ? db.discountCode.findMany({
+          where: { archivedAt: null },
+          orderBy: [{ isActive: "desc" }, { createdAt: "desc" }],
+          include: {
+            packages: { include: { package: true } },
+            purchaseRequests: {
+              select: { userId: true, status: true, receiptSubmittedAt: true, discountReservedUntil: true },
+            },
+          },
+        })
+      : Promise.resolve([]),
   ]);
 
   return (
@@ -122,15 +139,20 @@ export default async function AdminBillingPage({ searchParams }: AdminBillingPag
             ? [
                 { href: "/admin/billing?tab=costs", label: "هزینه هوش مصنوعی", active: activeTab === "costs" },
                 { href: "/admin/billing?tab=packages", label: "کاتالوگ بسته‌ها", active: activeTab === "packages", count: packages.length },
+                { href: "/admin/billing?tab=discounts", label: "کدهای تخفیف", active: activeTab === "discounts", count: discountCodes.length },
                 { href: "/admin/billing?tab=settings", label: "تنظیمات پرداخت", active: activeTab === "settings" },
               ]
             : []),
         ]}
       />
 
+      {params?.error ? <p className="rounded-lg bg-rose-50 px-4 py-3 text-xs font-medium text-rose-700">{params.error}</p> : null}
+      {params?.saved === "1" ? <p className="rounded-lg bg-emerald-50 px-4 py-3 text-xs font-medium text-emerald-700">کد تخفیف ذخیره شد.</p> : null}
+
       {activeTab === "receipts" ? <ReceiptsTab pendingPurchases={pendingPurchases} /> : null}
       {activeTab === "costs" ? <AiCostsTab events={providerCostEvents} rangeDays={rangeDays} /> : null}
       {activeTab === "packages" ? <PackagesTab packages={packages} /> : null}
+      {activeTab === "discounts" ? <DiscountCodesTab discountCodes={discountCodes} packages={packages} /> : null}
       {activeTab === "settings" ? <SettingsTab paymentSettings={paymentSettings} /> : null}
     </>
   );
@@ -298,7 +320,17 @@ function ReceiptsTab({ pendingPurchases }: { pendingPurchases: PendingPurchase[]
                   {getUserIdentifier(request.user)}
                 </p>
               </td>
-              <td className={`${cellClass} tabular-nums`}>{formatIrr(request.amount, request.currency)}</td>
+              <td className={`${cellClass} tabular-nums`}>
+                <span className="font-medium text-navy-950">{formatIrr(request.amount, request.currency)}</span>
+                {request.discountCodeSnapshot ? (
+                  <p className="mt-0.5 text-[11px] text-emerald-700">
+                    {request.discountCodeSnapshot} · تخفیف {formatIrr(request.discountAmount, request.currency)}
+                  </p>
+                ) : null}
+                {request.discountAmount > 0 ? (
+                  <p className="text-[11px] text-slate-400 line-through">{formatIrr(request.originalAmount, request.currency)}</p>
+                ) : null}
+              </td>
               <td className={cellClass}>
                 {receiptUrl ? (
                   <a
@@ -603,6 +635,237 @@ function PackagesTab({ packages }: { packages: BillingPackageWithCounts[] }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+type DiscountCodeWithUsage = Prisma.DiscountCodeGetPayload<{
+  include: {
+    packages: { include: { package: true } };
+    purchaseRequests: {
+      select: { userId: true; status: true; receiptSubmittedAt: true; discountReservedUntil: true };
+    };
+  };
+}>;
+
+function discountUsage(discountCode: DiscountCodeWithUsage, now = new Date()) {
+  let redeemed = 0;
+  let reserved = 0;
+  for (const request of discountCode.purchaseRequests) {
+    if (request.status === "APPROVED") redeemed += 1;
+    else if (
+      request.status === "PENDING" &&
+      (request.receiptSubmittedAt || (request.discountReservedUntil && request.discountReservedUntil > now))
+    ) {
+      reserved += 1;
+    }
+  }
+  return { redeemed, reserved, total: redeemed + reserved };
+}
+
+function discountValueLabel(discountCode: Pick<DiscountCodeWithUsage, "type" | "value">) {
+  return discountCode.type === "PERCENTAGE" ? `٪${faNum(discountCode.value)}` : formatIrr(discountCode.value, "IRR");
+}
+
+function discountScopeLabel(discountCode: DiscountCodeWithUsage) {
+  if (discountCode.scope === "ALL_PACKAGES") return "همه بسته‌ها";
+  if (discountCode.scope === "VERTICAL") return getVerticalLabel(discountCode.vertical ?? "jewelry");
+  return `${faNum(discountCode.packages.length)} بسته منتخب`;
+}
+
+function discountStatus(discountCode: DiscountCodeWithUsage, usage: ReturnType<typeof discountUsage>, now = new Date()) {
+  if (!discountCode.isActive) return { status: "PAUSED", label: "غیرفعال" };
+  if (discountCode.startsAt && discountCode.startsAt > now) return { status: "PENDING", label: "زمان‌بندی‌شده" };
+  if (discountCode.expiresAt && discountCode.expiresAt <= now) return { status: "EXPIRED", label: "منقضی" };
+  if (discountCode.maxRedemptions !== null && usage.total >= discountCode.maxRedemptions) {
+    return { status: "EXPIRED", label: "ظرفیت تکمیل" };
+  }
+  return { status: "ACTIVE", label: "فعال" };
+}
+
+function DiscountCodeFormFields({
+  discountCode,
+  packages,
+}: {
+  discountCode?: DiscountCodeWithUsage;
+  packages: BillingPackageWithCounts[];
+}) {
+  const selectedPackageIds = new Set(discountCode?.packages.map((item) => item.packageId) ?? []);
+  return (
+    <>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Field label="کد">
+          <input
+            name="code"
+            required
+            minLength={3}
+            maxLength={32}
+            pattern="[A-Za-z0-9_-]{3,32}"
+            defaultValue={discountCode?.code}
+            placeholder="OVALA20"
+            dir="ltr"
+            className={`${fieldClass} text-left uppercase tracking-wide`}
+          />
+        </Field>
+        <Field label="نوع تخفیف">
+          <select name="discountType" defaultValue={discountCode?.type ?? "PERCENTAGE"} className={fieldClass}>
+            <option value="PERCENTAGE">درصدی</option>
+            <option value="FIXED_AMOUNT">مبلغ ثابت ریالی</option>
+          </select>
+        </Field>
+        <Field label="مقدار" hint="درصد ۱ تا ۹۹ یا مبلغ ریالی">
+          <input name="discountValue" type="number" min={1} required defaultValue={discountCode?.value} className={fieldClass} />
+        </Field>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Field label="دامنه">
+          <select name="scope" defaultValue={discountCode?.scope ?? "ALL_PACKAGES"} className={fieldClass}>
+            <option value="ALL_PACKAGES">همه بسته‌ها</option>
+            <option value="VERTICAL">یک حوزه</option>
+            <option value="PACKAGES">بسته‌های منتخب</option>
+          </select>
+        </Field>
+        <Field label="حوزه" hint="فقط برای دامنه «یک حوزه»">
+          <select name="vertical" defaultValue={discountCode?.vertical ?? "jewelry"} className={fieldClass}>
+            {USER_VISIBLE_VERTICAL_IDS.map((vertical) => <option key={vertical} value={vertical}>{getVerticalLabel(vertical)}</option>)}
+          </select>
+        </Field>
+        <Field label="سقف استفاده" hint="برای نامحدود خالی بگذارید">
+          <input name="maxRedemptions" type="number" min={1} defaultValue={discountCode?.maxRedemptions ?? ""} className={fieldClass} />
+        </Field>
+      </div>
+
+      <fieldset className="rounded-lg border border-slate-200 p-3">
+        <legend className="px-1 text-xs font-medium text-slate-600">بسته‌های منتخب</legend>
+        <p className="mb-2 text-[11px] text-slate-400">فقط وقتی دامنه روی «بسته‌های منتخب» است استفاده می‌شود.</p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {packages.map((billingPackage) => (
+            <label key={billingPackage.id} className="flex items-start gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-navy-900">
+              <input
+                name="packageIds"
+                type="checkbox"
+                value={billingPackage.id}
+                defaultChecked={selectedPackageIds.has(billingPackage.id)}
+                className={`${checkboxClass} mt-0.5`}
+              />
+              <span>
+                <b>{billingPackage.title}</b>
+                <span className="mt-0.5 block text-[11px] text-slate-400">
+                  {getVerticalLabel(billingPackage.vertical)} · {billingPackage.type === "SUBSCRIPTION" ? "اشتراک" : "اعتبار"}
+                </span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Field label="شروع (زمان تهران)" hint="اختیاری">
+          <input name="startsAt" type="datetime-local" defaultValue={formatDateTimeLocalInTehran(discountCode?.startsAt)} className={fieldClass} />
+        </Field>
+        <Field label="پایان (زمان تهران)" hint="اختیاری">
+          <input name="expiresAt" type="datetime-local" defaultValue={formatDateTimeLocalInTehran(discountCode?.expiresAt)} className={fieldClass} />
+        </Field>
+        <Field label="یادداشت داخلی">
+          <input name="note" defaultValue={discountCode?.note ?? ""} className={fieldClass} />
+        </Field>
+      </div>
+
+      <label className="inline-flex items-center gap-2 text-xs font-medium text-navy-900">
+        <input name="isActive" type="checkbox" defaultChecked={discountCode ? discountCode.isActive : true} className={checkboxClass} />
+        کد برای رزروهای جدید فعال باشد
+      </label>
+    </>
+  );
+}
+
+function DiscountCodeEditor({ discountCode, packages }: { discountCode: DiscountCodeWithUsage; packages: BillingPackageWithCounts[] }) {
+  return (
+    <form action={updateDiscountCodeAction} className="grid gap-3">
+      <input type="hidden" name="discountCodeId" value={discountCode.id} />
+      <input type="hidden" name="nextActive" value={String(!discountCode.isActive)} />
+      <DiscountCodeFormFields discountCode={discountCode} packages={packages} />
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
+        <div className="flex flex-wrap gap-1.5">
+          <button className={btnPrimary}><Save2 className="h-4 w-4" />ذخیره تغییرات</button>
+          <button formAction={toggleDiscountCodeAction} className={btnSecondary}>{discountCode.isActive ? "غیرفعال‌کردن" : "فعال‌کردن"}</button>
+        </div>
+        <ConfirmAction
+          action={archiveDiscountCodeAction}
+          fields={[{ name: "discountCodeId", value: discountCode.id }]}
+          title="کد تخفیف آرشیو شود؟"
+          description="برای استفاده‌های جدید غیرفعال می‌شود و سابقه خریدها باقی می‌ماند."
+          confirmLabel="آرشیو"
+          triggerLabel="آرشیو کد"
+          triggerClassName={btnDanger}
+          triggerIcon="trash"
+        />
+      </div>
+    </form>
+  );
+}
+
+function DiscountCodesTab({ discountCodes, packages }: { discountCodes: DiscountCodeWithUsage[]; packages: BillingPackageWithCounts[] }) {
+  const usage = discountCodes.map((discountCode) => ({ discountCode, usage: discountUsage(discountCode) }));
+  const activeCount = usage.filter(({ discountCode, usage: itemUsage }) => discountStatus(discountCode, itemUsage).status === "ACTIVE").length;
+  const reservedCount = usage.reduce((sum, item) => sum + item.usage.reserved, 0);
+  const redeemedCount = usage.reduce((sum, item) => sum + item.usage.redeemed, 0);
+
+  return (
+    <div className="space-y-4">
+      <StatBar items={[
+        { label: "کد فعال", value: activeCount, tone: "success" },
+        { label: "رزرو جاری", value: reservedCount, tone: reservedCount ? "attention" : "neutral" },
+        { label: "استفاده تاییدشده", value: redeemedCount },
+      ]} />
+
+      <Disclosure summary={<><Add className="h-4 w-4 text-slate-400" />ساخت کد تخفیف</>}>
+        <form action={createDiscountCodeAction} className="grid gap-3">
+          <DiscountCodeFormFields packages={packages} />
+          <div className="border-t border-slate-100 pt-3">
+            <button className={btnPrimary}><DiscountShape className="h-4 w-4" />ساخت کد</button>
+          </div>
+        </form>
+      </Disclosure>
+
+      <Surface>
+        <div className="border-b border-slate-100 px-4 py-3.5">
+          <h2 className="text-sm font-semibold text-navy-950">کدهای تخفیف</h2>
+          <p className="mt-0.5 text-xs text-slate-500">رزروها ۲۴ ساعت اعتبار دارند؛ ارسال رسید، سهم را تا تصمیم نهایی نگه می‌دارد.</p>
+        </div>
+        {discountCodes.length === 0 ? (
+          <div className="p-8"><EmptyState title="کد تخفیفی ثبت نشده است." /></div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {usage.map(({ discountCode, usage: itemUsage }) => {
+              const status = discountStatus(discountCode, itemUsage);
+              return (
+                <details key={discountCode.id} className="group">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm transition hover:bg-navy-25/70 group-open:bg-navy-50/80 [&::-webkit-details-marker]:hidden">
+                    <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1.5">
+                      <StatusDot status={status.status} label={status.label} />
+                      <b className="tracking-wide text-navy-950" dir="ltr">{discountCode.code}</b>
+                      <span className="font-semibold text-emerald-700">{discountValueLabel(discountCode)}</span>
+                      <span className="text-xs text-slate-500">{discountScopeLabel(discountCode)}</span>
+                      <span className="text-[11px] text-slate-400">
+                        {faNum(itemUsage.redeemed)} مصرف · {faNum(itemUsage.reserved)} رزرو
+                        {discountCode.maxRedemptions !== null ? ` از ${faNum(discountCode.maxRedemptions)}` : ""}
+                      </span>
+                    </span>
+                    <ArrowDown2 className="h-3.5 w-3.5 shrink-0 text-slate-400 transition duration-200 group-open:rotate-180" />
+                  </summary>
+                  <div className="border-y border-slate-200 bg-slate-50 p-3">
+                    <div className="rounded-lg border border-slate-200 bg-white p-4">
+                      <DiscountCodeEditor discountCode={discountCode} packages={packages} />
+                    </div>
+                  </div>
+                </details>
+              );
+            })}
+          </div>
+        )}
+      </Surface>
     </div>
   );
 }

@@ -6,7 +6,7 @@ import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
-import type { Prisma } from "@/generated/prisma";
+import type { DiscountScope, DiscountType, Prisma } from "@/generated/prisma";
 import sharp from "sharp";
 import { db } from "@/lib/db";
 import { requireAdminOrSalesSession, requireAdminSession } from "@/lib/auth/session";
@@ -15,6 +15,11 @@ import { normalizeLoginIdentifier } from "@/lib/auth/identifier";
 import { hashPassword } from "@/lib/auth/password";
 import { getSubscriptionPeriod, logAdminAudit } from "@/lib/billing";
 import { normalizeBillingPlanColorPreset } from "@/lib/billing-plan-colors";
+import {
+  isValidDiscountCodeFormat,
+  normalizeDiscountCode,
+  parseTehranDateTime,
+} from "@/lib/discounts";
 import { creditUnitsToVisibleCredits, visibleCreditsToCreditUnits } from "@/lib/credit-units";
 import { INITIAL_SIGNUP_CREDITS } from "@/lib/credits";
 import { processImageProject } from "@/lib/generation/jobs";
@@ -500,6 +505,181 @@ export async function updatePaymentSettingsAction(formData: FormData) {
     summary: "تنظیمات کارت‌به‌کارت به‌روزرسانی شد.",
   });
 
+  revalidateAdmin();
+}
+
+function discountAdminRedirect(message: string): never {
+  redirect(`/admin/billing?tab=discounts&error=${encodeURIComponent(message)}`);
+}
+
+async function discountCodeInput(formData: FormData, exceptId?: string) {
+  const code = normalizeDiscountCode(text(formData, "code"));
+  const type: DiscountType = text(formData, "discountType") === "FIXED_AMOUNT" ? "FIXED_AMOUNT" : "PERCENTAGE";
+  const value = integer(formData, "discountValue");
+  const scopeInput = text(formData, "scope");
+  const scope: DiscountScope = scopeInput === "VERTICAL" ? "VERTICAL" : scopeInput === "PACKAGES" ? "PACKAGES" : "ALL_PACKAGES";
+  const vertical = scope === "VERTICAL" ? normalizeUserVisibleVerticalId(text(formData, "vertical")) : null;
+  const startsAtRaw = text(formData, "startsAt");
+  const expiresAtRaw = text(formData, "expiresAt");
+  const startsAt = startsAtRaw ? parseTehranDateTime(startsAtRaw) : null;
+  const expiresAt = expiresAtRaw ? parseTehranDateTime(expiresAtRaw) : null;
+  const maxRedemptions = optionalInteger(formData, "maxRedemptions");
+  const packageIds = Array.from(
+    new Set(formData.getAll("packageIds").map((item) => String(item).trim()).filter(Boolean)),
+  );
+
+  if (!isValidDiscountCodeFormat(code)) {
+    return { ok: false as const, error: "کد باید ۳ تا ۳۲ کاراکتر و شامل حروف لاتین، عدد، خط تیره یا زیرخط باشد." };
+  }
+  if ((type === "PERCENTAGE" && (value < 1 || value > 99)) || (type === "FIXED_AMOUNT" && value < 1)) {
+    return { ok: false as const, error: type === "PERCENTAGE" ? "درصد تخفیف باید بین ۱ تا ۹۹ باشد." : "مبلغ تخفیف باید بیشتر از صفر باشد." };
+  }
+  if ((startsAtRaw && !startsAt) || (expiresAtRaw && !expiresAt) || (startsAt && expiresAt && startsAt >= expiresAt)) {
+    return { ok: false as const, error: "بازه زمانی کد تخفیف معتبر نیست." };
+  }
+  if (maxRedemptions !== null && maxRedemptions < 1) {
+    return { ok: false as const, error: "سقف استفاده باید خالی یا حداقل یک باشد." };
+  }
+  if (scope === "PACKAGES" && packageIds.length === 0) {
+    return { ok: false as const, error: "برای دامنه بسته‌های منتخب، حداقل یک بسته انتخاب کنید." };
+  }
+
+  const [duplicate, packageCount] = await Promise.all([
+    db.discountCode.findFirst({ where: { code, ...(exceptId ? { id: { not: exceptId } } : {}) }, select: { id: true } }),
+    scope === "PACKAGES" ? db.billingPackage.count({ where: { id: { in: packageIds }, archivedAt: null } }) : Promise.resolve(0),
+  ]);
+  if (duplicate) return { ok: false as const, error: "این کد قبلاً ثبت شده است." };
+  if (scope === "PACKAGES" && packageCount !== packageIds.length) {
+    return { ok: false as const, error: "یکی از بسته‌های انتخاب‌شده معتبر نیست." };
+  }
+
+  return {
+    ok: true as const,
+    data: {
+      code,
+      type,
+      value,
+      scope,
+      vertical,
+      startsAt,
+      expiresAt,
+      maxRedemptions,
+      note: text(formData, "note") || null,
+      isActive: formData.has("isActive"),
+      packageIds: scope === "PACKAGES" ? packageIds : [],
+    },
+  };
+}
+
+export async function createDiscountCodeAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const input = await discountCodeInput(formData);
+  if (!input.ok) discountAdminRedirect(input.error);
+
+  const discountCode = await db.discountCode.create({
+    data: {
+      code: input.data.code,
+      type: input.data.type,
+      value: input.data.value,
+      scope: input.data.scope,
+      vertical: input.data.vertical,
+      startsAt: input.data.startsAt,
+      expiresAt: input.data.expiresAt,
+      maxRedemptions: input.data.maxRedemptions,
+      note: input.data.note,
+      isActive: input.data.isActive,
+      createdByAdminId: session.userId,
+      packages: { create: input.data.packageIds.map((packageId) => ({ packageId })) },
+    },
+  });
+
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: "discount.create",
+    targetType: "DiscountCode",
+    targetId: discountCode.id,
+    summary: `کد تخفیف ${discountCode.code} ساخته شد.`,
+    metadata: { type: discountCode.type, value: discountCode.value, scope: discountCode.scope },
+  });
+  revalidateAdmin();
+  redirect("/admin/billing?tab=discounts&saved=1");
+}
+
+export async function updateDiscountCodeAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const discountCodeId = text(formData, "discountCodeId");
+  if (!discountCodeId) discountAdminRedirect("کد تخفیف پیدا نشد.");
+  const existing = await db.discountCode.findFirst({ where: { id: discountCodeId, archivedAt: null }, select: { id: true } });
+  if (!existing) discountAdminRedirect("کد تخفیف پیدا نشد.");
+
+  const input = await discountCodeInput(formData, discountCodeId);
+  if (!input.ok) discountAdminRedirect(input.error);
+
+  await db.discountCode.update({
+    where: { id: discountCodeId },
+    data: {
+      code: input.data.code,
+      type: input.data.type,
+      value: input.data.value,
+      scope: input.data.scope,
+      vertical: input.data.vertical,
+      startsAt: input.data.startsAt,
+      expiresAt: input.data.expiresAt,
+      maxRedemptions: input.data.maxRedemptions,
+      note: input.data.note,
+      isActive: input.data.isActive,
+      packages: {
+        deleteMany: {},
+        create: input.data.packageIds.map((packageId) => ({ packageId })),
+      },
+    },
+  });
+
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: "discount.update",
+    targetType: "DiscountCode",
+    targetId: discountCodeId,
+    summary: `کد تخفیف ${input.data.code} ویرایش شد.`,
+    metadata: { type: input.data.type, value: input.data.value, scope: input.data.scope },
+  });
+  revalidateAdmin();
+  redirect("/admin/billing?tab=discounts&saved=1");
+}
+
+export async function toggleDiscountCodeAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const discountCodeId = text(formData, "discountCodeId");
+  const isActive = text(formData, "nextActive") === "true";
+  if (!discountCodeId) return;
+
+  const updated = await db.discountCode.updateMany({ where: { id: discountCodeId, archivedAt: null }, data: { isActive } });
+  if (!updated.count) return;
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: isActive ? "discount.activate" : "discount.deactivate",
+    targetType: "DiscountCode",
+    targetId: discountCodeId,
+    summary: isActive ? "کد تخفیف فعال شد." : "کد تخفیف غیرفعال شد.",
+  });
+  revalidateAdmin();
+}
+
+export async function archiveDiscountCodeAction(formData: FormData) {
+  const session = await requireAdminSession();
+  const discountCodeId = text(formData, "discountCodeId");
+  if (!discountCodeId) return;
+
+  const discountCode = await db.discountCode.findFirst({ where: { id: discountCodeId, archivedAt: null }, select: { code: true } });
+  if (!discountCode) return;
+  await db.discountCode.update({ where: { id: discountCodeId }, data: { isActive: false, archivedAt: new Date() } });
+  await logAdminAudit({
+    actorAdminId: session.userId,
+    action: "discount.archive",
+    targetType: "DiscountCode",
+    targetId: discountCodeId,
+    summary: `کد تخفیف ${discountCode.code} آرشیو شد.`,
+  });
   revalidateAdmin();
 }
 
@@ -1063,7 +1243,14 @@ export async function approvePurchaseRequestAction(formData: FormData) {
       targetType: "PurchaseRequest",
       targetId: requestId,
       summary: `درخواست خرید ${result.package.title} تایید شد.`,
-      metadata: { vertical: normalizeUserVisibleVerticalId(result.vertical), packageId: result.packageId },
+      metadata: {
+        vertical: normalizeUserVisibleVerticalId(result.vertical),
+        packageId: result.packageId,
+        originalAmount: result.originalAmount,
+        discountAmount: result.discountAmount,
+        finalAmount: result.amount,
+        discountCode: result.discountCodeSnapshot,
+      },
     });
   }
   revalidateAdmin();

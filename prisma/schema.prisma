@@ -63,6 +63,17 @@ enum PurchaseRequestStatus {
   CANCELED
 }
 
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+enum DiscountScope {
+  ALL_PACKAGES
+  VERTICAL
+  PACKAGES
+}
+
 enum CreditEventSource {
   SIGNUP
   ADMIN
@@ -179,6 +190,7 @@ model User {
   createdSalesReferralCodes  SalesReferralCode[]           @relation("SalesReferralCodeAdmin")
   ownedSalesReferralCodes    SalesReferralCode[]           @relation("SalesReferralCodeSalesUser")
   redeemedSalesReferralCodes SalesReferralCode[]           @relation("SalesReferralCodeRedeemer")
+  createdDiscountCodes       DiscountCode[]                 @relation("DiscountCodeAdmin")
   startGuideSeenAt           DateTime?
   createdAt                  DateTime                      @default(now())
   updatedAt                  DateTime                      @updatedAt
@@ -460,6 +472,7 @@ model BillingPackage {
   subscriptions    UserSubscription[]
   purchaseRequests PurchaseRequest[]
   creditEvents     CreditEvent[]
+  discountCodes    DiscountCodePackage[]
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 
@@ -526,8 +539,17 @@ model PurchaseRequest {
   packageId          String
   package            BillingPackage        @relation(fields: [packageId], references: [id], onDelete: Restrict)
   status             PurchaseRequestStatus @default(PENDING)
+  originalAmount     Int
   amount             Int
   currency           String                @default("IRR")
+  discountCodeId     String?
+  discountCode       DiscountCode?         @relation(fields: [discountCodeId], references: [id], onDelete: SetNull)
+  discountCodeSnapshot String?
+  discountTypeSnapshot DiscountType?
+  discountValueSnapshot Int?
+  discountAmount     Int                   @default(0)
+  discountAppliedAt  DateTime?
+  discountReservedUntil DateTime?
   receiptImageUrl    String?
   receiptStorageKey  String?
   receiptNote        String?               @db.Text
@@ -542,7 +564,42 @@ model PurchaseRequest {
   @@index([userId, status])
   @@index([userId, vertical, status])
   @@index([packageId])
+  @@index([discountCodeId, status])
   @@index([status, createdAt])
+}
+
+model DiscountCode {
+  id               String                @id @default(cuid())
+  code             String                @unique
+  type             DiscountType
+  value            Int
+  scope            DiscountScope         @default(ALL_PACKAGES)
+  vertical         String?
+  startsAt         DateTime?
+  expiresAt        DateTime?
+  maxRedemptions   Int?
+  isActive         Boolean               @default(true)
+  note             String?               @db.Text
+  archivedAt       DateTime?
+  createdByAdminId String
+  createdByAdmin   User                  @relation("DiscountCodeAdmin", fields: [createdByAdminId], references: [id], onDelete: Restrict)
+  packages         DiscountCodePackage[]
+  purchaseRequests PurchaseRequest[]
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  @@index([isActive, archivedAt, startsAt, expiresAt])
+  @@index([createdByAdminId, createdAt])
+}
+
+model DiscountCodePackage {
+  discountCodeId String
+  discountCode   DiscountCode   @relation(fields: [discountCodeId], references: [id], onDelete: Cascade)
+  packageId      String
+  package        BillingPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@id([discountCodeId, packageId])
+  @@index([packageId])
 }
 
 model PaymentSettings {

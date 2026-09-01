@@ -1,13 +1,15 @@
 import Link from "next/link";
-import { Bank, Card, DocumentUpload, Layer, ReceiptText, TickCircle, Trash, Wallet, type Icon } from "vuesax-icons-react";
+import { Bank, Card, DiscountShape, DocumentUpload, Layer, ReceiptText, TickCircle, Timer, Trash, Wallet, type Icon } from "vuesax-icons-react";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { fieldControlClassName } from "@/components/ui/field";
 import { PageShell } from "@/components/ui/page-shell";
 import { StatusPill } from "@/components/ui/status-pill";
 import { createPurchaseRequestAction, deletePurchaseRequestAction, submitPurchaseReceiptAction } from "@/features/account/actions";
 import { CopyCardNumberButton } from "@/features/account/components/copy-card-number-button";
+import { DiscountCodeForm } from "@/features/account/components/discount-code-form";
 import { AccountSectionHeader, accountCardClass } from "@/features/account/components/account-subpage";
 import { normalizeBillingPlanColorPreset, type BillingPlanColorPreset } from "@/lib/billing-plan-colors";
+import { getPurchaseDiscountView } from "@/lib/discounts";
 
 type BillingPackage = {
   id: string;
@@ -28,11 +30,18 @@ type PendingPurchase = {
   packageId: string;
   status: string;
   amount: number;
+  originalAmount: number;
   currency: string;
+  discountCodeId: string | null;
+  discountCodeSnapshot: string | null;
+  discountTypeSnapshot: "PERCENTAGE" | "FIXED_AMOUNT" | null;
+  discountValueSnapshot: number | null;
+  discountAmount: number;
+  discountReservedUntil: Date | null;
   receiptImageUrl: string | null;
   receiptSubmittedAt: Date | null;
   updatedAt: Date;
-  package: { title: string };
+  package: { title: string; type: string; colorPreset: string };
 };
 
 type PaymentSettings = {
@@ -45,8 +54,10 @@ type PaymentSettings = {
 type BillingScreenProps = {
   packages: BillingPackage[];
   purchaseRequests: PendingPurchase[];
+  selectedPurchaseRequest: PendingPurchase | null;
   paymentSettings: PaymentSettings;
   activeTab: BillingTab;
+  discountError: string | null;
 };
 
 type BillingTab = "packages" | "credits" | "payment" | "receipts";
@@ -83,6 +94,14 @@ function purchaseStatusCopy(request: PendingPurchase) {
 
   return { label: "منتظر رسید", detail: "بعد از کارت‌به‌کارت، تصویر رسید را در همین بخش ارسال کنید.", variant: "accent" as const };
 }
+
+const reservationFormatter = new Intl.DateTimeFormat("fa-IR", {
+  month: "short",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Asia/Tehran",
+});
 
 const subscriptionCardSkins = {
   amber: {
@@ -199,7 +218,7 @@ function PackageCard({
       {pending ? (
         <div className="relative mt-3 grid gap-2">
           <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.5rem] gap-2">
-            <ButtonLink href="/billing?tab=payment" variant={isSubscription ? "studio-secondary" : "primary"} size="full" className="h-10 rounded-[0.9rem] px-2 text-xs">
+            <ButtonLink href={`/billing?tab=payment&request=${encodeURIComponent(pendingRequest!.id)}`} variant={isSubscription ? "studio-secondary" : "primary"} size="full" className="h-10 rounded-[0.9rem] px-2 text-xs">
               <Bank aria-hidden={true} className="h-4 w-4" />
               اطلاعات پرداخت
             </ButtonLink>
@@ -246,7 +265,7 @@ function PackageCard({
   );
 }
 
-export function BillingScreen({ packages, purchaseRequests, paymentSettings, activeTab }: BillingScreenProps) {
+export function BillingScreen({ packages, purchaseRequests, selectedPurchaseRequest, paymentSettings, activeTab, discountError }: BillingScreenProps) {
   const pendingRequests = purchaseRequests.filter((request) => request.status === "PENDING");
   const pendingRequestsByPackageId = new Map(pendingRequests.map((request) => [request.packageId, request]));
   const subscriptionPackages = packages.filter((item) => item.type === "SUBSCRIPTION");
@@ -316,12 +335,92 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
       ) : null}
 
       {activeTab === "payment" ? (
-        <section className={`${accountCardClass} space-y-3`}>
-          <AccountSectionHeader icon={Bank} title="اطلاعات کارت‌به‌کارت" />
-          {paymentSettings?.isActive ? (
+        <section className="space-y-2.5">
+          <AccountSectionHeader icon={Bank} title="خلاصه خرید و پرداخت" />
+          {selectedPurchaseRequest ? (
             <>
-              <div className="motion-state rounded-[1rem] bg-white/62 p-3">
-                <div className="motion-state rounded-[0.95rem] bg-white/78 px-3 py-2.5">
+              {(() => {
+                const discountView = getPurchaseDiscountView(selectedPurchaseRequest);
+                const hasEffectiveDiscount = discountView.effectiveDiscountAmount > 0;
+                const locked = Boolean(selectedPurchaseRequest.receiptSubmittedAt);
+                return (
+                  <div className={`${accountCardClass} space-y-3`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">{selectedPurchaseRequest.package.title}</p>
+                        <p className="mt-1 text-[11px] leading-5 text-muted">
+                          مبلغ نهایی را قبل از انتقال وجه بررسی کنید.
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-accent-wash px-2.5 py-1 text-[10px] font-semibold text-accent-deep">
+                        {selectedPurchaseRequest.package.type === "SUBSCRIPTION" ? "اشتراک" : "اعتبار"}
+                      </span>
+                    </div>
+
+                    <div className="divide-y divide-border/70 rounded-[var(--radius-lg)] bg-white/62 px-3">
+                      <div className="flex items-center justify-between gap-3 py-2.5 text-xs text-muted">
+                        <span>مبلغ بسته</span>
+                        <span className={hasEffectiveDiscount ? "line-through" : "font-medium text-foreground"}>
+                          {formatPrice(selectedPurchaseRequest.originalAmount, selectedPurchaseRequest.currency)}
+                        </span>
+                      </div>
+                      {hasEffectiveDiscount ? (
+                        <div className="flex items-center justify-between gap-3 py-2.5 text-xs">
+                          <span className="inline-flex items-center gap-1.5 text-[#28613f]">
+                            <DiscountShape aria-hidden={true} className="h-3.5 w-3.5" />
+                            تخفیف {selectedPurchaseRequest.discountCodeSnapshot}
+                          </span>
+                          <span className="font-semibold text-[#28613f]">
+                            − {formatPrice(discountView.effectiveDiscountAmount, selectedPurchaseRequest.currency)}
+                          </span>
+                        </div>
+                      ) : null}
+                      <div className="flex items-center justify-between gap-3 py-3">
+                        <span className="text-xs font-semibold text-foreground">مبلغ قابل واریز</span>
+                        <span className="text-base font-bold text-foreground">
+                          {formatPrice(discountView.payableAmount, selectedPurchaseRequest.currency)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {discountView.expired ? (
+                      <p className="rounded-[var(--radius-md)] bg-danger-soft px-3 py-2.5 text-xs leading-6 text-danger">
+                        رزرو کد تخفیف منقضی شده است. مبلغ به حالت اولیه برگشته؛ کد را دوباره اعمال کنید.
+                      </p>
+                    ) : null}
+                    {discountError === "reservation_expired" ? (
+                      <p className="rounded-[var(--radius-md)] bg-danger-soft px-3 py-2.5 text-xs leading-6 text-danger">
+                        رسید ثبت نشد؛ مهلت رزرو تخفیف تمام شده است. پس از اعمال دوباره کد، مبلغ را بررسی کنید.
+                      </p>
+                    ) : null}
+
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-foreground">کد تخفیف</p>
+                      <DiscountCodeForm
+                        requestId={selectedPurchaseRequest.id}
+                        appliedCode={selectedPurchaseRequest.discountCodeSnapshot}
+                        locked={locked}
+                      />
+                    </div>
+
+                    {hasEffectiveDiscount && selectedPurchaseRequest.discountReservedUntil && !locked ? (
+                      <p className="flex items-center gap-1.5 text-[11px] leading-5 text-muted">
+                        <Timer aria-hidden={true} className="h-3.5 w-3.5 shrink-0" />
+                        این مبلغ تا {reservationFormatter.format(selectedPurchaseRequest.discountReservedUntil)} برای شما محفوظ است.
+                      </p>
+                    ) : null}
+                  </div>
+                );
+              })()}
+
+              {paymentSettings?.isActive ? (
+                <div className={`${accountCardClass} space-y-3`}>
+                  <AccountSectionHeader icon={Card} title="اطلاعات کارت‌به‌کارت" />
+                  <p className="rounded-[var(--radius-md)] bg-accent-wash px-3 py-2.5 text-xs leading-6 text-accent-deep">
+                    دقیقاً {formatPrice(getPurchaseDiscountView(selectedPurchaseRequest).payableAmount, selectedPurchaseRequest.currency)} واریز کنید.
+                  </p>
+                  <div className="motion-state rounded-[1rem] bg-white/62 p-3">
+                    <div className="motion-state rounded-[0.95rem] bg-white/78 px-3 py-2.5">
                   <p className="text-[11px] text-muted">نام صاحب کارت</p>
                   <p className="mt-1 text-sm font-semibold text-foreground">{paymentSettings.cardholderName}</p>
                 </div>
@@ -334,16 +433,34 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
                     </p>
                   </div>
                 </div>
-              </div>
-              <ButtonLink href="/billing?tab=receipts" variant="primary" size="full" className="h-11 rounded-[0.95rem] px-2 text-xs">
-                <DocumentUpload aria-hidden={true} className="h-4 w-4" />
-                رفتن به ارسال رسید
-              </ButtonLink>
+                  </div>
+                  <ButtonLink href="/billing?tab=receipts" variant="primary" size="full" className="h-11 rounded-[0.95rem] px-2 text-xs">
+                    <DocumentUpload aria-hidden={true} className="h-4 w-4" />
+                    رفتن به ارسال رسید
+                  </ButtonLink>
+                </div>
+              ) : (
+                <p className={`${accountCardClass} text-xs leading-6 text-muted`}>
+                  پرداخت کارت‌به‌کارت فعلا فعال نیست. برای ثبت خرید، از پشتیبانی راهنمایی بگیرید.
+                </p>
+              )}
             </>
           ) : (
-            <p className="motion-state rounded-[1rem] bg-white/62 p-3 text-xs leading-6 text-muted">
-              پرداخت کارت‌به‌کارت فعلا فعال نیست. برای ثبت خرید، از پشتیبانی راهنمایی بگیرید.
-            </p>
+            <div className={`${accountCardClass} space-y-3`}>
+              <p className="text-xs leading-6 text-muted">برای دیدن مبلغ دقیق و اطلاعات کارت، ابتدا یکی از خریدهای در انتظار را انتخاب کنید.</p>
+              {pendingRequests.length > 0 ? (
+                <div className="grid gap-2">
+                  {pendingRequests.map((request) => (
+                    <ButtonLink key={request.id} href={`/billing?tab=payment&request=${encodeURIComponent(request.id)}`} variant="secondary" size="full" className="h-10 justify-between px-3 text-xs">
+                      <span>{request.package.title}</span>
+                      <span>{formatPrice(getPurchaseDiscountView(request).payableAmount, request.currency)}</span>
+                    </ButtonLink>
+                  ))}
+                </div>
+              ) : (
+                <ButtonLink href="/billing?tab=packages" variant="primary" size="full" className="h-10 text-xs">انتخاب پلن</ButtonLink>
+              )}
+            </div>
           )}
         </section>
       ) : null}
@@ -354,7 +471,8 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
           {purchaseRequests.length > 0 ? (
             purchaseRequests.map((request) => {
               const status = purchaseStatusCopy(request);
-              const canUploadReceipt = request.status === "PENDING";
+              const discountView = getPurchaseDiscountView(request);
+              const canUploadReceipt = request.status === "PENDING" && !discountView.expired;
               const requestSkin = subscriptionSkinByPackageId.get(request.packageId);
               const isPlanRequest = Boolean(requestSkin);
 
@@ -380,7 +498,7 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
                   <div>
                     <p className={["relative text-sm font-semibold", isPlanRequest ? "text-white" : "text-foreground"].join(" ")}>{request.package.title}</p>
                     <p className={["relative mt-1 text-[11px]", isPlanRequest ? "text-white/68" : "text-muted"].join(" ")}>
-                      {formatPrice(request.amount, request.currency)} · {dateFormatter.format(request.updatedAt)}
+                      {formatPrice(discountView.payableAmount, request.currency)} · {dateFormatter.format(request.updatedAt)}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
@@ -414,6 +532,23 @@ export function BillingScreen({ packages, purchaseRequests, paymentSettings, act
                   >
                     {status.detail}
                   </p>
+                ) : null}
+
+                {request.discountCodeSnapshot ? (
+                  <div className={[
+                    "relative grid grid-cols-2 gap-2 rounded-[0.95rem] px-3 py-2.5 text-[11px]",
+                    isPlanRequest ? "bg-white/12 text-white/76" : "bg-white/56 text-muted",
+                  ].join(" ")}>
+                    <span>کد: <b dir="ltr">{request.discountCodeSnapshot}</b></span>
+                    <span className="text-left">تخفیف: {formatPrice(discountView.effectiveDiscountAmount, request.currency)}</span>
+                  </div>
+                ) : null}
+
+                {discountView.expired ? (
+                  <ButtonLink href={`/billing?tab=payment&request=${encodeURIComponent(request.id)}`} variant={isPlanRequest ? "studio-secondary" : "secondary"} size="full" className="relative h-10 text-xs">
+                    <DiscountShape aria-hidden={true} className="h-4 w-4" />
+                    اعمال دوباره کد تخفیف
+                  </ButtonLink>
                 ) : null}
 
                 {request.receiptImageUrl ? (
